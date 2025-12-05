@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "projects": {
+    "rootDirectory": "frontend"
+  },
+  "build": {
+    "env": {
+      "NODE_ENV": "production"
+    }
+  },
+  "rewrites": []
+}
