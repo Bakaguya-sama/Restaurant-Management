@@ -13,7 +13,7 @@ const StaffSchema = new Schema({
   is_active: { type: Boolean, default: true },
   role: { 
     type: String, 
-    enum: ['service', 'cashier', 'warehouse', 'manager'], 
+    enum: ['waiter', 'cashier', 'warehouse', 'manager'], 
     required: true 
   },
   //Only for managers
@@ -176,7 +176,7 @@ const MenuEntrySchema = new Schema({
 const OrderSchema = new Schema({
   order_number: { type: String, required: true, unique: true },
   table_id: { type: Schema.Types.ObjectId, ref: 'Table', required: true },
-  staff_id: { type: Schema.Types.ObjectId, ref: 'Staff', required: true }, // ServiceStaff
+  staff_id: { type: Schema.Types.ObjectId, ref: 'Staff', required: true }, // Waiter
   customer_id: { type: Schema.Types.ObjectId, ref: 'Customer' },
   order_date: { type: Date, default: Date.now },
   order_time: { type: String, required: true },
@@ -209,7 +209,7 @@ const PromotionSchema = new Schema({
   name: { type: String, required: true },
   description: String,
   promotion_type: { type: String, enum: ['percentage', 'fixed_amount', 'buy_x_get_y'], default: 'percentage' },
-  discount_value: { type: Number, required: true }, // 20 for 20% or 50000 for 50k VND
+  discount_value: { type: Number, required: true }, // 20 for 20% or 50000 for 50k VND depending on type
   minimum_order_amount: { type: Number, default: 0 },
   promo_code: { type: String, unique: true, sparse: true },
   start_date: { type: Date, required: true },
@@ -255,10 +255,10 @@ InvoiceSchema.index({ invoice_number: 1 });
 // ==================== EXPORTS ====================
 
 const Staff = mongoose.model('Staff', StaffSchema);
-const Manager = mongoose.model('Manager', ManagerSchema);
 const Customer = mongoose.model('Customer', CustomerSchema);
 const Table = mongoose.model('Table', TableSchema);
 const Reservation = mongoose.model('Reservation', ReservationSchema);
+const ReservationDetail = mongoose.model('ReservationDetail', ReservationDetailSchema);
 const Complaint = mongoose.model('Complaint', ComplaintSchema);
 const Ingredient = mongoose.model('Ingredient', IngredientSchema);
 const StockImport = mongoose.model('StockImport', StockImportSchema);
@@ -275,10 +275,10 @@ const InvoicePromotion = mongoose.model('InvoicePromotion', InvoicePromotionSche
 
 module.exports = {
   Staff,
-  Manager,
   Customer,
   Table,
   Reservation,
+  ReservationDetail,
   Complaint,
   Ingredient,
   StockImport,
