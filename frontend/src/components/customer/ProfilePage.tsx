@@ -18,6 +18,8 @@ import { toast } from "sonner";
 
 export function CustomerProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [profileData, setProfileData] = useState({
     fullName: "Nguyễn Văn An",
     email: "customer@email.com",
@@ -34,6 +36,42 @@ export function CustomerProfilePage() {
   });
 
   const [showPasswordChange, setShowPasswordChange] = useState(false);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Chỉ chấp nhận file ảnh (JPG, PNG, GIF, WebP)");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Kích thước ảnh không được vượt quá 5MB");
+      return;
+    }
+
+    // Create preview URL
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAvatarUrl(reader.result as string);
+      toast.success("Ảnh đại diện đã được cập nhật");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
 
   const membershipInfo = {
     tier: "Gold",
@@ -96,12 +134,31 @@ export function CustomerProfilePage() {
           <Card className="p-6">
             <div className="text-center">
               <div className="relative inline-block mb-4">
-                <div className="w-32 h-32 bg-gradient-to-br from-[#0056D2] to-[#0041A3] rounded-full flex items-center justify-center mx-auto">
-                  <span className="text-white text-4xl">
-                    {profileData.fullName.charAt(0)}
-                  </span>
+                <div className="w-32 h-32 bg-gradient-to-br from-[#0056D2] to-[#0041A3] rounded-full flex items-center justify-center mx-auto overflow-hidden">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt="Avatar"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-white text-4xl">
+                      {profileData.fullName.charAt(0)}
+                    </span>
+                  )}
                 </div>
-                <button className="absolute bottom-0 right-0 w-10 h-10 bg-white rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-50">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                />
+                <button
+                  onClick={handleAvatarClick}
+                  className="absolute bottom-0 right-0 w-10 h-10 bg-white rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-50"
+                  title="Chọn ảnh đại diện"
+                >
                   <Camera className="w-5 h-5 text-gray-600" />
                 </button>
               </div>
