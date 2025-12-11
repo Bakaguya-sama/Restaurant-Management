@@ -80,14 +80,6 @@ export function CustomerProfilePage() {
     fileInputRef.current?.click();
   };
 
-  const membershipInfo = {
-    tier: "Gold",
-    points: 1500,
-    nextTier: "Platinum",
-    pointsToNextTier: 500,
-    totalSpent: 15800000,
-  };
-
   const handleSaveProfile = () => {
     // Validate all fields
     const nameValidation = validateRequired(profileData.fullName, "Họ và tên");
@@ -204,12 +196,6 @@ export function CustomerProfilePage() {
                 </button>
               </div>
               <h3 className="mb-2">{profileData.fullName}</h3>
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Award className="w-5 h-5 text-yellow-500" />
-                <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm">
-                  {membershipInfo.tier}
-                </span>
-              </div>
               <p className="text-sm text-gray-500">
                 Thành viên từ{" "}
                 {new Date(profileData.memberSince).toLocaleDateString("vi-VN")}
@@ -230,49 +216,6 @@ export function CustomerProfilePage() {
                 <span className="text-gray-600 line-clamp-2">
                   {profileData.address}
                 </span>
-              </div>
-            </div>
-          </Card>
-
-          {/* Membership Card */}
-          <Card className="p-6 bg-gradient-to-br from-yellow-50 to-orange-50">
-            <div className="flex items-center gap-2 mb-4">
-              <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-              <h4>Thông tin hạng thành viên</h4>
-            </div>
-            <div className="space-y-3">
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-600">Điểm hiện tại</span>
-                  <span className="text-[#0056D2]">
-                    {membershipInfo.points} điểm
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-[#0056D2] h-2 rounded-full"
-                    style={{
-                      width: `${
-                        (membershipInfo.points /
-                          (membershipInfo.points +
-                            membershipInfo.pointsToNextTier)) *
-                        100
-                      }%`,
-                    }}
-                  />
-                </div>
-                <p className="text-xs text-gray-600 mt-1">
-                  Còn {membershipInfo.pointsToNextTier} điểm để lên hạng{" "}
-                  {membershipInfo.nextTier}
-                </p>
-              </div>
-              <div className="pt-3 border-t">
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-600">Tổng chi tiêu</span>
-                  <span className="text-[#0056D2]">
-                    {membershipInfo.totalSpent.toLocaleString()}đ
-                  </span>
-                </div>
               </div>
             </div>
           </Card>
@@ -429,45 +372,6 @@ export function CustomerProfilePage() {
                 dụng mật khẩu mạnh.
               </p>
             )}
-          </Card>
-
-          {/* Preferences */}
-          <Card className="p-6">
-            <h3 className="mb-6">Tùy chọn</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p>Nhận thông báo khuyến mãi</p>
-                  <p className="text-sm text-gray-600">
-                    Nhận email về các chương trình ưu đãi
-                  </p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    defaultChecked
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0056D2]"></div>
-                </label>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p>Nhận thông báo đơn hàng</p>
-                  <p className="text-sm text-gray-600">
-                    Cập nhật trạng thái đặt bàn và order
-                  </p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    defaultChecked
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0056D2]"></div>
-                </label>
-              </div>
-            </div>
           </Card>
         </div>
       </div>

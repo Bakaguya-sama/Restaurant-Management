@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Calendar, UtensilsCrossed, Gift, Star } from "lucide-react";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
@@ -10,6 +9,7 @@ import { MenuItem } from "../../types";
 import { useCart } from "../../contexts/CartContext";
 import { PromotionCard } from "./PromotionCard";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -45,13 +45,13 @@ export function HomePage() {
               Đặt bàn ngay hôm nay và nhận ưu đãi đặc biệt dành cho thành viên
             </p>
             <div className="flex gap-4">
-              <Button size="lg" onClick={() => onNavigate("booking")}>
+              <Button size="lg" onClick={() => navigate("booking")}>
                 Đặt bàn ngay
               </Button>
               <Button
                 size="lg"
                 variant="secondary"
-                onClick={() => onNavigate("menu")}
+                onClick={() => navigate("menu")}
               >
                 Xem thực đơn
               </Button>
@@ -64,7 +64,7 @@ export function HomePage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
         <Card
           hover
-          onClick={() => onNavigate("booking")}
+          onClick={() => navigate("booking")}
           className="p-6 text-center cursor-pointer"
         >
           <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -76,7 +76,7 @@ export function HomePage() {
 
         <Card
           hover
-          onClick={() => onNavigate("menu")}
+          onClick={() => navigate("menu")}
           className="p-6 text-center cursor-pointer"
         >
           <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -88,7 +88,7 @@ export function HomePage() {
 
         <Card
           hover
-          onClick={() => onNavigate("membership")}
+          onClick={() => navigate("membership")}
           className="p-6 text-center cursor-pointer"
         >
           <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -100,7 +100,7 @@ export function HomePage() {
 
         <Card
           hover
-          onClick={() => onNavigate("bills")}
+          onClick={() => navigate("bills")}
           className="p-6 text-center cursor-pointer"
         >
           <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -115,7 +115,7 @@ export function HomePage() {
       <div className="mb-12">
         <div className="flex items-center justify-between mb-6">
           <h2>Món ăn nổi bật</h2>
-          <Button variant="ghost" onClick={() => onNavigate("menu")}>
+          <Button variant="ghost" onClick={() => navigate("menu")}>
             Xem tất cả
           </Button>
         </div>

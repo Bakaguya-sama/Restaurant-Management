@@ -211,12 +211,6 @@ export function StaffLayout() {
               />
             </div>
 
-            {/* Notifications */}
-            <button className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-            </button>
-
             {/* User */}
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-[#0056D2] rounded-full flex items-center justify-center">

@@ -1,13 +1,19 @@
-import React, { useState } from 'react';
-import { Search, AlertCircle, CheckCircle, Utensils, WrenchIcon } from 'lucide-react';
-import { Button } from '../../ui/Button';
-import { Card } from '../../ui/Card';
-import { Modal } from '../../ui/Modal';
-import { Input, Textarea } from '../../ui/Input';
-import { Badge } from '../../ui/badge';
-import { mockTables, mockBookings } from '../../../lib/mockData';
-import { Table, TableStatus } from '../../../types';
-import { toast } from 'sonner';
+import React, { useState } from "react";
+import {
+  Search,
+  AlertCircle,
+  CheckCircle,
+  Utensils,
+  WrenchIcon,
+} from "lucide-react";
+import { Button } from "../../ui/Button";
+import { Card } from "../../ui/Card";
+import { Modal } from "../../ui/Modal";
+import { Input, Textarea } from "../../ui/Input";
+import { Badge } from "../../ui/badge";
+import { mockTables, mockBookings } from "../../../lib/mockData";
+import { Table, TableStatus } from "../../../types";
+import { toast } from "sonner";
 
 export function TablesMapPage() {
   const [tables, setTables] = useState<Table[]>(mockTables);
@@ -15,46 +21,46 @@ export function TablesMapPage() {
   const [showActionModal, setShowActionModal] = useState(false);
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [showBrokenModal, setShowBrokenModal] = useState(false);
-  const [bookingCode, setBookingCode] = useState('');
-  const [brokenReason, setBrokenReason] = useState('');
+  const [bookingCode, setBookingCode] = useState("");
+  const [brokenReason, setBrokenReason] = useState("");
 
   const getTableColor = (status: TableStatus) => {
     switch (status) {
-      case 'free':
-        return 'bg-green-500 hover:bg-green-600';
-      case 'occupied':
-        return 'bg-red-500 hover:bg-red-600';
-      case 'reserved':
-        return 'bg-yellow-500 hover:bg-yellow-600';
-      case 'dirty':
-        return 'bg-orange-500 hover:bg-orange-600';
-      case 'broken':
-        return 'bg-gray-500 cursor-not-allowed';
+      case "free":
+        return "bg-green-500 hover:bg-green-600";
+      case "occupied":
+        return "bg-red-500 hover:bg-red-600";
+      case "reserved":
+        return "bg-yellow-500 hover:bg-yellow-600";
+      case "dirty":
+        return "bg-orange-500 hover:bg-orange-600";
+      case "broken":
+        return "bg-gray-500 cursor-not-allowed";
       default:
-        return 'bg-gray-300';
+        return "bg-gray-300";
     }
   };
 
   const getStatusText = (status: TableStatus) => {
     switch (status) {
-      case 'free':
-        return 'Trống';
-      case 'occupied':
-        return 'Có khách';
-      case 'reserved':
-        return 'Đã đặt';
-      case 'dirty':
-        return 'Chờ dọn';
-      case 'broken':
-        return 'Hỏng';
+      case "free":
+        return "Trống";
+      case "occupied":
+        return "Có khách";
+      case "reserved":
+        return "Đã đặt";
+      case "dirty":
+        return "Chờ dọn";
+      case "broken":
+        return "Hỏng";
       default:
         return status;
     }
   };
 
   const handleTableClick = (table: Table) => {
-    if (table.status === 'broken') {
-      toast.error('Bàn đang hỏng, không thể sử dụng');
+    if (table.status === "broken") {
+      toast.error("Bàn đang hỏng, không thể sử dụng");
       return;
     }
 
@@ -65,15 +71,17 @@ export function TablesMapPage() {
   const handleCreateOrder = () => {
     if (!selectedTable) return;
 
-    if (selectedTable.status !== 'free') {
-      toast.error('Bàn không ở trạng thái trống');
+    if (selectedTable.status !== "free") {
+      toast.error("Bàn không ở trạng thái trống");
       return;
     }
 
     // Update table status to occupied
     setTables(
       tables.map((t) =>
-        t.id === selectedTable.id ? { ...t, status: 'occupied' as TableStatus } : t
+        t.id === selectedTable.id
+          ? { ...t, status: "occupied" as TableStatus }
+          : t
       )
     );
 
@@ -84,21 +92,23 @@ export function TablesMapPage() {
 
   const handleCheckIn = () => {
     if (!selectedTable || !bookingCode) {
-      toast.error('Vui lòng nhập mã đặt bàn');
+      toast.error("Vui lòng nhập mã đặt bàn");
       return;
     }
 
     // Find booking
     const booking = mockBookings.find((b) => b.id === bookingCode);
     if (!booking) {
-      toast.error('Không tìm thấy mã đặt bàn');
+      toast.error("Không tìm thấy mã đặt bàn");
       return;
     }
 
     // Update table status
     setTables(
       tables.map((t) =>
-        t.id === selectedTable.id ? { ...t, status: 'occupied' as TableStatus } : t
+        t.id === selectedTable.id
+          ? { ...t, status: "occupied" as TableStatus }
+          : t
       )
     );
 
@@ -106,21 +116,21 @@ export function TablesMapPage() {
     setShowCheckInModal(false);
     setShowActionModal(false);
     setSelectedTable(null);
-    setBookingCode('');
+    setBookingCode("");
   };
 
   const handleCleanTable = () => {
     if (!selectedTable) return;
 
-    if (selectedTable.status !== 'dirty') {
-      toast.error('Bàn không ở trạng thái chờ dọn');
+    if (selectedTable.status !== "dirty") {
+      toast.error("Bàn không ở trạng thái chờ dọn");
       return;
     }
 
     // Update table status to free
     setTables(
       tables.map((t) =>
-        t.id === selectedTable.id ? { ...t, status: 'free' as TableStatus } : t
+        t.id === selectedTable.id ? { ...t, status: "free" as TableStatus } : t
       )
     );
 
@@ -131,14 +141,16 @@ export function TablesMapPage() {
 
   const handleMarkBroken = () => {
     if (!selectedTable || !brokenReason) {
-      toast.error('Vui lòng nhập lý do');
+      toast.error("Vui lòng nhập lý do");
       return;
     }
 
     // Update table status to broken
     setTables(
       tables.map((t) =>
-        t.id === selectedTable.id ? { ...t, status: 'broken' as TableStatus } : t
+        t.id === selectedTable.id
+          ? { ...t, status: "broken" as TableStatus }
+          : t
       )
     );
 
@@ -146,7 +158,7 @@ export function TablesMapPage() {
     setShowBrokenModal(false);
     setShowActionModal(false);
     setSelectedTable(null);
-    setBrokenReason('');
+    setBrokenReason("");
   };
 
   // Group tables by area
@@ -162,7 +174,7 @@ export function TablesMapPage() {
     <div>
       <div className="mb-6">
         <h2 className="mb-4">Sơ đồ bàn</h2>
-        
+
         {/* Legend */}
         <div className="flex flex-wrap gap-4 mb-6">
           <div className="flex items-center gap-2">
@@ -192,31 +204,31 @@ export function TablesMapPage() {
           <Card className="p-4">
             <p className="text-gray-600 mb-1 text-sm">Trống</p>
             <p className="text-2xl text-green-600">
-              {tables.filter((t) => t.status === 'free').length}
+              {tables.filter((t) => t.status === "free").length}
             </p>
           </Card>
           <Card className="p-4">
             <p className="text-gray-600 mb-1 text-sm">Có khách</p>
             <p className="text-2xl text-red-600">
-              {tables.filter((t) => t.status === 'occupied').length}
+              {tables.filter((t) => t.status === "occupied").length}
             </p>
           </Card>
           <Card className="p-4">
             <p className="text-gray-600 mb-1 text-sm">Đã đặt</p>
             <p className="text-2xl text-yellow-600">
-              {tables.filter((t) => t.status === 'reserved').length}
+              {tables.filter((t) => t.status === "reserved").length}
             </p>
           </Card>
           <Card className="p-4">
             <p className="text-gray-600 mb-1 text-sm">Chờ dọn</p>
             <p className="text-2xl text-orange-600">
-              {tables.filter((t) => t.status === 'dirty').length}
+              {tables.filter((t) => t.status === "dirty").length}
             </p>
           </Card>
           <Card className="p-4">
             <p className="text-gray-600 mb-1 text-sm">Hỏng</p>
             <p className="text-2xl text-gray-600">
-              {tables.filter((t) => t.status === 'broken').length}
+              {tables.filter((t) => t.status === "broken").length}
             </p>
           </Card>
         </div>
@@ -234,7 +246,7 @@ export function TablesMapPage() {
                 className={`relative p-6 rounded-lg text-white transition-all ${getTableColor(
                   table.status
                 )}`}
-                disabled={table.status === 'broken'}
+                disabled={table.status === "broken"}
               >
                 <div className="text-center">
                   <div className="text-2xl mb-2">{table.number}</div>
@@ -243,7 +255,7 @@ export function TablesMapPage() {
                     {getStatusText(table.status)}
                   </div>
                 </div>
-                {table.status === 'dirty' && (
+                {table.status === "dirty" && (
                   <div className="absolute top-1 right-1">
                     <AlertCircle className="w-5 h-5 animate-pulse" />
                   </div>
@@ -279,15 +291,15 @@ export function TablesMapPage() {
                   <p className="text-gray-600">Trạng thái:</p>
                   <Badge
                     className={
-                      selectedTable.status === 'free'
-                        ? 'bg-green-100 text-green-700'
-                        : selectedTable.status === 'occupied'
-                        ? 'bg-red-100 text-red-700'
-                        : selectedTable.status === 'dirty'
-                        ? 'bg-orange-100 text-orange-700'
-                        : selectedTable.status === 'reserved'
-                        ? 'bg-yellow-100 text-yellow-700'
-                        : 'bg-gray-100 text-gray-700'
+                      selectedTable.status === "free"
+                        ? "bg-green-100 text-green-700"
+                        : selectedTable.status === "occupied"
+                        ? "bg-red-100 text-red-700"
+                        : selectedTable.status === "dirty"
+                        ? "bg-orange-100 text-orange-700"
+                        : selectedTable.status === "reserved"
+                        ? "bg-yellow-100 text-yellow-700"
+                        : "bg-gray-100 text-gray-700"
                     }
                   >
                     {getStatusText(selectedTable.status)}
@@ -297,12 +309,15 @@ export function TablesMapPage() {
             </div>
 
             <div className="space-y-2">
-              {selectedTable.status === 'free' && (
+              {selectedTable.status === "free" ? (
                 <>
                   <Button fullWidth onClick={handleCreateOrder}>
                     <Utensils className="w-4 h-4 mr-2" />
                     Tạo order mới
                   </Button>
+                </>
+              ) : selectedTable.status === "reserved" ? (
+                <>
                   <Button
                     fullWidth
                     variant="secondary"
@@ -315,9 +330,11 @@ export function TablesMapPage() {
                     Check-in khách đặt
                   </Button>
                 </>
+              ) : (
+                ""
               )}
 
-              {selectedTable.status === 'dirty' && (
+              {selectedTable.status === "dirty" && (
                 <Button fullWidth onClick={handleCleanTable}>
                   <CheckCircle className="w-4 h-4 mr-2" />
                   Xác nhận đã dọn xong
@@ -345,7 +362,7 @@ export function TablesMapPage() {
         isOpen={showCheckInModal}
         onClose={() => {
           setShowCheckInModal(false);
-          setBookingCode('');
+          setBookingCode("");
         }}
         title="Check-in khách đặt bàn"
       >
@@ -369,7 +386,7 @@ export function TablesMapPage() {
               fullWidth
               onClick={() => {
                 setShowCheckInModal(false);
-                setBookingCode('');
+                setBookingCode("");
               }}
             >
               Hủy
@@ -386,14 +403,12 @@ export function TablesMapPage() {
         isOpen={showBrokenModal}
         onClose={() => {
           setShowBrokenModal(false);
-          setBrokenReason('');
+          setBrokenReason("");
         }}
         title="Báo hỏng bàn"
       >
         <div className="space-y-4">
-          <p className="text-gray-600">
-            Bàn: {selectedTable?.number}
-          </p>
+          <p className="text-gray-600">Bàn: {selectedTable?.number}</p>
 
           <Textarea
             label="Lý do hỏng"
@@ -409,7 +424,7 @@ export function TablesMapPage() {
               fullWidth
               onClick={() => {
                 setShowBrokenModal(false);
-                setBrokenReason('');
+                setBrokenReason("");
               }}
             >
               Hủy
