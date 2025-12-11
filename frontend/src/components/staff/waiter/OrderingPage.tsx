@@ -1,10 +1,9 @@
 import React, { useState } from "react";
-import { Plus, Minus, Send, Clock, Check, Utensils, X } from "lucide-react";
+import { Plus, Minus, Utensils, X } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Card } from "../../ui/Card";
 import { Modal } from "../../ui/Modal";
 import { Badge } from "../../ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
 import { mockMenuItems } from "../../../lib/mockData";
 import { MenuItem } from "../../../types";
 import { toast } from "sonner";
@@ -13,18 +12,23 @@ interface OrderItem {
   item: MenuItem;
   quantity: number;
   notes: string;
-  status?: "pending" | "sent" | "cooking" | "served";
+  status: "pending" | "cooking" | "served";
 }
 
 export function OrderingPage() {
   const [selectedTable, setSelectedTable] = useState("T02");
-  const [currentOrder, setCurrentOrder] = useState<OrderItem[]>([]);
-  const [sentOrders, setSentOrders] = useState<OrderItem[]>([
+  const [tableOrders, setTableOrders] = useState<OrderItem[]>([
     {
       item: mockMenuItems[0],
       quantity: 2,
       notes: "Không hành",
       status: "cooking",
+    },
+    {
+      item: mockMenuItems[1],
+      quantity: 1,
+      notes: "",
+      status: "served",
     },
   ]);
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -32,8 +36,6 @@ export function OrderingPage() {
   const [customizingItem, setCustomizingItem] = useState<OrderItem | null>(
     null
   );
-  const [showUpdateModal, setShowUpdateModal] = useState(false);
-  const [updatingItem, setUpdatingItem] = useState<OrderItem | null>(null);
 
   const categories = ["all", "Khai vị", "Món chính", "Đồ uống"];
   const quickNotes = ["Ít đá", "Không cay", "Không hành", "Ít dầu", "Thêm rau"];
@@ -57,29 +59,32 @@ export function OrderingPage() {
   });
 
   const handleAddToOrder = (item: MenuItem) => {
-    const existing = currentOrder.find(
-      (o) => o.item.id === item.id && !o.notes
-    );
+    const existing = tableOrders.find((o) => o.item.id === item.id && !o.notes);
     if (existing) {
-      setCurrentOrder(
-        currentOrder.map((o) =>
+      setTableOrders(
+        tableOrders.map((o) =>
           o.item.id === item.id && !o.notes
             ? { ...o, quantity: o.quantity + 1 }
             : o
         )
       );
     } else {
-      setCurrentOrder([...currentOrder, { item, quantity: 1, notes: "" }]);
+      setTableOrders([
+        ...tableOrders,
+        { item, quantity: 1, notes: "", status: "pending" },
+      ]);
     }
+    toast.success(`Đã thêm ${item.name}`);
   };
 
   const handleUpdateQuantity = (index: number, delta: number) => {
-    const newOrder = [...currentOrder];
+    const newOrder = [...tableOrders];
     newOrder[index].quantity += delta;
     if (newOrder[index].quantity <= 0) {
       newOrder.splice(index, 1);
+      toast.success("Đã xóa món");
     }
-    setCurrentOrder(newOrder);
+    setTableOrders(newOrder);
   };
 
   const handleCustomize = (orderItem: OrderItem, index: number) => {
@@ -90,54 +95,47 @@ export function OrderingPage() {
   const handleSaveCustomization = () => {
     if (!customizingItem) return;
 
-    const index = currentOrder.findIndex(
+    const index = tableOrders.findIndex(
       (o) =>
         o.item.id === customizingItem.item.id &&
         o.notes === (customizingItem.notes || "")
     );
 
     if (index >= 0) {
-      const newOrder = [...currentOrder];
+      const newOrder = [...tableOrders];
       newOrder[index] = customizingItem;
-      setCurrentOrder(newOrder);
+      setTableOrders(newOrder);
     }
 
     setShowCustomizeModal(false);
     setCustomizingItem(null);
+    toast.success("Đã lưu tùy chỉnh");
   };
 
-  const handleSendOrder = () => {
-    if (currentOrder.length === 0) {
-      toast.error("Chưa có món nào được chọn");
-      return;
-    }
-
-    const ordersToSend = currentOrder.map((o) => ({
-      ...o,
-      status: "sent" as const,
-    }));
-    setSentOrders([...sentOrders, ...ordersToSend]);
-    setCurrentOrder([]);
-    toast.success(`Đã gửi ${ordersToSend.length} món cho bếp`);
+  const handleUpdateStatus = (
+    index: number,
+    newStatus: "pending" | "cooking" | "served"
+  ) => {
+    const newOrders = [...tableOrders];
+    newOrders[index].status = newStatus;
+    setTableOrders(newOrders);
+    toast.success(`Đã cập nhật trạng thái: ${getStatusText(newStatus)}`);
   };
 
-  const handleChangeItem = (item: OrderItem) => {
-    setUpdatingItem(item);
-    setShowUpdateModal(true);
-  };
-
-  const handleReturnItem = (item: OrderItem) => {
-    const reason = prompt("Lý do trả món:");
-    if (reason) {
-      setSentOrders(sentOrders.filter((o) => o !== item));
-      toast.success("Đã gửi yêu cầu trả món");
+  const handleRemoveItem = (index: number) => {
+    const item = tableOrders[index];
+    if (confirm(`Xác nhận hủy món "${item.item.name}"?`)) {
+      const newOrders = [...tableOrders];
+      newOrders.splice(index, 1);
+      setTableOrders(newOrders);
+      toast.success("Đã hủy món");
     }
   };
 
-  const getStatusColor = (status?: string) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
-      case "sent":
-        return "bg-blue-100 text-blue-700";
+      case "pending":
+        return "bg-yellow-100 text-yellow-700";
       case "cooking":
         return "bg-orange-100 text-orange-700";
       case "served":
@@ -147,16 +145,16 @@ export function OrderingPage() {
     }
   };
 
-  const getStatusText = (status?: string) => {
+  const getStatusText = (status: string) => {
     switch (status) {
-      case "sent":
-        return "Đã gửi";
+      case "pending":
+        return "Chờ xử lý";
       case "cooking":
         return "Đang nấu";
       case "served":
         return "Đã phục vụ";
       default:
-        return "Chờ gửi";
+        return "Không rõ";
     }
   };
 
@@ -241,166 +239,113 @@ export function OrderingPage() {
 
       {/* Right: Order Summary */}
       <div>
-        <Tabs defaultValue="current" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="current">
-              Đang chọn ({currentOrder.length})
-            </TabsTrigger>
-            <TabsTrigger value="sent">Đã gửi ({sentOrders.length})</TabsTrigger>
-          </TabsList>
-
-          {/* Current Order Tab */}
-          <TabsContent value="current">
-            <Card className="p-4">
-              {currentOrder.length === 0 ? (
-                <div className="text-center py-8">
-                  <Utensils className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500 text-sm">Chưa có món nào</p>
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-3 mb-4 max-h-96 overflow-y-auto">
-                    {currentOrder.map((orderItem, index) => (
-                      <div
-                        key={index}
-                        className="p-3 border rounded-lg"
-                        onClick={() => handleCustomize(orderItem, index)}
-                      >
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex-1">
-                            <h4 className="text-sm mb-1">
-                              {orderItem.item.name}
-                            </h4>
-                            {orderItem.notes && (
-                              <p className="text-xs text-gray-600">
-                                Ghi chú: {orderItem.notes}
-                              </p>
-                            )}
-                          </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleUpdateQuantity(index, -orderItem.quantity);
-                            }}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 border rounded-lg">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleUpdateQuantity(index, -1);
-                              }}
-                              className="p-1 hover:bg-gray-100"
-                            >
-                              <Minus className="w-4 h-4" />
-                            </button>
-                            <span className="w-8 text-center text-sm">
-                              {orderItem.quantity}
-                            </span>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleUpdateQuantity(index, 1);
-                              }}
-                              className="p-1 hover:bg-gray-100"
-                            >
-                              <Plus className="w-4 h-4" />
-                            </button>
-                          </div>
-                          <span className="text-sm text-[#0056D2]">
-                            {(
-                              orderItem.item.price * orderItem.quantity
-                            ).toLocaleString()}
-                            đ
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="border-t pt-4 mb-4">
-                    <div className="flex justify-between">
-                      <span>Tổng:</span>
-                      <span className="text-xl text-[#0056D2]">
-                        {currentOrder
-                          .reduce(
-                            (sum, o) => sum + o.item.price * o.quantity,
-                            0
-                          )
-                          .toLocaleString()}
-                        đ
-                      </span>
-                    </div>
-                  </div>
-
-                  <Button fullWidth onClick={handleSendOrder}>
-                    <Send className="w-4 h-4 mr-2" />
-                    Gửi bếp
-                  </Button>
-                </>
-              )}
-            </Card>
-          </TabsContent>
-
-          {/* Sent Orders Tab */}
-          <TabsContent value="sent">
-            <Card className="p-4">
-              {sentOrders.length === 0 ? (
-                <div className="text-center py-8">
-                  <Clock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500 text-sm">Chưa gửi món nào</p>
-                </div>
-              ) : (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {sentOrders.map((orderItem, index) => (
-                    <div key={index} className="p-3 border rounded-lg">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <h4 className="text-sm mb-1">
-                            {orderItem.item.name}
-                          </h4>
-                          <p className="text-xs text-gray-600">
-                            SL: {orderItem.quantity}
+        <Card className="p-4">
+          <h3 className="mb-4">Đơn hàng - Bàn {selectedTable}</h3>
+          {tableOrders.length === 0 ? (
+            <div className="text-center py-8">
+              <Utensils className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500 text-sm">Chưa có món nào</p>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-3 mb-4 max-h-[500px] overflow-y-auto">
+                {tableOrders.map((orderItem, index) => (
+                  <div
+                    key={index}
+                    className="p-3 border rounded-lg hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <h4 className="text-sm mb-1">{orderItem.item.name}</h4>
+                        {orderItem.notes && (
+                          <p className="text-xs text-gray-600 mb-1">
+                            Ghi chú: {orderItem.notes}
                           </p>
-                          {orderItem.notes && (
-                            <p className="text-xs text-gray-600">
-                              Ghi chú: {orderItem.notes}
-                            </p>
-                          )}
-                        </div>
+                        )}
                         <Badge className={getStatusColor(orderItem.status)}>
                           {getStatusText(orderItem.status)}
                         </Badge>
                       </div>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          fullWidth
-                          onClick={() => handleChangeItem(orderItem)}
-                        >
-                          Đổi món
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          fullWidth
-                          onClick={() => handleReturnItem(orderItem)}
-                        >
-                          Trả món
-                        </Button>
-                      </div>
+                      <button
+                        onClick={() => handleRemoveItem(index)}
+                        className="text-red-500 hover:text-red-700 p-1"
+                        title="Hủy món"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
-                  ))}
+
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2 border rounded-lg">
+                        <button
+                          onClick={() => handleUpdateQuantity(index, -1)}
+                          className="p-1 hover:bg-gray-100"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <span className="w-8 text-center text-sm">
+                          {orderItem.quantity}
+                        </span>
+                        <button
+                          onClick={() => handleUpdateQuantity(index, 1)}
+                          className="p-1 hover:bg-gray-100"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <span className="text-sm text-[#0056D2] font-medium">
+                        {(
+                          orderItem.item.price * orderItem.quantity
+                        ).toLocaleString()}
+                        đ
+                      </span>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => handleCustomize(orderItem, index)}
+                      >
+                        Tùy chỉnh
+                      </Button>
+
+                      {/* Status update dropdown */}
+                      <select
+                        value={orderItem.status}
+                        onChange={(e) =>
+                          handleUpdateStatus(index, e.target.value as any)
+                        }
+                        className="px-2 py-1 text-sm border rounded-lg hover:bg-gray-50 cursor-pointer"
+                      >
+                        <option value="pending">Chờ xử lý</option>
+                        <option value="cooking">Đang nấu</option>
+                        <option value="served">Đã phục vụ</option>
+                      </select>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="border-t pt-4">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Tổng cộng:</span>
+                  <span className="text-xl text-[#0056D2] font-bold">
+                    {tableOrders
+                      .reduce((sum, o) => sum + o.item.price * o.quantity, 0)
+                      .toLocaleString()}
+                    đ
+                  </span>
                 </div>
-              )}
-            </Card>
-          </TabsContent>
-        </Tabs>
+                <div className="mt-2 text-sm text-gray-600">
+                  Tổng món:{" "}
+                  {tableOrders.reduce((sum, o) => sum + o.quantity, 0)}
+                </div>
+              </div>
+            </>
+          )}
+        </Card>
       </div>
 
       {/* Customize Modal */}
@@ -501,44 +446,6 @@ export function OrderingPage() {
             </div>
           </div>
         )}
-      </Modal>
-
-      {/* Update Order Modal */}
-      <Modal
-        isOpen={showUpdateModal}
-        onClose={() => setShowUpdateModal(false)}
-        title="Cập nhật món"
-      >
-        <div className="space-y-4">
-          <p className="text-gray-600">
-            Chọn hành động cho món: {updatingItem?.item.name}
-          </p>
-          <div className="space-y-2">
-            <Button
-              fullWidth
-              variant="secondary"
-              onClick={() => {
-                setShowUpdateModal(false);
-                toast.success("Đã gửi yêu cầu đổi món");
-              }}
-            >
-              Đổi sang món khác
-            </Button>
-            <Button
-              fullWidth
-              variant="secondary"
-              onClick={() => {
-                const reason = prompt("Lý do trả món lỗi:");
-                if (reason) {
-                  setShowUpdateModal(false);
-                  toast.success("Đã gửi yêu cầu trả món");
-                }
-              }}
-            >
-              Trả món lỗi
-            </Button>
-          </div>
-        </div>
       </Modal>
     </div>
   );
