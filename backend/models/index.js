@@ -8,18 +8,16 @@ const StaffSchema = new Schema({
   email: { type: String, required: true, unique: true },
   phone: { type: String, required: true },
   address: String,
+  date_of_birth: Date,
   hire_date: { type: Date, default: Date.now },
-  salary: { type: Number, required: true },
+  //salary: { type: Number, required: true },
   is_active: { type: Boolean, default: true },
   role: { 
     type: String, 
-    enum: ['waiter', 'cashier', 'warehouse', 'manager'], 
+    enum: ['waiter', 'cashier', 'manager'], 
     required: true 
   },
   image_url: String,
-  //Only for managers
-  department: { type: String, enum: ['operations', 'kitchen', 'service', 'admin'], default: null},
-  access_level: { type: String, enum: ['manager', 'senior_manager', 'director'], default: null },
   // For authentication
   username: { type: String, required: true, unique: true }, // Could be email or custom username
   password_hash: { type: String, required: true },
@@ -35,10 +33,12 @@ const CustomerSchema = new Schema({
   email: { type: String, required: true, unique: true },
   phone: { type: String, required: true },
   address: String,
-  membership_level: { type: String, enum: ['regular', 'silver', 'gold', 'platinum'], default: 'regular' },
+  date_of_birth: Date,
+  membership_level: { type: String, enum: ['regular', 'silver', 'gold'], default: 'regular' },
   points: { type: Number, default: 0 },
   total_spent: { type: Number, default: 0 },
   image_url: String,
+  isBanned: { type: Boolean, default: false },
   // For authentication
   // Use email and phone as username options
   password_hash: { type: String, required: true },
@@ -52,6 +52,7 @@ const TableSchema = new Schema({
   table_number: { type: String, required: true, unique: true },
   capacity: { type: Number, required: true },
   location: { type: String, enum: ['indoor', 'outdoor', 'vip'], default: 'indoor' },
+  floor: { type: Number, default: 1 },
   status: { type: String, enum: ['available', 'occupied', 'reserved', 'maintenance'], default: 'available' },
   created_at: { type: Date, default: Date.now }
 });
@@ -60,7 +61,7 @@ const TableSchema = new Schema({
 
 const ReservationSchema = new Schema({
   customer_id: { type: Schema.Types.ObjectId, ref: 'Customer', required: true },
-  staff_id: { type: Schema.Types.ObjectId, ref: 'Staff', required: true }, // ServiceStaff
+  //staff_id: { type: Schema.Types.ObjectId, ref: 'Staff', required: true }, // Waiter
   reservation_date: { type: Date, required: true },
   reservation_time: { type: String, required: true }, // "18:30"
   number_of_guests: { type: Number, required: true },
@@ -135,15 +136,15 @@ const DishSchema = new Schema({
   description: String,
   category: { 
     type: String, 
-    enum: ['appetizer', 'main_course', 'dessert', 'beverage', 'special'], 
+    enum: ['appetizer', 'main_course', 'beverage'], 
     required: true 
   },
   price: { type: Number, required: true },
   image_url: String,
   preparation_time: { type: Number, default: 15 }, // minutes
   is_available: { type: Boolean, default: true },
-  is_special: { type: Boolean, default: false },
-  calories: Number,
+  //is_special: { type: Boolean, default: false },
+  //calories: Number,
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now }
 });
@@ -180,9 +181,7 @@ const MenuEntrySchema = new Schema({
 
 const OrderSchema = new Schema({
   order_number: { type: String, required: true, unique: true },
-  table_id: { type: Schema.Types.ObjectId, ref: 'Table', required: true },
-  staff_id: { type: Schema.Types.ObjectId, ref: 'Staff', required: true }, // Waiter
-  customer_id: { type: Schema.Types.ObjectId, ref: 'Customer' },
+  order_type: { type: String, default: false },
   order_date: { type: Date, default: Date.now },
   order_time: { type: String, required: true },
   status: { 
@@ -196,7 +195,28 @@ const OrderSchema = new Schema({
   notes: String,
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now }
-});
+}, {discriminatorKey: 'order_type', collection: 'orders'});
+
+//Add discriminators for different order types
+
+const DineInByCustomer = OrderSchema.discriminator('dine-in-customer', new Schema({
+  table_id: { type: Schema.Types.ObjectId, ref: 'Table', required: true },
+  customer_id: { type: Schema.Types.ObjectId, ref: 'Customer'}
+}));
+
+const TakeawayByCustomer = OrderSchema.discriminator('takeaway-customer', new Schema({
+  customer_id: { type: Schema.Types.ObjectId, ref: 'Customer'}
+}));
+
+const DineInByWaiter = OrderSchema.discriminator('dine-in-waiter', new Schema({
+  table_id: { type: Schema.Types.ObjectId, ref: 'Table', required: true },
+  staff_id: { type: Schema.Types.ObjectId, ref: 'Staff', required: true } // Waiter
+}));
+
+const TakeawayByStaff = OrderSchema.discriminator('takeaway-staff', new Schema({
+  staff_id: { type: Schema.Types.ObjectId, ref: 'Staff', required: true } // Waiter
+}));
+
 
 const OrderDetailSchema = new Schema({
   order_id: { type: Schema.Types.ObjectId, ref: 'Order', required: true },
@@ -204,7 +224,7 @@ const OrderDetailSchema = new Schema({
   quantity: { type: Number, required: true },
   unit_price: { type: Number, required: true },
   line_total: { type: Number, required: true },
-  special_instructions: String,
+  special_instructions: String, 
   status: { type: String, enum: ['pending', 'preparing', 'ready', 'served'], default: 'pending' }
 });
 
@@ -249,6 +269,29 @@ const InvoicePromotionSchema = new Schema({
   promotion_id: { type: Schema.Types.ObjectId, ref: 'Promotion', required: true },
   discount_applied: { type: Number, required: true }
 });
+// ==================== VIOLATIONS ====================
+const ViolationSchema = new Schema({
+  customer_id: { type: Schema.Types.ObjectId, ref: 'Customer', required: true },
+  description: { type: String, required: true },
+  violation_date: { type: Date, default: Date.now },
+  resolution: String,
+  resolved_at: Date,
+});
+// ==================== RATINGS ====================
+const RatingSchema = new Schema({
+  customer_id: { type: Schema.Types.ObjectId, ref: 'Customer', required: true },
+  description: String,
+  rating_date: { type: Date, default: Date.now },
+  score: { type: Number, required: true, min: 1, max: 5 },
+});
+
+//Replies to ratings
+const RatingReplySchema = new Schema({
+  rating_id: { type: Schema.Types.ObjectId, ref: 'Rating', required: true },
+  staff_id: { type: Schema.Types.ObjectId, ref: 'Staff', required: true },
+  reply_text: { type: String, required: true },
+  reply_date: { type: Date, default: Date.now },
+});
 
 // ==================== INDEXES ====================
 
@@ -277,6 +320,9 @@ const OrderDetail = mongoose.model('OrderDetail', OrderDetailSchema);
 const Promotion = mongoose.model('Promotion', PromotionSchema);
 const Invoice = mongoose.model('Invoice', InvoiceSchema);
 const InvoicePromotion = mongoose.model('InvoicePromotion', InvoicePromotionSchema);
+const Violation = mongoose.model('Violation', ViolationSchema);
+const Rating = mongoose.model('Rating', RatingSchema);
+const RatingReply = mongoose.model('RatingReply', RatingReplySchema);
 
 module.exports = {
   Staff,
@@ -296,5 +342,8 @@ module.exports = {
   OrderDetail,
   Promotion,
   Invoice,
-  InvoicePromotion
+  InvoicePromotion,
+  Violation,
+  Rating,
+  RatingReply
 };

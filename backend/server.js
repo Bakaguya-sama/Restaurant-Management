@@ -58,11 +58,11 @@ const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`
 ╔═══════════════════════════════════════╗
-║   🍽️  RESTAURANT MANAGEMENT API      ║
-║   🚀 Server running on port ${PORT}     ║
-║   🌍 Environment: ${process.env.NODE_ENV || 'development'}      ║
+║   RESTAURANT MANAGEMENT API      ║
+║   Server running on port ${PORT}     ║
+║   Environment: ${process.env.NODE_ENV || 'development'}      ║
 ║                                       ║
-║   📡 Available Routes:                ║
+║   Available Routes:                ║
 ║   • GET  /                            ║
 ║   • GET  /api/health                  ║
 ╚═══════════════════════════════════════╝
