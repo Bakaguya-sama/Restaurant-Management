@@ -5,6 +5,13 @@ import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { toast } from "sonner";
 import { UserRole } from "../../types";
+import {
+  validateEmail,
+  validateVietnamesePhone,
+  validateRequired,
+  validatePassword,
+  validatePasswordMatch,
+} from "../../lib/validation";
 
 interface ProfilePageProps {
   role: UserRole;
@@ -12,6 +19,8 @@ interface ProfilePageProps {
 
 export function ProfilePage({ role }: ProfilePageProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [profileData, setProfileData] = useState({
     fullName: "Nguyễn Văn A",
     email: "nhanvien@restaurant.com",
@@ -37,7 +46,69 @@ export function ProfilePage({ role }: ProfilePageProps) {
 
   const [showPasswordChange, setShowPasswordChange] = useState(false);
 
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Chỉ chấp nhận file ảnh (JPG, PNG, GIF, WebP)");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Kích thước ảnh không được vượt quá 5MB");
+      return;
+    }
+
+    // Create preview URL
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAvatarUrl(reader.result as string);
+      toast.success("Ảnh đại diện đã được cập nhật");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
   const handleSaveProfile = () => {
+    // Validate all fields
+    const nameValidation = validateRequired(profileData.fullName, "Họ và tên");
+    const emailValidation = validateEmail(profileData.email);
+    const phoneValidation = validateVietnamesePhone(profileData.phone);
+    const addressValidation = validateRequired(profileData.address, "Địa chỉ");
+
+    if (!nameValidation.isValid) {
+      toast.error(nameValidation.error);
+      return;
+    }
+
+    if (!emailValidation.isValid) {
+      toast.error(emailValidation.error);
+      return;
+    }
+
+    if (!phoneValidation.isValid) {
+      toast.error(phoneValidation.error);
+      return;
+    }
+
+    if (!addressValidation.isValid) {
+      toast.error(addressValidation.error);
+      return;
+    }
+
     toast.success("Cập nhật thông tin thành công!");
     setIsEditing(false);
   };
@@ -48,22 +119,30 @@ export function ProfilePage({ role }: ProfilePageProps) {
   };
 
   const handleChangePassword = () => {
-    if (
-      !passwordData.currentPassword ||
-      !passwordData.newPassword ||
-      !passwordData.confirmPassword
-    ) {
-      toast.error("Vui lòng điền đầy đủ thông tin");
+    // Validate current password
+    const currentPasswordValidation = validateRequired(
+      passwordData.currentPassword,
+      "Mật khẩu hiện tại"
+    );
+    if (!currentPasswordValidation.isValid) {
+      toast.error(currentPasswordValidation.error);
       return;
     }
 
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast.error("Mật khẩu xác nhận không khớp");
+    // Validate new password
+    const newPasswordValidation = validatePassword(passwordData.newPassword);
+    if (!newPasswordValidation.isValid) {
+      toast.error(newPasswordValidation.error);
       return;
     }
 
-    if (passwordData.newPassword.length < 6) {
-      toast.error("Mật khẩu phải có ít nhất 6 ký tự");
+    // Validate password match
+    const passwordMatchValidation = validatePasswordMatch(
+      passwordData.newPassword,
+      passwordData.confirmPassword
+    );
+    if (!passwordMatchValidation.isValid) {
+      toast.error(passwordMatchValidation.error);
       return;
     }
 
@@ -90,12 +169,31 @@ export function ProfilePage({ role }: ProfilePageProps) {
         <Card className="p-6">
           <div className="text-center">
             <div className="relative inline-block mb-4">
-              <div className="w-32 h-32 bg-[#0056D2] rounded-full flex items-center justify-center mx-auto">
-                <span className="text-white text-4xl">
-                  {profileData.fullName.charAt(0)}
-                </span>
+              <div className="w-32 h-32 bg-[#0056D2] rounded-full flex items-center justify-center mx-auto overflow-hidden">
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt="Avatar"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-white text-4xl">
+                    {profileData.fullName.charAt(0)}
+                  </span>
+                )}
               </div>
-              <button className="absolute bottom-0 right-0 w-10 h-10 bg-white rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-50">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                onChange={handleAvatarChange}
+                className="hidden"
+              />
+              <button
+                onClick={handleAvatarClick}
+                className="absolute bottom-0 right-0 w-10 h-10 bg-white rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-50"
+                title="Chọn ảnh đại diện"
+              >
                 <Camera className="w-5 h-5 text-gray-600" />
               </button>
             </div>

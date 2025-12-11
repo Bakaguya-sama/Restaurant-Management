@@ -6,6 +6,12 @@ import { Modal } from "../../ui/Modal";
 import { Input, Select } from "../../ui/Input";
 import { mockTables } from "../../../lib/mockData";
 import { Table } from "../../../types";
+import { toast } from "sonner";
+import {
+  validateRequired,
+  validateNumberRange,
+  validateInteger,
+} from "../../../lib/validation";
 
 export function TablesPage() {
   const [showModal, setShowModal] = useState(false);
@@ -37,7 +43,39 @@ export function TablesPage() {
   };
 
   const handleSubmit = () => {
-    alert(editingTable ? "Đã cập nhật bàn" : "Đã thêm bàn mới");
+    // Validate required fields
+    const numberValidation = validateRequired(formData.number, "Số bàn");
+    const areaValidation = validateRequired(formData.area, "Khu vực");
+
+    if (!numberValidation.isValid) {
+      toast.error(numberValidation.error);
+      return;
+    }
+
+    if (!areaValidation.isValid) {
+      toast.error(areaValidation.error);
+      return;
+    }
+
+    // Validate seats count
+    const seatsValidation = validateInteger(formData.seats, "Số ghế");
+    if (!seatsValidation.isValid) {
+      toast.error(seatsValidation.error);
+      return;
+    }
+
+    const seatsRangeValidation = validateNumberRange(
+      formData.seats,
+      1,
+      20,
+      "Số ghế"
+    );
+    if (!seatsRangeValidation.isValid) {
+      toast.error(seatsRangeValidation.error);
+      return;
+    }
+
+    toast.success(editingTable ? "Đã cập nhật bàn" : "Đã thêm bàn mới");
     setShowModal(false);
     setEditingTable(null);
     setFormData({ number: "", area: "", seats: 4, floor: "Floor 1" });
@@ -190,9 +228,11 @@ export function TablesPage() {
             type="number"
             value={formData.seats}
             onChange={(e) =>
-              setFormData({ ...formData, seats: parseInt(e.target.value) })
+              setFormData({ ...formData, seats: parseInt(e.target.value) || 0 })
             }
             min="1"
+            max="20"
+            step="1"
             required
           />
           <Select

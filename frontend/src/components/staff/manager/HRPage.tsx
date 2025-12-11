@@ -14,6 +14,12 @@ import {
 } from "../../ui/select";
 import { Checkbox } from "../../ui/checkbox";
 import { toast } from "sonner";
+import {
+  validateEmail,
+  validateVietnamesePhone,
+  validateRequired,
+  validatePassword,
+} from "../../../lib/validation";
 
 interface Employee {
   id: string;
@@ -96,9 +102,45 @@ export function HRPage() {
   );
 
   const handleAddEmployee = () => {
-    if (!formData.name || !formData.username || !formData.password) {
-      toast.error("Vui lòng điền đầy đủ thông tin");
+    // Validate required fields
+    const nameValidation = validateRequired(formData.name, "Họ và tên");
+    const usernameValidation = validateRequired(
+      formData.username,
+      "Tên đăng nhập"
+    );
+    const passwordValidation = validatePassword(formData.password);
+
+    if (!nameValidation.isValid) {
+      toast.error(nameValidation.error);
       return;
+    }
+
+    if (!usernameValidation.isValid) {
+      toast.error(usernameValidation.error);
+      return;
+    }
+
+    if (!passwordValidation.isValid) {
+      toast.error(passwordValidation.error);
+      return;
+    }
+
+    // Validate phone if provided
+    if (formData.phone) {
+      const phoneValidation = validateVietnamesePhone(formData.phone);
+      if (!phoneValidation.isValid) {
+        toast.error(phoneValidation.error);
+        return;
+      }
+    }
+
+    // Validate email if provided
+    if (formData.email) {
+      const emailValidation = validateEmail(formData.email);
+      if (!emailValidation.isValid) {
+        toast.error(emailValidation.error);
+        return;
+      }
     }
 
     const newEmployee: Employee = {
