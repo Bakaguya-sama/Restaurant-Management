@@ -16,10 +16,12 @@ const StaffSchema = new Schema({
     enum: ['waiter', 'cashier', 'warehouse', 'manager'], 
     required: true 
   },
+  image_url: String,
   //Only for managers
   department: { type: String, enum: ['operations', 'kitchen', 'service', 'admin'], default: null},
   access_level: { type: String, enum: ['manager', 'senior_manager', 'director'], default: null },
   // For authentication
+  username: { type: String, required: true, unique: true }, // Could be email or custom username
   password_hash: { type: String, required: true },
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now }
@@ -36,6 +38,9 @@ const CustomerSchema = new Schema({
   membership_level: { type: String, enum: ['regular', 'silver', 'gold', 'platinum'], default: 'regular' },
   points: { type: Number, default: 0 },
   total_spent: { type: Number, default: 0 },
+  image_url: String,
+  // For authentication
+  // Use email and phone as username options
   password_hash: { type: String, required: true },
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now }
