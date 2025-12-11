@@ -1,0 +1,159 @@
+// User Types
+export type UserRole = 'customer' | 'manager' | 'cashier' | 'waiter';
+
+export interface User {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  role: UserRole;
+  employeeId?: string;
+}
+
+export interface Customer extends User {
+  membershipTier: 'gold' | 'silver' | 'bronze';
+  points: number;
+  violations: Violation[];
+  isBlacklisted: boolean;
+}
+
+// Table Types
+export type TableStatus = 'free' | 'occupied' | 'reserved' | 'dirty' | 'broken';
+
+export interface Table {
+  id: string;
+  number: string;
+  area: string;
+  seats: number;
+  status: TableStatus;
+  floor?: string;
+}
+
+// Menu Types
+export interface MenuItem {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  description?: string;
+  image?: string;
+  available: boolean;
+  ingredients?: string[];
+}
+
+export interface OrderItem {
+  id: string;
+  menuItem: MenuItem;
+  quantity: number;
+  notes?: string;
+  status: 'pending' | 'cooking' | 'served';
+}
+
+// Booking Types
+export interface Booking {
+  id: string;
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  tableId: string;
+  date: string;
+  time: string;
+  guests: number;
+  specialRequests?: string;
+  preOrders?: OrderItem[];
+  depositAmount: number;
+  depositPaid: boolean;
+  status: 'pending' | 'confirmed' | 'checked-in' | 'completed' | 'cancelled' | 'no-show';
+}
+
+// Invoice Types
+export interface Invoice {
+  id: string;
+  tableId?: string;
+  customerId?: string;
+  items: OrderItem[];
+  subtotal: number;
+  tax: number;
+  discount: number;
+  total: number;
+  promotionCode?: string;
+  pointsUsed?: number;
+  voucherCode?: string;
+  voucherAmount?: number;
+  paymentMethod?: 'cash' | 'card' | 'wallet' | 'online';
+  paymentRequestedAt?: string;
+  status: 'pending' | 'paid' | 'cancelled' | 'payment-requested';
+  createdAt: string;
+  paidAt?: string;
+  customerSelectedVoucher?: boolean;
+  customerSelectedPoints?: number;
+}
+
+// Inventory Types
+export interface InventoryItem {
+  id: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  expiryDate?: string;
+  supplierId?: string;
+  lastUpdated: string;
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  phone: string;
+  address: string;
+}
+
+// Promotion Types
+export interface Promotion {
+  id: string;
+  name: string;
+  code: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  description?: string;
+  minOrderAmount?: number;
+  maxDiscountAmount?: number;
+  startDate: string;
+  endDate: string;
+  active: boolean;
+}
+
+// Violation Types
+export interface Violation {
+  id: string;
+  customerId: string;
+  type: 'no-show' | 'late-cancel' | 'damage';
+  description: string;
+  date: string;
+}
+
+// Membership Types
+export interface Reward {
+  id: string;
+  name: string;
+  pointsCost: number;
+  description: string;
+  image?: string;
+}
+
+export interface PointHistory {
+  id: string;
+  type: 'earned' | 'redeemed' | 'expired';
+  amount: number;
+  description: string;
+  date: string;
+  invoiceId?: string;
+}
+
+export interface VoucherHistory {
+  id: string;
+  voucherCode: string;
+  voucherName: string;
+  discountAmount: number;
+  usedAt: string;
+  invoiceId: string;
+}

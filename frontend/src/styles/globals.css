@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --primary-blue: #0056D2;
+    --bg-light-gray: #F4F7FE;
+    --surface-white: #FFFFFF;
+    --status-success: #10B981;
+    --status-error: #EF4444;
+    --status-warning: #F59E0B;
+    --status-pending: #F97316;
+    --text-dark: #1F2937;
+    --text-gray: #6B7280;
+    --border-light: #E5E7EB;
+  }
+
+  body {
+    font-family: 'Inter', 'Roboto', system-ui, -apple-system, sans-serif;
+    background-color: var(--bg-light-gray);
+    color: var(--text-dark);
+    margin: 0;
+    padding: 0;
+  }
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 2.5rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 2rem;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.75rem;
+  }
+
+  h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.5rem;
+  }
+
+  p {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+
+  button {
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  input, textarea, select {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+}
