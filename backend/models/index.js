@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-// ==================== STAFF & MANAGER ====================
+// ==================== STAFF====================
 
 const StaffSchema = new Schema({
   full_name: { type: String, required: true },
@@ -13,21 +13,18 @@ const StaffSchema = new Schema({
   is_active: { type: Boolean, default: true },
   role: { 
     type: String, 
-    enum: ['service', 'cashier', 'warehouse', 'chef'], 
+    enum: ['service', 'cashier', 'warehouse', 'manager'], 
     required: true 
   },
+  //Only for managers
+  department: { type: String, enum: ['operations', 'kitchen', 'service', 'admin'], default: null},
+  access_level: { type: String, enum: ['manager', 'senior_manager', 'director'], default: null },
   // For authentication
   password_hash: { type: String, required: true },
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now }
 });
 
-const ManagerSchema = new Schema({
-  staff_id: { type: Schema.Types.ObjectId, ref: 'Staff', required: true },
-  department: { type: String, enum: ['operations', 'kitchen', 'service', 'admin'] },
-  access_level: { type: String, enum: ['manager', 'senior_manager', 'director'], default: 'manager' },
-  created_at: { type: Date, default: Date.now }
-});
 
 // ==================== CUSTOMER ====================
 
@@ -59,7 +56,6 @@ const TableSchema = new Schema({
 const ReservationSchema = new Schema({
   customer_id: { type: Schema.Types.ObjectId, ref: 'Customer', required: true },
   staff_id: { type: Schema.Types.ObjectId, ref: 'Staff', required: true }, // ServiceStaff
-  table_id: { type: Schema.Types.ObjectId, ref: 'Table', required: true },
   reservation_date: { type: Date, required: true },
   reservation_time: { type: String, required: true }, // "18:30"
   number_of_guests: { type: Number, required: true },
@@ -67,6 +63,11 @@ const ReservationSchema = new Schema({
   special_requests: String,
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now }
+});
+
+const ReservationDetailSchema = new Schema({
+  reservation_id: { type: Schema.Types.ObjectId, ref: 'Reservation', required: true },
+  table_id: { type: Schema.Types.ObjectId, ref: 'Table', required: true }
 });
 
 // ==================== COMPLAINT ====================
