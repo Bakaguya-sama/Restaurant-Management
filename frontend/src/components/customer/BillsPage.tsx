@@ -1,9 +1,8 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Clock,
   Check,
   Utensils,
-  DollarSign,
   MessageSquare,
   Star,
   CreditCard,
@@ -17,11 +16,7 @@ import { Modal } from "../ui/Modal";
 import { Badge } from "../ui/badge";
 import { Textarea } from "../ui/textarea";
 import { Input } from "../ui/Input";
-import {
-  mockInvoices,
-  mockMenuItems,
-  mockPromotions,
-} from "../../lib/mockData";
+import { mockPromotions } from "../../lib/mockData";
 import { toast } from "sonner";
 
 interface BillsPageProps {
@@ -29,7 +24,6 @@ interface BillsPageProps {
 }
 
 export function BillsPage({ onNavigate }: BillsPageProps) {
-  const [selectedBill, setSelectedBill] = useState<any>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showVoucherModal, setShowVoucherModal] = useState(false);
@@ -134,7 +128,7 @@ export function BillsPage({ onNavigate }: BillsPageProps) {
       setCurrentBill({
         ...currentBill,
         voucherDiscount: discount,
-        voucherCode: voucher.code,
+        voucherCode: voucher.code as any,
         total:
           currentBill.subtotal +
           currentBill.tax -
@@ -513,7 +507,7 @@ export function BillsPage({ onNavigate }: BillsPageProps) {
                 </div>
               )}
 
-              {/* Feedback Button - Only for paid bills */}
+              {/* Feedback Button */}
               <div className="mt-3">
                 <Button
                   size="sm"

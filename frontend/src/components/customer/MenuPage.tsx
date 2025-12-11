@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Search, ShoppingCart, Plus, Minus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Card } from "../ui/Card";
@@ -10,6 +11,7 @@ import { toast } from "sonner";
 import { useCart } from "../../contexts/CartContext";
 
 export function MenuPage() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
@@ -17,6 +19,10 @@ export function MenuPage() {
     useCart();
   const [dishNote, setDishNote] = useState("");
   const [showCart, setShowCart] = useState(false);
+
+  // Mock: Check if customer has an active booking
+  // Set to true to test checkout with booking, false to test redirect to booking page
+  const hasActiveBooking = true; // TODO: Replace with actual booking check from context/API
 
   const categories = ["all", "Khai vị", "Món chính", "Đồ uống"];
 
@@ -38,6 +44,13 @@ export function MenuPage() {
   const handleCheckout = () => {
     if (cart.length === 0) {
       toast.error("Giỏ hàng trống");
+      return;
+    }
+
+    // Check if customer has an active booking
+    if (!hasActiveBooking) {
+      toast.error("Cần phải đặt bàn");
+      navigate("/customer/booking");
       return;
     }
 

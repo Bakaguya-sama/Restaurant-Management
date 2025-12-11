@@ -262,57 +262,6 @@ export function MembershipPage() {
               />
             ))}
           </div>
-
-          {/* Member Benefits */}
-          <Card className="mt-8 p-6 bg-gradient-to-r from-purple-50 to-pink-50">
-            <h4 className="mb-4">Đặc quyền thành viên {currentTier.name}</h4>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Star className="w-4 h-4 text-purple-600" />
-                </div>
-                <div>
-                  <p className="mb-1">Tích điểm x1.5</p>
-                  <p className="text-sm text-gray-600">
-                    Nhận 1.5 điểm cho mỗi 10.000đ chi tiêu
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Gift className="w-4 h-4 text-purple-600" />
-                </div>
-                <div>
-                  <p className="mb-1">Quà sinh nhật</p>
-                  <p className="text-sm text-gray-600">
-                    Voucher 200.000đ vào tháng sinh nhật
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <TrendingUp className="w-4 h-4 text-purple-600" />
-                </div>
-                <div>
-                  <p className="mb-1">Ưu tiên đặt bàn</p>
-                  <p className="text-sm text-gray-600">
-                    Được ưu tiên trong giờ cao điểm
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Ticket className="w-4 h-4 text-purple-600" />
-                </div>
-                <div>
-                  <p className="mb-1">Voucher độc quyền</p>
-                  <p className="text-sm text-gray-600">
-                    Nhận ưu đãi đặc biệt mỗi tháng
-                  </p>
-                </div>
-              </div>
-            </div>
-          </Card>
         </div>
       )}
 

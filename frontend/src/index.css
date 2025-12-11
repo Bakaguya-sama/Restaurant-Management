@@ -79,3 +79,30 @@
     @apply text-base;
   }
 }
+
+/* Toast Styles */
+@layer components {
+  .toast-success {
+    background-color: #28ca91 !important;
+    color: white !important;
+    border: none !important;
+  }
+
+  .toast-error {
+    background-color: #ca2828 !important;
+    color: white !important;
+    border: none !important;
+  }
+
+  .toast-info {
+    background-color: #0056D2 !important;
+    color: white !important;
+    border: none !important;
+  }
+
+  .toast-warning {
+    background-color: #f59e0b !important;
+    color: white !important;
+    border: none !important;
+  }
+}

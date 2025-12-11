@@ -1,4 +1,3 @@
-import React from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -10,6 +9,7 @@ import { RegisterPage } from "./components/auth/RegisterPage";
 import { CustomerLayout } from "./components/customer/CustomerLayout";
 import { HomePage } from "./components/customer/HomePage";
 import { BookingPage } from "./components/customer/BookingPage";
+import { BookingManagementPage } from "./components/customer/BookingManagementPage";
 import { MenuPage } from "./components/customer/MenuPage";
 import { MembershipPage } from "./components/customer/MembershipPage";
 import { BillsPage } from "./components/customer/BillsPage";
@@ -27,7 +27,7 @@ import { TablesMapPage } from "./components/staff/waiter/TablesMapPage";
 import { OrderingPage } from "./components/staff/waiter/OrderingPage";
 import { ProfilePage } from "./components/staff/ProfilePage";
 import { Toaster } from "./components/ui/sonner";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
 
 function App() {
@@ -44,10 +44,20 @@ function App() {
             <Route path="/customer" element={<CustomerLayout />}>
               <Route index element={<Navigate to="home" replace />} />
               <Route path="home" element={<HomePage />} />
-              <Route path="booking" element={<BookingPage />} />
+              <Route
+                path="booking"
+                element={<BookingPage onNavigate={() => {}} />}
+              />
+              <Route
+                path="booking-management"
+                element={<BookingManagementPage />}
+              />
               <Route path="menu" element={<MenuPage />} />
               <Route path="membership" element={<MembershipPage />} />
-              <Route path="bills" element={<BillsPage />} />
+              <Route
+                path="bills"
+                element={<BillsPage onNavigate={() => {}} />}
+              />
               <Route path="profile" element={<CustomerProfilePage />} />
             </Route>
 
@@ -70,7 +80,7 @@ function App() {
               <Route path="waiter/orders" element={<OrderingPage />} />
 
               {/* Common Staff Route */}
-              <Route path="profile" element={<ProfilePage />} />
+              <Route path="profile" element={<ProfilePage role="staff" />} />
             </Route>
 
             {/* Default Route */}
