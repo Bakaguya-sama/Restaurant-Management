@@ -10,6 +10,11 @@ import { Switch } from "../../ui/switch";
 import { mockMenuItems, mockPromotions } from "../../../lib/mockData";
 import { MenuItem, Promotion } from "../../../types";
 import { toast } from "sonner";
+import {
+  validateRequired,
+  validatePositiveNumber,
+  validateNumberRange,
+} from "../../../lib/validation";
 
 export function MenuPromotionPage() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>(mockMenuItems);
@@ -32,8 +37,20 @@ export function MenuPromotionPage() {
   });
 
   const handleAddMenuItem = () => {
-    if (!menuForm.name || menuForm.price <= 0) {
-      toast.error("Vui lòng điền đầy đủ thông tin");
+    // Validate name
+    const nameValidation = validateRequired(menuForm.name, "Tên món ăn");
+    if (!nameValidation.isValid) {
+      toast.error(nameValidation.error);
+      return;
+    }
+
+    // Validate price
+    const priceValidation = validatePositiveNumber(
+      menuForm.price,
+      "Giá món ăn"
+    );
+    if (!priceValidation.isValid) {
+      toast.error(priceValidation.error);
       return;
     }
 
@@ -70,9 +87,42 @@ export function MenuPromotionPage() {
   };
 
   const handleAddPromotion = () => {
-    if (!promoForm.name || !promoForm.code || promoForm.discountValue <= 0) {
-      toast.error("Vui lòng điền đầy đủ thông tin");
+    // Validate name
+    const nameValidation = validateRequired(promoForm.name, "Tên chương trình");
+    if (!nameValidation.isValid) {
+      toast.error(nameValidation.error);
       return;
+    }
+
+    // Validate code
+    const codeValidation = validateRequired(promoForm.code, "Mã khuyến mãi");
+    if (!codeValidation.isValid) {
+      toast.error(codeValidation.error);
+      return;
+    }
+
+    // Validate discount value
+    const discountValidation = validatePositiveNumber(
+      promoForm.discountValue,
+      "Giá trị giảm giá"
+    );
+    if (!discountValidation.isValid) {
+      toast.error(discountValidation.error);
+      return;
+    }
+
+    // If percentage, check range 0-100
+    if (promoForm.discountType === "percentage") {
+      const rangeValidation = validateNumberRange(
+        promoForm.discountValue,
+        0.01,
+        100,
+        "Phần trăm giảm giá"
+      );
+      if (!rangeValidation.isValid) {
+        toast.error(rangeValidation.error);
+        return;
+      }
     }
 
     const newPromo: Promotion = {
@@ -313,6 +363,8 @@ export function MenuPromotionPage() {
                 })
               }
               placeholder="Nhập giá"
+              min="0.01"
+              step="1000"
             />
           </div>
           <Textarea
@@ -394,6 +446,9 @@ export function MenuPromotionPage() {
                 })
               }
               placeholder="Nhập giá trị"
+              min="0.01"
+              max={promoForm.discountType === "percentage" ? "100" : undefined}
+              step={promoForm.discountType === "percentage" ? "0.1" : "1000"}
             />
           </div>
           <div className="grid grid-cols-2 gap-4">

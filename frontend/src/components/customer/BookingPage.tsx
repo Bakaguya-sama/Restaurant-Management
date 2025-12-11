@@ -13,6 +13,12 @@ import { Card } from "../ui/Card";
 import { Modal } from "../ui/Modal";
 import { mockTables, mockMenuItems } from "../../lib/mockData";
 import { Table, MenuItem } from "../../types";
+import { toast } from "sonner";
+import {
+  validateFutureDate,
+  validateNumberRange,
+  validateInteger,
+} from "../../lib/validation";
 
 interface BookingPageProps {
   onNavigate: (page: string) => void;
@@ -182,14 +188,49 @@ export function BookingPage({ onNavigate }: BookingPageProps) {
               onChange={(e) =>
                 setBookingData({
                   ...bookingData,
-                  guests: parseInt(e.target.value),
+                  guests: parseInt(e.target.value) || 1,
                 })
               }
               min="1"
+              max="20"
+              step="1"
             />
           </div>
           <Button
-            onClick={() => setStep(2)}
+            onClick={() => {
+              // Validate date
+              const dateValidation = validateFutureDate(
+                bookingData.date,
+                "Ngày đặt bàn"
+              );
+              if (!dateValidation.isValid) {
+                toast.error(dateValidation.error);
+                return;
+              }
+
+              // Validate guests count
+              const guestsValidation = validateInteger(
+                bookingData.guests,
+                "Số người"
+              );
+              if (!guestsValidation.isValid) {
+                toast.error(guestsValidation.error);
+                return;
+              }
+
+              const guestsRangeValidation = validateNumberRange(
+                bookingData.guests,
+                1,
+                20,
+                "Số người"
+              );
+              if (!guestsRangeValidation.isValid) {
+                toast.error(guestsRangeValidation.error);
+                return;
+              }
+
+              setStep(2);
+            }}
             disabled={!bookingData.date || !bookingData.time}
           >
             Tiếp tục

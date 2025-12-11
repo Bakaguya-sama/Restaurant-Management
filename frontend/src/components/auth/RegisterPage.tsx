@@ -3,6 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { User, Phone, Mail, Lock, CheckCircle } from "lucide-react";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
+import { toast } from "sonner";
+import {
+  validateEmail,
+  validateVietnamesePhone,
+  validatePassword,
+  validatePasswordMatch,
+  validateRequired,
+} from "../../lib/validation";
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -14,9 +22,50 @@ export function RegisterPage() {
     confirmPassword: "",
   });
   const [showSuccess, setShowSuccess] = useState(false);
+  const [errors, setErrors] = useState({
+    fullName: "",
+    phone: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate all fields
+    const nameValidation = validateRequired(form.fullName, "Họ và tên");
+    const phoneValidation = validateVietnamesePhone(form.phone);
+    const emailValidation = form.email
+      ? validateEmail(form.email)
+      : { isValid: true };
+    const passwordValidation = validatePassword(form.password);
+    const confirmPasswordValidation = validatePasswordMatch(
+      form.password,
+      form.confirmPassword
+    );
+
+    // Set errors
+    setErrors({
+      fullName: nameValidation.error || "",
+      phone: phoneValidation.error || "",
+      email: emailValidation.error || "",
+      password: passwordValidation.error || "",
+      confirmPassword: confirmPasswordValidation.error || "",
+    });
+
+    // Check if all validations passed
+    if (
+      !nameValidation.isValid ||
+      !phoneValidation.isValid ||
+      !emailValidation.isValid ||
+      !passwordValidation.isValid ||
+      !confirmPasswordValidation.isValid
+    ) {
+      toast.error("Vui lòng kiểm tra lại thông tin đăng ký");
+      return;
+    }
+
     // Mock registration
     setShowSuccess(true);
     setTimeout(() => {
@@ -82,56 +131,97 @@ export function RegisterPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              label="Họ và tên"
-              type="text"
-              placeholder="Nhập họ và tên đầy đủ"
-              icon={<User className="w-4 h-4" />}
-              value={form.fullName}
-              onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-              required
-            />
+            <div>
+              <Input
+                label="Họ và tên"
+                type="text"
+                placeholder="Nhập họ và tên đầy đủ"
+                icon={<User className="w-4 h-4" />}
+                value={form.fullName}
+                onChange={(e) => {
+                  setForm({ ...form, fullName: e.target.value });
+                  if (errors.fullName) setErrors({ ...errors, fullName: "" });
+                }}
+                required
+              />
+              {errors.fullName && (
+                <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>
+              )}
+            </div>
 
-            <Input
-              label="Số điện thoại"
-              type="tel"
-              placeholder="Nhập số điện thoại"
-              icon={<Phone className="w-4 h-4" />}
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              required
-            />
+            <div>
+              <Input
+                label="Số điện thoại"
+                type="tel"
+                placeholder="Nhập số điện thoại (VD: 0912345678)"
+                icon={<Phone className="w-4 h-4" />}
+                value={form.phone}
+                onChange={(e) => {
+                  setForm({ ...form, phone: e.target.value });
+                  if (errors.phone) setErrors({ ...errors, phone: "" });
+                }}
+                required
+              />
+              {errors.phone && (
+                <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
+              )}
+            </div>
 
-            <Input
-              label="Email"
-              type="email"
-              placeholder="Nhập địa chỉ email"
-              icon={<Mail className="w-4 h-4" />}
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-            />
+            <div>
+              <Input
+                label="Email (tùy chọn)"
+                type="email"
+                placeholder="Nhập địa chỉ email"
+                icon={<Mail className="w-4 h-4" />}
+                value={form.email}
+                onChange={(e) => {
+                  setForm({ ...form, email: e.target.value });
+                  if (errors.email) setErrors({ ...errors, email: "" });
+                }}
+              />
+              {errors.email && (
+                <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+              )}
+            </div>
 
-            <Input
-              label="Mật khẩu"
-              type="password"
-              placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
-              icon={<Lock className="w-4 h-4" />}
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              required
-            />
+            <div>
+              <Input
+                label="Mật khẩu"
+                type="password"
+                placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
+                icon={<Lock className="w-4 h-4" />}
+                value={form.password}
+                onChange={(e) => {
+                  setForm({ ...form, password: e.target.value });
+                  if (errors.password) setErrors({ ...errors, password: "" });
+                }}
+                required
+              />
+              {errors.password && (
+                <p className="text-red-500 text-sm mt-1">{errors.password}</p>
+              )}
+            </div>
 
-            <Input
-              label="Xác nhận mật khẩu"
-              type="password"
-              placeholder="Nhập lại mật khẩu"
-              icon={<Lock className="w-4 h-4" />}
-              value={form.confirmPassword}
-              onChange={(e) =>
-                setForm({ ...form, confirmPassword: e.target.value })
-              }
-              required
-            />
+            <div>
+              <Input
+                label="Xác nhận mật khẩu"
+                type="password"
+                placeholder="Nhập lại mật khẩu"
+                icon={<Lock className="w-4 h-4" />}
+                value={form.confirmPassword}
+                onChange={(e) => {
+                  setForm({ ...form, confirmPassword: e.target.value });
+                  if (errors.confirmPassword)
+                    setErrors({ ...errors, confirmPassword: "" });
+                }}
+                required
+              />
+              {errors.confirmPassword && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.confirmPassword}
+                </p>
+              )}
+            </div>
 
             <div className="pt-2">
               <label className="flex items-start gap-2 cursor-pointer text-sm text-gray-600">

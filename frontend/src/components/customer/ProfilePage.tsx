@@ -15,6 +15,13 @@ import { Card } from "../ui/Card";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { toast } from "sonner";
+import {
+  validateEmail,
+  validateVietnamesePhone,
+  validateRequired,
+  validatePassword,
+  validatePasswordMatch,
+} from "../../lib/validation";
 
 export function CustomerProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
@@ -82,6 +89,32 @@ export function CustomerProfilePage() {
   };
 
   const handleSaveProfile = () => {
+    // Validate all fields
+    const nameValidation = validateRequired(profileData.fullName, "Họ và tên");
+    const emailValidation = validateEmail(profileData.email);
+    const phoneValidation = validateVietnamesePhone(profileData.phone);
+    const addressValidation = validateRequired(profileData.address, "Địa chỉ");
+
+    if (!nameValidation.isValid) {
+      toast.error(nameValidation.error);
+      return;
+    }
+
+    if (!emailValidation.isValid) {
+      toast.error(emailValidation.error);
+      return;
+    }
+
+    if (!phoneValidation.isValid) {
+      toast.error(phoneValidation.error);
+      return;
+    }
+
+    if (!addressValidation.isValid) {
+      toast.error(addressValidation.error);
+      return;
+    }
+
     toast.success("Cập nhật thông tin thành công!");
     setIsEditing(false);
   };
@@ -91,22 +124,30 @@ export function CustomerProfilePage() {
   };
 
   const handleChangePassword = () => {
-    if (
-      !passwordData.currentPassword ||
-      !passwordData.newPassword ||
-      !passwordData.confirmPassword
-    ) {
-      toast.error("Vui lòng điền đầy đủ thông tin");
+    // Validate current password
+    const currentPasswordValidation = validateRequired(
+      passwordData.currentPassword,
+      "Mật khẩu hiện tại"
+    );
+    if (!currentPasswordValidation.isValid) {
+      toast.error(currentPasswordValidation.error);
       return;
     }
 
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast.error("Mật khẩu xác nhận không khớp");
+    // Validate new password
+    const newPasswordValidation = validatePassword(passwordData.newPassword);
+    if (!newPasswordValidation.isValid) {
+      toast.error(newPasswordValidation.error);
       return;
     }
 
-    if (passwordData.newPassword.length < 6) {
-      toast.error("Mật khẩu phải có ít nhất 6 ký tự");
+    // Validate password match
+    const passwordMatchValidation = validatePasswordMatch(
+      passwordData.newPassword,
+      passwordData.confirmPassword
+    );
+    if (!passwordMatchValidation.isValid) {
+      toast.error(passwordMatchValidation.error);
       return;
     }
 
