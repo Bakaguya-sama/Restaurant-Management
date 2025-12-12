@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Edit, Trash2, Power } from "lucide-react";
+import { Plus, Edit, Trash2, Power, Search, X } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Card } from "../../ui/Card";
 import { Modal } from "../../ui/Modal";
@@ -21,6 +21,12 @@ export function MenuPromotionPage() {
   const [promotions, setPromotions] = useState<Promotion[]>(mockPromotions);
   const [showAddMenuModal, setShowAddMenuModal] = useState(false);
   const [showAddPromoModal, setShowAddPromoModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
+  const [ingredientRows, setIngredientRows] = useState<
+    Array<{ name: string; quantity: number; unit: string }>
+  >([{ name: "", quantity: 0, unit: "" }]);
   const [menuForm, setMenuForm] = useState({
     name: "",
     category: "Món chính",
@@ -35,6 +41,20 @@ export function MenuPromotionPage() {
     startDate: "",
     endDate: "",
   });
+
+  const addIngredientRow = () => {
+    setIngredientRows([...ingredientRows, { name: "", quantity: 0, unit: "" }]);
+  };
+
+  const removeIngredientRow = (index: number) => {
+    setIngredientRows(ingredientRows.filter((_, i) => i !== index));
+  };
+
+  const updateIngredientRow = (index: number, field: string, value: any) => {
+    const newRows = [...ingredientRows];
+    newRows[index] = { ...newRows[index], [field]: value };
+    setIngredientRows(newRows);
+  };
 
   const handleAddMenuItem = () => {
     // Validate name
@@ -54,6 +74,11 @@ export function MenuPromotionPage() {
       return;
     }
 
+    // Build ingredients array from valid rows
+    const validIngredients = ingredientRows
+      .filter((row) => row.name.trim() !== "")
+      .map((row) => `${row.name} (${row.quantity} ${row.unit})`);
+
     const newItem: MenuItem = {
       id: String(menuItems.length + 1),
       name: menuForm.name,
@@ -61,6 +86,7 @@ export function MenuPromotionPage() {
       price: menuForm.price,
       description: menuForm.description,
       available: true,
+      ingredients: validIngredients.length > 0 ? validIngredients : undefined,
       image:
         "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400",
     };
@@ -69,6 +95,7 @@ export function MenuPromotionPage() {
     toast.success("Thêm món ăn thành công!");
     setShowAddMenuModal(false);
     setMenuForm({ name: "", category: "Món chính", price: 0, description: "" });
+    setIngredientRows([{ name: "", quantity: 0, unit: "" }]);
   };
 
   const handleToggleAvailability = (id: string) => {
@@ -157,7 +184,16 @@ export function MenuPromotionPage() {
     );
   };
 
-  const categories = ["Khai vị", "Món chính", "Đồ uống", "Tráng miệng"];
+  const categories = ["all", "Khai vị", "Món chính", "Đồ uống", "Tráng miệng"];
+
+  const filteredMenuItems = menuItems.filter((item) => {
+    const matchesSearch = item.name
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    const matchesCategory =
+      selectedCategory === "all" || item.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <div>
@@ -181,66 +217,103 @@ export function MenuPromotionPage() {
             Thêm món
           </Button>
 
-          {/* Menu by Category */}
-          {categories.map((category) => {
-            const categoryItems = menuItems.filter(
-              (item) => item.category === category
-            );
-            if (categoryItems.length === 0) return null;
+          {/* Search & Filter */}
+          <div>
+            <div className="mb-4">
+              <Input
+                placeholder="Tìm kiếm món ăn..."
+                icon={<Search className="w-4 h-4" />}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-4 py-2 rounded-lg whitespace-nowrap transition-all ${
+                    selectedCategory === cat
+                      ? "bg-[#0056D2] text-white"
+                      : "bg-white text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  {cat === "all" ? "Tất cả" : cat}
+                </button>
+              ))}
+            </div>
+          </div>
 
-            return (
-              <div key={category}>
-                <h3 className="mb-4">{category}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {categoryItems.map((item) => (
-                    <Card key={item.id} className="overflow-hidden">
-                      <img
-                        src={
-                          item.image ||
-                          "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400"
-                        }
-                        alt={item.name}
-                        className="w-full h-48 object-cover"
-                      />
-                      <div className="p-4">
-                        <div className="flex items-start justify-between mb-2">
-                          <h4>{item.name}</h4>
-                          <Switch
-                            checked={item.available}
-                            onCheckedChange={() =>
-                              handleToggleAvailability(item.id)
-                            }
-                          />
-                        </div>
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                          {item.description || "Chưa có mô tả"}
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-[#0056D2]">
-                            {item.price.toLocaleString()}đ
-                          </span>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => handleDeleteMenuItem(item.id)}
-                            >
-                              <Trash2 className="w-4 h-4 text-red-600" />
-                            </Button>
-                          </div>
-                        </div>
-                        {!item.available && (
-                          <Badge className="mt-2 bg-gray-100 text-gray-700">
-                            Tạm ngưng phục vụ
-                          </Badge>
-                        )}
-                      </div>
-                    </Card>
-                  ))}
+          {/* Menu Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredMenuItems.map((item) => (
+              <Card
+                key={item.id}
+                hover
+                onClick={() => setSelectedDish(item)}
+                className="overflow-hidden cursor-pointer"
+              >
+                <div className="relative">
+                  <img
+                    src={
+                      item.image ||
+                      "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400"
+                    }
+                    alt={item.name}
+                    className="w-full h-48 object-cover"
+                  />
+                  {!item.available && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <span className="text-white px-4 py-2 bg-red-500 rounded-lg">
+                        Tạm hết
+                      </span>
+                    </div>
+                  )}
                 </div>
-              </div>
-            );
-          })}
+                <div className="p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <h4>{item.name}</h4>
+                    <div
+                      className="flex gap-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Switch
+                        checked={item.available}
+                        onCheckedChange={() =>
+                          handleToggleAvailability(item.id)
+                        }
+                      />
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                    {item.description || "Món ăn ngon tuyệt vời"}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#0056D2]">
+                      {item.price.toLocaleString()}đ
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteMenuItem(item.id);
+                      }}
+                      className="text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {filteredMenuItems.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-500">Không tìm thấy món ăn phù hợp</p>
+            </div>
+          )}
         </TabsContent>
 
         {/* Promotions Tab */}
@@ -325,7 +398,16 @@ export function MenuPromotionPage() {
       {/* Add Menu Item Modal */}
       <Modal
         isOpen={showAddMenuModal}
-        onClose={() => setShowAddMenuModal(false)}
+        onClose={() => {
+          setShowAddMenuModal(false);
+          setMenuForm({
+            name: "",
+            category: "Món chính",
+            price: 0,
+            description: "",
+          });
+          setIngredientRows([{ name: "", quantity: 0, unit: "" }]);
+        }}
         title="Thêm món ăn mới"
       >
         <div className="space-y-4">
@@ -376,6 +458,64 @@ export function MenuPromotionPage() {
             placeholder="Nhập mô tả món ăn..."
             rows={3}
           />
+
+          {/* Nguyên liệu */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <label className="block">Nguyên liệu</label>
+              <Button size="sm" variant="secondary" onClick={addIngredientRow}>
+                <Plus className="w-4 h-4 mr-1" />
+                Thêm nguyên liệu
+              </Button>
+            </div>
+
+            <div className="space-y-3">
+              {ingredientRows.map((row, index) => (
+                <div key={index} className="flex gap-3 items-start">
+                  <Input
+                    placeholder="Tên nguyên liệu"
+                    value={row.name}
+                    onChange={(e) =>
+                      updateIngredientRow(index, "name", e.target.value)
+                    }
+                    className="flex-1"
+                  />
+                  <Input
+                    type="number"
+                    placeholder="Số lượng"
+                    value={row.quantity || ""}
+                    onChange={(e) =>
+                      updateIngredientRow(
+                        index,
+                        "quantity",
+                        parseFloat(e.target.value) || 0
+                      )
+                    }
+                    className="w-24"
+                  />
+                  <Input
+                    placeholder="Đơn vị"
+                    value={row.unit}
+                    onChange={(e) =>
+                      updateIngredientRow(index, "unit", e.target.value)
+                    }
+                    className="w-24"
+                  />
+                  {ingredientRows.length > 1 && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => removeIngredientRow(index)}
+                      className="text-red-600 hover:bg-red-50"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="flex gap-4 pt-4">
             <Button
               variant="secondary"
@@ -482,6 +622,101 @@ export function MenuPromotionPage() {
             </Button>
           </div>
         </div>
+      </Modal>
+
+      {/* Dish Detail Modal */}
+      <Modal
+        isOpen={selectedDish !== null}
+        onClose={() => setSelectedDish(null)}
+        title={selectedDish?.name || ""}
+        size="xl"
+      >
+        {selectedDish && (
+          <div className="space-y-6">
+            {/* Ảnh ở trên */}
+            <div>
+              <img
+                src={
+                  selectedDish.image ||
+                  "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=800"
+                }
+                alt={selectedDish.name}
+                className="w-full h-96 object-cover rounded-lg"
+              />
+            </div>
+
+            {/* Thông tin ở dưới */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-gray-600 text-lg">
+                  {selectedDish.description || "Món ăn ngon tuyệt vời"}
+                </p>
+                <Switch
+                  checked={selectedDish.available}
+                  onCheckedChange={() =>
+                    handleToggleAvailability(selectedDish.id)
+                  }
+                />
+              </div>
+
+              {selectedDish.ingredients &&
+                selectedDish.ingredients.length > 0 && (
+                  <div>
+                    <p className="font-medium text-lg mb-3">Thành phần:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedDish.ingredients.map((ing, i) => (
+                        <span
+                          key={i}
+                          className="px-4 py-2 bg-gray-100 rounded-full text-sm"
+                        >
+                          {ing}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              <div className="flex items-center justify-between pt-4 border-t">
+                <span className="text-gray-600 text-lg">Giá:</span>
+                <span className="text-3xl text-[#0056D2] font-medium">
+                  {selectedDish.price.toLocaleString()}đ
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between pt-4 border-t">
+                <span className="text-gray-600 text-lg">Danh mục:</span>
+                <span className="text-lg font-medium">
+                  {selectedDish.category}
+                </span>
+              </div>
+
+              {!selectedDish.available && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-center">
+                  <p className="text-red-700 font-medium">
+                    Món ăn đang tạm ngưng phục vụ
+                  </p>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-4">
+                <Button
+                  variant="ghost"
+                  fullWidth
+                  onClick={() => {
+                    if (confirm("Bạn có chắc muốn xóa món ăn này?")) {
+                      handleDeleteMenuItem(selectedDish.id);
+                      setSelectedDish(null);
+                    }
+                  }}
+                  className="text-red-600 hover:bg-red-50"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Xóa món
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

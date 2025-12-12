@@ -13,6 +13,13 @@ import { Modal } from "../../ui/Modal";
 import { Input, Textarea } from "../../ui/Input";
 import { Badge } from "../../ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../ui/select";
 import { mockCustomers } from "../../../lib/mockData";
 import { Customer, Violation } from "../../../types";
 import { toast } from "sonner";
@@ -20,6 +27,8 @@ import { toast } from "sonner";
 export function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>(mockCustomers);
   const [searchQuery, setSearchQuery] = useState("");
+  const [tierFilter, setTierFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null
   );
@@ -54,11 +63,18 @@ export function CustomersPage() {
     },
   ];
 
-  const filteredCustomers = customers.filter(
-    (customer) =>
+  const filteredCustomers = customers.filter((customer) => {
+    const matchesSearch =
       customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      customer.phone?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+      customer.phone?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesTier =
+      tierFilter === "all" || customer.membershipTier === tierFilter;
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "blocked" && customer.isBlacklisted) ||
+      (statusFilter === "normal" && !customer.isBlacklisted);
+    return matchesSearch && matchesTier && matchesStatus;
+  });
 
   const handleViewDetail = (customer: Customer) => {
     setSelectedCustomer(customer);
@@ -163,16 +179,8 @@ export function CustomersPage() {
 
         {/* Customers Tab */}
         <TabsContent value="customers" className="space-y-6">
-          {/* Search */}
-          <Input
-            placeholder="Tìm kiếm khách hàng..."
-            icon={<Search className="w-4 h-4" />}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-
           {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="p-6">
               <p className="text-gray-600 mb-2">Tổng khách hàng</p>
               <p className="text-3xl">{customers.length}</p>
@@ -184,17 +192,49 @@ export function CustomersPage() {
               </p>
             </Card>
             <Card className="p-6">
-              <p className="text-gray-600 mb-2">Vi phạm</p>
-              <p className="text-3xl text-orange-600">
-                {customers.reduce((sum, c) => sum + c.violations.length, 0)}
-              </p>
-            </Card>
-            <Card className="p-6">
               <p className="text-gray-600 mb-2">Blacklist</p>
               <p className="text-3xl text-red-600">
                 {customers.filter((c) => c.isBlacklisted).length}
               </p>
             </Card>
+          </div>
+
+          {/* Search and Filters */}
+          <div className="flex gap-4 items-center">
+            <div className="flex-1">
+              <Input
+                placeholder="Tìm kiếm khách hàng..."
+                icon={<Search className="w-4 h-4" />}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-10"
+              />
+            </div>
+            <div className="w-48">
+              <Select value={tierFilter} onValueChange={setTierFilter}>
+                <SelectTrigger className="h-10">
+                  <SelectValue placeholder="Hạng thành viên" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả hạng</SelectItem>
+                  <SelectItem value="gold">Vàng</SelectItem>
+                  <SelectItem value="silver">Bạc</SelectItem>
+                  <SelectItem value="bronze">Đồng</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-48">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="h-10">
+                  <SelectValue placeholder="Trạng thái" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                  <SelectItem value="normal">Bình thường</SelectItem>
+                  <SelectItem value="blocked">Bị chặn</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Customer Table */}
@@ -207,7 +247,6 @@ export function CustomersPage() {
                     <th className="text-left p-4">Liên hệ</th>
                     <th className="text-left p-4">Hạng</th>
                     <th className="text-left p-4">Điểm</th>
-                    <th className="text-left p-4">Vi phạm</th>
                     <th className="text-left p-4">Trạng thái</th>
                     <th className="text-left p-4">Thao tác</th>
                   </tr>
@@ -238,18 +277,9 @@ export function CustomersPage() {
                       </td>
                       <td className="p-4">{customer.points}</td>
                       <td className="p-4">
-                        {customer.violations.length > 0 ? (
-                          <Badge className="bg-orange-100 text-orange-700">
-                            {customer.violations.length} lần
-                          </Badge>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </td>
-                      <td className="p-4">
                         {customer.isBlacklisted ? (
                           <Badge className="bg-red-100 text-red-700">
-                            Blacklist
+                            Bị chặn
                           </Badge>
                         ) : (
                           <Badge className="bg-green-100 text-green-700">

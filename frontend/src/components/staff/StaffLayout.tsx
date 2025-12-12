@@ -77,12 +77,6 @@ export function StaffLayout() {
           path: "/staff/manager/customers",
         },
         {
-          id: "reports",
-          label: "Báo cáo",
-          icon: BarChart3,
-          path: "/staff/manager/reports",
-        },
-        {
           id: "profile",
           label: "Hồ sơ cá nhân",
           icon: Settings,

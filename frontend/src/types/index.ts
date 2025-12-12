@@ -1,5 +1,5 @@
 // User Types
-export type UserRole = 'customer' | 'manager' | 'cashier' | 'waiter';
+export type UserRole = "customer" | "manager" | "cashier" | "waiter";
 
 export interface User {
   id: string;
@@ -11,14 +11,14 @@ export interface User {
 }
 
 export interface Customer extends User {
-  membershipTier: 'gold' | 'silver' | 'bronze';
+  membershipTier: "gold" | "silver" | "bronze";
   points: number;
   violations: Violation[];
   isBlacklisted: boolean;
 }
 
 // Table Types
-export type TableStatus = 'free' | 'occupied' | 'reserved' | 'dirty' | 'broken';
+export type TableStatus = "free" | "occupied" | "reserved" | "dirty" | "broken";
 
 export interface Table {
   id: string;
@@ -27,6 +27,7 @@ export interface Table {
   seats: number;
   status: TableStatus;
   floor?: string;
+  brokenReason?: string;
 }
 
 // Menu Types
@@ -46,7 +47,7 @@ export interface OrderItem {
   menuItem: MenuItem;
   quantity: number;
   notes?: string;
-  status: 'pending' | 'cooking' | 'served';
+  status: "pending" | "cooking" | "served";
 }
 
 // Booking Types
@@ -63,7 +64,13 @@ export interface Booking {
   preOrders?: OrderItem[];
   depositAmount: number;
   depositPaid: boolean;
-  status: 'pending' | 'confirmed' | 'checked-in' | 'completed' | 'cancelled' | 'no-show';
+  status:
+    | "pending"
+    | "confirmed"
+    | "checked-in"
+    | "completed"
+    | "cancelled"
+    | "no-show";
 }
 
 // Invoice Types
@@ -80,9 +87,9 @@ export interface Invoice {
   pointsUsed?: number;
   voucherCode?: string;
   voucherAmount?: number;
-  paymentMethod?: 'cash' | 'card' | 'wallet' | 'online';
+  paymentMethod?: "cash" | "card" | "wallet" | "online";
   paymentRequestedAt?: string;
-  status: 'pending' | 'paid' | 'cancelled' | 'payment-requested';
+  status: "pending" | "paid" | "cancelled" | "payment-requested";
   createdAt: string;
   paidAt?: string;
   customerSelectedVoucher?: boolean;
@@ -112,7 +119,7 @@ export interface Promotion {
   id: string;
   name: string;
   code: string;
-  discountType: 'percentage' | 'fixed';
+  discountType: "percentage" | "fixed";
   discountValue: number;
   description?: string;
   minOrderAmount?: number;
@@ -126,7 +133,7 @@ export interface Promotion {
 export interface Violation {
   id: string;
   customerId: string;
-  type: 'no-show' | 'late-cancel' | 'damage';
+  type: "no-show" | "late-cancel" | "damage";
   description: string;
   date: string;
 }
@@ -142,7 +149,7 @@ export interface Reward {
 
 export interface PointHistory {
   id: string;
-  type: 'earned' | 'redeemed' | 'expired';
+  type: "earned" | "redeemed" | "expired";
   amount: number;
   description: string;
   date: string;

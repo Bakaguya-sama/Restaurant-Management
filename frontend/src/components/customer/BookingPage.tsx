@@ -1,16 +1,10 @@
 import React, { useState } from "react";
-import {
-  Calendar,
-  Clock,
-  Users,
-  MapPin,
-  CreditCard,
-  CheckCircle,
-} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Calendar, Clock, Users, CreditCard, CheckCircle } from "lucide-react";
 import { Button } from "../ui/Button";
 import { Input, Textarea } from "../ui/Input";
 import { Card } from "../ui/Card";
-import { Modal } from "../ui/Modal";
+// import { Modal } from "../ui/Modal";
 import { mockTables, mockMenuItems } from "../../lib/mockData";
 import { Table, MenuItem } from "../../types";
 import { toast } from "sonner";
@@ -20,11 +14,8 @@ import {
   validateInteger,
 } from "../../lib/validation";
 
-interface BookingPageProps {
-  onNavigate: (page: string) => void;
-}
-
-export function BookingPage({ onNavigate }: BookingPageProps) {
+export function BookingPage() {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [bookingData, setBookingData] = useState({
     date: "",
@@ -34,11 +25,8 @@ export function BookingPage({ onNavigate }: BookingPageProps) {
     phone: "",
     notes: "",
     tableId: "",
-    preOrder: false,
   });
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
-  const [showPreOrderModal, setShowPreOrderModal] = useState(false);
-  const [selectedDishes, setSelectedDishes] = useState<MenuItem[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
 
   const availableTables = mockTables.filter(
@@ -48,14 +36,6 @@ export function BookingPage({ onNavigate }: BookingPageProps) {
   const handleTableSelect = (table: Table) => {
     setSelectedTable(table);
     setBookingData({ ...bookingData, tableId: table.id });
-  };
-
-  const handleAddDish = (dish: MenuItem) => {
-    setSelectedDishes([...selectedDishes, dish]);
-  };
-
-  const handleRemoveDish = (dishId: string) => {
-    setSelectedDishes(selectedDishes.filter((d) => d.id !== dishId));
   };
 
   const handleConfirmBooking = () => {
@@ -102,8 +82,13 @@ export function BookingPage({ onNavigate }: BookingPageProps) {
             </div>
           </div>
           <div className="flex gap-4 justify-center">
-            <Button onClick={() => onNavigate("home")}>Về trang chủ</Button>
-            <Button variant="secondary" onClick={() => onNavigate("bills")}>
+            <Button onClick={() => navigate("/customer/home")}>
+              Về trang chủ
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => navigate("/customer/bills")}
+            >
               Xem chi tiết
             </Button>
           </div>
@@ -172,13 +157,15 @@ export function BookingPage({ onNavigate }: BookingPageProps) {
               min={new Date().toISOString().split("T")[0]}
             />
             <Input
-              label="Giờ"
+              label="Giờ (8:00 - 20:00)"
               type="time"
               icon={<Clock className="w-4 h-4" />}
               value={bookingData.time}
               onChange={(e) =>
                 setBookingData({ ...bookingData, time: e.target.value })
               }
+              min="08:00"
+              max="20:00"
             />
             <Input
               label="Số người"
@@ -192,7 +179,7 @@ export function BookingPage({ onNavigate }: BookingPageProps) {
                 })
               }
               min="1"
-              max="20"
+              max="8"
               step="1"
             />
           </div>
@@ -208,6 +195,23 @@ export function BookingPage({ onNavigate }: BookingPageProps) {
                 return;
               }
 
+              // Validate time range (8:00 AM - 8:00 PM)
+              if (bookingData.time) {
+                const [hours, minutes] = bookingData.time
+                  .split(":")
+                  .map(Number);
+                const timeInMinutes = hours * 60 + minutes;
+                const minTime = 8 * 60; // 8:00 AM
+                const maxTime = 20 * 60; // 8:00 PM
+
+                if (timeInMinutes < minTime || timeInMinutes > maxTime) {
+                  toast.error(
+                    "Giờ đặt bàn phải trong khoảng 8:00 sáng đến 8:00 tối"
+                  );
+                  return;
+                }
+              }
+
               // Validate guests count
               const guestsValidation = validateInteger(
                 bookingData.guests,
@@ -221,7 +225,7 @@ export function BookingPage({ onNavigate }: BookingPageProps) {
               const guestsRangeValidation = validateNumberRange(
                 bookingData.guests,
                 1,
-                20,
+                8,
                 "Số người"
               );
               if (!guestsRangeValidation.isValid) {
@@ -308,38 +312,6 @@ export function BookingPage({ onNavigate }: BookingPageProps) {
                 rows={3}
               />
             </div>
-
-            <div className="border-t pt-6">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={bookingData.preOrder}
-                  onChange={(e) =>
-                    setBookingData({
-                      ...bookingData,
-                      preOrder: e.target.checked,
-                    })
-                  }
-                  className="w-5 h-5 rounded border-gray-300"
-                />
-                <div>
-                  <p>Đặt món trước</p>
-                  <p className="text-sm text-gray-600">
-                    Chọn món ăn ngay để tiết kiệm thời gian
-                  </p>
-                </div>
-              </label>
-              {bookingData.preOrder && (
-                <div className="mt-4">
-                  <Button
-                    variant="secondary"
-                    onClick={() => setShowPreOrderModal(true)}
-                  >
-                    Chọn món ({selectedDishes.length})
-                  </Button>
-                </div>
-              )}
-            </div>
           </Card>
           <div className="flex gap-4">
             <Button variant="secondary" onClick={() => setStep(2)}>
@@ -401,12 +373,6 @@ export function BookingPage({ onNavigate }: BookingPageProps) {
                   <span className="text-gray-600">Số người:</span>
                   <span>{bookingData.guests} người</span>
                 </div>
-                {selectedDishes.length > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Món đặt trước:</span>
-                    <span>{selectedDishes.length} món</span>
-                  </div>
-                )}
                 <div className="flex justify-between pt-2 border-t">
                   <span>Tiền cọc:</span>
                   <span>{depositAmount.toLocaleString()}đ</span>
@@ -424,78 +390,6 @@ export function BookingPage({ onNavigate }: BookingPageProps) {
           </div>
         </div>
       )}
-
-      {/* Pre-order Modal */}
-      <Modal
-        isOpen={showPreOrderModal}
-        onClose={() => setShowPreOrderModal(false)}
-        title="Chọn món đặt trước"
-        size="lg"
-      >
-        <div className="space-y-4">
-          {mockMenuItems
-            .filter((m) => m.available)
-            .map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center gap-4 p-4 border rounded-lg"
-              >
-                <img
-                  src={
-                    item.image ||
-                    "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=100"
-                  }
-                  alt={item.name}
-                  className="w-20 h-20 object-cover rounded-lg"
-                />
-                <div className="flex-1">
-                  <h4 className="mb-1">{item.name}</h4>
-                  <p className="text-sm text-gray-600 mb-2">
-                    {item.description}
-                  </p>
-                  <span className="text-[#0056D2]">
-                    {item.price.toLocaleString()}đ
-                  </span>
-                </div>
-                <Button
-                  size="sm"
-                  onClick={() => handleAddDish(item)}
-                  disabled={selectedDishes.some((d) => d.id === item.id)}
-                >
-                  {selectedDishes.some((d) => d.id === item.id)
-                    ? "Đã chọn"
-                    : "Thêm"}
-                </Button>
-              </div>
-            ))}
-        </div>
-        {selectedDishes.length > 0 && (
-          <div className="mt-6 pt-6 border-t">
-            <h4 className="mb-4">Món đã chọn ({selectedDishes.length})</h4>
-            <div className="space-y-2">
-              {selectedDishes.map((dish) => (
-                <div
-                  key={dish.id}
-                  className="flex items-center justify-between text-sm"
-                >
-                  <span>{dish.name}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-600">
-                      {dish.price.toLocaleString()}đ
-                    </span>
-                    <button
-                      onClick={() => handleRemoveDish(dish.id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      Xóa
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </Modal>
     </div>
   );
 }
