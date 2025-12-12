@@ -25,21 +25,9 @@ export function BookingPage() {
     phone: "",
     notes: "",
     tableId: "",
-    preOrder: false,
   });
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
-  const [showPreOrderModal, setShowPreOrderModal] = useState(false);
-  // const [selectedDishes, setSelectedDishes] = useState<
-  //   Array<{ item: MenuItem; quantity: number; notes: string }>
-  // >([]);
   const [showSuccess, setShowSuccess] = useState(false);
-
-  // Menu search and filter states
-  const [menuSearchQuery, setMenuSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [selectedDishForDetail, setSelectedDishForDetail] =
-    useState<MenuItem | null>(null);
-  const [dishNote, setDishNote] = useState("");
 
   const availableTables = mockTables.filter(
     (t) => t.status === "free" || t.status === "reserved"
@@ -49,39 +37,6 @@ export function BookingPage() {
     setSelectedTable(table);
     setBookingData({ ...bookingData, tableId: table.id });
   };
-
-  // const handleAddDish = (dish: MenuItem, notes: string) => {
-  //   const existingIndex = selectedDishes.findIndex(
-  //     (d) => d.item.id === dish.id && d.notes === notes
-  //   );
-  //   if (existingIndex >= 0) {
-  //     const updated = [...selectedDishes];
-  //     updated[existingIndex].quantity += 1;
-  //     setSelectedDishes(updated);
-  //   } else {
-  //     setSelectedDishes([
-  //       ...selectedDishes,
-  //       { item: dish, quantity: 1, notes },
-  //     ]);
-  //   }
-  //   toast.success(`Đã thêm ${dish.name} vào đơn hàng!`);
-  //   setSelectedDishForDetail(null);
-  //   setDishNote("");
-  // };
-
-  // const handleRemoveDish = (index: number) => {
-  //   setSelectedDishes(selectedDishes.filter((_, i) => i !== index));
-  // };
-
-  // const handleUpdateQuantity = (index: number, delta: number) => {
-  //   const updated = [...selectedDishes];
-  //   updated[index].quantity += delta;
-  //   if (updated[index].quantity <= 0) {
-  //     setSelectedDishes(updated.filter((_, i) => i !== index));
-  //   } else {
-  //     setSelectedDishes(updated);
-  //   }
-  // };
 
   const handleConfirmBooking = () => {
     setShowSuccess(true);
@@ -357,38 +312,6 @@ export function BookingPage() {
                 rows={3}
               />
             </div>
-
-            {/* <div className="border-t pt-6">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={bookingData.preOrder}
-                  onChange={(e) =>
-                    setBookingData({
-                      ...bookingData,
-                      preOrder: e.target.checked,
-                    })
-                  }
-                  className="w-5 h-5 rounded border-gray-300"
-                />
-                <div>
-                  <p>Đặt món trước</p>
-                  <p className="text-sm text-gray-600">
-                    Chọn món ăn ngay để tiết kiệm thời gian
-                  </p>
-                </div>
-              </label>
-              {bookingData.preOrder && (
-                <div className="mt-4">
-                  <Button
-                    variant="secondary"
-                    onClick={() => setShowPreOrderModal(true)}
-                  >
-                    Chọn món ({selectedDishes.length})
-                  </Button>
-                </div>
-              )}
-            </div> */}
           </Card>
           <div className="flex gap-4">
             <Button variant="secondary" onClick={() => setStep(2)}>
@@ -450,12 +373,6 @@ export function BookingPage() {
                   <span className="text-gray-600">Số người:</span>
                   <span>{bookingData.guests} người</span>
                 </div>
-                {/* {selectedDishes.length > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Món đặt trước:</span>
-                    <span>{selectedDishes.length} món</span>
-                  </div>
-                )} */}
                 <div className="flex justify-between pt-2 border-t">
                   <span>Tiền cọc:</span>
                   <span>{depositAmount.toLocaleString()}đ</span>
@@ -473,249 +390,6 @@ export function BookingPage() {
           </div>
         </div>
       )}
-
-      {/* Pre-order Menu Modal */}
-      {/* <Modal
-        isOpen={showPreOrderModal && !selectedDishForDetail}
-        onClose={() => {
-          setShowPreOrderModal(false);
-          setMenuSearchQuery("");
-          setSelectedCategory("all");
-        }}
-        title="Chọn món đặt trước"
-        size="xl"
-      >
-        <div className="space-y-4">
-          <div className="space-y-4">
-            <Input
-              placeholder="Tìm kiếm món ăn..."
-              icon={<Search className="w-4 h-4" />}
-              value={menuSearchQuery}
-              onChange={(e) => setMenuSearchQuery(e.target.value)}
-            />
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {["all", "Khai vị", "Món chính", "Đồ uống"].map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-2 rounded-lg whitespace-nowrap transition-all ${
-                    selectedCategory === cat
-                      ? "bg-[#0056D2] text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                >
-                  {cat === "all" ? "Tất cả" : cat}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-[400px] overflow-y-auto">
-            {mockMenuItems
-              .filter((item) => {
-                const matchesSearch = item.name
-                  .toLowerCase()
-                  .includes(menuSearchQuery.toLowerCase());
-                const matchesCategory =
-                  selectedCategory === "all" ||
-                  item.category === selectedCategory;
-                return item.available && matchesSearch && matchesCategory;
-              })
-              .map((item) => (
-                <Card
-                  key={item.id}
-                  hover
-                  onClick={() => setSelectedDishForDetail(item)}
-                  className="overflow-hidden cursor-pointer"
-                >
-                  <img
-                    src={
-                      item.image ||
-                      "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400"
-                    }
-                    alt={item.name}
-                    className="w-full h-32 object-cover"
-                  />
-                  <div className="p-3">
-                    <h4 className="text-sm mb-1">{item.name}</h4>
-                    <p className="text-xs text-gray-600 mb-2 line-clamp-2">
-                      {item.description || "Món ăn ngon tuyệt vời"}
-                    </p>
-                    <span className="text-[#0056D2] text-sm">
-                      {item.price.toLocaleString()}đ
-                    </span>
-                  </div>
-                </Card>
-              ))}
-          </div>
-
-          {selectedDishes.length > 0 && (
-            <div className="border-t pt-4">
-              <div className="flex items-center justify-between mb-3">
-                <h4>
-                  Món đã chọn (
-                  {selectedDishes.reduce((sum, d) => sum + d.quantity, 0)})
-                </h4>
-                <span className="text-[#0056D2]">
-                  {selectedDishes
-                    .reduce((sum, d) => sum + d.item.price * d.quantity, 0)
-                    .toLocaleString()}
-                  đ
-                </span>
-              </div>
-              <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                {selectedDishes.map((dish, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg"
-                  >
-                    <img
-                      src={
-                        dish.item.image ||
-                        "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=100"
-                      }
-                      alt={dish.item.name}
-                      className="w-12 h-12 object-cover rounded"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm truncate">{dish.item.name}</p>
-                      {dish.notes && (
-                        <p className="text-xs text-gray-600 truncate">
-                          Ghi chú: {dish.notes}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1 border rounded">
-                        <button
-                          onClick={() => handleUpdateQuantity(index, -1)}
-                          className="p-1 hover:bg-gray-100"
-                        >
-                          <Minus className="w-3 h-3" />
-                        </button>
-                        <span className="text-sm w-6 text-center">
-                          {dish.quantity}
-                        </span>
-                        <button
-                          onClick={() => handleUpdateQuantity(index, 1)}
-                          className="p-1 hover:bg-gray-100"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </button>
-                      </div>
-                      <span className="text-sm text-gray-600 w-20 text-right">
-                        {(dish.item.price * dish.quantity).toLocaleString()}đ
-                      </span>
-                      <button
-                        onClick={() => handleRemoveDish(index)}
-                        className="text-red-500 hover:text-red-700 text-xs"
-                      >
-                        Xóa
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="flex gap-2 pt-4 border-t">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setShowPreOrderModal(false);
-                setMenuSearchQuery("");
-                setSelectedCategory("all");
-              }}
-              className="flex-1"
-            >
-              Đóng
-            </Button>
-          </div>
-        </div>
-      </Modal> */}
-
-      {/* Dish Detail Modal */}
-      {/* <Modal
-        isOpen={selectedDishForDetail !== null}
-        onClose={() => {
-          setSelectedDishForDetail(null);
-          setDishNote("");
-        }}
-        title={selectedDishForDetail?.name || ""}
-        size="lg"
-      >
-        {selectedDishForDetail && (
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <img
-                src={
-                  selectedDishForDetail.image ||
-                  "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=600"
-                }
-                alt={selectedDishForDetail.name}
-                className="w-full h-64 object-cover rounded-lg"
-              />
-            </div>
-            <div>
-              <p className="text-gray-600 mb-4">
-                {selectedDishForDetail.description}
-              </p>
-
-              {selectedDishForDetail.ingredients && (
-                <div className="mb-4">
-                  <p className="mb-2">Thành phần:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedDishForDetail.ingredients.map((ing, i) => (
-                      <span
-                        key={i}
-                        className="px-3 py-1 bg-gray-100 rounded-full text-sm"
-                      >
-                        {ing}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="mb-4">
-                <label className="block text-sm mb-2">Ghi chú đặc biệt:</label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {["Không cay", "Ít đường", "Không hành", "Mang về"].map(
-                    (tag) => (
-                      <button
-                        key={tag}
-                        onClick={() =>
-                          setDishNote(dishNote ? `${dishNote}, ${tag}` : tag)
-                        }
-                        className="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
-                      >
-                        {tag}
-                      </button>
-                    )
-                  )}
-                </div>
-                <Input
-                  placeholder="Hoặc nhập ghi chú tùy chỉnh..."
-                  value={dishNote}
-                  onChange={(e) => setDishNote(e.target.value)}
-                />
-              </div>
-
-              <div className="flex items-center justify-between pt-4 border-t">
-                <span className="text-2xl text-[#0056D2]">
-                  {selectedDishForDetail.price.toLocaleString()}đ
-                </span>
-                <Button
-                  onClick={() => handleAddDish(selectedDishForDetail, dishNote)}
-                >
-                  Thêm vào đơn
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-      </Modal> */}
     </div>
   );
 }

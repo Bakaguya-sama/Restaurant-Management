@@ -39,11 +39,6 @@ export function BookingManagementPage() {
       tableNumber: "T08",
       area: "Khu VIP",
       notes: "Cần không gian riêng tư",
-      preOrders: [
-        { name: "Lẩu Thái", quantity: 1, price: 250000 },
-        { name: "Gà Nướng Muối Ớt", quantity: 1, price: 180000 },
-        { name: "Salad Rau Trộn", quantity: 2, price: 55000 },
-      ],
       depositAmount: 200000,
       status: "confirmed",
       createdAt: "2025-12-12 14:30",
@@ -102,10 +97,6 @@ export function BookingManagementPage() {
       tableNumber: "T05",
       area: "Khu ngoài trời",
       notes: "Gần cửa sổ",
-      preOrders: [
-        { name: "Phở Bò Đặc Biệt", quantity: 2, price: 85000 },
-        { name: "Gỏi Cuốn Tôm Thịt", quantity: 3, price: 45000 },
-      ],
       depositAmount: 150000,
       status: "completed",
       createdAt: "2025-12-08",
@@ -158,10 +149,6 @@ export function BookingManagementPage() {
       tableNumber: "T05",
       area: "Khu ngoài trời",
       notes: "Tổ chức sinh nhật, cần bánh kem",
-      preOrders: [
-        { name: "Bò Né", quantity: 2, price: 120000 },
-        { name: "Cà phê sữa đá", quantity: 2, price: 30000 },
-      ],
       depositAmount: 200000,
       status: "completed",
       createdAt: "2025-12-08",
@@ -204,10 +191,6 @@ export function BookingManagementPage() {
       tableNumber: "T03",
       area: "Khu trong nhà",
       notes: "",
-      preOrders: [
-        { name: "Cơm Tấm Sườn", quantity: 1, price: 65000 },
-        { name: "Trà đá", quantity: 1, price: 10000 },
-      ],
       depositAmount: 100000,
       status: "completed",
       createdAt: "2025-12-04",
@@ -249,11 +232,9 @@ export function BookingManagementPage() {
       tableNumber: "T12",
       area: "Khu trong nhà",
       notes: "Gần quầy bar",
-      preOrders: [],
       depositAmount: 100000,
       status: "completed",
       createdAt: "2025-12-02",
-      // No pre-orders, no bill - just booking
       bill: null,
     },
   ];
@@ -670,62 +651,6 @@ export function BookingManagementPage() {
                 <p>{selectedBooking.notes}</p>
               </div>
             )}
-
-            {/* Pre-orders */}
-            {selectedBooking.preOrders &&
-              selectedBooking.preOrders.length > 0 && (
-                <div>
-                  <h4 className="mb-3 flex items-center gap-2">
-                    <Utensils className="w-5 h-5" />
-                    Món ăn đặt trước
-                  </h4>
-                  <div className="space-y-3">
-                    {selectedBooking.preOrders.map(
-                      (item: any, index: number) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                        >
-                          <div className="flex-1">
-                            <p className="font-medium">{item.name}</p>
-                            <p className="text-sm text-gray-600">
-                              Số lượng: {item.quantity}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-[#10B981]">
-                              {item.price.toLocaleString()}đ
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              Tổng:{" "}
-                              {(item.price * item.quantity).toLocaleString()}đ
-                            </p>
-                          </div>
-                        </div>
-                      )
-                    )}
-
-                    {/* Pre-order Total */}
-                    <div className="pt-3 border-t">
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600">
-                          Tổng món đặt trước:
-                        </span>
-                        <span className="text-lg font-medium">
-                          {selectedBooking.preOrders
-                            .reduce(
-                              (sum: number, item: any) =>
-                                sum + item.price * item.quantity,
-                              0
-                            )
-                            .toLocaleString()}
-                          đ
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
 
             {/* Deposit Information */}
             <div className="p-4 bg-green-50 border border-green-200 rounded-lg">

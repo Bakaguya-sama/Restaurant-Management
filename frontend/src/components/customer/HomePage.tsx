@@ -1,33 +1,20 @@
 import React, { useState } from "react";
-import { Calendar, UtensilsCrossed, Gift, Star } from "lucide-react";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { Modal } from "../ui/Modal";
-import { Input } from "../ui/Input";
 import { mockMenuItems, mockPromotions } from "../../lib/mockData";
 import { MenuItem } from "../../types";
-import { useCart } from "../../contexts/CartContext";
 import { PromotionCard } from "./PromotionCard";
-import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
 export function HomePage() {
   const navigate = useNavigate();
-  const { addToCart } = useCart();
   const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
-  const [dishNote, setDishNote] = useState("");
 
   // Get first 3 available dishes
   const featuredDishes = mockMenuItems
     .filter((item) => item.available)
     .slice(0, 3);
-
-  const handleAddToCart = (item: MenuItem, notes: string) => {
-    addToCart(item, notes);
-    toast.success(`Đã thêm ${item.name} vào giỏ hàng!`);
-    setSelectedDish(null);
-    setDishNote("");
-  };
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
@@ -131,9 +118,11 @@ export function HomePage() {
                 <h4 className="mb-2">{item.name}</h4>
                 <p className="text-sm text-gray-600 mb-3">{item.description}</p>
                 <div className="flex items-center justify-between">
-                  <span className="text-[#0056D2]">{item.price}đ</span>
+                  <span className="text-[#0056D2]">
+                    {item.price.toLocaleString()}đ
+                  </span>
                   <Button size="sm" onClick={() => setSelectedDish(item)}>
-                    Đặt món
+                    Xem chi tiết
                   </Button>
                 </div>
               </div>
@@ -152,57 +141,62 @@ export function HomePage() {
         </div>
       </div>
 
-      {/* Add to Cart Modal */}
+      {/* Dish Detail Modal */}
       <Modal
         isOpen={selectedDish !== null}
-        onClose={() => {
-          setSelectedDish(null);
-          setDishNote("");
-        }}
-        title={selectedDish ? `Đặt món - ${selectedDish.name}` : ""}
+        onClose={() => setSelectedDish(null)}
+        title={selectedDish?.name || ""}
+        size="xl"
       >
         {selectedDish && (
-          <div className="space-y-4">
+          <div className="space-y-6">
+            {/* Ảnh ở trên */}
             <div>
               <img
-                src={selectedDish.image}
+                src={
+                  selectedDish.image ||
+                  "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=800"
+                }
                 alt={selectedDish.name}
-                className="w-full h-48 object-cover rounded-lg mb-4"
+                className="w-full h-96 object-cover rounded-lg"
               />
-              <p className="text-gray-600 mb-4">{selectedDish.description}</p>
             </div>
 
-            <div>
-              <label className="block text-sm mb-2">Ghi chú đặc biệt:</label>
-              <div className="flex flex-wrap gap-2 mb-2">
-                {["Không cay", "Ít đường", "Không hành", "Mang về"].map(
-                  (tag) => (
-                    <button
-                      key={tag}
-                      onClick={() =>
-                        setDishNote(dishNote ? `${dishNote}, ${tag}` : tag)
-                      }
-                      className="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
-                    >
-                      {tag}
-                    </button>
-                  )
+            {/* Thông tin ở dưới */}
+            <div className="space-y-4">
+              <p className="text-gray-600 text-lg">
+                {selectedDish.description}
+              </p>
+
+              {selectedDish.ingredients &&
+                selectedDish.ingredients.length > 0 && (
+                  <div>
+                    <p className="font-medium text-lg mb-3">Thành phần:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedDish.ingredients.map((ing, i) => (
+                        <span
+                          key={i}
+                          className="px-4 py-2 bg-gray-100 rounded-full text-sm"
+                        >
+                          {ing}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 )}
-              </div>
-              <Input
-                placeholder="Hoặc nhập ghi chú tùy chỉnh..."
-                value={dishNote}
-                onChange={(e) => setDishNote(e.target.value)}
-              />
-            </div>
 
-            <div className="flex items-center justify-between pt-4 border-t">
-              <span className="text-2xl text-[#0056D2]">
-                {selectedDish.price.toLocaleString()}đ
-              </span>
-              <Button onClick={() => handleAddToCart(selectedDish, dishNote)}>
-                Thêm vào giỏ
-              </Button>
+              <div className="flex items-center justify-between pt-4 border-t">
+                <span className="text-gray-600 text-lg">Giá:</span>
+                <span className="text-3xl text-[#0056D2] font-medium">
+                  {selectedDish.price.toLocaleString()}đ
+                </span>
+              </div>
+
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
+                <p className="text-gray-700 italic text-base">
+                  Hãy đến hoặc đặt bàn trước để thưởng thức nhé! 👋
+                </p>
+              </div>
             </div>
           </div>
         )}
