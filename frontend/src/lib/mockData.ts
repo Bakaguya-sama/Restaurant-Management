@@ -77,6 +77,7 @@ export const mockTables: Table[] = [
     seats: 2,
     status: "broken",
     floor: "Floor 1",
+    brokenReason: "Ghế bị gãy chân, cần thay thế",
   },
 ];
 

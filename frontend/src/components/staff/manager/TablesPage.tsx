@@ -5,7 +5,7 @@ import { Card } from "../../ui/Card";
 import { Modal } from "../../ui/Modal";
 import { Input, Select } from "../../ui/Input";
 import { mockTables } from "../../../lib/mockData";
-import { Table } from "../../../types";
+import { Table, TableStatus } from "../../../types";
 import { toast } from "sonner";
 import {
   validateRequired,
@@ -18,12 +18,39 @@ export function TablesPage() {
   const [editingTable, setEditingTable] = useState<Table | null>(null);
   const [filterArea, setFilterArea] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [tables, setTables] = useState(mockTables);
+  const [showRepairModal, setShowRepairModal] = useState(false);
+  const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [formData, setFormData] = useState({
     number: "",
     area: "",
     seats: 4,
     floor: "Floor 1",
   });
+
+  const handleRepair = (table: Table) => {
+    setSelectedTable(table);
+    setShowRepairModal(true);
+  };
+
+  const confirmRepair = () => {
+    if (selectedTable) {
+      setTables((prevTables) =>
+        prevTables.map((table) =>
+          table.id === selectedTable.id
+            ? {
+                ...table,
+                status: "free" as TableStatus,
+                brokenReason: undefined,
+              }
+            : table
+        )
+      );
+      toast.success("Đã chuyển bàn về trạng thái trống");
+      setShowRepairModal(false);
+      setSelectedTable(null);
+    }
+  };
 
   const handleEdit = (table: Table) => {
     setEditingTable(table);
@@ -81,7 +108,7 @@ export function TablesPage() {
     setFormData({ number: "", area: "", seats: 4, floor: "Floor 1" });
   };
 
-  const filteredTables = mockTables.filter((table) => {
+  const filteredTables = tables.filter((table) => {
     const matchArea = filterArea === "all" || table.area === filterArea;
     const matchStatus = filterStatus === "all" || table.status === filterStatus;
     return matchArea && matchStatus;
@@ -169,15 +196,25 @@ export function TablesPage() {
               <span>{table.floor}</span>
             </div>
             <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => handleEdit(table)}
-                className="flex-1"
-              >
-                <Edit className="w-4 h-4 mr-1" />
-                Sửa
-              </Button>
+              {table.status === "broken" ? (
+                <Button
+                  size="sm"
+                  onClick={() => handleRepair(table)}
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                >
+                  Khắc phục
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => handleEdit(table)}
+                  className="flex-1"
+                >
+                  <Edit className="w-4 h-4 mr-1" />
+                  Sửa
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="ghost"
@@ -260,6 +297,46 @@ export function TablesPage() {
             </Button>
             <Button fullWidth onClick={handleSubmit}>
               {editingTable ? "Cập nhật" : "Thêm bàn"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Repair Modal */}
+      <Modal
+        isOpen={showRepairModal}
+        onClose={() => {
+          setShowRepairModal(false);
+          setSelectedTable(null);
+        }}
+        title="Khắc phục sự cố bàn"
+      >
+        <div className="space-y-4">
+          <div className="p-4 bg-gray-50 rounded-lg">
+            <p className="text-sm text-gray-600 mb-2">Bàn số:</p>
+            <p className="font-medium text-lg">{selectedTable?.number}</p>
+          </div>
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm font-medium text-red-700 mb-2">Lý do hỏng:</p>
+            <p className="text-red-600">
+              {selectedTable?.brokenReason || "Không có thông tin"}
+            </p>
+          </div>
+          <div className="flex gap-3 justify-end">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setShowRepairModal(false);
+                setSelectedTable(null);
+              }}
+            >
+              Hủy
+            </Button>
+            <Button
+              onClick={confirmRepair}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              Xác nhận khắc phục
             </Button>
           </div>
         </div>
