@@ -6,8 +6,8 @@ import {
   Package,
   Download,
   Utensils,
-  Star,
   Calendar,
+  MessageSquare,
 } from "lucide-react";
 import { Card } from "../../ui/Card";
 import { Button } from "../../ui/Button";
@@ -320,42 +320,34 @@ export function ManagerDashboard() {
     { tier: "Silver", count: 234, revenue: 28400000, percentage: 23 },
   ];
 
-  // Báo cáo đánh giá & phản hồi (không đổi theo time range)
-  const feedbackStats = {
-    avgRating: 4.6,
-    ratings: {
-      5: 89,
-      4: 45,
-      3: 15,
-      2: 5,
-      1: 2,
-    },
-  };
-
+  // Báo cáo phản hồi (5 phản hồi gần nhất)
   const recentFeedback = [
     {
       customer: "Nguyễn Văn An",
-      rating: 5,
-      comment: "Món ăn rất ngon, phục vụ tận tình",
+      comment:
+        "Món ăn rất ngon, phục vụ tận tình. Đặc biệt là phở bò rất đúng vị.",
       date: "2025-12-12",
     },
     {
       customer: "Trần Thị Bình",
-      rating: 4,
-      comment: "Không gian đẹp, nhưng thời gian chờ hơi lâu",
+      comment:
+        "Không gian đẹp, nhưng thời gian chờ hơi lâu. Nên cải thiện tốc độ phục vụ.",
       date: "2025-12-11",
     },
     {
       customer: "Lê Văn Cường",
-      rating: 5,
-      comment: "Sẽ quay lại lần sau",
+      comment: "Sẽ quay lại lần sau. Nhân viên nhiệt tình, thân thiện.",
       date: "2025-12-11",
     },
     {
       customer: "Phạm Thị Dung",
-      rating: 3,
-      comment: "Món ăn ổn nhưng giá hơi cao",
+      comment: "Món ăn ổn nhưng giá hơi cao so với mặt bằng chung.",
       date: "2025-12-10",
+    },
+    {
+      customer: "Hoàng Minh Tuấn",
+      comment: "Đồ ăn ngon, không gian sạch sẽ. Sẽ giới thiệu cho bạn bè.",
+      date: "2025-12-09",
     },
   ];
 
@@ -754,53 +746,20 @@ export function ManagerDashboard() {
           </div>
         </Card>
 
-        {/* 7. Báo cáo đánh giá và phản hồi */}
+        {/* 7. Báo cáo phản hồi */}
         <Card className="p-6">
           <div className="flex items-center gap-2 mb-4">
-            <Star className="w-5 h-5 text-yellow-600" />
-            <h3>Báo cáo đánh giá và phản hồi khách hàng</h3>
+            <MessageSquare className="w-5 h-5 text-blue-600" />
+            <h3>Báo cáo phản hồi khách hàng</h3>
           </div>
 
-          {/* Rating Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
-            <div className="p-4 bg-yellow-50 rounded-lg">
-              <p className="text-gray-600 text-sm mb-1">Đánh giá TB</p>
-              <div className="flex items-center gap-1">
-                <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-                <p className="text-2xl text-yellow-600">
-                  {feedbackStats.avgRating}
-                </p>
-              </div>
-            </div>
-            {[5, 4, 3, 2, 1].map((star) => (
-              <div key={star} className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-gray-600 text-sm mb-1">{star} sao</p>
-                <p className="text-xl">{feedbackStats.ratings[star]}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Recent Feedback */}
-          <h4 className="mb-3">Phản hồi gần đây</h4>
+          {/* Recent Feedback - 5 phản hồi gần nhất */}
+          <h4 className="mb-3">5 phản hồi gần nhất</h4>
           <div className="space-y-3">
             {recentFeedback.map((feedback, index) => (
               <div key={index} className="p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium">{feedback.customer}</p>
-                    <div className="flex items-center gap-1">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-4 h-4 ${
-                            i < feedback.rating
-                              ? "text-yellow-500 fill-yellow-500"
-                              : "text-gray-300"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  </div>
+                  <p className="font-medium">{feedback.customer}</p>
                   <p className="text-sm text-gray-600">{feedback.date}</p>
                 </div>
                 <p className="text-gray-700">{feedback.comment}</p>
