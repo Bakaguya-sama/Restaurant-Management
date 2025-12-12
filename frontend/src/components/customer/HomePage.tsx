@@ -45,13 +45,13 @@ export function HomePage() {
               Đặt bàn ngay hôm nay và nhận ưu đãi đặc biệt dành cho thành viên
             </p>
             <div className="flex gap-4">
-              <Button size="lg" onClick={() => navigate("booking")}>
+              <Button size="lg" onClick={() => navigate("/customer/booking")}>
                 Đặt bàn ngay
               </Button>
               <Button
                 size="lg"
                 variant="secondary"
-                onClick={() => navigate("menu")}
+                onClick={() => navigate("/customer/menu")}
               >
                 Xem thực đơn
               </Button>
@@ -61,10 +61,10 @@ export function HomePage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+      {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
         <Card
           hover
-          onClick={() => navigate("booking")}
+          onClick={() => navigate("/customer/booking")}
           className="p-6 text-center cursor-pointer"
         >
           <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -76,7 +76,7 @@ export function HomePage() {
 
         <Card
           hover
-          onClick={() => navigate("menu")}
+          onClick={() => navigate("/customer/menu")}
           className="p-6 text-center cursor-pointer"
         >
           <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -88,7 +88,7 @@ export function HomePage() {
 
         <Card
           hover
-          onClick={() => navigate("membership")}
+          onClick={() => navigate("/customer/membership")}
           className="p-6 text-center cursor-pointer"
         >
           <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -100,7 +100,7 @@ export function HomePage() {
 
         <Card
           hover
-          onClick={() => navigate("bills")}
+          onClick={() => navigate("/customer/bills")}
           className="p-6 text-center cursor-pointer"
         >
           <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -109,13 +109,13 @@ export function HomePage() {
           <h4 className="mb-2">Hóa đơn</h4>
           <p className="text-sm text-gray-600">Theo dõi chi tiêu</p>
         </Card>
-      </div>
+      </div> */}
 
       {/* Featured Dishes */}
       <div className="mb-12">
         <div className="flex items-center justify-between mb-6">
           <h2>Món ăn nổi bật</h2>
-          <Button variant="ghost" onClick={() => navigate("menu")}>
+          <Button variant="ghost" onClick={() => navigate("/customer/menu")}>
             Xem tất cả
           </Button>
         </div>

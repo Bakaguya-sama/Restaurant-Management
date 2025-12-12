@@ -44,20 +44,14 @@ function App() {
             <Route path="/customer" element={<CustomerLayout />}>
               <Route index element={<Navigate to="home" replace />} />
               <Route path="home" element={<HomePage />} />
-              <Route
-                path="booking"
-                element={<BookingPage onNavigate={() => {}} />}
-              />
+              <Route path="booking" element={<BookingPage />} />
               <Route
                 path="booking-management"
                 element={<BookingManagementPage />}
               />
               <Route path="menu" element={<MenuPage />} />
               <Route path="membership" element={<MembershipPage />} />
-              <Route
-                path="bills"
-                element={<BillsPage onNavigate={() => {}} />}
-              />
+              <Route path="bills" element={<BillsPage />} />
               <Route path="profile" element={<CustomerProfilePage />} />
             </Route>
 
