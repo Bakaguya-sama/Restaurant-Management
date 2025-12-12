@@ -403,7 +403,7 @@ export const mockCustomers: Customer[] = [
         date: "2025-11-20",
       },
     ],
-    isBlacklisted: false,
+    isBlacklisted: true,
   },
 ];
 

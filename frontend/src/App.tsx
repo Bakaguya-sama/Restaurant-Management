@@ -21,7 +21,6 @@ import { HRPage } from "./components/staff/manager/HRPage";
 import { InventoryPage } from "./components/staff/manager/InventoryPage";
 import { CustomersPage } from "./components/staff/manager/CustomersPage";
 import { MenuPromotionPage } from "./components/staff/manager/MenuPromotionPage";
-import { ReportsPage } from "./components/staff/manager/ReportsPage";
 import { InvoicesPage } from "./components/staff/cashier/InvoicesPage";
 import { TablesMapPage } from "./components/staff/waiter/TablesMapPage";
 import { OrderingPage } from "./components/staff/waiter/OrderingPage";
@@ -64,7 +63,6 @@ function App() {
               <Route path="manager/inventory" element={<InventoryPage />} />
               <Route path="manager/menu" element={<MenuPromotionPage />} />
               <Route path="manager/customers" element={<CustomersPage />} />
-              <Route path="manager/reports" element={<ReportsPage />} />
 
               {/* Cashier Routes */}
               <Route path="cashier/invoices" element={<InvoicesPage />} />

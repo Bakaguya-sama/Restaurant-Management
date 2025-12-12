@@ -94,7 +94,7 @@ export function TablesPage() {
     const seatsRangeValidation = validateNumberRange(
       formData.seats,
       1,
-      20,
+      8,
       "Số ghế"
     );
     if (!seatsRangeValidation.isValid) {
@@ -268,7 +268,7 @@ export function TablesPage() {
               setFormData({ ...formData, seats: parseInt(e.target.value) || 0 })
             }
             min="1"
-            max="20"
+            max="8"
             step="1"
             required
           />

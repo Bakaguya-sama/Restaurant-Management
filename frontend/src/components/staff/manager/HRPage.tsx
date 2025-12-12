@@ -29,7 +29,6 @@ interface Employee {
   phone: string;
   email: string;
   status: "active" | "inactive";
-  permissions: string[];
 }
 
 const mockEmployees: Employee[] = [
@@ -41,7 +40,6 @@ const mockEmployees: Employee[] = [
     phone: "0901234567",
     email: "nguyenvana@restaurant.com",
     status: "active",
-    permissions: ["view_reports", "manage_inventory", "manage_staff"],
   },
   {
     id: "E002",
@@ -51,7 +49,6 @@ const mockEmployees: Employee[] = [
     phone: "0902345678",
     email: "tranthib@restaurant.com",
     status: "active",
-    permissions: ["process_payments", "view_bills"],
   },
   {
     id: "E003",
@@ -61,27 +58,26 @@ const mockEmployees: Employee[] = [
     phone: "0903456789",
     email: "levanc@restaurant.com",
     status: "active",
-    permissions: ["take_orders", "manage_tables"],
   },
 ];
 
-const availablePermissions = [
-  { id: "view_reports", label: "Xem báo cáo" },
-  { id: "manage_inventory", label: "Quản lý kho" },
-  { id: "manage_staff", label: "Quản lý nhân sự" },
-  { id: "process_payments", label: "Xử lý thanh toán" },
-  { id: "view_bills", label: "Xem hóa đơn" },
-  { id: "take_orders", label: "Nhận order" },
-  { id: "manage_tables", label: "Quản lý bàn" },
-  { id: "manage_menu", label: "Quản lý thực đơn" },
-  { id: "manage_promotions", label: "Quản lý khuyến mãi" },
+const availableRoles = [
+  { id: "waiter", label: "Phục vụ", description: "Nhận order, quản lý bàn" },
+  {
+    id: "cashier",
+    label: "Thu ngân",
+    description: "Xử lý thanh toán, in hóa đơn",
+  },
+  { id: "manager", label: "Quản lý", description: "Quản lý toàn bộ hệ thống" },
 ];
 
 export function HRPage() {
   const [employees, setEmployees] = useState<Employee[]>(mockEmployees);
   const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showPermissionModal, setShowPermissionModal] = useState(false);
+  const [showRoleModal, setShowRoleModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
     null
   );
@@ -93,13 +89,16 @@ export function HRPage() {
     phone: "",
     email: "",
   });
-  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [selectedRole, setSelectedRole] = useState<Employee["role"]>("waiter");
 
-  const filteredEmployees = employees.filter(
-    (emp) =>
+  const filteredEmployees = employees.filter((emp) => {
+    const matchesSearch =
       emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      emp.username.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+      emp.username.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesRole = roleFilter === "all" || emp.role === roleFilter;
+    const matchesStatus = statusFilter === "all" || emp.status === statusFilter;
+    return matchesSearch && matchesRole && matchesStatus;
+  });
 
   const handleAddEmployee = () => {
     // Validate required fields
@@ -151,7 +150,6 @@ export function HRPage() {
       phone: formData.phone,
       email: formData.email,
       status: "active",
-      permissions: [],
     };
 
     setEmployees([...employees, newEmployee]);
@@ -174,35 +172,23 @@ export function HRPage() {
     }
   };
 
-  const handleOpenPermissions = (employee: Employee) => {
+  const handleOpenRole = (employee: Employee) => {
     setSelectedEmployee(employee);
-    setSelectedPermissions(employee.permissions);
-    setShowPermissionModal(true);
+    setSelectedRole(employee.role);
+    setShowRoleModal(true);
   };
 
-  const handleUpdatePermissions = () => {
+  const handleUpdateRole = () => {
     if (!selectedEmployee) return;
 
     setEmployees(
       employees.map((emp) =>
-        emp.id === selectedEmployee.id
-          ? { ...emp, permissions: selectedPermissions }
-          : emp
+        emp.id === selectedEmployee.id ? { ...emp, role: selectedRole } : emp
       )
     );
-    toast.success("Cập nhật quyền thành công!");
-    setShowPermissionModal(false);
+    toast.success("Cập nhật vai trò thành công!");
+    setShowRoleModal(false);
     setSelectedEmployee(null);
-  };
-
-  const togglePermission = (permissionId: string) => {
-    if (selectedPermissions.includes(permissionId)) {
-      setSelectedPermissions(
-        selectedPermissions.filter((p) => p !== permissionId)
-      );
-    } else {
-      setSelectedPermissions([...selectedPermissions, permissionId]);
-    }
   };
 
   const getRoleColor = (role: string) => {
@@ -272,14 +258,42 @@ export function HRPage() {
         </Card>
       </div>
 
-      {/* Search */}
-      <div className="mb-6">
-        <Input
-          placeholder="Tìm kiếm nhân viên..."
-          icon={<Search className="w-4 h-4" />}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+      {/* Search and Filters */}
+      <div className="mb-6 flex gap-4 items-center">
+        <div className="flex-1">
+          <Input
+            placeholder="Tìm kiếm nhân viên..."
+            icon={<Search className="w-4 h-4" />}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-10"
+          />
+        </div>
+        <div className="w-48">
+          <Select value={roleFilter} onValueChange={setRoleFilter}>
+            <SelectTrigger className="h-10">
+              <SelectValue placeholder="Vai trò" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả vai trò</SelectItem>
+              <SelectItem value="manager">Quản lý</SelectItem>
+              <SelectItem value="cashier">Thu ngân</SelectItem>
+              <SelectItem value="waiter">Phục vụ</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="w-48">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-10">
+              <SelectValue placeholder="Trạng thái" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả trạng thái</SelectItem>
+              <SelectItem value="active">Hoạt động</SelectItem>
+              <SelectItem value="inactive">Ngừng hoạt động</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Employee Table */}
@@ -332,7 +346,8 @@ export function HRPage() {
                       <Button
                         size="sm"
                         variant="secondary"
-                        onClick={() => handleOpenPermissions(employee)}
+                        onClick={() => handleOpenRole(employee)}
+                        title="Đổi vai trò"
                       >
                         <Shield className="w-4 h-4" />
                       </Button>
@@ -436,34 +451,46 @@ export function HRPage() {
         </div>
       </Modal>
 
-      {/* Permissions Modal */}
+      {/* Role Modal */}
       <Modal
-        isOpen={showPermissionModal}
-        onClose={() => setShowPermissionModal(false)}
-        title={`Phân quyền - ${selectedEmployee?.name}`}
+        isOpen={showRoleModal}
+        onClose={() => setShowRoleModal(false)}
+        title={`Đổi vai trò - ${selectedEmployee?.name}`}
       >
         <div className="space-y-4">
           <div className="bg-gray-50 rounded-lg p-4 mb-4">
             <p className="text-sm text-gray-600">
-              Vai trò:{" "}
-              <span className="text-gray-900">
+              Vai trò hiện tại:{" "}
+              <span className="text-gray-900 font-medium">
                 {selectedEmployee && getRoleText(selectedEmployee.role)}
               </span>
             </p>
           </div>
 
           <div className="space-y-3">
-            {availablePermissions.map((permission) => (
+            {availableRoles.map((role) => (
               <label
-                key={permission.id}
-                className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                key={role.id}
+                className="flex items-center gap-3 p-4 border-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-all"
+                style={{
+                  borderColor: selectedRole === role.id ? "#3b82f6" : "#e5e7eb",
+                  backgroundColor:
+                    selectedRole === role.id ? "#eff6ff" : "white",
+                }}
               >
-                <Checkbox
-                  checked={selectedPermissions.includes(permission.id)}
-                  onCheckedChange={() => togglePermission(permission.id)}
+                <input
+                  type="radio"
+                  name="role"
+                  value={role.id}
+                  checked={selectedRole === role.id}
+                  onChange={(e) =>
+                    setSelectedRole(e.target.value as Employee["role"])
+                  }
+                  className="w-4 h-4"
                 />
-                <div>
-                  <p>{permission.label}</p>
+                <div className="flex-1">
+                  <p className="font-medium">{role.label}</p>
+                  <p className="text-sm text-gray-600">{role.description}</p>
                 </div>
               </label>
             ))}
@@ -473,12 +500,12 @@ export function HRPage() {
             <Button
               variant="secondary"
               fullWidth
-              onClick={() => setShowPermissionModal(false)}
+              onClick={() => setShowRoleModal(false)}
             >
               Hủy
             </Button>
-            <Button fullWidth onClick={handleUpdatePermissions}>
-              Cập nhật
+            <Button fullWidth onClick={handleUpdateRole}>
+              Cập nhật vai trò
             </Button>
           </div>
         </div>
