@@ -18,12 +18,15 @@ import {
   mockPromotions,
   mockPointHistory,
   mockVoucherHistory,
+  mockCustomers,
 } from "../../lib/mockData";
 import { toast } from "sonner";
 import { copyToClipboard } from "../../lib/clipboard";
 import { PromotionCard } from "./PromotionCard";
+import { useAuth } from "../../contexts/AuthContext";
 
 export function MembershipPage() {
+  const { userProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<
     "rewards" | "promotions" | "history"
   >("rewards");
@@ -32,12 +35,37 @@ export function MembershipPage() {
   const [showPointsRedemption, setShowPointsRedemption] = useState(false);
   const [pointsToRedeem, setPointsToRedeem] = useState(0);
 
+  // Lấy thông tin customer hiện tại
+  const currentCustomer = mockCustomers.find(
+    (c) => c.phone === userProfile?.phone || c.email === userProfile?.email
+  );
+
+  // Lọc lịch sử điểm theo customer hiện tại
+  const userPointHistory = currentCustomer
+    ? mockPointHistory.filter(
+        (history) =>
+          // Lọc theo invoiceId của customer hoặc theo logic khác
+          // Tạm thời hiển thị tất cả (sẽ update khi có API thực)
+          true
+      )
+    : [];
+
+  // Lọc lịch sử voucher theo customer hiện tại
+  const userVoucherHistory = currentCustomer
+    ? mockVoucherHistory.filter(
+        (history) =>
+          // Lọc theo invoiceId của customer hoặc theo logic khác
+          // Tạm thời hiển thị tất cả (sẽ update khi có API thực)
+          true
+      )
+    : [];
+
   const memberData = {
-    name: "Nguyễn Văn An",
-    tier: "gold",
-    points: 1500,
+    name: currentCustomer?.name || userProfile?.name || "Khách hàng",
+    tier: currentCustomer?.membershipTier || "bronze",
+    points: currentCustomer?.points || 0,
     nextTierPoints: 2000,
-    totalSpent: 15000000,
+    totalSpent: 15000000, // Tạm thời hardcode, sẽ tính từ invoices
   };
 
   const tierConfig = {
@@ -297,50 +325,57 @@ export function MembershipPage() {
               Lịch sử điểm
             </h4>
             <div className="space-y-3">
-              {mockPointHistory.map((history) => (
-                <Card key={history.id} className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-xs ${
-                            history.type === "earned"
-                              ? "bg-green-100 text-green-700"
+              {userPointHistory.length > 0 ? (
+                userPointHistory.map((history) => (
+                  <Card key={history.id} className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-xs ${
+                              history.type === "earned"
+                                ? "bg-green-100 text-green-700"
+                                : history.type === "redeemed"
+                                ? "bg-blue-100 text-blue-700"
+                                : "bg-gray-100 text-gray-700"
+                            }`}
+                          >
+                            {history.type === "earned"
+                              ? "Tích điểm"
                               : history.type === "redeemed"
-                              ? "bg-blue-100 text-blue-700"
-                              : "bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          {history.type === "earned"
-                            ? "Tích điểm"
-                            : history.type === "redeemed"
-                            ? "Quy đổi"
-                            : "Hết hạn"}
-                        </span>
-                        {history.invoiceId && (
-                          <span className="text-xs text-gray-500">
-                            HĐ: {history.invoiceId}
+                              ? "Quy đổi"
+                              : "Hết hạn"}
                           </span>
-                        )}
+                          {history.invoiceId && (
+                            <span className="text-xs text-gray-500">
+                              HĐ: {history.invoiceId}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 mb-1">
+                          {history.description}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(history.date).toLocaleString("vi-VN")}
+                        </p>
                       </div>
-                      <p className="text-sm text-gray-600 mb-1">
-                        {history.description}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(history.date).toLocaleString("vi-VN")}
-                      </p>
+                      <div
+                        className={`text-lg ${
+                          history.amount > 0 ? "text-green-600" : "text-red-600"
+                        }`}
+                      >
+                        {history.amount > 0 ? "+" : ""}
+                        {history.amount.toLocaleString()}
+                      </div>
                     </div>
-                    <div
-                      className={`text-lg ${
-                        history.amount > 0 ? "text-green-600" : "text-red-600"
-                      }`}
-                    >
-                      {history.amount > 0 ? "+" : ""}
-                      {history.amount.toLocaleString()}
-                    </div>
-                  </div>
+                  </Card>
+                ))
+              ) : (
+                <Card className="p-8 text-center">
+                  <Star className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">Chưa có lịch sử sử dụng điểm</p>
                 </Card>
-              ))}
+              )}
             </div>
           </div>
 
@@ -351,8 +386,8 @@ export function MembershipPage() {
               Lịch sử sử dụng voucher
             </h4>
             <div className="space-y-3">
-              {mockVoucherHistory.length > 0 ? (
-                mockVoucherHistory.map((history) => (
+              {userVoucherHistory.length > 0 ? (
+                userVoucherHistory.map((history) => (
                   <Card key={history.id} className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
