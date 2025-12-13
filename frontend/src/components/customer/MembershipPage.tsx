@@ -41,6 +41,16 @@ export function MembershipPage() {
   };
 
   const tierConfig = {
+    diamond: {
+      name: "Kim cương",
+      color: "from-cyan-400 to-cyan-600",
+      icon: "💎",
+    },
+    platinum: {
+      name: "Bạch kim",
+      color: "from-slate-300 to-slate-500",
+      icon: "⚪",
+    },
     gold: { name: "Vàng", color: "from-yellow-400 to-yellow-600", icon: "👑" },
     silver: { name: "Bạc", color: "from-gray-300 to-gray-500", icon: "🥈" },
     bronze: { name: "Đồng", color: "from-amber-600 to-amber-800", icon: "🥉" },

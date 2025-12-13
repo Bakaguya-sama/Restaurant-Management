@@ -125,6 +125,10 @@ export function CustomersPage() {
 
   const getTierColor = (tier: string) => {
     switch (tier) {
+      case "diamond":
+        return "bg-cyan-100 text-cyan-700";
+      case "platinum":
+        return "bg-slate-100 text-slate-700";
       case "gold":
         return "bg-yellow-100 text-yellow-700";
       case "silver":
@@ -138,6 +142,10 @@ export function CustomersPage() {
 
   const getTierText = (tier: string) => {
     switch (tier) {
+      case "diamond":
+        return "Kim cương";
+      case "platinum":
+        return "Bạch kim";
       case "gold":
         return "Vàng";
       case "silver":
@@ -217,6 +225,8 @@ export function CustomersPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tất cả hạng</SelectItem>
+                  <SelectItem value="diamond">Kim cương</SelectItem>
+                  <SelectItem value="platinum">Bạch kim</SelectItem>
                   <SelectItem value="gold">Vàng</SelectItem>
                   <SelectItem value="silver">Bạc</SelectItem>
                   <SelectItem value="bronze">Đồng</SelectItem>
