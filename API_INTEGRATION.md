@@ -1,5 +1,23 @@
 # API Integration Documentation
 
+**Version**: 1.1  
+**Last Updated**: December 13, 2025
+
+## Changelog
+
+### Version 1.1 (December 13, 2025)
+
+- ✅ Thêm 5 membership tiers: diamond, platinum, gold, silver, bronze (thay vì 3 tiers)
+- ✅ Thêm `promotionQuantity` vào Promotion để quản lý số lượng lượt dùng
+- ✅ Thêm `customerSelectedVoucher` và `customerSelectedPoints` vào Invoice
+- ✅ Thêm `isBlacklisted` vào Customer response
+- ✅ Thêm `brokenReason` vào Table khi status = "broken"
+- ✅ Thêm Location & Floor Management APIs (section 2.8)
+- ✅ Thêm Booking eligibility check API (section 5.0)
+- ✅ Cập nhật Business Logic Notes với logic blacklist và promotion quantity
+- ✅ Thêm `paymentMethod` và `paidAt` vào Invoice response
+- ✅ Cập nhật invoice status: thêm "payment-requested"
+
 ## Overview
 
 Tài liệu này mô tả các API endpoints cần thiết để tích hợp backend với frontend của hệ thống quản lý nhà hàng.
@@ -108,8 +126,9 @@ GET /auth/me
     "email": "string",
     "phone": "string",
     "role": "string",
-    "membershipTier": "gold" | "silver" | "bronze", // chỉ customer
-    "points": 0 // chỉ customer
+    "membershipTier": "diamond" | "platinum" | "gold" | "silver" | "bronze", // chỉ customer
+    "points": 0, // chỉ customer
+    "isBlacklisted": false // chỉ customer
   }
 }
 ```
@@ -142,7 +161,8 @@ GET /tables
       "area": "string",
       "seats": 4,
       "status": "free" | "occupied" | "reserved" | "dirty" | "broken",
-      "floor": "string"
+      "floor": "string",
+      "brokenReason": "string" // optional, chỉ khi status = "broken"
     }
   ]
 }
@@ -250,6 +270,119 @@ POST /tables/:id/assign
   "message": "Đã phân công bàn thành công"
 }
 ```
+
+---
+
+## 2.8 Location & Floor Management APIs (Manager only)
+
+### 2.8.1 Lấy danh sách locations
+
+```
+GET /locations
+```
+
+**Query Parameters:**
+
+- `floor`: string (optional) - Lọc theo tầng
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "string",
+      "name": "string",
+      "floor": "string",
+      "description": "string",
+      "createdAt": "2025-12-11T09:00:00Z"
+    }
+  ]
+}
+```
+
+### 2.8.2 Tạo location mới
+
+```
+POST /locations
+```
+
+**Request Body:**
+
+```json
+{
+  "name": "string",
+  "floor": "string",
+  "description": "string"
+}
+```
+
+### 2.8.3 Cập nhật location
+
+```
+PUT /locations/:id
+```
+
+### 2.8.4 Xóa location
+
+```
+DELETE /locations/:id
+```
+
+**Note:** Không được xóa location nếu còn bàn thuộc location đó
+
+### 2.8.5 Lấy danh sách floors
+
+```
+GET /floors
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "string",
+      "name": "string",
+      "level": 1,
+      "description": "string"
+    }
+  ]
+}
+```
+
+### 2.8.6 Tạo floor mới
+
+```
+POST /floors
+```
+
+**Request Body:**
+
+```json
+{
+  "name": "string",
+  "level": 1,
+  "description": "string"
+}
+```
+
+### 2.8.7 Cập nhật floor
+
+```
+PUT /floors/:id
+```
+
+### 2.8.8 Xóa floor
+
+```
+DELETE /floors/:id
+```
+
+**Note:** Không được xóa floor nếu còn location trên floor đó
 
 ---
 
@@ -418,6 +551,33 @@ DELETE /orders/:orderId/items/:itemId
 
 ## 5. Booking APIs
 
+### 5.0 Kiểm tra điều kiện đặt bàn (Customer)
+
+```
+GET /bookings/check-eligibility
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "canBook": false,
+    "isBlacklisted": true,
+    "violations": [
+      {
+        "id": "string",
+        "type": "no-show" | "late-cancel" | "damage",
+        "description": "string",
+        "date": "2025-11-20"
+      }
+    ],
+    "message": "Tài khoản bị hạn chế do vi phạm chính sách"
+  }
+}
+```
+
 ### 5.1 Tạo booking (Customer)
 
 ```
@@ -520,7 +680,11 @@ POST /invoices
     "tax": 50000,
     "discount": 0,
     "total": 550000,
-    "status": "pending"
+    "status": "pending" | "payment-requested" | "paid" | "cancelled",
+    "paymentMethod": "cash" | "card" | "wallet" | "online", // optional
+    "paidAt": "2025-12-11T09:00:00Z", // optional
+    "customerSelectedVoucher": false, // optional
+    "customerSelectedPoints": 0 // optional
   }
 }
 ```
@@ -667,7 +831,7 @@ GET /customers
       "name": "string",
       "phone": "string",
       "email": "string",
-      "membershipTier": "gold",
+      "membershipTier": "diamond" | "platinum" | "gold" | "silver" | "bronze",
       "points": 1500,
       "totalSpent": 15000000,
       "violations": [...],
@@ -682,6 +846,35 @@ GET /customers
 ```
 GET /customers/:id
 ```
+
+### 7.2.1 Tìm kiếm khách hàng theo số điện thoại (Waiter)
+
+```
+GET /customers/search-by-phone
+```
+
+**Query Parameters:**
+
+- `phone`: string (required) - Số điện thoại khách hàng
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "string",
+    "name": "string",
+    "phone": "string",
+    "email": "string",
+    "membershipTier": "gold",
+    "points": 1500,
+    "isBlacklisted": false
+  }
+}
+```
+
+**Note:** API này dùng cho waiter khi tạo order mới và cần tìm thông tin customer
 
 ### 7.3 Cập nhật thông tin khách hàng
 
@@ -931,6 +1124,7 @@ GET /promotions
       "description": "string",
       "minOrderAmount": 200000,
       "maxDiscountAmount": 100000,
+      "promotionQuantity": 100, // optional, số lượng lượt dùng còn lại
       "startDate": "2025-12-01",
       "endDate": "2025-12-31",
       "active": true
@@ -1615,13 +1809,36 @@ socket.on("inventory:low-stock", (data) => {
 
 ### 6. Business Logic Notes
 
-- **Points**: 1000 VND chi tiêu = 1 điểm
-- **Membership tiers**:
-  - Bronze: 0-5M VND
-  - Silver: 5M-10M VND
-  - Gold: >10M VND
-- **Violations**: 3 vi phạm no-show = blacklist
-- **Booking deposit**: 200,000 VND cố định
+- **Points**:
+  - 10,000 VND chi tiêu = 10 điểm tích lũy
+  - 1000 điểm = 1,000 VND giảm giá khi quy đổi
+- **Membership tiers** (5 cấp):
+  - **Bronze (Đồng)**: 0-5M VND tổng chi tiêu
+  - **Silver (Bạc)**: 5M-10M VND tổng chi tiêu
+  - **Gold (Vàng)**: 10M-20M VND tổng chi tiêu
+  - **Platinum (Bạch kim)**: 20M-50M VND tổng chi tiêu
+  - **Diamond (Kim cương)**: >50M VND tổng chi tiêu
+- **Violations & Blacklist**:
+  - **No-show**: Không đến nhận bàn đã đặt
+  - **Late-cancel**: Hủy bàn muộn (< 2 giờ trước giờ đặt)
+  - **Damage**: Gây hư hại tài sản nhà hàng
+  - 3 vi phạm no-show → tự động blacklist
+  - Customer bị blacklist không thể đặt bàn online
+- **Booking & Deposit**:
+  - Deposit cố định: 200,000 VND
+  - Deposit được hoàn lại khi check-in thành công
+  - Deposit bị mất nếu no-show
+- **Promotions**:
+
+  - Mỗi promotion có `promotionQuantity` (số lượt dùng)
+  - Khi `promotionQuantity = 0`: không thể sử dụng
+  - Customer chỉ được chọn 1 trong: voucher HOẶC quy đổi điểm
+  - Cashier có thể áp dụng promotion cho customer nếu customer chưa chọn
+
+- **Invoice & Payment**:
+  - Customer có thể yêu cầu thanh toán từ bàn (`payment-requested`)
+  - Cashier xử lý thanh toán và invoice chuyển sang `paid`
+  - Invoice có thể có: voucherCode, pointsUsed, hoặc promotion do cashier áp dụng
 
 ### 7. Performance Considerations
 

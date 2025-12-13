@@ -1,18 +1,21 @@
-import React, { useState } from 'react';
-import { Ticket, Calendar, Tag, Copy, Check } from 'lucide-react';
-import { Button } from '../ui/Button';
-import { Card } from '../ui/Card';
-import { Modal } from '../ui/Modal';
-import { Promotion } from '../../types';
-import { copyToClipboard } from '../../lib/clipboard';
-import { toast } from 'sonner';
+import React, { useState } from "react";
+import { Ticket, Calendar, Tag, Copy, Check } from "lucide-react";
+import { Button } from "../ui/Button";
+import { Card } from "../ui/Card";
+import { Modal } from "../ui/Modal";
+import { Promotion } from "../../types";
+import { copyToClipboard } from "../../lib/clipboard";
+import { toast } from "sonner";
 
 interface PromotionCardProps {
   promotion: Promotion;
-  variant?: 'card' | 'list';
+  variant?: "card" | "list";
 }
 
-export function PromotionCard({ promotion, variant = 'card' }: PromotionCardProps) {
+export function PromotionCard({
+  promotion,
+  variant = "card",
+}: PromotionCardProps) {
   const [showDetails, setShowDetails] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
 
@@ -21,26 +24,27 @@ export function PromotionCard({ promotion, variant = 'card' }: PromotionCardProp
     const success = await copyToClipboard(promotion.code);
     if (success) {
       setCopiedCode(true);
-      toast.success('Đã sao chép mã khuyến mãi!');
+      toast.success("Đã sao chép mã khuyến mãi!");
       setTimeout(() => setCopiedCode(false), 3000);
     } else {
-      toast.error('Không thể sao chép mã. Vui lòng thử lại.');
+      toast.error("Không thể sao chép mã. Vui lòng thử lại.");
     }
   };
 
-  const discountText = promotion.discountType === 'percentage'
-    ? `${promotion.discountValue}%`
-    : `${promotion.discountValue.toLocaleString()}đ`;
+  const discountText =
+    promotion.discountType === "percentage"
+      ? `${promotion.discountValue}%`
+      : `${promotion.discountValue.toLocaleString()}đ`;
 
   const minOrderText = promotion.minOrderAmount
     ? `Đơn tối thiểu: ${promotion.minOrderAmount.toLocaleString()}đ`
-    : 'Không giới hạn đơn hàng';
+    : "Không giới hạn đơn hàng";
 
   const maxDiscountText = promotion.maxDiscountAmount
     ? `Giảm tối đa: ${promotion.maxDiscountAmount.toLocaleString()}đ`
-    : '';
+    : "";
 
-  if (variant === 'list') {
+  if (variant === "list") {
     return (
       <>
         <Card className="overflow-hidden">
@@ -57,15 +61,40 @@ export function PromotionCard({ promotion, variant = 'card' }: PromotionCardProp
                   <h4 className="mb-2">{promotion.name}</h4>
                   <div className="space-y-1 text-sm text-gray-600">
                     <p className="flex items-center gap-2">
-                      Mã: <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">{promotion.code}</span>
+                      Mã:{" "}
+                      <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">
+                        {promotion.code}
+                      </span>
                     </p>
-                    <p>Thời gian: {new Date(promotion.startDate).toLocaleDateString('vi-VN')} - {new Date(promotion.endDate).toLocaleDateString('vi-VN')}</p>
+                    <p>
+                      Thời gian:{" "}
+                      {new Date(promotion.startDate).toLocaleDateString(
+                        "vi-VN"
+                      )}{" "}
+                      -{" "}
+                      {new Date(promotion.endDate).toLocaleDateString("vi-VN")}
+                    </p>
+                    {promotion.promotionQuantity !== undefined && (
+                      <p
+                        className={
+                          promotion.promotionQuantity <= 10
+                            ? "text-orange-600"
+                            : ""
+                        }
+                      >
+                        Còn {promotion.promotionQuantity} lượt sử dụng
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="ml-4 flex gap-2">
                   {promotion.active ? (
                     <>
-                      <Button size="sm" variant="secondary" onClick={() => setShowDetails(true)}>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setShowDetails(true)}
+                      >
                         Xem chi tiết
                       </Button>
                       <Button size="sm" onClick={handleCopyCode}>
@@ -104,7 +133,9 @@ export function PromotionCard({ promotion, variant = 'card' }: PromotionCardProp
               <h3 className="mb-2">{promotion.name}</h3>
               <div className="inline-block bg-white px-4 py-2 rounded-lg shadow-sm">
                 <p className="text-sm text-gray-600 mb-1">Mã khuyến mãi</p>
-                <p className="text-xl text-[#0056D2] font-mono">{promotion.code}</p>
+                <p className="text-xl text-[#0056D2] font-mono">
+                  {promotion.code}
+                </p>
               </div>
             </div>
 
@@ -125,7 +156,8 @@ export function PromotionCard({ promotion, variant = 'card' }: PromotionCardProp
                 <div>
                   <p className="text-sm text-gray-600">Thời gian áp dụng</p>
                   <p>
-                    {new Date(promotion.startDate).toLocaleDateString('vi-VN')} - {new Date(promotion.endDate).toLocaleDateString('vi-VN')}
+                    {new Date(promotion.startDate).toLocaleDateString("vi-VN")}{" "}
+                    - {new Date(promotion.endDate).toLocaleDateString("vi-VN")}
                   </p>
                 </div>
               </div>
@@ -136,7 +168,24 @@ export function PromotionCard({ promotion, variant = 'card' }: PromotionCardProp
                   <p className="text-sm text-gray-600">Điều kiện</p>
                   <p>{minOrderText}</p>
                   {promotion.description && (
-                    <p className="text-sm text-gray-600 mt-1">{promotion.description}</p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {promotion.description}
+                    </p>
+                  )}
+                  {promotion.promotionQuantity !== undefined && (
+                    <p className="text-sm text-gray-600 mt-1">
+                      Còn{" "}
+                      <span
+                        className={
+                          promotion.promotionQuantity <= 10
+                            ? "text-orange-600 font-medium"
+                            : "font-medium"
+                        }
+                      >
+                        {promotion.promotionQuantity}
+                      </span>{" "}
+                      lượt sử dụng
+                    </p>
                   )}
                 </div>
               </div>
@@ -144,7 +193,7 @@ export function PromotionCard({ promotion, variant = 'card' }: PromotionCardProp
 
             <div className="pt-4 border-t">
               <Button fullWidth onClick={handleCopyCode}>
-                {copiedCode ? 'Đã sao chép mã' : 'Sao chép mã khuyến mãi'}
+                {copiedCode ? "Đã sao chép mã" : "Sao chép mã khuyến mãi"}
               </Button>
             </div>
           </div>
@@ -156,7 +205,7 @@ export function PromotionCard({ promotion, variant = 'card' }: PromotionCardProp
   // Card variant for HomePage
   return (
     <>
-      <Card 
+      <Card
         hover
         onClick={() => setShowDetails(true)}
         className="p-6 bg-gradient-to-r from-green-400 to-green-600 text-white cursor-pointer"
@@ -167,10 +216,14 @@ export function PromotionCard({ promotion, variant = 'card' }: PromotionCardProp
         </p>
         <div className="flex items-center justify-between">
           <span className="text-2xl">{discountText}</span>
-          <Button variant="secondary" size="sm" onClick={(e) => {
-            e.stopPropagation();
-            setShowDetails(true);
-          }}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowDetails(true);
+            }}
+          >
             Xem chi tiết
           </Button>
         </div>
@@ -189,7 +242,9 @@ export function PromotionCard({ promotion, variant = 'card' }: PromotionCardProp
             <h3 className="mb-2">{promotion.name}</h3>
             <div className="inline-block bg-white px-4 py-2 rounded-lg shadow-sm">
               <p className="text-sm text-gray-600 mb-1">Mã khuyến mãi</p>
-              <p className="text-xl text-[#0056D2] font-mono">{promotion.code}</p>
+              <p className="text-xl text-[#0056D2] font-mono">
+                {promotion.code}
+              </p>
             </div>
           </div>
 
@@ -210,7 +265,8 @@ export function PromotionCard({ promotion, variant = 'card' }: PromotionCardProp
               <div>
                 <p className="text-sm text-gray-600">Thời gian áp dụng</p>
                 <p>
-                  {new Date(promotion.startDate).toLocaleDateString('vi-VN')} - {new Date(promotion.endDate).toLocaleDateString('vi-VN')}
+                  {new Date(promotion.startDate).toLocaleDateString("vi-VN")} -{" "}
+                  {new Date(promotion.endDate).toLocaleDateString("vi-VN")}
                 </p>
               </div>
             </div>
@@ -221,7 +277,24 @@ export function PromotionCard({ promotion, variant = 'card' }: PromotionCardProp
                 <p className="text-sm text-gray-600">Điều kiện</p>
                 <p>{minOrderText}</p>
                 {promotion.description && (
-                  <p className="text-sm text-gray-600 mt-1">{promotion.description}</p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {promotion.description}
+                  </p>
+                )}
+                {promotion.promotionQuantity !== undefined && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    Còn{" "}
+                    <span
+                      className={
+                        promotion.promotionQuantity <= 10
+                          ? "text-orange-600 font-medium"
+                          : "font-medium"
+                      }
+                    >
+                      {promotion.promotionQuantity}
+                    </span>{" "}
+                    lượt sử dụng
+                  </p>
                 )}
               </div>
             </div>
@@ -229,7 +302,7 @@ export function PromotionCard({ promotion, variant = 'card' }: PromotionCardProp
 
           <div className="pt-4 border-t">
             <Button fullWidth onClick={handleCopyCode}>
-              {copiedCode ? 'Đã sao chép mã' : 'Sao chép mã khuyến mãi'}
+              {copiedCode ? "Đã sao chép mã" : "Sao chép mã khuyến mãi"}
             </Button>
           </div>
         </div>
