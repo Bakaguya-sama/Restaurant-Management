@@ -30,6 +30,23 @@ export interface Table {
   brokenReason?: string;
 }
 
+// Location/Area Management Types
+export interface Location {
+  id: string;
+  name: string;
+  floor: string;
+  description?: string;
+  capacity?: number; // Total capacity for this location
+  createdAt?: string;
+}
+
+export interface Floor {
+  id: string;
+  name: string;
+  level: number;
+  description?: string;
+}
+
 // Menu Types
 export interface MenuItem {
   id: string;

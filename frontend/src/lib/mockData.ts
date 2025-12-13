@@ -10,6 +10,8 @@ import {
   Reward,
   PointHistory,
   VoucherHistory,
+  Location,
+  Floor,
 } from "../types";
 
 // Mock Tables
@@ -467,5 +469,49 @@ export const mockVoucherHistory: VoucherHistory[] = [
     discountAmount: 67500,
     usedAt: "2025-12-09T19:20:00",
     invoiceId: "INV003",
+  },
+];
+
+// Mock Floors
+export const mockFloors: Floor[] = [
+  {
+    id: "F1",
+    name: "Floor 1",
+    level: 1,
+    description: "Tầng trệt - Khu vực chính",
+  },
+  {
+    id: "F2",
+    name: "Floor 2",
+    level: 2,
+    description: "Tầng 2 - Khu vực VIP",
+  },
+];
+
+// Mock Locations
+export const mockLocations: Location[] = [
+  {
+    id: "L1",
+    name: "Main Hall",
+    floor: "Floor 1",
+    description: "Khu vực chính - sảnh lớn",
+    capacity: 50,
+    createdAt: "2024-01-01T00:00:00",
+  },
+  {
+    id: "L2",
+    name: "VIP",
+    floor: "Floor 2",
+    description: "Khu vực VIP - phòng riêng",
+    capacity: 30,
+    createdAt: "2024-01-01T00:00:00",
+  },
+  {
+    id: "L3",
+    name: "Outdoor",
+    floor: "Floor 1",
+    description: "Khu vực ngoài trời",
+    capacity: 20,
+    createdAt: "2024-01-01T00:00:00",
   },
 ];
