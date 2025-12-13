@@ -5,6 +5,8 @@ import {
   CheckCircle,
   Utensils,
   WrenchIcon,
+  User,
+  UserCheck,
 } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Card } from "../../ui/Card";
@@ -12,7 +14,7 @@ import { Modal } from "../../ui/Modal";
 import { Input, Textarea } from "../../ui/Input";
 import { Badge } from "../../ui/badge";
 import { mockTables, mockBookings } from "../../../lib/mockData";
-import { Table, TableStatus } from "../../../types";
+import { Table, TableStatus, Customer } from "../../../types";
 import { toast } from "sonner";
 
 export function TablesMapPage() {
@@ -21,8 +23,18 @@ export function TablesMapPage() {
   const [showActionModal, setShowActionModal] = useState(false);
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [showBrokenModal, setShowBrokenModal] = useState(false);
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [bookingCode, setBookingCode] = useState("");
   const [brokenReason, setBrokenReason] = useState("");
+
+  // Customer info states
+  const [customerType, setCustomerType] = useState<"member" | "walk-in">(
+    "member"
+  );
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [foundCustomer, setFoundCustomer] = useState<Customer | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
 
   const getTableColor = (status: TableStatus) => {
     switch (status) {
@@ -68,12 +80,70 @@ export function TablesMapPage() {
     setShowActionModal(true);
   };
 
+  const handleSearchCustomer = async () => {
+    if (!customerPhone || customerPhone.length < 10) {
+      toast.error("Vui lòng nhập số điện thoại hợp lệ");
+      return;
+    }
+
+    setIsSearching(true);
+
+    // TODO: Replace with actual API call
+    // Simulate API call
+    setTimeout(() => {
+      // Mock customer data - replace with actual API call
+      const mockCustomer: Customer = {
+        id: "C001",
+        name: "Nguyễn Văn A",
+        phone: customerPhone,
+        role: "customer",
+        membershipTier: "gold",
+        points: 1250,
+        violations: [],
+        isBlacklisted: false,
+      };
+
+      // Check if customer exists
+      if (customerPhone === "0123456789") {
+        setFoundCustomer(mockCustomer);
+        setCustomerName(mockCustomer.name);
+        toast.success("Tìm thấy thông tin khách hàng");
+      } else {
+        setFoundCustomer(null);
+        toast.error("Không tìm thấy khách hàng. Vui lòng chọn khách vãng lai.");
+      }
+
+      setIsSearching(false);
+    }, 500);
+  };
+
   const handleCreateOrder = () => {
     if (!selectedTable) return;
 
     if (selectedTable.status !== "free") {
       toast.error("Bàn không ở trạng thái trống");
       return;
+    }
+
+    // Show customer info modal first
+    setShowActionModal(false);
+    setShowCustomerModal(true);
+  };
+
+  const handleConfirmCustomerAndCreateOrder = () => {
+    if (!selectedTable) return;
+
+    // Validate customer info
+    if (customerType === "member") {
+      if (!foundCustomer) {
+        toast.error("Vui lòng tìm kiếm thông tin khách hàng thành viên");
+        return;
+      }
+    } else {
+      if (!customerName.trim()) {
+        toast.error("Vui lòng nhập tên khách hàng");
+        return;
+      }
     }
 
     // Update table status to occupied
@@ -85,9 +155,26 @@ export function TablesMapPage() {
       )
     );
 
-    toast.success(`Đã tạo order cho bàn ${selectedTable.number}`);
-    setShowActionModal(false);
+    const customerInfo =
+      customerType === "member"
+        ? `${
+            foundCustomer?.name
+          } (Thành viên ${foundCustomer?.membershipTier?.toUpperCase()})`
+        : customerName;
+
+    toast.success(
+      `Đã tạo order cho bàn ${selectedTable.number} - Khách: ${customerInfo}`
+    );
+
+    // Reset states
+    setShowCustomerModal(false);
     setSelectedTable(null);
+    setCustomerType("member");
+    setCustomerPhone("");
+    setCustomerName("");
+    setFoundCustomer(null);
+
+    // TODO: Navigate to OrderingPage with customer info and table
   };
 
   const handleCheckIn = () => {
@@ -117,6 +204,8 @@ export function TablesMapPage() {
     setShowActionModal(false);
     setSelectedTable(null);
     setBookingCode("");
+
+    //TODO: Call api cập nhật phiếu đặt bàn của khách
   };
 
   const handleCleanTable = () => {
@@ -137,6 +226,28 @@ export function TablesMapPage() {
     toast.success(`Đã dọn xong bàn ${selectedTable.number}`);
     setShowActionModal(false);
     setSelectedTable(null);
+  };
+
+  const handleTableCheckout = () => {
+    if (!selectedTable) return;
+
+    if (selectedTable.status !== "occupied") {
+      toast.error("Bàn chưa được sử dụng xong");
+      return;
+    }
+
+    // Update table status to dirty
+    setTables(
+      tables.map((t) =>
+        t.id === selectedTable.id ? { ...t, status: "dirty" as TableStatus } : t
+      )
+    );
+
+    toast.success(`Đã giải phóng bàn ${selectedTable.number}`);
+    setShowActionModal(false);
+    setSelectedTable(null);
+
+    //TODO: Call api để cập nhật trạng thái bàn, hóa đơn của khách
   };
 
   const handleMarkBroken = () => {
@@ -341,6 +452,13 @@ export function TablesMapPage() {
                 </Button>
               )}
 
+              {selectedTable.status === "occupied" && (
+                <Button fullWidth onClick={handleTableCheckout}>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Xác nhận khách trả bàn
+                </Button>
+              )}
+
               <Button
                 fullWidth
                 variant="secondary"
@@ -431,6 +549,134 @@ export function TablesMapPage() {
             </Button>
             <Button fullWidth onClick={handleMarkBroken}>
               Xác nhận báo hỏng
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Customer Info Modal */}
+      <Modal
+        isOpen={showCustomerModal}
+        onClose={() => {
+          setShowCustomerModal(false);
+          setCustomerType("member");
+          setCustomerPhone("");
+          setCustomerName("");
+          setFoundCustomer(null);
+        }}
+        title="Xác nhận thông tin khách hàng"
+      >
+        <div className="space-y-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-sm text-blue-800">
+              Bàn: <strong>{selectedTable?.number}</strong> -{" "}
+              {selectedTable?.area}
+            </p>
+          </div>
+
+          {/* Customer Type Selection */}
+          <div className="flex gap-2">
+            <Button
+              fullWidth
+              variant={customerType === "member" ? "primary" : "secondary"}
+              onClick={() => {
+                setCustomerType("member");
+                setCustomerName("");
+              }}
+            >
+              <UserCheck className="w-4 h-4 mr-2" />
+              Khách thành viên
+            </Button>
+            <Button
+              fullWidth
+              variant={customerType === "walk-in" ? "primary" : "secondary"}
+              onClick={() => {
+                setCustomerType("walk-in");
+                setCustomerPhone("");
+                setFoundCustomer(null);
+              }}
+            >
+              <User className="w-4 h-4 mr-2" />
+              Khách vãng lai
+            </Button>
+          </div>
+
+          {/* Member Customer Section */}
+          {customerType === "member" && (
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  label="Số điện thoại"
+                  value={customerPhone}
+                  onChange={(e) => {
+                    setCustomerPhone(e.target.value);
+                    setFoundCustomer(null);
+                  }}
+                  placeholder="Nhập số điện thoại khách hàng"
+                  type="tel"
+                />
+                <Button
+                  onClick={handleSearchCustomer}
+                  disabled={isSearching}
+                  className="mt-7"
+                >
+                  <Search className="w-4 h-4" />
+                </Button>
+              </div>
+
+              {foundCustomer && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="font-semibold text-green-900">
+                        {foundCustomer.name}
+                      </p>
+                      <p className="text-sm text-green-700">
+                        {foundCustomer.phone}
+                      </p>
+                    </div>
+                    <Badge className="bg-yellow-100 text-yellow-800">
+                      {foundCustomer.membershipTier.toUpperCase()}
+                    </Badge>
+                  </div>
+                  <div className="text-sm text-green-700">
+                    Điểm tích lũy: <strong>{foundCustomer.points}</strong>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Walk-in Customer Section */}
+          {customerType === "walk-in" && (
+            <div className="space-y-4">
+              <Input
+                label="Tên khách hàng"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="Nhập tên khách hàng"
+              />
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex gap-4 pt-4">
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={() => {
+                setShowCustomerModal(false);
+                setShowActionModal(true);
+                setCustomerType("member");
+                setCustomerPhone("");
+                setCustomerName("");
+                setFoundCustomer(null);
+              }}
+            >
+              Quay lại
+            </Button>
+            <Button fullWidth onClick={handleConfirmCustomerAndCreateOrder}>
+              Xác nhận và tạo order
             </Button>
           </div>
         </div>

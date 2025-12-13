@@ -135,9 +135,14 @@ export function HomePage() {
       <div>
         <h2 className="mb-6">Khuyến mãi đang diễn ra</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {mockPromotions.map((promotion) => (
-            <PromotionCard key={promotion.id} promotion={promotion} />
-          ))}
+          {mockPromotions
+            .filter(
+              (p) =>
+                p.promotionQuantity === undefined || p.promotionQuantity > 0
+            )
+            .map((promotion) => (
+              <PromotionCard key={promotion.id} promotion={promotion} />
+            ))}
         </div>
       </div>
 

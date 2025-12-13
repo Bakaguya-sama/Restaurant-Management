@@ -38,6 +38,7 @@ export function MenuPromotionPage() {
     code: "",
     discountType: "percentage" as "percentage" | "fixed",
     discountValue: 0,
+    promotionQuantity: 0,
     startDate: "",
     endDate: "",
   });
@@ -158,6 +159,7 @@ export function MenuPromotionPage() {
       code: promoForm.code,
       discountType: promoForm.discountType,
       discountValue: promoForm.discountValue,
+      promotionQuantity: promoForm.promotionQuantity || undefined,
       startDate: promoForm.startDate,
       endDate: promoForm.endDate,
       active: true,
@@ -171,6 +173,7 @@ export function MenuPromotionPage() {
       code: "",
       discountType: "percentage",
       discountValue: 0,
+      promotionQuantity: 0,
       startDate: "",
       endDate: "",
     });
@@ -332,6 +335,7 @@ export function MenuPromotionPage() {
                     <th className="text-left p-4">Tên chương trình</th>
                     <th className="text-left p-4">Mã</th>
                     <th className="text-left p-4">Giảm giá</th>
+                    <th className="text-left p-4">Số lượng</th>
                     <th className="text-left p-4">Thời gian</th>
                     <th className="text-left p-4">Trạng thái</th>
                     <th className="text-left p-4">Thao tác</th>
@@ -351,6 +355,20 @@ export function MenuPromotionPage() {
                         {promo.discountType === "percentage"
                           ? `${promo.discountValue}%`
                           : `${promo.discountValue.toLocaleString()}đ`}
+                      </td>
+                      <td className="p-4">
+                        <span
+                          className={
+                            promo.promotionQuantity !== undefined &&
+                            promo.promotionQuantity <= 0
+                              ? "text-red-600"
+                              : ""
+                          }
+                        >
+                          {promo.promotionQuantity !== undefined
+                            ? promo.promotionQuantity
+                            : "Không giới hạn"}
+                        </span>
                       </td>
                       <td className="p-4 text-sm">
                         <div>
@@ -591,6 +609,20 @@ export function MenuPromotionPage() {
               step={promoForm.discountType === "percentage" ? "0.1" : "1000"}
             />
           </div>
+          <Input
+            label="Số lượng lượt dùng"
+            type="number"
+            value={promoForm.promotionQuantity || ""}
+            onChange={(e) =>
+              setPromoForm({
+                ...promoForm,
+                promotionQuantity: parseInt(e.target.value) || 0,
+              })
+            }
+            placeholder="Nhập số lượng (để trống = không giới hạn)"
+            min="0"
+            step="1"
+          />
           <div className="grid grid-cols-2 gap-4">
             <Input
               label="Ngày bắt đầu"

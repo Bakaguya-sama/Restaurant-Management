@@ -247,6 +247,15 @@ export function BillsPage() {
       (p) => p.code === voucherCode && p.active
     );
     if (voucher) {
+      // Check if promotion has available quantity
+      if (
+        voucher.promotionQuantity !== undefined &&
+        voucher.promotionQuantity <= 0
+      ) {
+        toast.error("Đã hết lượt sử dụng cho mã khuyến mãi này");
+        return;
+      }
+
       let discount = 0;
       if (voucher.discountType === "percentage") {
         discount = Math.floor(
@@ -280,6 +289,12 @@ export function BillsPage() {
   };
 
   const handleSelectPromotion = (promo: any) => {
+    // Check if promotion has available quantity
+    if (promo.promotionQuantity !== undefined && promo.promotionQuantity <= 0) {
+      toast.error("Đã hết lượt sử dụng cho mã khuyến mãi này");
+      return;
+    }
+
     let discount = 0;
     if (promo.discountType === "percentage") {
       discount = Math.floor(
@@ -810,7 +825,12 @@ export function BillsPage() {
             </label>
             <div className="space-y-3">
               {mockPromotions
-                .filter((p) => p.active)
+                .filter(
+                  (p) =>
+                    p.active &&
+                    (p.promotionQuantity === undefined ||
+                      p.promotionQuantity > 0)
+                )
                 .map((promo) => (
                   <div
                     key={promo.id}
@@ -828,9 +848,17 @@ export function BillsPage() {
                     <p className="text-sm text-gray-600 mb-1">
                       Mã: {promo.code}
                     </p>
-                    <p className="text-xs text-gray-500">
-                      HSD: {new Date(promo.endDate).toLocaleDateString("vi-VN")}
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-gray-500">
+                        HSD:{" "}
+                        {new Date(promo.endDate).toLocaleDateString("vi-VN")}
+                      </p>
+                      {promo.promotionQuantity !== undefined && (
+                        <p className="text-xs text-gray-500">
+                          Còn {promo.promotionQuantity} lượt
+                        </p>
+                      )}
+                    </div>
                   </div>
                 ))}
             </div>

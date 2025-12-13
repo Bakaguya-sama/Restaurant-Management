@@ -314,10 +314,11 @@ export function ManagerDashboard() {
   };
 
   const customerSegments = [
-    { tier: "Diamond", count: 45, revenue: 35100000, percentage: 28 },
-    { tier: "Platinum", count: 82, revenue: 28200000, percentage: 22 },
-    { tier: "Gold", count: 128, revenue: 52800000, percentage: 42 },
-    { tier: "Silver", count: 234, revenue: 28400000, percentage: 23 },
+    { tier: "Kim cương", count: 45, revenue: 35100000, percentage: 28 },
+    { tier: "Bạch kim", count: 82, revenue: 28200000, percentage: 22 },
+    { tier: "Vàng", count: 128, revenue: 52800000, percentage: 42 },
+    { tier: "Bạc", count: 234, revenue: 28400000, percentage: 23 },
+    { tier: "Đồng", count: 156, revenue: 18900000, percentage: 15 },
   ];
 
   // Báo cáo phản hồi (5 phản hồi gần nhất)

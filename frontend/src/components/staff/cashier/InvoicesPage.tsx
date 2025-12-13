@@ -54,6 +54,8 @@ export function InvoicesPage() {
       total: 280500,
       status: "pending",
       paymentRequested: false,
+      paymentMethod: undefined,
+      paidAt: undefined,
       createdAt: "2025-12-11T14:30:00",
       customerSelectedVoucher: false,
       customerSelectedPoints: 0,
@@ -75,6 +77,8 @@ export function InvoicesPage() {
       total: 291500,
       status: "payment-requested",
       paymentRequested: true,
+      paymentMethod: undefined,
+      paidAt: undefined,
       createdAt: "2025-12-11T15:30:00",
       customerSelectedVoucher: false,
       customerSelectedPoints: 0,
@@ -96,6 +100,8 @@ export function InvoicesPage() {
       total: 132000,
       status: "payment-requested",
       paymentRequested: true,
+      paymentMethod: undefined,
+      paidAt: undefined,
       createdAt: "2025-12-11T15:45:00",
       customerSelectedVoucher: false,
       customerSelectedPoints: 0,
@@ -118,6 +124,8 @@ export function InvoicesPage() {
       voucherAmount: 50000,
       status: "payment-requested",
       paymentRequested: true,
+      paymentMethod: undefined,
+      paidAt: undefined,
       createdAt: "2025-12-11T15:00:00",
       customerSelectedVoucher: true,
       customerSelectedPoints: 0,
@@ -140,6 +148,8 @@ export function InvoicesPage() {
       pointsDiscount: 1000,
       status: "payment-requested",
       paymentRequested: true,
+      paymentMethod: undefined,
+      paidAt: undefined,
       createdAt: "2025-12-11T15:15:00",
       customerSelectedVoucher: false,
       customerSelectedPoints: 1000,
@@ -147,9 +157,9 @@ export function InvoicesPage() {
   ]);
 
   const pendingInvoices = invoices.filter(
-    (inv) => inv.status === "pending" || inv.status === "payment-requested"
+    (inv) => inv.status === "payment-requested"
   );
-  const paidInvoices = mockInvoices.filter((inv) => inv.status === "paid");
+  const paidInvoices = invoices.filter((inv) => inv.status === "paid");
 
   // Get available promotions for selected invoice
   const getAvailablePromotions = () => {
@@ -158,12 +168,20 @@ export function InvoicesPage() {
     return mockPromotions
       .filter((promo) => {
         // Must be active
-        if (!promo.isActive) return false;
+        if (!promo.active) return false;
 
-        // Check minimum order value
+        // Check if promotion has available quantity
         if (
-          promo.minOrderValue &&
-          selectedInvoice.subtotal < promo.minOrderValue
+          promo.promotionQuantity !== undefined &&
+          promo.promotionQuantity <= 0
+        ) {
+          return false;
+        }
+
+        // Check minimum order amount
+        if (
+          promo.minOrderAmount &&
+          selectedInvoice.subtotal < promo.minOrderAmount
         ) {
           return false;
         }
@@ -178,7 +196,7 @@ export function InvoicesPage() {
           } else if (promo.discountType === "percentage") {
             const discount =
               selectedInvoice.subtotal * (promo.discountValue / 100);
-            return Math.min(discount, promo.maxDiscount || Infinity);
+            return Math.min(discount, promo.maxDiscountAmount || Infinity);
           }
           return 0;
         };
@@ -205,7 +223,7 @@ export function InvoicesPage() {
         discount = Math.min(
           selectedInvoice.subtotal *
             (cashierSelectedPromotion.discountValue / 100),
-          cashierSelectedPromotion.maxDiscount || Infinity
+          cashierSelectedPromotion.maxDiscountAmount || Infinity
         );
       }
     }
@@ -301,7 +319,7 @@ export function InvoicesPage() {
   return (
     <div>
       <div className="mb-6">
-        <h2>Quản lý thanh toán</h2>
+        <h2>Quản lý hóa đơn đã thanh toán</h2>
         <p className="text-gray-600 mt-1">
           Xử lý thanh toán và quản lý hóa đơn
         </p>
@@ -326,55 +344,61 @@ export function InvoicesPage() {
             <div className="lg:col-span-1">
               <h3 className="mb-4">Bàn cần xử lý</h3>
               <div className="space-y-3">
-                {pendingInvoices.map((invoice) => (
-                  <Card
-                    key={invoice.id}
-                    hover
-                    onClick={() => setSelectedInvoice(invoice)}
-                    className={`p-4 cursor-pointer ${
-                      selectedInvoice?.id === invoice.id
-                        ? "ring-2 ring-[#0056D2]"
-                        : ""
-                    } ${
-                      invoice.paymentRequested
-                        ? "border-l-4 border-l-red-500"
-                        : ""
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h4>{invoice.tableNumber}</h4>
-                      <Badge
-                        className={
-                          invoice.paymentRequested
-                            ? "bg-red-100 text-red-700"
-                            : "bg-yellow-100 text-yellow-700"
-                        }
-                      >
-                        {invoice.paymentRequested ? (
-                          <>
-                            <AlertCircle className="w-3 h-3 mr-1" />
-                            Yêu cầu thanh toán
-                          </>
-                        ) : (
-                          "Đang dùng"
-                        )}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-1">
-                      {invoice.customerName}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {invoice.items.length} món •{" "}
-                      {invoice.total.toLocaleString()}đ
-                    </p>
-                    {(invoice.customerSelectedVoucher ||
-                      invoice.customerSelectedPoints > 0) && (
-                      <div className="mt-2 pt-2 border-t text-xs text-blue-600">
-                        Đã chọn ưu đãi
+                {pendingInvoices.map((invoice) =>
+                  invoice.status === "payment-requested" ? (
+                    <Card
+                      key={invoice.id}
+                      hover
+                      onClick={() => setSelectedInvoice(invoice)}
+                      className={`p-4 cursor-pointer ${
+                        selectedInvoice?.id === invoice.id
+                          ? "ring-2 ring-[#0056D2]"
+                          : ""
+                      } ${
+                        invoice.paymentRequested
+                          ? "border-l-4 border-l-red-500"
+                          : ""
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <h4>{invoice.tableNumber}</h4>
+                        <Badge
+                          className={
+                            invoice.paymentRequested
+                              ? "bg-red-100 text-red-700"
+                              : "bg-yellow-100 text-yellow-700"
+                          }
+                        >
+                          {/* {invoice.paymentRequested ? (
+                            <>
+                              <AlertCircle className="w-3 h-3 mr-1" />
+                              Yêu cầu thanh toán
+                            </>
+                          ) : (
+                            "Đang dùng"
+                          )} */}
+                          <AlertCircle className="w-3 h-3 mr-1" />
+                          Yêu cầu thanh toán
+                        </Badge>
                       </div>
-                    )}
-                  </Card>
-                ))}
+                      <p className="text-sm text-gray-600 mb-1">
+                        {invoice.customerName}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {invoice.items.length} món •{" "}
+                        {invoice.total.toLocaleString()}đ
+                      </p>
+                      {(invoice.customerSelectedVoucher ||
+                        invoice.customerSelectedPoints > 0) && (
+                        <div className="mt-2 pt-2 border-t text-xs text-blue-600">
+                          Đã chọn ưu đãi
+                        </div>
+                      )}
+                    </Card>
+                  ) : (
+                    ""
+                  )
+                )}
               </div>
             </div>
 
@@ -504,7 +528,7 @@ export function InvoicesPage() {
                                 : Math.min(
                                     selectedInvoice.subtotal *
                                       (promo.discountValue / 100),
-                                    promo.maxDiscount || Infinity
+                                    promo.maxDiscountAmount || Infinity
                                   );
 
                             return (
@@ -529,11 +553,17 @@ export function InvoicesPage() {
                                       <Badge className="bg-purple-100 text-purple-700 text-xs">
                                         {promo.code}
                                       </Badge>
-                                      {promo.minOrderValue && (
+                                      {promo.minOrderAmount && (
                                         <span className="text-xs text-gray-500">
                                           Đơn tối thiểu:{" "}
-                                          {promo.minOrderValue.toLocaleString()}
+                                          {promo.minOrderAmount.toLocaleString()}
                                           đ
+                                        </span>
+                                      )}
+                                      {promo.promotionQuantity !==
+                                        undefined && (
+                                        <span className="text-xs text-gray-500">
+                                          • Còn {promo.promotionQuantity} lượt
                                         </span>
                                       )}
                                     </div>
@@ -693,7 +723,6 @@ export function InvoicesPage() {
         {/* Paid Invoices Tab */}
         <TabsContent value="paid">
           <Card className="p-6">
-            <h3 className="mb-4">Hóa đơn đã thanh toán</h3>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>

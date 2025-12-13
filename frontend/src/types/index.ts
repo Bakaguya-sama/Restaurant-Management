@@ -11,7 +11,7 @@ export interface User {
 }
 
 export interface Customer extends User {
-  membershipTier: "gold" | "silver" | "bronze";
+  membershipTier: "diamond" | "platinum" | "gold" | "silver" | "bronze";
   points: number;
   violations: Violation[];
   isBlacklisted: boolean;
@@ -28,6 +28,23 @@ export interface Table {
   status: TableStatus;
   floor?: string;
   brokenReason?: string;
+}
+
+// Location/Area Management Types
+export interface Location {
+  id: string;
+  name: string;
+  floor: string;
+  description?: string;
+  capacity?: number; // Total capacity for this location
+  createdAt?: string;
+}
+
+export interface Floor {
+  id: string;
+  name: string;
+  level: number;
+  description?: string;
 }
 
 // Menu Types
@@ -124,6 +141,7 @@ export interface Promotion {
   description?: string;
   minOrderAmount?: number;
   maxDiscountAmount?: number;
+  promotionQuantity?: number;
   startDate: string;
   endDate: string;
   active: boolean;
