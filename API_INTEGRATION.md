@@ -1,9 +1,15 @@
 # API Integration Documentation
 
-**Version**: 1.1  
+**Version**: 1.2  
 **Last Updated**: December 13, 2025
 
 ## Changelog
+
+### Version 1.2 (December 13, 2025)
+
+- ✅ Cập nhật Menu Management APIs: chi tiết về ingredients từ inventory
+- ✅ Cập nhật Upload APIs: hỗ trợ base64 image upload
+- ✅ Thêm ConfirmationModal component documentation
 
 ### Version 1.1 (December 13, 2025)
 
@@ -412,9 +418,16 @@ GET /menu
       "category": "string",
       "price": 85000,
       "description": "string",
-      "image": "string",
+      "image": "string", // base64 hoặc URL
       "available": true,
-      "ingredients": ["string"]
+      "ingredients": [
+        {
+          "inventoryItemId": "string",
+          "name": "string",
+          "quantity": 0.5,
+          "unit": "kg"
+        }
+      ]
     }
   ]
 }
@@ -434,10 +447,40 @@ POST /menu
   "category": "string",
   "price": 85000,
   "description": "string",
-  "image": "string",
-  "ingredients": ["string"]
+  "image": "string", // base64 encoded image hoặc URL
+  "ingredients": [
+    {
+      "inventoryItemId": "string",
+      "quantity": 0.5
+    }
+  ]
 }
 ```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "string",
+    "name": "string",
+    "category": "string",
+    "price": 85000,
+    "description": "string",
+    "image": "string",
+    "available": true,
+    "ingredients": [...]
+  }
+}
+```
+
+**Note:**
+
+- `ingredients` chứa danh sách nguyên liệu từ inventory
+- Frontend sẽ chọn nguyên liệu từ dropdown (inventory items)
+- Backend cần validate `inventoryItemId` có tồn tại
+- Khi tạo món mới, mặc định `available = true`
 
 ### 3.3 Cập nhật món ăn (Manager only)
 
@@ -445,10 +488,28 @@ POST /menu
 PUT /menu/:id
 ```
 
+**Request Body:** Same as POST /menu
+
+**Response:** Same as POST /menu
+
+**Note:**
+
+- Có thể cập nhật cả image (base64 mới) hoặc giữ nguyên image cũ
+- Ingredients có thể được thay đổi hoàn toàn
+
 ### 3.4 Xóa món ăn (Manager only)
 
 ```
 DELETE /menu/:id
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Xóa món ăn thành công"
+}
 ```
 
 ### 3.5 Cập nhật trạng thái món (Staff)
@@ -462,6 +523,18 @@ PATCH /menu/:id/availability
 ```json
 {
   "available": true
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "string",
+    "available": true
+  }
 }
 ```
 
@@ -1570,6 +1643,36 @@ GET /search
 
 ### 15.1 Upload ảnh món ăn
 
+**Option 1: Base64 Upload (Recommended for quick implementation)**
+
+```
+POST /upload/menu-image
+Content-Type: application/json
+```
+
+**Request Body:**
+
+```json
+{
+  "image": "data:image/jpeg;base64,/9j/4AAQSkZJRg...", // base64 encoded image
+  "menuItemId": "string" // optional, ID món ăn nếu đang cập nhật
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "imageUrl": "https://storage.example.com/menu/abc123.jpg",
+    "base64": "data:image/jpeg;base64,/9j/4AAQSkZJRg..." // optional, trả về base64 nếu không dùng storage
+  }
+}
+```
+
+**Option 2: File Upload (For production with cloud storage)**
+
 ```
 POST /upload/menu-image
 Content-Type: multipart/form-data
@@ -1592,36 +1695,28 @@ Content-Type: multipart/form-data
 }
 ```
 
+**Note:**
+
+- Frontend hiện đang sử dụng FileReader để convert image thành base64
+- Backend có thể:
+  - **Development**: Lưu trực tiếp base64 trong DB (nhanh, không cần storage service)
+  - **Production**: Upload base64 lên cloud storage (S3, Cloudinary) và trả về URL
+
 ### 15.2 Upload ảnh khuyến mãi
 
-```
-POST /upload/promotion-image
-Content-Type: multipart/form-data
-```
+**Same as 15.1**, endpoint: `POST /upload/promotion-image`
 
-**Request Body:**
+### 15.3 Upload avatar
 
-- `image`: File (required) - File ảnh (jpg, jpeg, png)
-- `promotionId`: string (optional) - ID khuyến mãi nếu đang cập nhật
-
-**Response:**
-
-```json
-{
-  "success": true,
-  "data": {
-    "imageUrl": "https://storage.example.com/promotions/xyz456.jpg",
-    "thumbnailUrl": "https://storage.example.com/promotions/xyz456_thumb.jpg"
-  }
-}
-```
+**Same as 15.1**, endpoint: `POST /upload/avatar`
 
 **Validation Rules:**
 
 - Chỉ chấp nhận: image/jpeg, image/jpg, image/png
-- Max file size: 5MB
-- Tự động resize và tạo thumbnail
+- Max file size: 5MB (base64 encoded ~ 6.7MB)
+- Tự động resize và tạo thumbnail (nếu dùng storage)
 - Compress quality: 80%
+- Base64 format: `data:image/jpeg;base64,<encoded_string>`
 
 ---
 
@@ -1836,9 +1931,17 @@ socket.on("inventory:low-stock", (data) => {
   - Cashier có thể áp dụng promotion cho customer nếu customer chưa chọn
 
 - **Invoice & Payment**:
+
   - Customer có thể yêu cầu thanh toán từ bàn (`payment-requested`)
   - Cashier xử lý thanh toán và invoice chuyển sang `paid`
   - Invoice có thể có: voucherCode, pointsUsed, hoặc promotion do cashier áp dụng
+
+- **Menu & Ingredients**:
+  - Mỗi món ăn có danh sách nguyên liệu từ inventory
+  - Khi tạo/sửa món, ingredients được chọn từ inventory items có sẵn
+  - Frontend hiển thị dropdown với format: "Tên nguyên liệu (SL đơn vị trong kho)"
+  - Mỗi ingredient trong menu item có: inventoryItemId, quantity cần dùng
+  - Backend cần check tồn kho khi nhận order để xác nhận món có thể làm được
 
 ### 7. Performance Considerations
 
@@ -1859,3 +1962,139 @@ socket.on("inventory:low-stock", (data) => {
 ## Contact
 
 Nếu có thắc mắc về API spec, liên hệ Frontend Team.
+
+---
+
+## Appendix A: Frontend UI Components
+
+### A.1 ConfirmationModal Component
+
+**Location:** `frontend/src/components/ui/ConfirmationModal.tsx`
+
+**Purpose:** Reusable confirmation dialog cho các hành động quan trọng (xóa, đăng xuất, etc.)
+
+**Props:**
+
+- `isOpen`: boolean - Điều khiển hiển thị modal
+- `onClose`: () => void - Callback khi đóng modal
+- `onConfirm`: () => void - Callback khi xác nhận (tự động đóng modal)
+- `title?`: string - Tiêu đề (default: "Xác nhận")
+- `message?`: string - Nội dung (default: "Bạn có chắc chắn...")
+- `confirmText?`: string - Text nút confirm (default: "Xác nhận")
+- `cancelText?`: string - Text nút cancel (default: "Hủy")
+- `variant?`: 'danger' | 'warning' | 'info' - Style variant (default: 'warning')
+
+**Variants:**
+
+- `danger`: Màu đỏ - dùng cho hành động nguy hiểm (xóa, hủy vĩnh viễn)
+- `warning`: Màu vàng - dùng cho cảnh báo (đăng xuất, rời khỏi trang)
+- `info`: Màu xanh - dùng cho thông tin (lưu, xác nhận thay đổi)
+
+**Usage Example:**
+
+```tsx
+import { ConfirmationModal } from "../../ui/ConfirmationModal";
+import { useState } from "react";
+
+function MyComponent() {
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  return (
+    <>
+      <Button onClick={() => setShowConfirm(true)}>Xóa món ăn</Button>
+
+      <ConfirmationModal
+        isOpen={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        onConfirm={() => {
+          handleDelete(itemId);
+          toast.success("Xóa thành công!");
+        }}
+        title="Xóa món ăn"
+        message="Bạn có chắc chắn muốn xóa món ăn này? Hành động này không thể hoàn tác."
+        confirmText="Xóa"
+        cancelText="Hủy"
+        variant="danger"
+      />
+    </>
+  );
+}
+```
+
+### A.2 User Dropdown Menu
+
+**Location:**
+
+- `frontend/src/components/customer/CustomerLayout.tsx`
+- `frontend/src/components/staff/StaffLayout.tsx`
+
+**Changes (v1.2):**
+
+- Đã di chuyển nút "Đăng xuất" từ sidebar lên header
+- User click vào tên/avatar ở góc phải header để mở dropdown
+- Dropdown chứa: Đăng xuất (có thể thêm Profile, Settings sau)
+
+**UI Details:**
+
+- Icon: ChevronDown từ lucide-react
+- Dropdown position: absolute right-0
+- Styling: white background, shadow, border, rounded corners
+- Hover effect: background color change
+
+### A.3 Image Upload Component (Menu Items)
+
+**Location:** `frontend/src/components/staff/manager/MenuPromotionPage.tsx`
+
+**Implementation:**
+
+- File selection via `<input type="file" accept="image/*">`
+- FileReader API để convert sang base64
+- Preview ảnh với overlay hover effects
+- Buttons: Edit (blue) và Delete (red) hiện khi hover
+- Empty state: Dashed border box với ImageIcon và text "Nhấn để chọn ảnh"
+
+**Features:**
+
+- Click anywhere on box để chọn ảnh mới
+- Hover lên ảnh hiện overlay với 2 buttons
+- Edit button: cho phép thay đổi ảnh
+- Delete button: xóa ảnh hiện tại
+- Support format: PNG, JPG, GIF up to 10MB
+
+**Integration Notes:**
+
+- Image được lưu dưới dạng base64 string trong state
+- Khi submit, gửi base64 string lên backend
+- Backend có thể lưu trực tiếp base64 hoặc upload lên cloud storage
+
+---
+
+## Appendix B: Frontend State Management
+
+### B.1 Menu Form State
+
+```tsx
+const [menuForm, setMenuForm] = useState({
+  name: "",
+  category: "Món chính",
+  price: 0,
+  description: "",
+  image: "", // base64 string hoặc URL
+});
+```
+
+### B.2 Ingredient Rows State
+
+```tsx
+const [ingredientRows, setIngredientRows] = useState<
+  Array<{ ingredientId: string; quantity: number }>
+>([{ ingredientId: "", quantity: 0 }]);
+```
+
+**Note:**
+
+- Frontend chỉ lưu `ingredientId` và `quantity`
+- Tên nguyên liệu và unit được lấy từ `mockInventory` để hiển thị
+- Khi submit, gửi array of `{ inventoryItemId: string, quantity: number }`
+
+---
