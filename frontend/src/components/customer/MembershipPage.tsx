@@ -264,13 +264,18 @@ export function MembershipPage() {
             </p>
           </div>
           <div className="space-y-4">
-            {mockPromotions.map((promotion) => (
-              <PromotionCard
-                key={promotion.id}
-                promotion={promotion}
-                variant="list"
-              />
-            ))}
+            {mockPromotions
+              .filter(
+                (p) =>
+                  p.promotionQuantity === undefined || p.promotionQuantity > 0
+              )
+              .map((promotion) => (
+                <PromotionCard
+                  key={promotion.id}
+                  promotion={promotion}
+                  variant="list"
+                />
+              ))}
           </div>
         </div>
       )}

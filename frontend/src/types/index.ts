@@ -11,7 +11,7 @@ export interface User {
 }
 
 export interface Customer extends User {
-  membershipTier: "gold" | "silver" | "bronze";
+  membershipTier: "diamond" | "platinum" | "gold" | "silver" | "bronze";
   points: number;
   violations: Violation[];
   isBlacklisted: boolean;
@@ -141,6 +141,7 @@ export interface Promotion {
   description?: string;
   minOrderAmount?: number;
   maxDiscountAmount?: number;
+  promotionQuantity?: number;
   startDate: string;
   endDate: string;
   active: boolean;
