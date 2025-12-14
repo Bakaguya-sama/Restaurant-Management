@@ -7,6 +7,7 @@ import { Badge } from "../../ui/badge";
 import { mockMenuItems } from "../../../lib/mockData";
 import { MenuItem } from "../../../types";
 import { toast } from "sonner";
+import { ConfirmationModal } from "../../ui/ConfirmationModal";
 
 interface OrderItem {
   item: MenuItem;
@@ -40,6 +41,16 @@ export function OrderingPage() {
   const [customizingItem, setCustomizingItem] = useState<OrderItem | null>(
     null
   );
+
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmTitle, setConfirmTitle] = useState("");
+  const [confirmMessage, setConfirmMessage] = useState("");
+  const [confirmText, setConfirmText] = useState("");
+  const [confirmCancelText, setConfirmCancelText] = useState("Hủy");
+  const [confirmVariant, setConfirmVariant] = useState<
+    "info" | "warning" | "danger"
+  >("info");
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
   const categories = ["all", "Khai vị", "Món chính", "Đồ uống"];
   const quickNotes = ["Ít đá", "Không cay", "Không hành", "Ít dầu", "Thêm rau"];
@@ -150,7 +161,13 @@ export function OrderingPage() {
   const handleRemoveItem = (index: number) => {
     const currentOrders = ordersByTable[selectedTable] || [];
     const item = currentOrders[index];
-    if (confirm(`Xác nhận hủy món "${item.item.name}"?`)) {
+
+    setConfirmTitle(`Xác nhận hủy món`);
+    setConfirmMessage(`Bạn có chắc hủy món này?`);
+    setConfirmText("Xác nhận");
+    setConfirmCancelText("Hủy");
+    setConfirmVariant(`warning`);
+    setPendingAction(() => () => {
       const newOrders = [...currentOrders];
       newOrders.splice(index, 1);
       setOrdersByTable({
@@ -158,7 +175,8 @@ export function OrderingPage() {
         [selectedTable]: newOrders,
       });
       toast.success("Đã hủy món");
-    }
+    });
+    setShowConfirmModal(true);
   };
 
   const getStatusColor = (status: string) => {
@@ -189,13 +207,32 @@ export function OrderingPage() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => {
+          setShowConfirmModal(false);
+          setPendingAction(null);
+        }}
+        onConfirm={() => {
+          if (pendingAction) {
+            pendingAction();
+          }
+          setShowConfirmModal(false);
+          setPendingAction(null);
+        }}
+        title={confirmTitle}
+        message={confirmMessage}
+        confirmText={confirmText}
+        cancelText={confirmCancelText}
+        variant={confirmVariant}
+      />
       {/* Left: Menu Selection */}
       <div className="lg:col-span-2">
         <div className="mb-6">
           <div className="mb-4">
             <h3 className="mb-4">Chọn bàn</h3>
             {/* Table Selection Grid - Prominent Display */}
-            <div className="grid grid-cols-4 md:grid-cols-6 gap-3 mb-6 p-4 bg-white rounded-lg border-2 border-[#0056D2]">
+            <div className="grid grid-cols-4 md:grid-cols-6 gap-3 mb-6 p-4 bg-white rounded-lg border-2 border-[#625EE8]">
               {availableTables.map((tableNum) => {
                 const hasOrders = ordersByTable[tableNum]?.length > 0;
                 return (
@@ -204,10 +241,10 @@ export function OrderingPage() {
                     onClick={() => setSelectedTable(tableNum)}
                     className={`p-4 rounded-lg border-2 transition-all ${
                       selectedTable === tableNum
-                        ? "bg-[#0056D2] text-white border-[#0056D2] shadow-lg scale-105"
+                        ? "bg-[#625EE8] text-white border-[#625EE8] shadow-lg scale-105"
                         : hasOrders
                         ? "bg-green-50 text-green-700 border-green-400 hover:border-green-500 hover:bg-green-100"
-                        : "bg-white text-gray-700 border-gray-300 hover:border-[#0056D2] hover:bg-blue-50"
+                        : "bg-white text-gray-700 border-gray-300 hover:border-[#625EE8] hover:bg-blue-50"
                     }`}
                   >
                     <div className="text-center">
@@ -225,7 +262,7 @@ export function OrderingPage() {
             </div>
 
             <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-sm text-[#0056D2]">
+              <p className="text-sm text-[#625EE8]">
                 <span>Đang gọi món cho: </span>
                 <span className="text-lg">Bàn {selectedTable}</span>
               </p>
@@ -240,7 +277,7 @@ export function OrderingPage() {
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-4 py-2 rounded-lg whitespace-nowrap transition-all ${
                   selectedCategory === cat
-                    ? "bg-[#0056D2] text-white"
+                    ? "bg-[#625EE8] text-white"
                     : "bg-white text-gray-700 hover:bg-gray-100"
                 }`}
               >
@@ -269,7 +306,7 @@ export function OrderingPage() {
               />
               <div className="p-3">
                 <h4 className="text-sm mb-1">{item.name}</h4>
-                <p className="text-[#0056D2]">{item.price.toLocaleString()}đ</p>
+                <p className="text-[#625EE8]">{item.price.toLocaleString()}đ</p>
               </div>
             </Card>
           ))}
@@ -332,7 +369,7 @@ export function OrderingPage() {
                           <Plus className="w-4 h-4" />
                         </button>
                       </div>
-                      <span className="text-sm text-[#0056D2] font-medium">
+                      <span className="text-sm text-[#625EE8] font-medium">
                         {(
                           orderItem.item.price * orderItem.quantity
                         ).toLocaleString()}
@@ -370,7 +407,7 @@ export function OrderingPage() {
               <div className="border-t pt-4">
                 <div className="flex justify-between items-center">
                   <span className="font-medium">Tổng cộng:</span>
-                  <span className="text-xl text-[#0056D2] font-bold">
+                  <span className="text-xl text-[#625EE8] font-bold">
                     {tableOrders
                       .reduce((sum, o) => sum + o.item.price * o.quantity, 0)
                       .toLocaleString()}

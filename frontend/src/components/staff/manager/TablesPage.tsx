@@ -13,6 +13,7 @@ import {
   validateInteger,
 } from "../../../lib/validation";
 import { LocationManagement } from "./LocationManagement";
+import { ConfirmationModal } from "../../ui/ConfirmationModal";
 
 export function TablesPage() {
   const [activeTab, setActiveTab] = useState<"tables" | "locations">("tables");
@@ -31,6 +32,16 @@ export function TablesPage() {
     seats: 4,
     floor: "Floor 1",
   });
+
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmTitle, setConfirmTitle] = useState("");
+  const [confirmMessage, setConfirmMessage] = useState("");
+  const [confirmText, setConfirmText] = useState("");
+  const [confirmCancelText, setConfirmCancelText] = useState("Hủy");
+  const [confirmVariant, setConfirmVariant] = useState<
+    "info" | "warning" | "danger"
+  >("info");
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
   // Update available areas when locations change
   const availableAreas = locations.map((loc) => loc.name);
@@ -84,10 +95,17 @@ export function TablesPage() {
       return;
     }
 
-    if (confirm(`Bạn có chắc muốn xóa bàn ${table.number}?`)) {
+    setConfirmTitle(`Xóa bàn`);
+    setConfirmMessage(`Bạn có chắc muốn xóa bàn này?`);
+    setConfirmText("Xóa");
+    setConfirmCancelText("Hủy");
+    setConfirmVariant(`warning`);
+    setPendingAction(() => () => {
+      //TODO: Api xóa bàn
       setTables(tables.filter((t) => t.id !== tableId));
       toast.success(`Đã xóa bàn ${table.number}`);
-    }
+    });
+    setShowConfirmModal(true);
   };
 
   const handleSubmit = () => {
@@ -186,6 +204,27 @@ export function TablesPage() {
 
   return (
     <div>
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => {
+          setShowConfirmModal(false);
+          setPendingAction(null);
+        }}
+        onConfirm={() => {
+          if (pendingAction) {
+            pendingAction();
+          }
+          setShowConfirmModal(false);
+          setPendingAction(null);
+        }}
+        title={confirmTitle}
+        message={confirmMessage}
+        confirmText={confirmText}
+        cancelText={confirmCancelText}
+        variant={confirmVariant}
+      />
+
       {/* Tabs */}
       <div className="flex gap-4 mb-6 border-b">
         <button

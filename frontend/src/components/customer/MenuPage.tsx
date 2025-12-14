@@ -48,7 +48,7 @@ export function MenuPage() {
               onClick={() => setSelectedCategory(cat)}
               className={`px-4 py-2 rounded-lg whitespace-nowrap transition-all ${
                 selectedCategory === cat
-                  ? "bg-[#0056D2] text-white"
+                  ? "bg-[#625EE8] text-white"
                   : "bg-white text-gray-700 hover:bg-gray-100"
               }`}
             >
@@ -90,7 +90,7 @@ export function MenuPage() {
                 {item.description || "Món ăn ngon tuyệt vời"}
               </p>
               <div className="flex items-center justify-between">
-                <span className="text-[#0056D2]">
+                <span className="text-[#625EE8]">
                   {item.price.toLocaleString()}đ
                 </span>
               </div>
@@ -151,7 +151,7 @@ export function MenuPage() {
 
               <div className="flex items-center justify-between pt-4 border-t">
                 <span className="text-gray-600 text-lg">Giá:</span>
-                <span className="text-3xl text-[#0056D2] font-medium">
+                <span className="text-3xl text-[#625EE8] font-medium">
                   {selectedDish.price.toLocaleString()}đ
                 </span>
               </div>

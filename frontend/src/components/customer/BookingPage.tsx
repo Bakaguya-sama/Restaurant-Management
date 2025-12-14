@@ -174,7 +174,7 @@ export function BookingPage() {
                         step > index + 1
                           ? "bg-green-500 text-white"
                           : step === index + 1
-                          ? "bg-[#0056D2] text-white"
+                          ? "bg-[#625EE8] text-white"
                           : "bg-gray-200 text-gray-500"
                       }`}
                     >
@@ -312,7 +312,7 @@ export function BookingPage() {
                         onClick={() => handleTableSelect(table)}
                         className={`p-4 rounded-lg border-2 transition-all ${
                           selectedTable?.id === table.id
-                            ? "border-[#0056D2] bg-blue-50"
+                            ? "border-[#625EE8] bg-blue-50"
                             : "border-gray-200 hover:border-gray-300"
                         }`}
                       >
@@ -406,8 +406,8 @@ export function BookingPage() {
 
                 <div className="space-y-4 mb-6">
                   <div className="grid grid-cols-2 gap-4">
-                    <button className="p-4 border-2 border-[#0056D2] rounded-lg bg-blue-50 text-left">
-                      <CreditCard className="w-6 h-6 text-[#0056D2] mb-2" />
+                    <button className="p-4 border-2 border-[#625EE8] rounded-lg bg-blue-50 text-left">
+                      <CreditCard className="w-6 h-6 text-[#625EE8] mb-2" />
                       <p>Ví điện tử</p>
                       <p className="text-sm text-gray-600">MoMo, ZaloPay</p>
                     </button>

@@ -75,7 +75,7 @@ export function RegisterPage() {
 
   if (showSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0056D2]/10 to-white p-8">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#625EE8]/10 to-white p-8">
         <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="w-10 h-10 text-green-600" />
@@ -90,7 +90,7 @@ export function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="h-screen flex overflow-hidden">
       {/* Left Side - Image */}
       <div className="hidden lg:block lg:w-1/2 relative overflow-hidden">
         <img
@@ -233,7 +233,7 @@ export function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => navigate("/login")}
-                  className="text-[#0056D2] hover:underline"
+                  className="text-[#625EE8] hover:underline"
                 >
                   Đăng nhập ngay
                 </button>

@@ -26,7 +26,7 @@ export function BookingManagementPage() {
   const [showVoucherSection, setShowVoucherSection] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [rating, setRating] = useState(0);
+  // const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState("");
 
   // Mock data: Bookings with optional bills
@@ -292,13 +292,12 @@ export function BookingManagementPage() {
   };
 
   const handleSubmitFeedback = () => {
-    if (rating === 0) {
-      alert("Vui lòng chọn số sao đánh giá");
+    if (feedback === "") {
+      alert("Bạn hãy chia sẻ cho chúng tôi biết về cảm nhận của mình nhé!");
       return;
     }
     alert("Cảm ơn bạn đã gửi đánh giá!");
     setShowFeedbackModal(false);
-    setRating(0);
     setFeedback("");
   };
 
@@ -453,13 +452,13 @@ export function BookingManagementPage() {
             {/* Booking Details */}
             <div className="border rounded-lg p-4 bg-blue-50">
               <h4 className="mb-3 flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-[#0056D2]" />
+                <Calendar className="w-5 h-5 text-[#625EE8]" />
                 Thông tin đặt bàn
               </h4>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="col-span-2 pb-3 mb-3 border-b border-blue-200">
                   <p className="text-gray-600 text-xs mb-1">Mã phiếu đặt bàn</p>
-                  <p className="font-bold text-xl text-[#0056D2]">
+                  <p className="font-bold text-xl text-[#625EE8]">
                     {selectedBooking.id}
                   </p>
                 </div>
@@ -482,7 +481,7 @@ export function BookingManagementPage() {
                     <span className="text-gray-600">
                       Tiền cọc đã thanh toán:
                     </span>
-                    <span className="font-medium text-[#0056D2]">
+                    <span className="font-medium text-[#625EE8]">
                       {selectedBooking.depositAmount.toLocaleString()}đ
                     </span>
                   </div>
@@ -514,7 +513,7 @@ export function BookingManagementPage() {
                           <p className="text-sm mb-1">
                             {item.price.toLocaleString()}đ x {item.quantity}
                           </p>
-                          <p className="text-[#0056D2] text-sm">
+                          <p className="text-[#625EE8] text-sm">
                             {(item.price * item.quantity).toLocaleString()}đ
                           </p>
                         </div>
@@ -558,7 +557,7 @@ export function BookingManagementPage() {
               )}
               <div className="flex justify-between text-xl pt-2 border-t">
                 <span>Tổng cộng:</span>
-                <span className="text-[#0056D2]">
+                <span className="text-[#625EE8]">
                   {selectedBooking.bill.total.toLocaleString()}đ
                 </span>
               </div>
@@ -719,9 +718,9 @@ export function BookingManagementPage() {
         <div className="space-y-6">
           <div>
             <label className="block mb-3 text-center">
-              Bạn đánh giá thế nào về trải nghiệm?
+              Bạn đánh giá thế nào về dịch vụ của chúng tôi?
             </label>
-            <div className="flex justify-center gap-2">
+            {/* <div className="flex justify-center gap-2">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
@@ -737,13 +736,11 @@ export function BookingManagementPage() {
                   />
                 </button>
               ))}
-            </div>
+            </div> */}
           </div>
 
           <div>
-            <label className="block mb-2">
-              Chia sẻ cảm nhận của bạn (tùy chọn)
-            </label>
+            <label className="block mb-2">Chia sẻ cảm nhận của bạn</label>
             <Textarea
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}

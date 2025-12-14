@@ -21,7 +21,7 @@ export function Input({ label, error, icon, className = '', ...props }: InputPro
           </div>
         )}
         <input
-          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0056D2] focus:border-transparent transition-all ${
+          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#625EE8] focus:border-transparent transition-all ${
             icon ? 'pl-10' : ''
           } ${error ? 'border-red-500' : 'border-gray-300'} ${className}`}
           {...props}
@@ -46,7 +46,7 @@ export function Textarea({ label, error, className = '', ...props }: TextareaPro
         </label>
       )}
       <textarea
-        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0056D2] focus:border-transparent transition-all resize-none ${
+        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#625EE8] focus:border-transparent transition-all resize-none ${
           error ? 'border-red-500' : 'border-gray-300'
         } ${className}`}
         {...props}
@@ -71,7 +71,7 @@ export function Select({ label, error, options, className = '', ...props }: Sele
         </label>
       )}
       <select
-        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0056D2] focus:border-transparent transition-all ${
+        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#625EE8] focus:border-transparent transition-all ${
           error ? 'border-red-500' : 'border-gray-300'
         } ${className}`}
         {...props}

@@ -364,7 +364,7 @@ export function InventoryPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left p-4">Mã</th>
+                    {/* <th className="text-left p-4">Mã</th> */}
                     <th className="text-left p-4">Tên nguyên liệu</th>
                     <th className="text-left p-4">Số lượng</th>
                     <th className="text-left p-4">Đơn vị</th>
@@ -393,7 +393,7 @@ export function InventoryPage() {
                         className={`border-b hover:bg-gray-50 
                         }`}
                       >
-                        <td className="p-4 text-gray-600">{item.id}</td>
+                        {/* <td className="p-4 text-gray-600">{item.id}</td> */}
                         <td className="p-4">{item.name}</td>
                         <td className="p-4">
                           <span className={isLowStock ? "text-orange-600" : ""}>
@@ -479,7 +479,7 @@ export function InventoryPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left p-4">Mã NCC</th>
+                    {/* <th className="text-left p-4">Mã NCC</th> */}
                     <th className="text-left p-4">Tên công ty</th>
                     <th className="text-left p-4">Số điện thoại</th>
                     <th className="text-left p-4">Địa chỉ</th>
@@ -488,7 +488,7 @@ export function InventoryPage() {
                 <tbody>
                   {suppliers.map((supplier) => (
                     <tr key={supplier.id} className="border-b hover:bg-gray-50">
-                      <td className="p-4 text-gray-600">{supplier.id}</td>
+                      {/* <td className="p-4 text-gray-600">{supplier.id}</td> */}
                       <td className="p-4">{supplier.name}</td>
                       <td className="p-4">{supplier.phone}</td>
                       <td className="p-4 text-gray-600">{supplier.address}</td>
@@ -736,7 +736,7 @@ export function InventoryPage() {
             <div className="mt-4 p-4 bg-gray-50 rounded-lg">
               <div className="flex justify-between">
                 <span>Tổng tiền:</span>
-                <span className="text-xl text-[#0056D2]">
+                <span className="text-xl text-[#625EE8]">
                   {importItems
                     .reduce((sum, item) => sum + item.quantity * item.price, 0)
                     .toLocaleString()}
