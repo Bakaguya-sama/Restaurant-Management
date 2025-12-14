@@ -112,6 +112,8 @@ const SupplierSchema = new Schema({
   address: String,
 });
 
+const Supplier = mongoose.model('Supplier', SupplierSchema);
+
 const IngredientSchema = new Schema({
   name: { type: String, required: true },
   unit: { type: String, required: true }, // kg, g, l, ml, pieces
@@ -147,6 +149,26 @@ const StockImportDetailSchema = new Schema({
   unit_price: { type: Number, required: true },
   line_total: { type: Number, required: true },
   expiry_date: Date
+});
+
+// ==================== STOCK EXPORT ====================
+
+const StockExportSchema = new Schema({
+  export_number: { type: String, required: true, unique: true },
+  staff_id: { type: Schema.Types.ObjectId, ref: 'Staff', required: true },
+  export_date: { type: Date, default: Date.now },
+  total_cost: { type: Number, default: 0 },
+  notes: String,
+  status: { type: String, enum: ['pending', 'completed', 'cancelled'], default: 'pending' },
+  created_at: { type: Date, default: Date.now }
+});
+
+const StockExportDetailSchema = new Schema({
+  export_id: { type: Schema.Types.ObjectId, ref: 'StockExport', required: true },
+  ingredient_id: { type: Schema.Types.ObjectId, ref: 'Ingredient', required: true },
+  quantity: { type: Number, required: true },
+  unit_price: { type: Number, required: true },
+  line_total: { type: Number, required: true }
 });
 
 // ==================== DISH ====================
@@ -347,9 +369,16 @@ const Violation = mongoose.model('Violation', ViolationSchema);
 const Rating = mongoose.model('Rating', RatingSchema);
 const RatingReply = mongoose.model('RatingReply', RatingReplySchema);
 
+const StockExport = mongoose.model('StockExport', StockExportSchema);
+const StockExportDetail = mongoose.model('StockExportDetail', StockExportDetailSchema);
+
+// Supplier model
+// (exported below)
+
 module.exports = {
   Staff,
   Customer,
+  Supplier,
   Floor,
   Location,
   Table,
@@ -371,5 +400,7 @@ module.exports = {
   Violation,
   Rating,
   RatingReply
+  ,StockExport,
+  StockExportDetail
 };
 
