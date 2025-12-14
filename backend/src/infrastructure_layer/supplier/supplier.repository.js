@@ -14,8 +14,23 @@ async function createSupplier({ name, phone, address }) {
   return supplier;
 }
 
+
+async function updateSupplier(id, { name, phone, address }) {
+  const update = {};
+  if (name !== undefined) update.name = name;
+  if (phone !== undefined) update.phone_contact = phone;
+  if (address !== undefined) update.address = address;
+  return Supplier.findByIdAndUpdate(id, update, { new: true });
+}
+
+async function deleteSupplier(id) {
+  return Supplier.findByIdAndDelete(id);
+}
+
 module.exports = {
   listSuppliers,
   findByNameInsensitive,
-  createSupplier
+  createSupplier,
+  updateSupplier,
+  deleteSupplier
 };

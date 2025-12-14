@@ -1,14 +1,12 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const connectDB = require('./src/config/database');
+const connectDB = require('./config/database');
 
 // Import routes
-const floorsRouter = require('./src/routes/floors');
-const locationsRouter = require('./src/routes/locations');
-const tablesRouter = require('./src/routes/tables');
-const inventoryRouter = require('./src/routes/inventory');
-const suppliersRouter = require('./src/routes/suppliers');
+const inventoryRouter = require('./src/presentation_layer/routes/inventory.routes');
+const suppliersRouter = require('./src/presentation_layer/routes/supplier.routes');
+const menuRouter = require('./src/presentation_layer/routes/menu.routes');
 
 // Load environment variables
 dotenv.config();
@@ -42,14 +40,12 @@ app.get('/api/v1/health', (req, res) => {
   });
 });
 
-// Table Management Routes
-app.use('/api/v1/floors', floorsRouter);
-app.use('/api/v1/locations', locationsRouter);
-app.use('/api/v1/tables', tablesRouter);
-
 // Inventory & Suppliers
 app.use('/api/v1/inventory', inventoryRouter);
 app.use('/api/v1/suppliers', suppliersRouter);
+
+// Menu management
+app.use('/api/v1/menu', menuRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -71,7 +67,9 @@ app.use((req, res) => {
 
 const PORT = process.env.PORT || 5001;
 
-app.listen(PORT, () => {
+// Only start listening when not running tests to allow supertest to use the app
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
   console.log(`
 ╔═════════════════════════════════════════════════════╗
 ║       RESTAURANT MANAGEMENT API SERVER             ║
@@ -83,12 +81,6 @@ app.listen(PORT, () => {
 ║  • GET    /api/v1/health                              ║
 ║                                                    ║
 ║  TABLE MANAGEMENT:                                 ║
-║  • GET    /api/v1/floors                              ║
-║  • POST   /api/v1/floors                              ║
-║  • GET    /api/v1/floors/:id                          ║
-║  • PUT    /api/v1/floors/:id                          ║
-║  • DELETE /api/v1/floors/:id                          ║
-║                                                    ║
 ║  • GET    /api/v1/locations                           ║
 ║  • POST   /api/v1/locations                           ║
 ║  • GET    /api/v1/locations/:id                       ║
@@ -105,8 +97,26 @@ app.listen(PORT, () => {
 ║  • PUT    /api/v1/tables/:id                          ║
 ║  • PATCH  /api/v1/tables/:id/status                   ║
 ║  • DELETE /api/v1/tables/:id                          ║
+║                                                    ║
+║  INVENTORY MANAGEMENT:                             ║
+║  • GET    /api/v1/inventory                          ║
+║  • POST   /api/v1/inventory/import                   ║
+║  • POST   /api/v1/inventory/export                   ║
+║  • PUT    /api/v1/inventory/:id                      ║
+║                                                    ║
+║  MENU MANAGEMENT:                                  ║
+║  • GET    /api/v1/menu                              ║
+║  • POST   /api/v1/menu                              ║
+║  • PUT    /api/v1/menu/:id                          ║
+║  • PATCH  /api/v1/menu/:id/availability             ║
+║  • DELETE /api/v1/menu/:id                          ║
+║                                                    ║
+║  SUPPLIERS:                                        ║
+║  • GET    /api/v1/suppliers                          ║
+║  • POST   /api/v1/suppliers                          ║
 ╚═════════════════════════════════════════════════════╝
 `);
-});
+  });
+}
 
 module.exports = app;

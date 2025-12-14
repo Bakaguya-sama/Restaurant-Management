@@ -6,7 +6,7 @@ process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/
 
 const request = require('supertest');
 const mongoose = require('mongoose');
-const app = require('../../src/server');
+const app = require('../../server');
 const { Ingredient, Supplier, StockImport, StockImportDetail, StockExport, StockExportDetail } = require('../../src/models');
 
 describe('Inventory Integration Tests', () => {

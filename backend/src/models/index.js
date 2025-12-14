@@ -184,8 +184,12 @@ const DishSchema = new Schema({
   },
   price: { type: Number, required: true },
   image_url: String,
-  //preparation_time: { type: Number, default: 15 }, // minutes
+
   is_available: { type: Boolean, default: true },
+
+  manual_unavailable_reason: { type: String }, // e.g. "Tạm ngưng phục vụ"
+  manual_unavailable_by: { type: Schema.Types.ObjectId, ref: 'Staff' },
+  manual_unavailable_at: { type: Date },
   //is_special: { type: Boolean, default: false },
   //calories: Number,
   created_at: { type: Date, default: Date.now },
@@ -337,12 +341,7 @@ const RatingReplySchema = new Schema({
   reply_date: { type: Date, default: Date.now },
 });
 
-// ==================== INDEXES ====================
 
-StaffSchema.index({ email: 1 });
-CustomerSchema.index({ email: 1 });
-OrderSchema.index({ order_number: 1 });
-InvoiceSchema.index({ invoice_number: 1 });
 
 // ==================== EXPORTS ====================
 

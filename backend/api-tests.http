@@ -2,123 +2,110 @@
 
 # ======================
 # INVENTORY API TESTS
-# File: api-tests.http
 # ======================
 
-###
-# GET /inventory - Lấy tất cả batch tồn kho
-# Mục đích: trả về toàn bộ batch có quantity > 0
+### GET /inventory - Lấy tất cả batch tồn kho
 GET {{baseUrl}}/inventory
 
-###
-# GET /inventory - Lọc low stock
-# Mục đích: trả về batch có ingredient stock <= minimum_quantity
+
+### GET /inventory - Lọc low stock
 GET {{baseUrl}}/inventory?lowStock=true
 
-###
-# GET /inventory - Lọc expiring soon
-# Mục đích: trả về batch sắp hết hạn trong 7 ngày
+
+### GET /inventory - Lọc expiring soon
 GET {{baseUrl}}/inventory?expiring=true
 
-###
-# POST /inventory/import - SUCCESS
-# Mục đích: nhập kho 1 batch hợp lệ
-# Thay trước khi dùng: PUT_INVENTORY_ITEM_ID_HERE, PUT_SUPPLIER_ID_HERE
+
+### POST /inventory/import - SUCCESS
 POST {{baseUrl}}/inventory/import
 Content-Type: application/json
 
 {
   "items": [
     {
-      "itemId": 693e93aed977b610436eb292,
+      "itemId": "693e93aed977b610436eb292",
       "quantity": 10,
-      supplierId": 693e7df373919af5198ca0d3,
+      "supplierId": "693e7df373919af5198ca0d3",
       "expiryDate": "2026-12-31"
     }
   ]
 }
 
-###
-# POST /inventory/import - FAIL (thiếu supplierId)
-# Mục đích: kiểm tra validate khi thiếu trường bắt buộc -> expect 400
+
+### POST /inventory/import - FAIL (missing supplierId)
 POST {{baseUrl}}/inventory/import
 Content-Type: application/json
 
 {
   "items": [
     {
-      "itemId": 693e93aed977b610436eb292",
+      "itemId": "693e93aed977b610436eb292",
       "quantity": 5,
       "expiryDate": "2026-12-31"
     }
   ]
 }
 
-###
-# POST /inventory/import - KHÔNG GHI ĐÈ BATCH CŨ (2 import với expiry khác nhau)
-# Mục đích: import cùng itemId với expiry khác nhau, kiểm tra app không ghi đè batch cũ
-# 1) Import (expiry A)
+
+### Import batch A (expiry A)
 POST {{baseUrl}}/inventory/import
 Content-Type: application/json
 
 {
   "items": [
     {
-      "itemId": 693e93aed977b610436eb292,
+      "itemId": "693e93aed977b610436eb292",
       "quantity": 3,
-      "supplierId": 693e7df373919af5198ca0d3,
+      "supplierId": "693e7df373919af5198ca0d3",
       "expiryDate": "2026-06-30"
     }
   ]
 }
 
-###
-# 2) Import (expiry B - khác ngày)
+
+### Import batch B (expiry B)
 POST {{baseUrl}}/inventory/import
 Content-Type: application/json
 
 {
   "items": [
     {
-      "itemId": 693e93aed977b610436eb292,
+      "itemId": "693e93aed977b610436eb292",
       "quantity": 4,
-      "supplierId": 693e7df373919af5198ca0d3,
+      "supplierId": "693e7df373919af5198ca0d3",
       "expiryDate": "2027-01-15"
     }
   ]
 }
 
-###
-# 3) Xác nhận: GET /inventory để thấy hai batch (hoặc lọc theo expiry)
+
+### GET /inventory - verify multiple batches
 GET {{baseUrl}}/inventory
 
-###
-# POST /inventory/export - SUCCESS
-# Mục đích: xuất kho hợp lệ (quantity <= tồn), có reason
-# Thay trước khi dùng: PUT_INVENTORY_ITEM_ID_HERE
+
+### POST /inventory/export - SUCCESS
 POST {{baseUrl}}/inventory/export
 Content-Type: application/json
 
 {
   "items": [
     {
-      "itemId": 693e93aed977b610436eb292,
+      "itemId": "693e93aed977b610436eb292",
       "quantity": 1,
       "reason": "Used in recipe test"
     }
   ]
 }
 
-###
-# POST /inventory/export - FAIL (insufficient stock)
-# Mục đích: xuất vượt tồn -> expect 400 với message 'Insufficient stock'
+
+### POST /inventory/export - FAIL (insufficient stock)
 POST {{baseUrl}}/inventory/export
 Content-Type: application/json
 
 {
   "items": [
     {
-      "itemId": 693e93aed977b610436eb292,
+      "itemId": "693e93aed977b610436eb292",
       "quantity": 999999,
       "reason": "Force insufficient stock error"
     }
@@ -126,17 +113,15 @@ Content-Type: application/json
 }
 
 
+
 # ======================
 # SUPPLIER API TESTS
 # ======================
 
-###
-# GET /suppliers - Lấy danh sách nhà cung cấp
+### GET /suppliers
 GET {{baseUrl}}/suppliers
 
-###
-# POST /suppliers - SUCCESS
-# Mục đích: tạo nhà cung cấp mới (tên độc nhất)
+### POST /suppliers - SUCCESS
 POST {{baseUrl}}/suppliers
 Content-Type: application/json
 
@@ -146,10 +131,7 @@ Content-Type: application/json
   "address": "123 Test St, HCMC"
 }
 
-###
-# POST /suppliers - FAIL (duplicate name)
-# Mục đích: tạo supplier trùng tên -> expect 409
-# Lưu ý: chạy ngay sau request tạo thành công ở trên
+### POST /suppliers - FAIL (duplicate name)
 POST {{baseUrl}}/suppliers
 Content-Type: application/json
 
@@ -158,3 +140,97 @@ Content-Type: application/json
   "phone": "+84900000000",
   "address": "Duplicate address"
 }
+
+### PUT /suppliers/:id - Update supplier
+# 👉 Thay ID bên dưới bằng id trả về từ GET /suppliers hoặc POST /suppliers
+PUT {{baseUrl}}/suppliers/PUT_SUPPLIER_ID_HERE
+Content-Type: application/json
+
+{
+  "name": "Manual Test Supplier Updated",
+  "phone": "+84911111111",
+  "address": "456 Updated St, HCMC"
+}
+
+### DELETE /suppliers/:id - Delete supplier
+# 👉 Thay ID bên dưới bằng id trả về từ GET /suppliers hoặc POST /suppliers
+DELETE {{baseUrl}}/suppliers/PUT_SUPPLIER_ID_HERE
+
+
+# ======================
+# MENU API TESTS
+# ======================
+
+### GET /menu - Lấy danh sách món
+GET {{baseUrl}}/menu
+
+
+### POST /menu - SUCCESS (tạo món mới)
+POST {{baseUrl}}/menu
+Content-Type: application/json
+
+{
+  "name": "Manual Test Dish",
+  "category": "main_course",
+  "price": 120000,
+  "description": "Tạo từ API test",
+  "image": "/images/test-dish.jpg",
+  "ingredients": [
+    {
+      "inventoryItemId": "693e93aed977b610436eb292",
+      "quantity": 0.25
+    }
+  ]
+}
+
+
+### POST /menu - FAIL (ingredient không tồn tại)
+POST {{baseUrl}}/menu
+Content-Type: application/json
+
+{
+  "name": "Bad Dish",
+  "category": "main_course",
+  "price": 10000,
+  "ingredients": [
+    {
+      "inventoryItemId": "000000000000000000000000",
+      "quantity": 1
+    }
+  ]
+}
+
+
+
+
+### PUT /menu/:id - Update dish
+# 👉 thay ID bên dưới bằng id trả về từ GET /menu
+PUT {{baseUrl}}/menu/693e93aed977b610436eb2b2
+Content-Type: application/json
+
+{
+  "name": "Manual Test Dish Updated",
+  "category": "main_course",
+  "price": 140000,
+  "description": "Updated via API test",
+  "ingredients": [
+    {
+      "inventoryItemId": "693e93aed977b610436eb292",
+      "quantity": 0.3
+    }
+  ]
+}
+
+
+### PATCH /menu/:id/availability - Manual disable
+PATCH {{baseUrl}}/menu/693f44b3bf6313a18b173007/availability
+Content-Type: application/json
+
+{
+  "available": false,
+  "reason": "Testing manual disable"
+}
+
+
+### DELETE /menu/:id - Delete dish
+DELETE {{baseUrl}}/menu/PUT_DISH_ID_HERE

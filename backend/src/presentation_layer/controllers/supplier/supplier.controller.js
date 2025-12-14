@@ -18,6 +18,7 @@ exports.listSuppliers = async (req, res) => {
   }
 };
 
+
 exports.createSupplier = async (req, res) => {
   try {
     const { name, phone, address } = req.body;
@@ -25,6 +26,29 @@ exports.createSupplier = async (req, res) => {
     return res.status(201).json({ success: true, data: result, message: 'Supplier created' });
   } catch (err) {
     console.error('createSupplier error', err);
+    return res.status(err.status || 500).json({ success: false, data: null, message: err.message || 'Internal Server Error' });
+  }
+};
+
+exports.updateSupplier = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, phone, address } = req.body;
+    const result = await supplierService.updateSupplier(id, { name, phone, address });
+    return res.json({ success: true, data: result, message: 'Supplier updated' });
+  } catch (err) {
+    console.error('updateSupplier error', err);
+    return res.status(err.status || 500).json({ success: false, data: null, message: err.message || 'Internal Server Error' });
+  }
+};
+
+exports.deleteSupplier = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await supplierService.deleteSupplier(id);
+    return res.json({ success: true, data: null, message: 'Supplier deleted' });
+  } catch (err) {
+    console.error('deleteSupplier error', err);
     return res.status(err.status || 500).json({ success: false, data: null, message: err.message || 'Internal Server Error' });
   }
 };
