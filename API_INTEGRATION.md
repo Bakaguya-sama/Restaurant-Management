@@ -1,9 +1,18 @@
 # API Integration Documentation
 
-**Version**: 1.2  
-**Last Updated**: December 13, 2025
+**Version**: 1.3  
+**Last Updated**: December 14, 2025
 
 ## Changelog
+
+### Version 1.3 (December 14, 2025)
+
+- ✅ Thêm automatic inventory deduction khi waiter gọi món (POST /orders)
+- ✅ Thêm logic hoàn nguyên liệu khi hủy món ở trạng thái `pending`
+- ✅ Thêm chi tiết xử lý Race Conditions và Conflicts trong inventory management
+- ✅ Cập nhật GET /menu: thêm `unavailableReason` khi món hết nguyên liệu
+- ✅ Thêm Business Logic Notes về Inventory Management với database transaction patterns
+- ✅ Thêm error handling cho `INSUFFICIENT_INVENTORY` và `CANNOT_CANCEL`
 
 ### Version 1.2 (December 13, 2025)
 
@@ -420,6 +429,7 @@ GET /menu
       "description": "string",
       "image": "string", // base64 hoặc URL
       "available": true,
+      "unavailableReason": "Hết nguyên liệu", // chỉ hiển thị khi available = false
       "ingredients": [
         {
           "inventoryItemId": "string",
@@ -432,6 +442,14 @@ GET /menu
   ]
 }
 ```
+
+**Business Logic:**
+
+- Khi load danh sách món ăn, backend cần kiểm tra tồn kho (inventory) của từng nguyên liệu
+- Nếu bất kỳ nguyên liệu nào trong `ingredients` không đủ số lượng:
+  - Set `available = false`
+  - Thêm `unavailableReason` (VD: "Hết nguyên liệu: Tôm hùm", "Nguyên liệu không đủ")
+- Frontend hiển thị món ăn không khả dụng với badge "Hết món" và ghi chú lý do
 
 ### 3.2 Tạo món ăn mới (Manager only)
 
@@ -512,7 +530,7 @@ DELETE /menu/:id
 }
 ```
 
-### 3.5 Cập nhật trạng thái món (Staff)
+### 3.5 Cập nhật trạng thái món (Manager/Staff)
 
 ```
 PATCH /menu/:id/availability
@@ -537,6 +555,19 @@ PATCH /menu/:id/availability
   }
 }
 ```
+
+**Note:**
+
+- Manager có thể thủ công set `available = false` khi muốn tạm ngưng phục vụ món (không phụ thuộc vào inventory)
+- Tuy nhiên, **backend vẫn luôn tự động override `available = false`** nếu thiếu nguyên liệu trong inventory
+- Logic ưu tiên:
+  1. Check inventory trước → nếu thiếu nguyên liệu → force `available = false`
+  2. Nếu đủ nguyên liệu → check giá trị `available` do manager/staff set
+- Khi manager xem danh sách món trong MenuPromotionPage, món nào hết nguyên liệu sẽ hiển thị badge "Hết món" và có `unavailableReason`
+- Manager có thể:
+  - Nhập thêm nguyên liệu vào kho → món tự động available trở lại
+  - Tạm ngưng món thủ công (VD: nghỉ phục vụ tạm thời)
+  - Xem lý do món không available (thiếu nguyên liệu hay bị tắt thủ công)
 
 ---
 
@@ -578,6 +609,50 @@ POST /orders
 }
 ```
 
+**Business Logic - Tự động trừ nguyên liệu khi tạo order:**
+
+1. **Validate tồn kho trước khi tạo order:**
+   - Với mỗi `menuItemId`, lấy danh sách `ingredients` và `quantity` cần thiết
+   - Tính tổng nguyên liệu cần = `ingredient.quantity * orderItem.quantity`
+   - Kiểm tra inventory có đủ nguyên liệu không
+   - Nếu KHÔNG ĐỦ → Return error: `INSUFFICIENT_INVENTORY` với chi tiết nguyên liệu thiếu
+2. **Trừ nguyên liệu ngay lập tức (Pessimistic Locking):**
+   - Khi order được tạo thành công, tự động trừ số lượng nguyên liệu trong inventory
+   - Sử dụng database transaction để đảm bảo tính nhất quán
+   - Log lại việc trừ kho với `reason = "order_created"`, `orderId`, `orderItemId`
+3. **Xử lý xung đột (Race Condition):**
+   - Sử dụng database row-level locking khi cập nhật inventory
+   - Nếu có nhiều waiter cùng order món cần cùng nguyên liệu:
+     - Transaction đầu tiên thành công → order được tạo, nguyên liệu bị trừ
+     - Transaction sau nếu không đủ nguyên liệu → rollback và báo lỗi
+   - Pattern: `SELECT ... FOR UPDATE` trong transaction
+4. **Đảm bảo Atomicity:**
+   - Toàn bộ quá trình (tạo order + trừ inventory) phải trong 1 database transaction
+   - Nếu trừ inventory thất bại → rollback việc tạo order
+   - Nếu tạo order thất bại → không trừ inventory
+
+**Error Responses:**
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "INSUFFICIENT_INVENTORY",
+    "message": "Không đủ nguyên liệu để phục vụ món ăn",
+    "details": {
+      "missingIngredients": [
+        {
+          "name": "Tôm hùm",
+          "required": 1.5,
+          "available": 0.8,
+          "unit": "kg"
+        }
+      ]
+    }
+  }
+}
+```
+
 ### 4.2 Lấy orders theo bàn
 
 ```
@@ -614,11 +689,137 @@ POST /orders/:orderId/items
 }
 ```
 
+**Business Logic - Tự động trừ nguyên liệu:**
+
+- Áp dụng CÙNG logic như `POST /orders` (section 4.1)
+- Validate tồn kho → Trừ nguyên liệu ngay lập tức
+- Sử dụng transaction với row-level locking
+- Log: `reason = "order_item_added"`
+
 ### 4.5 Hủy món trong order
 
 ```
 DELETE /orders/:orderId/items/:itemId
 ```
+
+**Business Logic - Hoàn lại nguyên liệu khi hủy món:**
+
+1. **Kiểm tra trạng thái món ăn:**
+   - Lấy trạng thái hiện tại của order item: `pending` | `cooking` | `served`
+2. **Logic hoàn nguyên liệu:**
+
+   - **TRẠNG THÁI `pending` (Chờ xử lý):**
+
+     - Món chưa vào bếp → Hoàn lại TOÀN BỘ nguyên liệu đã trừ
+     - Cộng lại số lượng vào inventory
+     - Log: `reason = "order_item_cancelled"`, `orderId`, `orderItemId`
+
+   - **TRẠNG THÁI `cooking` (Đang nấu):**
+
+     - Món đã vào bếp → KHÔNG hoàn lại nguyên liệu
+     - Nguyên liệu đã được sử dụng/đang chế biến
+
+   - **TRẠNG THÁI `served` (Đã phục vụ):**
+     - Món đã ra khách → KHÔNG hoàn lại nguyên liệu
+     - Món đã được tiêu thụ
+
+3. **Xử lý xung đột (Race Condition):**
+
+   - **Trường hợp 1: Waiter hủy món ĐỒNG THỜI với việc bếp chuyển status sang `cooking`:**
+
+     - Sử dụng row-level locking trên order_items table
+     - Transaction lock order item trước khi check status
+     - Nếu status đã thay đổi → báo lỗi không thể hủy
+
+   - **Trường hợp 2: Nhiều waiter cùng hủy món:**
+
+     - Transaction đầu tiên lock order item → hủy thành công
+     - Transaction sau nhận lỗi `ORDER_ITEM_NOT_FOUND` hoặc `ALREADY_DELETED`
+
+   - **Trường hợp 3: Hủy món ĐỒNG THỜI với việc tạo món mới cần cùng nguyên liệu:**
+     - Transaction hoàn nguyên liệu (DELETE) lock inventory row
+     - Transaction tạo món mới (POST) phải chờ lock được release
+     - Đảm bảo inventory quantity luôn chính xác
+
+4. **Database Transaction Pattern:**
+
+   ```sql
+   BEGIN TRANSACTION;
+
+   -- Lock order item
+   SELECT status FROM order_items
+   WHERE id = :orderItemId
+   FOR UPDATE;
+
+   IF status = 'pending' THEN
+     -- Lock inventory rows
+     SELECT quantity FROM inventory
+     WHERE id IN (:ingredientIds)
+     FOR UPDATE;
+
+     -- Restore ingredients
+     UPDATE inventory
+     SET quantity = quantity + :returnAmount
+     WHERE id = :ingredientId;
+
+     -- Log inventory transaction
+     INSERT INTO inventory_logs (...);
+   END IF;
+
+   -- Delete order item
+   DELETE FROM order_items WHERE id = :orderItemId;
+
+   COMMIT;
+   ```
+
+5. **Đảm bảo Consistency:**
+   - Toàn bộ quá trình (kiểm tra status + hoàn nguyên liệu + xóa item) trong 1 transaction
+   - Nếu bất kỳ bước nào thất bại → rollback toàn bộ
+   - Inventory quantity luôn chính xác dù có bao nhiêu concurrent requests
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Đã hủy món",
+    "ingredientsRestored": true, // true nếu hoàn nguyên liệu, false nếu không
+    "restoredItems": [
+      {
+        "name": "Tôm hùm",
+        "quantity": 0.5,
+        "unit": "kg"
+      }
+    ]
+  }
+}
+```
+
+**Error Responses:**
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "CANNOT_CANCEL",
+    "message": "Không thể hủy món đang nấu hoặc đã phục vụ",
+    "details": {
+      "currentStatus": "cooking",
+      "reason": "Món đã vào bếp, không thể hoàn nguyên liệu"
+    }
+  }
+}
+```
+
+**Note quan trọng:**
+
+- **Pessimistic Locking Strategy**: Sử dụng database locks để đảm bảo consistency
+- **ACID Transactions**: Mọi thao tác phải tuân thủ ACID properties
+- **Idempotency**: API hủy món nên idempotent - gọi nhiều lần không gây side effects
+- **Audit Trail**: Log đầy đủ mọi thay đổi inventory để audit và debug
+- **Performance**: Monitor lock wait time, optimize query nếu cần
+- **Deadlock Prevention**: Luôn lock resources theo thứ tự nhất định (order_items → inventory)
 
 ---
 
@@ -1920,9 +2121,86 @@ socket.on("inventory:low-stock", (data) => {
   - 3 vi phạm no-show → tự động blacklist
   - Customer bị blacklist không thể đặt bàn online
 - **Booking & Deposit**:
+
   - Deposit cố định: 200,000 VND
   - Deposit được hoàn lại khi check-in thành công
   - Deposit bị mất nếu no-show
+
+- **Inventory Management - Automatic Deduction**:
+
+  - **Khi load menu (GET /menu)**:
+
+    - Backend tự động check tồn kho của tất cả nguyên liệu
+    - Món nào thiếu nguyên liệu → `available = false`
+    - Thêm `unavailableReason` để frontend hiển thị (VD: "Hết nguyên liệu: Tôm hùm")
+    - Frontend disable món hết và hiển thị badge "Hết món"
+
+  - **Khi waiter gọi món (POST /orders, POST /orders/:id/items)**:
+
+    - Backend validate đủ nguyên liệu trước khi tạo order
+    - TỰ ĐỘNG TRỪ nguyên liệu trong inventory NGAY LẬP TỨC
+    - Sử dụng database transaction với row-level locking (`SELECT ... FOR UPDATE`)
+    - Nếu không đủ → return error `INSUFFICIENT_INVENTORY` với chi tiết
+    - Log: `reason = "order_created"` hoặc `"order_item_added"`
+
+  - **Khi hủy món (DELETE /orders/:orderId/items/:itemId)**:
+
+    - **Status = `pending` (Chờ xử lý)**:
+      - Món chưa vào bếp → HOÀN LẠI toàn bộ nguyên liệu vào inventory
+      - Cộng lại số lượng đã trừ
+      - Log: `reason = "order_item_cancelled"`
+    - **Status = `cooking` hoặc `served`**:
+      - Món đã vào bếp/đã phục vụ → KHÔNG hoàn nguyên liệu
+      - Nguyên liệu đã được sử dụng/tiêu thụ
+    - Return response với `ingredientsRestored: true/false`
+
+  - **Xử lý Race Conditions & Conflicts**:
+
+    - **Problem 1**: Nhiều waiter cùng order món cần cùng nguyên liệu
+
+      - Solution: Row-level locking trên inventory table
+      - Transaction đầu tiên thành công, transaction sau fail nếu hết hàng
+
+    - **Problem 2**: Waiter hủy món ĐỒNG THỜI bếp chuyển status sang `cooking`
+
+      - Solution: Lock order_items row trước khi check status
+      - Nếu status đã thay đổi → báo lỗi không thể hủy
+
+    - **Problem 3**: Hủy món ĐỒNG THỜI tạo món mới cùng nguyên liệu
+
+      - Solution: Transaction hoàn nguyên liệu lock inventory
+      - Transaction tạo món mới phải chờ lock release
+      - Đảm bảo inventory quantity luôn chính xác
+
+    - **Deadlock Prevention**:
+      - Luôn lock theo thứ tự: order_items → inventory
+      - Timeout cho transactions (VD: 5 seconds)
+      - Retry mechanism với exponential backoff
+
+  - **Database Transaction Pattern**:
+
+    ```
+    1. BEGIN TRANSACTION
+    2. Lock order_items (FOR UPDATE)
+    3. Check status
+    4. If status allows → Lock inventory rows (FOR UPDATE)
+    5. Update inventory quantities
+    6. Insert inventory_logs
+    7. Delete/Update order_items
+    8. COMMIT (hoặc ROLLBACK nếu có lỗi)
+    ```
+
+  - **Monitoring & Alerts**:
+    - Log tất cả inventory transactions với timestamp, user, reason
+    - Alert manager khi nguyên liệu sắp hết (< 20% threshold)
+    - Dashboard hiển thị realtime inventory status
+    - Track lock wait times và optimize nếu > 1s
+
+- **Promotion Quantity**:
+  - Mỗi promotion có thể giới hạn số lượng lượt dùng (`promotionQuantity`)
+  - Mỗi lần áp dụng khuyến mãi → trừ 1 từ `promotionQuantity`
+  - Khi `promotionQuantity = 0` → promotion không khả dụng
+  - Frontend hiển thị số lượng còn lại
 - **Promotions**:
 
   - Mỗi promotion có `promotionQuantity` (số lượt dùng)

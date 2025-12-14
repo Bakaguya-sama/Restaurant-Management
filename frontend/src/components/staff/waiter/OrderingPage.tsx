@@ -17,20 +17,24 @@ interface OrderItem {
 
 export function OrderingPage() {
   const [selectedTable, setSelectedTable] = useState("T02");
-  const [tableOrders, setTableOrders] = useState<OrderItem[]>([
-    {
-      item: mockMenuItems[0],
-      quantity: 2,
-      notes: "Không hành",
-      status: "cooking",
-    },
-    {
-      item: mockMenuItems[1],
-      quantity: 1,
-      notes: "",
-      status: "served",
-    },
-  ]);
+  const [ordersByTable, setOrdersByTable] = useState<
+    Record<string, OrderItem[]>
+  >({
+    T02: [
+      {
+        item: mockMenuItems[0],
+        quantity: 2,
+        notes: "Không hành",
+        status: "cooking",
+      },
+      {
+        item: mockMenuItems[1],
+        quantity: 1,
+        notes: "",
+        status: "served",
+      },
+    ],
+  });
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [showCustomizeModal, setShowCustomizeModal] = useState(false);
   const [customizingItem, setCustomizingItem] = useState<OrderItem | null>(
@@ -58,33 +62,47 @@ export function OrderingPage() {
     return item.category === selectedCategory;
   });
 
+  // Get current table orders
+  const tableOrders = ordersByTable[selectedTable] || [];
+
   const handleAddToOrder = (item: MenuItem) => {
-    const existing = tableOrders.find((o) => o.item.id === item.id && !o.notes);
+    const currentOrders = ordersByTable[selectedTable] || [];
+    const existing = currentOrders.find(
+      (o) => o.item.id === item.id && !o.notes
+    );
+
     if (existing) {
-      setTableOrders(
-        tableOrders.map((o) =>
+      setOrdersByTable({
+        ...ordersByTable,
+        [selectedTable]: currentOrders.map((o) =>
           o.item.id === item.id && !o.notes
             ? { ...o, quantity: o.quantity + 1 }
             : o
-        )
-      );
+        ),
+      });
     } else {
-      setTableOrders([
-        ...tableOrders,
-        { item, quantity: 1, notes: "", status: "pending" },
-      ]);
+      setOrdersByTable({
+        ...ordersByTable,
+        [selectedTable]: [
+          ...currentOrders,
+          { item, quantity: 1, notes: "", status: "pending" },
+        ],
+      });
     }
     toast.success(`Đã thêm ${item.name}`);
   };
 
   const handleUpdateQuantity = (index: number, delta: number) => {
-    const newOrder = [...tableOrders];
-    newOrder[index].quantity += delta;
-    if (newOrder[index].quantity <= 0) {
-      newOrder.splice(index, 1);
+    const currentOrders = [...(ordersByTable[selectedTable] || [])];
+    currentOrders[index].quantity += delta;
+    if (currentOrders[index].quantity <= 0) {
+      currentOrders.splice(index, 1);
       toast.success("Đã xóa món");
     }
-    setTableOrders(newOrder);
+    setOrdersByTable({
+      ...ordersByTable,
+      [selectedTable]: currentOrders,
+    });
   };
 
   const handleCustomize = (orderItem: OrderItem, index: number) => {
@@ -95,16 +113,20 @@ export function OrderingPage() {
   const handleSaveCustomization = () => {
     if (!customizingItem) return;
 
-    const index = tableOrders.findIndex(
+    const currentOrders = ordersByTable[selectedTable] || [];
+    const index = currentOrders.findIndex(
       (o) =>
         o.item.id === customizingItem.item.id &&
         o.notes === (customizingItem.notes || "")
     );
 
     if (index >= 0) {
-      const newOrder = [...tableOrders];
+      const newOrder = [...currentOrders];
       newOrder[index] = customizingItem;
-      setTableOrders(newOrder);
+      setOrdersByTable({
+        ...ordersByTable,
+        [selectedTable]: newOrder,
+      });
     }
 
     setShowCustomizeModal(false);
@@ -116,18 +138,25 @@ export function OrderingPage() {
     index: number,
     newStatus: "pending" | "cooking" | "served"
   ) => {
-    const newOrders = [...tableOrders];
-    newOrders[index].status = newStatus;
-    setTableOrders(newOrders);
+    const currentOrders = [...(ordersByTable[selectedTable] || [])];
+    currentOrders[index].status = newStatus;
+    setOrdersByTable({
+      ...ordersByTable,
+      [selectedTable]: currentOrders,
+    });
     toast.success(`Đã cập nhật trạng thái: ${getStatusText(newStatus)}`);
   };
 
   const handleRemoveItem = (index: number) => {
-    const item = tableOrders[index];
+    const currentOrders = ordersByTable[selectedTable] || [];
+    const item = currentOrders[index];
     if (confirm(`Xác nhận hủy món "${item.item.name}"?`)) {
-      const newOrders = [...tableOrders];
+      const newOrders = [...currentOrders];
       newOrders.splice(index, 1);
-      setTableOrders(newOrders);
+      setOrdersByTable({
+        ...ordersByTable,
+        [selectedTable]: newOrders,
+      });
       toast.success("Đã hủy món");
     }
   };
@@ -167,22 +196,32 @@ export function OrderingPage() {
             <h3 className="mb-4">Chọn bàn</h3>
             {/* Table Selection Grid - Prominent Display */}
             <div className="grid grid-cols-4 md:grid-cols-6 gap-3 mb-6 p-4 bg-white rounded-lg border-2 border-[#0056D2]">
-              {availableTables.map((tableNum) => (
-                <button
-                  key={tableNum}
-                  onClick={() => setSelectedTable(tableNum)}
-                  className={`p-4 rounded-lg border-2 transition-all ${
-                    selectedTable === tableNum
-                      ? "bg-[#0056D2] text-white border-[#0056D2] shadow-lg scale-105"
-                      : "bg-white text-gray-700 border-gray-300 hover:border-[#0056D2] hover:bg-blue-50"
-                  }`}
-                >
-                  <div className="text-center">
-                    <Utensils className="w-6 h-6 mx-auto mb-1" />
-                    <span className="text-sm">{tableNum}</span>
-                  </div>
-                </button>
-              ))}
+              {availableTables.map((tableNum) => {
+                const hasOrders = ordersByTable[tableNum]?.length > 0;
+                return (
+                  <button
+                    key={tableNum}
+                    onClick={() => setSelectedTable(tableNum)}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      selectedTable === tableNum
+                        ? "bg-[#0056D2] text-white border-[#0056D2] shadow-lg scale-105"
+                        : hasOrders
+                        ? "bg-green-50 text-green-700 border-green-400 hover:border-green-500 hover:bg-green-100"
+                        : "bg-white text-gray-700 border-gray-300 hover:border-[#0056D2] hover:bg-blue-50"
+                    }`}
+                  >
+                    <div className="text-center">
+                      <Utensils className="w-6 h-6 mx-auto mb-1" />
+                      <span className="text-sm">{tableNum}</span>
+                      {hasOrders && (
+                        <span className="block text-xs mt-1">
+                          ({ordersByTable[tableNum].length} món)
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
 
             <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
