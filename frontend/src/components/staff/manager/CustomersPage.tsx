@@ -23,8 +23,17 @@ import {
 import { mockCustomers } from "../../../lib/mockData";
 import { Customer, Violation } from "../../../types";
 import { toast } from "sonner";
-
+import { ConfirmationModal } from "../../ui/ConfirmationModal";
 export function CustomersPage() {
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmTitle, setConfirmTitle] = useState("");
+  const [confirmMessage, setConfirmMessage] = useState("");
+  const [confirmText, setConfirmText] = useState("");
+  const [confirmCancelText, setConfirmCancelText] = useState("Hủy");
+  const [confirmVariant, setConfirmVariant] = useState<
+    "info" | "warning" | "danger"
+  >("info");
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [customers, setCustomers] = useState<Customer[]>(mockCustomers);
   const [searchQuery, setSearchQuery] = useState("");
   const [tierFilter, setTierFilter] = useState<string>("all");
@@ -47,7 +56,6 @@ export function CustomersPage() {
       id: "F001",
       customerId: "C001",
       customerName: "Nguyễn Văn An",
-      rating: 5,
       comment: "Món ăn rất ngon, phục vụ tận tình",
       date: "2025-12-09",
       response: "",
@@ -56,7 +64,6 @@ export function CustomersPage() {
       id: "F002",
       customerId: "C002",
       customerName: "Trần Thị Bình",
-      rating: 3,
       comment: "Thời gian chờ hơi lâu",
       date: "2025-12-08",
       response: "Xin lỗi quý khách, chúng tôi sẽ cải thiện",
@@ -113,14 +120,24 @@ export function CustomersPage() {
     if (!customer) return;
 
     const action = customer.isBlacklisted ? "bỏ chặn" : "chặn";
-    if (confirm(`Bạn có chắc muốn ${action} khách hàng này?`)) {
+    const actionCapitalized = customer.isBlacklisted ? "Bỏ chặn" : "Chặn";
+
+    setConfirmTitle(`${actionCapitalized} khách hàng`);
+    setConfirmMessage(
+      `Bạn có chắc muốn ${action} khách hàng ${customer.name}?`
+    );
+    setConfirmText(actionCapitalized);
+    setConfirmCancelText("Hủy");
+    setConfirmVariant(`${customer.isBlacklisted ? "info" : "warning"}`);
+    setPendingAction(() => () => {
       setCustomers(
         customers.map((c) =>
           c.id === customerId ? { ...c, isBlacklisted: !c.isBlacklisted } : c
         )
       );
       toast.success(`Đã ${action} khách hàng`);
-    }
+    });
+    setShowConfirmModal(true);
   };
 
   const getTierColor = (tier: string) => {
@@ -188,17 +205,17 @@ export function CustomersPage() {
         {/* Customers Tab */}
         <TabsContent value="customers" className="space-y-6">
           {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="flex grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="p-6">
               <p className="text-gray-600 mb-2">Tổng khách hàng</p>
               <p className="text-3xl">{customers.length}</p>
             </Card>
-            <Card className="p-6">
+            {/* <Card className="p-6">
               <p className="text-gray-600 mb-2">Thành viên Vàng</p>
               <p className="text-3xl text-yellow-600">
                 {customers.filter((c) => c.membershipTier === "gold").length}
               </p>
-            </Card>
+            </Card> */}
             <Card className="p-6">
               <p className="text-gray-600 mb-2">Blacklist</p>
               <p className="text-3xl text-red-600">
@@ -267,7 +284,7 @@ export function CustomersPage() {
                       <td className="p-4">
                         <button
                           onClick={() => handleViewDetail(customer)}
-                          className="text-[#0056D2] hover:underline"
+                          className="text-[#625EE8] hover:underline"
                         >
                           {customer.name}
                         </button>
@@ -344,7 +361,7 @@ export function CustomersPage() {
                     <div>
                       <h4 className="mb-1">{feedback.customerName}</h4>
                       <div className="flex items-center gap-2 mb-2">
-                        <div className="flex">
+                        {/* <div className="flex">
                           {[1, 2, 3, 4, 5].map((star) => (
                             <Star
                               key={star}
@@ -355,7 +372,7 @@ export function CustomersPage() {
                               }`}
                             />
                           ))}
-                        </div>
+                        </div> */}
                         <span className="text-sm text-gray-600">
                           {new Date(feedback.date).toLocaleDateString("vi-VN")}
                         </span>
@@ -560,6 +577,27 @@ export function CustomersPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => {
+          setShowConfirmModal(false);
+          setPendingAction(null);
+        }}
+        onConfirm={() => {
+          if (pendingAction) {
+            pendingAction();
+          }
+          setShowConfirmModal(false);
+          setPendingAction(null);
+        }}
+        title={confirmTitle}
+        message={confirmMessage}
+        confirmText={confirmText}
+        cancelText={confirmCancelText}
+        variant={confirmVariant}
+      />
     </div>
   );
 }

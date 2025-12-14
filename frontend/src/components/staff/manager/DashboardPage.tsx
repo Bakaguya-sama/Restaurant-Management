@@ -507,7 +507,7 @@ export function ManagerDashboard() {
                   ? "Tuần này"
                   : "Tháng này"}
               </p>
-              <p className="text-2xl text-[#0056D2] mb-1">
+              <p className="text-2xl text-[#625EE8] mb-1">
                 {currentData.invoices.count} đơn
               </p>
               <p className="text-sm text-gray-700">
@@ -698,7 +698,7 @@ export function ManagerDashboard() {
                       </Badge>
                     </td>
                     <td className="text-right py-3 px-4">{segment.count}</td>
-                    <td className="text-right py-3 px-4 text-[#0056D2]">
+                    <td className="text-right py-3 px-4 text-[#625EE8]">
                       {segment.revenue.toLocaleString()}đ
                     </td>
                     <td className="text-right py-3 px-4">

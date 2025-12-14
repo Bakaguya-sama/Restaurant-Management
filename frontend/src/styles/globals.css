@@ -2,13 +2,13 @@
 
 @layer base {
   :root {
-    --primary-blue: #0056D2;
+    --primary-blue: #625EE8;
     --bg-light-gray: #F4F7FE;
     --surface-white: #FFFFFF;
-    --status-success: #10B981;
-    --status-error: #EF4444;
+    --status-success: #17db99;
+    --status-error: #cd1b1b;
     --status-warning: #F59E0B;
-    --status-pending: #F97316;
+    --status-pending: #d88346;
     --text-dark: #1F2937;
     --text-gray: #6B7280;
     --border-light: #E5E7EB;
@@ -56,7 +56,9 @@
     font-weight: 500;
   }
 
-  input, textarea, select {
+  input,
+  textarea,
+  select {
     font-size: 0.875rem;
     line-height: 1.25rem;
   }

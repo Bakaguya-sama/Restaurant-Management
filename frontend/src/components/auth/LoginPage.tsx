@@ -45,7 +45,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="h-screen flex overflow-hidden">
       {/* Left Side - Image */}
       <div className="hidden lg:block lg:w-1/2 relative overflow-hidden">
         <img
@@ -53,7 +53,7 @@ export function LoginPage() {
           alt="Restaurant"
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0056D2]/80 to-transparent flex items-center justify-center">
+        <div className="absolute inset-0 bg-gradient-to-r from-[#625EE8]/80 to-transparent flex items-center justify-center">
           <div className="text-white px-12">
             <h1 className="text-white mb-6">Restaurant Management System</h1>
           </div>
@@ -74,7 +74,7 @@ export function LoginPage() {
               onClick={() => setActiveTab("customer")}
               className={`flex-1 py-2.5 rounded-md transition-all ${
                 activeTab === "customer"
-                  ? "bg-white shadow-sm text-[#0056D2]"
+                  ? "bg-white shadow-sm text-[#625EE8]"
                   : "text-gray-600 hover:text-gray-900"
               }`}
             >
@@ -84,7 +84,7 @@ export function LoginPage() {
               onClick={() => setActiveTab("staff")}
               className={`flex-1 py-2.5 rounded-md transition-all ${
                 activeTab === "staff"
-                  ? "bg-white shadow-sm text-[#0056D2]"
+                  ? "bg-white shadow-sm text-[#625EE8]"
                   : "text-gray-600 hover:text-gray-900"
               }`}
             >
@@ -126,7 +126,7 @@ export function LoginPage() {
                   <input type="checkbox" className="rounded border-gray-300" />
                   <span className="text-gray-600">Ghi nhớ đăng nhập</span>
                 </label>
-                <a href="#" className="text-[#0056D2] hover:underline">
+                <a href="#" className="text-[#625EE8] hover:underline">
                   Quên mật khẩu?
                 </a>
               </div>
@@ -141,7 +141,7 @@ export function LoginPage() {
                   <button
                     type="button"
                     onClick={() => navigate("/register")}
-                    className="text-[#0056D2] hover:underline"
+                    className="text-[#625EE8] hover:underline"
                   >
                     Đăng ký ngay
                   </button>
