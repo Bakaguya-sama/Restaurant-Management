@@ -1,14 +1,14 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const connectDB = require('./config/database');
+const connectDB = require('./src/config/database');
 
 // Import routes
-const floorsRouter = require('./routes/floors');
-const locationsRouter = require('./routes/locations');
-const tablesRouter = require('./routes/tables');
-const inventoryRouter = require('./presentation_layer/routes/inventory.routes');
-const suppliersRouter = require('./presentation_layer/routes/supplier.routes');
+const floorsRouter = require('./src/routes/floors');
+const locationsRouter = require('./src/routes/locations');
+const tablesRouter = require('./src/routes/tables');
+const inventoryRouter = require('./src/routes/inventory');
+const suppliersRouter = require('./src/routes/suppliers');
 
 // Load environment variables
 dotenv.config();
@@ -49,9 +49,7 @@ app.use('/api/v1/tables', tablesRouter);
 
 // Inventory & Suppliers
 app.use('/api/v1/inventory', inventoryRouter);
-
 app.use('/api/v1/suppliers', suppliersRouter);
-
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -73,9 +71,7 @@ app.use((req, res) => {
 
 const PORT = process.env.PORT || 5001;
 
-// Only start listening when not running tests to allow supertest to use the app
-if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`
 ╔═════════════════════════════════════════════════════╗
 ║       RESTAURANT MANAGEMENT API SERVER             ║
@@ -109,19 +105,8 @@ if (process.env.NODE_ENV !== 'test') {
 ║  • PUT    /api/v1/tables/:id                          ║
 ║  • PATCH  /api/v1/tables/:id/status                   ║
 ║  • DELETE /api/v1/tables/:id                          ║
-║                                                    ║
-║  INVENTORY MANAGEMENT:                             ║
-║  • GET    /api/v1/inventory                          ║
-║  • POST   /api/v1/inventory/import                   ║
-║  • POST   /api/v1/inventory/export                   ║
-║  • PUT    /api/v1/inventory/:id                      ║
-║                                                    ║
-║  SUPPLIERS:                                        ║
-║  • GET    /api/v1/suppliers                          ║
-║  • POST   /api/v1/suppliers                          ║
 ╚═════════════════════════════════════════════════════╝
 `);
-  });
-}
+});
 
 module.exports = app;

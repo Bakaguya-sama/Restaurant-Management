@@ -1,0 +1,160 @@
+@baseUrl = http://localhost:5001/api/v1
+
+# ======================
+# INVENTORY API TESTS
+# File: api-tests.http
+# ======================
+
+###
+# GET /inventory - Lấy tất cả batch tồn kho
+# Mục đích: trả về toàn bộ batch có quantity > 0
+GET {{baseUrl}}/inventory
+
+###
+# GET /inventory - Lọc low stock
+# Mục đích: trả về batch có ingredient stock <= minimum_quantity
+GET {{baseUrl}}/inventory?lowStock=true
+
+###
+# GET /inventory - Lọc expiring soon
+# Mục đích: trả về batch sắp hết hạn trong 7 ngày
+GET {{baseUrl}}/inventory?expiring=true
+
+###
+# POST /inventory/import - SUCCESS
+# Mục đích: nhập kho 1 batch hợp lệ
+# Thay trước khi dùng: PUT_INVENTORY_ITEM_ID_HERE, PUT_SUPPLIER_ID_HERE
+POST {{baseUrl}}/inventory/import
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "itemId": 693e93aed977b610436eb292,
+      "quantity": 10,
+      supplierId": 693e7df373919af5198ca0d3,
+      "expiryDate": "2026-12-31"
+    }
+  ]
+}
+
+###
+# POST /inventory/import - FAIL (thiếu supplierId)
+# Mục đích: kiểm tra validate khi thiếu trường bắt buộc -> expect 400
+POST {{baseUrl}}/inventory/import
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "itemId": 693e93aed977b610436eb292",
+      "quantity": 5,
+      "expiryDate": "2026-12-31"
+    }
+  ]
+}
+
+###
+# POST /inventory/import - KHÔNG GHI ĐÈ BATCH CŨ (2 import với expiry khác nhau)
+# Mục đích: import cùng itemId với expiry khác nhau, kiểm tra app không ghi đè batch cũ
+# 1) Import (expiry A)
+POST {{baseUrl}}/inventory/import
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "itemId": 693e93aed977b610436eb292,
+      "quantity": 3,
+      "supplierId": 693e7df373919af5198ca0d3,
+      "expiryDate": "2026-06-30"
+    }
+  ]
+}
+
+###
+# 2) Import (expiry B - khác ngày)
+POST {{baseUrl}}/inventory/import
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "itemId": 693e93aed977b610436eb292,
+      "quantity": 4,
+      "supplierId": 693e7df373919af5198ca0d3,
+      "expiryDate": "2027-01-15"
+    }
+  ]
+}
+
+###
+# 3) Xác nhận: GET /inventory để thấy hai batch (hoặc lọc theo expiry)
+GET {{baseUrl}}/inventory
+
+###
+# POST /inventory/export - SUCCESS
+# Mục đích: xuất kho hợp lệ (quantity <= tồn), có reason
+# Thay trước khi dùng: PUT_INVENTORY_ITEM_ID_HERE
+POST {{baseUrl}}/inventory/export
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "itemId": 693e93aed977b610436eb292,
+      "quantity": 1,
+      "reason": "Used in recipe test"
+    }
+  ]
+}
+
+###
+# POST /inventory/export - FAIL (insufficient stock)
+# Mục đích: xuất vượt tồn -> expect 400 với message 'Insufficient stock'
+POST {{baseUrl}}/inventory/export
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "itemId": 693e93aed977b610436eb292,
+      "quantity": 999999,
+      "reason": "Force insufficient stock error"
+    }
+  ]
+}
+
+
+# ======================
+# SUPPLIER API TESTS
+# ======================
+
+###
+# GET /suppliers - Lấy danh sách nhà cung cấp
+GET {{baseUrl}}/suppliers
+
+###
+# POST /suppliers - SUCCESS
+# Mục đích: tạo nhà cung cấp mới (tên độc nhất)
+POST {{baseUrl}}/suppliers
+Content-Type: application/json
+
+{
+  "name": "Manual Test Supplier",
+  "phone": "+84900000000",
+  "address": "123 Test St, HCMC"
+}
+
+###
+# POST /suppliers - FAIL (duplicate name)
+# Mục đích: tạo supplier trùng tên -> expect 409
+# Lưu ý: chạy ngay sau request tạo thành công ở trên
+POST {{baseUrl}}/suppliers
+Content-Type: application/json
+
+{
+  "name": "Manual Test Supplier",
+  "phone": "+84900000000",
+  "address": "Duplicate address"
+}

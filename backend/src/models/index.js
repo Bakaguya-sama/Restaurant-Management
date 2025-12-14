@@ -133,7 +133,8 @@ const IngredientSchema = new Schema({
 
 const StockImportSchema = new Schema({
   import_number: { type: String, required: true, unique: true },
-  staff_id: { type: Schema.Types.ObjectId, ref: 'Staff', required: true }, // WarehouseStaff
+  staff_id: { type: Schema.Types.ObjectId, ref: 'Staff' }, // WarehouseStaff (optional)
+  supplier_id: { type: Schema.Types.ObjectId, ref: 'Supplier' },
   import_date: { type: Date, default: Date.now },
   total_cost: { type: Number, default: 0 },
   supplier_name: String,
@@ -155,7 +156,7 @@ const StockImportDetailSchema = new Schema({
 
 const StockExportSchema = new Schema({
   export_number: { type: String, required: true, unique: true },
-  staff_id: { type: Schema.Types.ObjectId, ref: 'Staff', required: true },
+  staff_id: { type: Schema.Types.ObjectId, ref: 'Staff' },
   export_date: { type: Date, default: Date.now },
   total_cost: { type: Number, default: 0 },
   notes: String,
