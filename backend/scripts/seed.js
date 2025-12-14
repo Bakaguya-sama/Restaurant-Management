@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 const {
-  Staff, Customer, Table, Reservation, ReservationDetail, Complaint,
+  Staff, Customer, Floor, Location, Table, Reservation, ReservationDetail, Complaint,
   Ingredient, StockImport, StockImportDetail, Dish, DishIngredient,
   Menu, MenuEntry, Order, OrderDetail, Promotion, Invoice, InvoicePromotion,
   Violation, Rating, RatingReply
@@ -27,8 +27,9 @@ async function seedDatabase() {
     // XÓA DỮ LIỆU CŨ
     console.log('🗑️  Xóa dữ liệu cũ...');
     await Promise.all([
-      Staff.deleteMany({}), Customer.deleteMany({}),
-      Table.deleteMany({}), Reservation.deleteMany({}), ReservationDetail.deleteMany({}), Complaint.deleteMany({}),
+      Staff.deleteMany({}), Customer.deleteMany({}), 
+      Floor.deleteMany({}), Location.deleteMany({}), Table.deleteMany({}), 
+      Reservation.deleteMany({}), ReservationDetail.deleteMany({}), Complaint.deleteMany({}),
       Ingredient.deleteMany({}), StockImport.deleteMany({}), StockImportDetail.deleteMany({}),
       Dish.deleteMany({}), DishIngredient.deleteMany({}), Menu.deleteMany({}),
       MenuEntry.deleteMany({}), Order.deleteMany({}), OrderDetail.deleteMany({}),
@@ -209,22 +210,14 @@ async function seedDatabase() {
 
     // ==================== 3. FLOORS & LOCATIONS ====================
     console.log('3/20 🏢 Tạo Floors...');
-    const floors = await mongoose.model('Floor', new mongoose.Schema({
-      floor_name: String,
-      floor_number: Number,
-      description: String
-    })).insertMany([
+    const floors = await Floor.insertMany([
       { floor_name: 'Tầng 1 - Khu trong nhà', floor_number: 1, description: 'Khu vực ăn trong nhà' },
       { floor_name: 'Tầng 2 - VIP', floor_number: 2, description: 'Khu vực VIP riêng tư' }
     ]);
     console.log(`   ✅ ${floors.length} floors\n`);
 
     console.log('4/20 📍 Tạo Locations...');
-    const locations = await mongoose.model('Location', new mongoose.Schema({
-      name: String,
-      floor_id: mongoose.Schema.Types.ObjectId,
-      description: String
-    })).insertMany([
+    const locations = await Location.insertMany([
       { name: 'Trong nhà phía trước', floor_id: floors[0]._id, description: 'Phía trước cửa chính' },
       { name: 'Trong nhà phía sau', floor_id: floors[0]._id, description: 'Phía sau nhà hàng' },
       { name: 'Sân ngoài trời', floor_id: floors[0]._id, description: 'Bàn ngoài trời' },
@@ -792,7 +785,7 @@ async function seedDatabase() {
     console.log('========================================\n');
 
   } catch (error) {
-    console.error('❌ LỖI:', error.message);
+    console.error('LỖI:', error.message);
     console.error(error.stack);
     process.exit(1);
   } finally {

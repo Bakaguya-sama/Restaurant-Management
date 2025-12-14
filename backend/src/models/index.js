@@ -47,7 +47,7 @@ const CustomerSchema = new Schema({
 });
 
 // ==================== TABLE ====================
-const FLoorSchema = new Schema({
+const FloorSchema = new Schema({
   floor_name: { type: String, required: true, unique: true },
   floor_number: { type: Number, required: true, unique: true },
   description: String
@@ -322,7 +322,7 @@ InvoiceSchema.index({ invoice_number: 1 });
 
 const Staff = mongoose.model('Staff', StaffSchema);
 const Customer = mongoose.model('Customer', CustomerSchema);
-const Floor = mongoose.model('Floor', FLoorSchema);
+const Floor = mongoose.model('Floor', FloorSchema);
 const Location = mongoose.model('Location', LocationSchema);
 const Table = mongoose.model('Table', TableSchema);
 const Reservation = mongoose.model('Reservation', ReservationSchema);
