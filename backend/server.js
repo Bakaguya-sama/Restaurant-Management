@@ -3,6 +3,11 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/database');
 
+// Import routes
+const floorsRouter = require('./src/routes/floors');
+const locationsRouter = require('./src/routes/locations');
+const tablesRouter = require('./src/routes/tables');
+
 // Load environment variables
 dotenv.config();
 
@@ -26,7 +31,7 @@ app.get('/', (req, res) => {
   });
 });
 
-// API Routes (sẽ thêm sau)
+// API Routes
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
@@ -34,6 +39,11 @@ app.get('/api/health', (req, res) => {
     uptime: process.uptime()
   });
 });
+
+// Table Management Routes
+app.use('/api/floors', floorsRouter);
+app.use('/api/locations', locationsRouter);
+app.use('/api/tables', tablesRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -57,15 +67,39 @@ const PORT = process.env.PORT || 5001;
 
 app.listen(PORT, () => {
   console.log(`
-╔═══════════════════════════════════════╗
-║   RESTAURANT MANAGEMENT API      ║
-║   Server running on port ${PORT}     ║
-║   Environment: ${process.env.NODE_ENV || 'development'}      ║
-║                                       ║
-║   Available Routes:                ║
-║   • GET  /                            ║
-║   • GET  /api/health                  ║
-╚═══════════════════════════════════════╝
+╔═════════════════════════════════════════════════════╗
+║       RESTAURANT MANAGEMENT API SERVER             ║
+║       Port: ${PORT}                                       ║
+║       Environment: ${process.env.NODE_ENV || 'development'}                    ║
+╠═════════════════════════════════════════════════════╣
+║       Available Routes:                            ║
+║  • GET    /                                        ║
+║  • GET    /api/health                              ║
+║                                                    ║
+║  TABLE MANAGEMENT:                                 ║
+║  • GET    /api/floors                              ║
+║  • POST   /api/floors                              ║
+║  • GET    /api/floors/:id                          ║
+║  • PUT    /api/floors/:id                          ║
+║  • DELETE /api/floors/:id                          ║
+║                                                    ║
+║  • GET    /api/locations                           ║
+║  • POST   /api/locations                           ║
+║  • GET    /api/locations/:id                       ║
+║  • GET    /api/locations/floor/:floorId            ║
+║  • PUT    /api/locations/:id                       ║
+║  • DELETE /api/locations/:id                       ║
+║                                                    ║
+║  • GET    /api/tables                              ║
+║  • POST   /api/tables                              ║
+║  • GET    /api/tables/:id                          ║
+║  • GET    /api/tables/location/:locationId         ║
+║  • GET    /api/tables/status/available             ║
+║  • GET    /api/tables/status/summary               ║
+║  • PUT    /api/tables/:id                          ║
+║  • PATCH  /api/tables/:id/status                   ║
+║  • DELETE /api/tables/:id                          ║
+╚═════════════════════════════════════════════════════╝
 `);
 });
 
