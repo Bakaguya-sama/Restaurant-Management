@@ -4,9 +4,9 @@ const dotenv = require('dotenv');
 const connectDB = require('./config/database');
 
 // Import routes
-const floorsRouter = require('./src/routes/floors');
-const locationsRouter = require('./src/routes/locations');
-const tablesRouter = require('./src/routes/tables');
+const floorsRouter = require('./src/presentation_layer/routes/floors.routes');
+const locationsRouter = require('./src/presentation_layer/routes/locations.routes');
+const tablesRouter = require('./src/presentation_layer/routes/tables.routes');
 const staffRouter = require('./src/presentation_layer/routes/staff.routes');
 const customerRouter = require('./src/presentation_layer/routes/customer.routes');
 
@@ -34,7 +34,7 @@ app.get('/', (req, res) => {
 });
 
 // API Routes
-app.get('/api/v1/health', (req, res) => {
+app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     database: 'Connected',
