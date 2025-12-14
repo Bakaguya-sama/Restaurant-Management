@@ -4,7 +4,7 @@ Backend API cho hệ thống quản lý nhà hàng sử dụng Node.js, Express 
 
 ## 🗂️ Cấu trúc Database
 
-### Entities (20 bảng)
+### Entities (22 bảng)
 
 #### 1. **Staff** (Nhân viên)
 | Trường | Kiểu | Mô tả |
@@ -31,7 +31,7 @@ Backend API cho hệ thống quản lý nhà hàng sử dụng Node.js, Express 
 | phone | String | Số điện thoại (bắt buộc) |
 | address | String | Địa chỉ |
 | date_of_birth | Date | Ngày sinh |
-| membership_level | String | Cấp độ: regular, silver, gold (mặc định: regular) |
+| membership_level | String | Cấp độ: regular, bronze, silver, gold, platinum, diamond (mặc định: regular) |
 | points | Number | Điểm tích lũy (mặc định: 0) |
 | total_spent | Number | Tổng chi tiêu (mặc định: 0) |
 | image_url | String | URL ảnh đại diện |
@@ -40,17 +40,30 @@ Backend API cho hệ thống quản lý nhà hàng sử dụng Node.js, Express 
 | created_at | Date | Ngày tạo |
 | updated_at | Date | Ngày cập nhật |
 
-#### 3. **Table** (Bàn ăn)
+#### 3. **Floor** (Tầng - Mới)
+| Trường | Kiểu | Mô tả |
+|--------|------|-------|
+| floor_name | String | Tên tầng (bắt buộc, duy nhất) |
+| floor_number | Number | Số tầng (bắt buộc, duy nhất) |
+| description | String | Mô tả |
+
+#### 4. **Location** (Khu vực - Mới)
+| Trường | Kiểu | Mô tả |
+|--------|------|-------|
+| name | String | Tên khu vực (bắt buộc, duy nhất) |
+| floor_id | ObjectId | Tầng (bắt buộc) |
+| description | String | Mô tả |
+
+#### 5. **Table** (Bàn ăn)
 | Trường | Kiểu | Mô tả |
 |--------|------|-------|
 | table_number | String | Số bàn (bắt buộc, duy nhất) |
 | capacity | Number | Sức chứa (bắt buộc) |
-| location | String | Vị trí: indoor, outdoor, vip (mặc định: indoor) |
-| floor | Number | Tầng (mặc định: 1) |
-| status | String | Trạng thái: available, occupied, reserved, maintenance (mặc định: available) |
+| location_id | ObjectId | Khu vực (tham chiếu Location) |
+| status | String | Trạng thái: available, occupied, reserved, cleaning, maintenance (mặc định: available) |
 | created_at | Date | Ngày tạo |
 
-#### 4. **Reservation** (Đặt bàn)
+#### 6. **Reservation** (Đặt bàn)
 | Trường | Kiểu | Mô tả |
 |--------|------|-------|
 | customer_id | ObjectId | Khách hàng (bắt buộc) |
@@ -62,13 +75,13 @@ Backend API cho hệ thống quản lý nhà hàng sử dụng Node.js, Express 
 | created_at | Date | Ngày tạo |
 | updated_at | Date | Ngày cập nhật |
 
-#### 5. **ReservationDetail** (Chi tiết đặt bàn)
+#### 7. **ReservationDetail** (Chi tiết đặt bàn)
 | Trường | Kiểu | Mô tả |
 |--------|------|-------|
 | reservation_id | ObjectId | Đặt bàn (bắt buộc) |
 | table_id | ObjectId | Bàn ăn (bắt buộc) |
 
-#### 6. **Complaint** (Khiếu nại)
+#### 8. **Complaint** (Khiếu nại)
 | Trường | Kiểu | Mô tả |
 |--------|------|-------|
 | customer_id | ObjectId | Khách hàng (bắt buộc) |
@@ -82,56 +95,64 @@ Backend API cho hệ thống quản lý nhà hàng sử dụng Node.js, Express 
 | created_at | Date | Ngày tạo |
 | resolved_at | Date | Ngày giải quyết |
 
-#### 7. **Ingredient** (Nguyên liệu)
+#### 9. **Supplier** (Nhà cung cấp - Mới)
+| Trường | Kiểu | Mô tả |
+|--------|------|-------|
+| name | String | Tên nhà cung cấp (bắt buộc) |
+| phone_contact | String | Số điện thoại |
+| address | String | Địa chỉ |
+
+#### 10. **Ingredient** (Nguyên liệu)
 | Trường | Kiểu | Mô tả |
 |--------|------|-------|
 | name | String | Tên nguyên liệu (bắt buộc) |
 | unit | String | Đơn vị (kg, g, l, ml, pieces) (bắt buộc) |
 | quantity_in_stock | Number | Số lượng trong kho (mặc định: 0) |
 | minimum_quantity | Number | Số lượng tối thiểu (mặc định: 0) |
-| unit_price | Number | Giá đơn vị |
+| unit_price | Number | Giá đơn vị (bắt buộc) |
 | supplier_name | String | Tên nhà cung cấp |
 | supplier_contact | String | Thông tin liên hệ |
-| status | String | Trạng thái: available, low_stock, out_of_stock |
+| expiry_date | Date | Ngày hết hạn |
+| stock_status | String | Trạng thái: available, low_stock, out_of_stock (mặc định: available) |
+| expiry_status | String | Trạng thái hạn: valid, near_expiry, expired (mặc định: valid) |
 | created_at | Date | Ngày tạo |
 | updated_at | Date | Ngày cập nhật |
 
-#### 8. **StockImport** (Phiếu nhập kho)
+#### 11. **StockImport** (Phiếu nhập kho)
 | Trường | Kiểu | Mô tả |
 |--------|------|-------|
-| import_number | String | Mã phiếu nhập |
-| staff_id | ObjectId | Nhân viên nhập |
-| import_date | Date | Ngày nhập (bắt buộc) |
-| total_cost | Number | Tổng chi phí |
+| import_number | String | Mã phiếu nhập (bắt buộc, duy nhất) |
+| staff_id | ObjectId | Nhân viên nhập (bắt buộc) |
+| import_date | Date | Ngày nhập (mặc định: hiện tại) |
+| total_cost | Number | Tổng chi phí (mặc định: 0) |
 | supplier_name | String | Tên nhà cung cấp |
 | notes | String | Ghi chú |
-| status | String | Trạng thái: pending, completed |
+| status | String | Trạng thái: pending, completed, cancelled (mặc định: pending) |
 | created_at | Date | Ngày tạo |
 
-#### 9. **StockImportDetail** (Chi tiết nhập kho)
+#### 12. **StockImportDetail** (Chi tiết nhập kho)
 | Trường | Kiểu | Mô tả |
 |--------|------|-------|
 | import_id | ObjectId | Phiếu nhập (bắt buộc) |
 | ingredient_id | ObjectId | Nguyên liệu (bắt buộc) |
 | quantity | Number | Số lượng (bắt buộc) |
 | unit_price | Number | Giá đơn vị (bắt buộc) |
-| line_total | Number | Tổng dòng |
+| line_total | Number | Tổng dòng (bắt buộc) |
 | expiry_date | Date | Ngày hết hạn |
 
-#### 10. **Dish** (Món ăn)
+#### 13. **Dish** (Món ăn)
 | Trường | Kiểu | Mô tả |
 |--------|------|-------|
 | name | String | Tên món (bắt buộc) |
 | description | String | Mô tả |
-| category | String | Loại: appetizer, main_course, beverage (bắt buộc) |
+| category | String | Loại: appetizer, main_course, dessert, beverage (bắt buộc) |
 | price | Number | Giá (bắt buộc) |
-| preparation_time | Number | Thời gian chuẩn bị (phút) |
-| is_available | Boolean | Có sẵn (mặc định: true) |
 | image_url | String | URL ảnh |
+| is_available | Boolean | Có sẵn (mặc định: true) |
 | created_at | Date | Ngày tạo |
 | updated_at | Date | Ngày cập nhật |
 
-#### 11. **DishIngredient** (Junction Table: Món - Nguyên liệu)
+#### 14. **DishIngredient** (Junction Table: Món - Nguyên liệu)
 | Trường | Kiểu | Mô tả |
 |--------|------|-------|
 | dish_id | ObjectId | Món ăn (bắt buộc) |
@@ -139,36 +160,36 @@ Backend API cho hệ thống quản lý nhà hàng sử dụng Node.js, Express 
 | quantity_required | Number | Số lượng cần (bắt buộc) |
 | unit | String | Đơn vị (bắt buộc) |
 
-#### 12. **Menu** (Thực đơn)
+#### 15. **Menu** (Thực đơn)
 | Trường | Kiểu | Mô tả |
 |--------|------|-------|
 | name | String | Tên menu (bắt buộc) |
 | description | String | Mô tả |
-| menu_type | String | Loại: regular, lunch, dinner (bắt buộc) |
+| menu_type | String | Loại: regular, seasonal, special, lunch, dinner (bắt buộc) |
 | is_active | Boolean | Hoạt động (mặc định: true) |
 | valid_from | Date | Ngày bắt đầu |
 | valid_to | Date | Ngày kết thúc |
 | created_at | Date | Ngày tạo |
 
-#### 13. **MenuEntry** (Junction Table: Menu - Món)
+#### 16. **MenuEntry** (Junction Table: Menu - Món)
 | Trường | Kiểu | Mô tả |
 |--------|------|-------|
 | menu_id | ObjectId | Menu (bắt buộc) |
 | dish_id | ObjectId | Món ăn (bắt buộc) |
-| display_order | Number | Thứ tự hiển thị (bắt buộc) |
+| display_order | Number | Thứ tự hiển thị (mặc định: 0) |
 | is_featured | Boolean | Nổi bật (mặc định: false) |
 
-#### 14. **Order** (Đơn hàng) - Sử dụng Discriminators
+#### 17. **Order** (Đơn hàng) - Sử dụng Discriminators
 | Trường | Kiểu | Mô tả |
 |--------|------|-------|
 | order_number | String | Mã đơn (bắt buộc, duy nhất) |
 | order_type | String | Loại: dine-in-waiter, dine-in-customer, takeaway-customer, takeaway-staff (bắt buộc) |
-| order_date | Date | Ngày tạo (bắt buộc) |
-| order_time | String | Giờ tạo |
-| status | String | Trạng thái: pending, preparing, ready, served, completed (mặc định: pending) |
-| subtotal | Number | Tổng cộng trước thuế |
-| tax | Number | Thuế |
-| total_amount | Number | Tổng tiền |
+| order_date | Date | Ngày tạo (mặc định: hiện tại) |
+| order_time | String | Giờ tạo (bắt buộc) |
+| status | String | Trạng thái: pending, preparing, ready, served, completed, cancelled (mặc định: pending) |
+| subtotal | Number | Tổng cộng trước thuế (mặc định: 0) |
+| tax | Number | Thuế (mặc định: 0) |
+| total_amount | Number | Tổng tiền (mặc định: 0) |
 | table_id | ObjectId | Bàn ăn (cho dine-in) |
 | customer_id | ObjectId | Khách hàng (cho dine-in-customer, takeaway-customer) |
 | staff_id | ObjectId | Nhân viên (cho dine-in-waiter, takeaway-staff) |
@@ -176,67 +197,66 @@ Backend API cho hệ thống quản lý nhà hàng sử dụng Node.js, Express 
 | created_at | Date | Ngày tạo |
 | updated_at | Date | Ngày cập nhật |
 
-#### 15. **OrderDetail** (Chi tiết đơn hàng)
+#### 18. **OrderDetail** (Chi tiết đơn hàng)
 | Trường | Kiểu | Mô tả |
 |--------|------|-------|
 | order_id | ObjectId | Đơn hàng (bắt buộc) |
 | dish_id | ObjectId | Món ăn (bắt buộc) |
 | quantity | Number | Số lượng (bắt buộc) |
 | unit_price | Number | Giá đơn vị (bắt buộc) |
-| line_total | Number | Tổng dòng |
+| line_total | Number | Tổng dòng (bắt buộc) |
 | special_instructions | String | Yêu cầu đặc biệt |
-| status | String | Trạng thái: preparing, ready, served |
+| status | String | Trạng thái: pending, preparing, ready, served (mặc định: pending) |
 
-#### 16. **Promotion** (Khuyến mãi)
+#### 19. **Promotion** (Khuyến mãi)
 | Trường | Kiểu | Mô tả |
 |--------|------|-------|
 | name | String | Tên khuyến mãi (bắt buộc) |
 | description | String | Mô tả |
-| promotion_type | String | Loại: percentage, fixed_amount (bắt buộc) |
+| promotion_type | String | Loại: percentage, fixed_amount (bắt buộc, mặc định: percentage) |
 | discount_value | Number | Giá trị giảm (bắt buộc) |
-| minimum_order_amount | Number | Số tiền tối thiểu áp dụng |
-| promo_code | String | Mã khuyến mãi |
+| minimum_order_amount | Number | Số tiền tối thiểu áp dụng (mặc định: 0) |
+| promo_code | String | Mã khuyến mãi (duy nhất, tùy chọn) |
 | start_date | Date | Ngày bắt đầu (bắt buộc) |
 | end_date | Date | Ngày kết thúc (bắt buộc) |
 | is_active | Boolean | Hoạt động (mặc định: true) |
-| max_uses | Number | Số lần sử dụng tối đa (-1 = không giới hạn) |
+| max_uses | Number | Số lần sử dụng tối đa, -1 = không giới hạn (mặc định: -1) |
+| current_uses | Number | Số lần đã sử dụng (mặc định: 0) |
 | created_at | Date | Ngày tạo |
 
-#### 17. **Invoice** (Hóa đơn)
+#### 20. **Invoice** (Hóa đơn)
 | Trường | Kiểu | Mô tả |
 |--------|------|-------|
 | invoice_number | String | Mã hóa đơn (bắt buộc, duy nhất) |
-| order_id | ObjectId | Đơn hàng |
-| staff_id | ObjectId | Nhân viên (cashier) |
+| order_id | ObjectId | Đơn hàng (bắt buộc) |
+| staff_id | ObjectId | Nhân viên (cashier) (bắt buộc) |
 | customer_id | ObjectId | Khách hàng |
-| invoice_date | Date | Ngày lập (bắt buộc) |
+| invoice_date | Date | Ngày lập (mặc định: hiện tại) |
 | subtotal | Number | Tổng cộng trước thuế (bắt buộc) |
-| tax | Number | Thuế (bắt buộc) |
-| discount_amount | Number | Số tiền giảm |
+| tax | Number | Thuế (mặc định: 0) |
+| discount_amount | Number | Số tiền giảm (mặc định: 0) |
 | total_amount | Number | Tổng tiền (bắt buộc) |
-| payment_method | String | Phương thức: cash, card, e-wallet (bắt buộc) |
-| payment_status | String | Trạng thái: pending, paid (mặc định: pending) |
+| payment_method | String | Phương thức: cash, card, transfer, e-wallet (bắt buộc) |
+| payment_status | String | Trạng thái: pending, paid, cancelled (mặc định: pending) |
 | paid_at | Date | Ngày thanh toán |
-| notes | String | Ghi chú |
 | created_at | Date | Ngày tạo |
 
-#### 18. **InvoicePromotion** (Junction Table: Hóa đơn - Khuyến mãi)
+#### 21. **InvoicePromotion** (Junction Table: Hóa đơn - Khuyến mãi)
 | Trường | Kiểu | Mô tả |
 |--------|------|-------|
 | invoice_id | ObjectId | Hóa đơn (bắt buộc) |
 | promotion_id | ObjectId | Khuyến mãi (bắt buộc) |
 | discount_applied | Number | Số tiền giảm áp dụng (bắt buộc) |
 
-#### 19. **Violation** (Vi phạm)
+#### 22. **Violation** (Vi phạm)
 | Trường | Kiểu | Mô tả |
 |--------|------|-------|
 | customer_id | ObjectId | Khách hàng (bắt buộc) |
 | description | String | Mô tả vi phạm (bắt buộc) |
 | violation_date | Date | Ngày vi phạm (mặc định: hiện tại) |
-| resolution | String | Giải pháp |
-| resolved_at | Date | Ngày giải quyết |
+| violation_type | String | Loại: no_show, late_cancel, property_damage, other (mặc định: no_show) |
 
-#### 20. **Rating** (Đánh giá)
+#### 23. **Rating** (Đánh giá)
 | Trường | Kiểu | Mô tả |
 |--------|------|-------|
 | customer_id | ObjectId | Khách hàng (bắt buộc) |
@@ -244,7 +264,7 @@ Backend API cho hệ thống quản lý nhà hàng sử dụng Node.js, Express 
 | rating_date | Date | Ngày đánh giá (mặc định: hiện tại) |
 | score | Number | Điểm (1-5, bắt buộc) |
 
-#### 21. **RatingReply** (Phản hồi đánh giá)
+#### 24. **RatingReply** (Phản hồi đánh giá)
 | Trường | Kiểu | Mô tả |
 |--------|------|-------|
 | rating_id | ObjectId | Đánh giá (bắt buộc) |
@@ -285,24 +305,26 @@ net start MongoDB
 npm run seed
 ```
 
-Seed sẽ tạo dữ liệu đầy đủ cho 20 bảng:
+Seed sẽ tạo dữ liệu đầy đủ cho 22 bảng:
 - **6 Staff** (2 waiter, 2 cashier, 2 manager)
-- **5 Customers** (với các membership level khác nhau)
-- **10 Tables** (indoor, outdoor, vip với các sàn khác nhau)
+- **6 Customers** (các membership level: diamond, platinum, gold, silver, bronze, regular)
+- **2 Floors** (tầng 1, tầng 2)
+- **5 Locations** (trong nhà, ngoài trời, VIP phòng)
+- **10 Tables** (với location_id)
 - **4 Reservations** với chi tiết đầy đủ
 - **3 Complaints** với resolution
-- **10 Ingredients** với suppliers và stock levels
+- **10 Ingredients** với supplier, expiry_date, stock_status, expiry_status
 - **3 Stock Imports** và 6 chi tiết import
-- **8 Dishes** (appetizer, main_course, beverage)
+- **8 Dishes** (appetizer, main_course, dessert, beverage)
 - **10 Dish-Ingredient links**
 - **3 Menus** (regular, lunch, dinner)
 - **11 Menu Entries**
 - **3 Promotions** (percentage, fixed_amount, happy hour)
-- **4 Orders** với discriminators khác nhau (dine-in-waiter, dine-in-customer, takeaway-customer)
+- **4 Orders** với discriminators khác nhau
 - **10 Order Details**
 - **3 Invoices** với payment tracking
 - **1 Invoice Promotion**
-- **1 Violation** (tracking customer behavior)
+- **2 Violations** (no_show, late_cancel)
 - **4 Ratings** với 2 replies từ staff
 
 ### 5. Chạy server
@@ -321,29 +343,37 @@ Server sẽ chạy tại: `http://localhost:5001`
 ## 🔑 Tài khoản test
 
 ### Staff Accounts
-| Vai trò | Email | Mật khẩu | Ghi chú |
-|---------|-------|----------|--------|
-| Waiter | hung.waiter@restaurant.vn | password123 | Phục vụ bàn |
-| Waiter | mai.waiter@restaurant.vn | password123 | Phục vụ bàn |
-| Cashier | nam.cashier@restaurant.vn | password123 | Lập hóa đơn |
-| Cashier | lan.cashier@restaurant.vn | password123 | Lập hóa đơn |
-| Manager | minh.manager@restaurant.vn | password123 | Quản lý nhà hàng |
-| Manager | hoa.manager@restaurant.vn | password123 | Quản lý nhà hàng |
+| Vai trò | Email | Mật khẩu |
+|---------|-------|----------|
+| Waiter | hung.waiter@restaurant.vn | password123 |
+| Waiter | mai.waiter@restaurant.vn | password123 |
+| Cashier | nam.cashier@restaurant.vn | password123 |
+| Cashier | lan.cashier@restaurant.vn | password123 |
+| Manager | minh.manager@restaurant.vn | password123 |
+| Manager | hoa.manager@restaurant.vn | password123 |
 
 ### Customer Accounts
-| Cấp độ | Email | Mật khẩu | Điểm | Chi tiêu |
-|-------|-------|----------|------|---------|
-| Gold | tuan.nguyen@gmail.com | password123 | 2500 | 12.5M |
-| Silver | huong.tran@gmail.com | password123 | 1200 | 6M |
-| Gold | huy.le@gmail.com | password123 | 1800 | 9M |
-| Regular | nga.pham@gmail.com | password123 | 350 | 1.75M |
-| Silver | khoa.vo@gmail.com | password123 | 900 | 4.5M |
+| Membership | Email | Mật khẩu | Điểm | Chi tiêu |
+|-----------|-------|----------|------|---------|
+| Diamond | tuan.nguyen@gmail.com | password123 | 5000 | 50M |
+| Platinum | huong.tran@gmail.com | password123 | 3000 | 30M |
+| Gold | huy.le@gmail.com | password123 | 1800 | 15M |
+| Silver | nga.pham@gmail.com | password123 | 800 | 5M |
+| Bronze | khoa.vo@gmail.com | password123 | 300 | 2M |
+| Regular | son.hoang@gmail.com | password123 | 50 | 0.5M |
 
 ---
 
 ## 📊 Relationships (Mối quan hệ)
 
 ```
+Floor:
+└─ 1-N → Location (floor_id)
+
+Location:
+├─ N-1 → Floor (floor_id)
+└─ 1-N → Table (location_id)
+
 Staff:
 ├─ 1-N → Complaint (assigned_to_staff_id)
 ├─ 1-N → StockImport (staff_id)
@@ -361,6 +391,7 @@ Customer:
 
 Table:
 ├─ 1-N → ReservationDetail (table_id)
+├─ N-1 → Location (location_id)
 └─ 1-N → Order (table_id cho dine-in orders)
 
 Reservation:
@@ -369,8 +400,7 @@ Reservation:
 
 Ingredient:
 ├─ 1-N → StockImportDetail (ingredient_id)
-├─ 1-N → DishIngredient (ingredient_id)
-└─ N-1 → StockImport (qua StockImportDetail)
+└─ 1-N → DishIngredient (ingredient_id)
 
 Dish:
 ├─ 1-N → DishIngredient (dish_id)
@@ -381,7 +411,7 @@ Menu:
 ├─ 1-N → MenuEntry (menu_id)
 └─ N-N → Dish (qua MenuEntry)
 
-Order (Polymorphic - sử dụng Discriminators):
+Order (Polymorphic - Discriminators):
 ├─ dine-in-waiter → Staff + Table
 ├─ dine-in-customer → Customer + Table
 ├─ takeaway-customer → Customer
