@@ -2,9 +2,30 @@
 
 Backend API cho hệ thống quản lý nhà hàng sử dụng Node.js, Express và MongoDB.
 
+## 🗂️ Cấu trúc Project
+
+```
+backend/
+├── server.js                 # Main server entry point
+├── package.json
+├── config/
+│   └── database.js          # MongoDB connection config
+├── scripts/
+│   └── seed.js              # Database seeding script
+├── src/
+│   ├── models/
+│   │   └── index.js         # All Mongoose schemas & models (24 bảng)
+│   ├── routes/
+│   │   ├── floors.js        # Floor management routes
+│   │   ├── locations.js     # Location management routes
+│   │   └── tables.js        # Table management routes
+│   └── middleware/          # Authentication & validation middleware
+└── README.md
+```
+
 ## 🗂️ Cấu trúc Database
 
-### Entities (22 bảng)
+### Entities (24 bảng)
 
 #### 1. **Staff** (Nhân viên)
 | Trường | Kiểu | Mô tả |
@@ -274,7 +295,7 @@ Backend API cho hệ thống quản lý nhà hàng sử dụng Node.js, Express 
 
 ---
 
-## 🚀 Cài đặt & Chạy
+## Cài đặt & Chạy
 
 ### 1. Cài đặt dependencies
 ```bash
@@ -460,21 +481,140 @@ Violation:
 
 ---
 
-## 📝 Notes
+## API Routes
+
+### Floor Management (`/api/floors`)
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET | `/` | Lấy danh sách tất cả tầng |
+| GET | `/:id` | Lấy chi tiết tầng |
+| POST | `/` | Tạo tầng mới |
+| PUT | `/:id` | Cập nhật tầng |
+| DELETE | `/:id` | Xóa tầng |
+
+**Seed Data (2 tầng):**
+- Tầng 1 - Khu trong nhà (floor_number: 1)
+- Tầng 2 - VIP (floor_number: 2)
+
+### Location Management (`/api/locations`)
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET | `/` | Lấy danh sách tất cả khu vực |
+| GET | `/:id` | Lấy chi tiết khu vực |
+| GET | `/floor/:floorId` | Lấy khu vực theo tầng |
+| POST | `/` | Tạo khu vực mới |
+| PUT | `/:id` | Cập nhật khu vực |
+| DELETE | `/:id` | Xóa khu vực |
+
+**Seed Data (5 khu vực):**
+- Trong nhà phía trước (Tầng 1)
+- Trong nhà phía sau (Tầng 1)
+- Sân ngoài trời (Tầng 1)
+- Phòng VIP A (Tầng 2)
+- Phòng VIP B (Tầng 2)
+
+### Table Management (`/api/tables`)
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET | `/` | Lấy danh sách bàn (filter: status, location_id) |
+| GET | `/:id` | Lấy chi tiết bàn |
+| GET | `/location/:locationId` | Lấy bàn theo khu vực |
+| GET | `/status/available` | Lấy tất cả bàn trống |
+| GET | `/status/summary` | Tóm tắt số bàn theo trạng thái |
+| POST | `/` | Tạo bàn mới |
+| PUT | `/:id` | Cập nhật bàn |
+| PATCH | `/:id/status` | Cập nhật trạng thái bàn |
+| DELETE | `/:id` | Xóa bàn |
+
+**Seed Data (15 bàn):**
+- T01-T03: Bàn 2 chỗ (Khu trong nhà phía trước)
+- T04-T06: Bàn 4 chỗ (Khu trong nhà phía sau)
+- T07-T09: Bàn 2-6 chỗ (Sân ngoài trời)
+- T10-T12: Bàn VIP 8 chỗ (Phòng VIP A)
+- T13-T15: Bàn VIP 10 chỗ (Phòng VIP B)
+
+**Table Status:**
+- `available` - Bàn trống
+- `occupied` - Bàn đang sử dụng
+- `reserved` - Bàn được đặt
+- `cleaning` - Bàn đang làm sạch
+- `maintenance` - Bàn bảo trì
+
+---
+
+##  Notes
 
 - Database sử dụng Mongoose với schema validation
 - Passwords được hash bằng bcryptjs
 - Tất cả timestamps (created_at, updated_at) tự động
 - Indexes được tạo cho các trường thường xuyên query (email, order_number, invoice_number)
 - Junction tables được sử dụng cho many-to-many relationships
+- Tất cả routes có response format thống nhất: `{ success: boolean, data: any, message: string }`
+- Validation dữ liệu đầu vào cho tất cả endpoints
+- Error handling và logging cho các operation
 
 ---
 
-## 🔜 Next Steps
+##  Database Seeding
 
-1. Tạo các API routes cho từng entity
-2. Implement authentication & authorization
-3. Add validation middleware
-4. Create API documentation (Swagger/OpenAPI)
-5. Add unit tests
-6. Implement real-time features (Socket.io)
+Chạy script seed để tạo dữ liệu mẫu:
+
+```bash
+npm run seed
+```
+
+**Seed Data được tạo:**
+- **2 Staff accounts**: 1 waiter + 1 cashier + 1 manager (password: password123)
+- **5 Customers**: Với các membership levels khác nhau
+- **2 Floors**: Tầng 1 & Tầng 2
+- **5 Locations**: 3 khu vực tầng 1, 2 khu vực tầng 2
+- **15 Tables**: Phân bố theo các locations khác nhau
+- **Ingredients**: Các nguyên liệu nhà hàng
+- **Dishes**: Các món ăn (appetizer, main_course, dessert, beverage)
+- **Menu**: Thực đơn hàng ngày
+- **Promotions**: Các khuyến mãi (percentage & fixed_amount)
+- **và các bảng khác**: Orders, Invoices, Reservations, etc.
+
+---
+
+##  Getting Started
+
+### 1. Setup
+
+```bash
+# Install dependencies
+npm install
+
+# Create .env file
+cp .env.example .env
+
+# Update MongoDB URI in .env
+MONGODB_URI=mongodb://localhost:27017/restaurant_management
+```
+
+### 2. Run Development Server
+
+```bash
+# Start development server (with nodemon)
+npm run dev
+
+# Or run production server
+npm start
+```
+
+### 3. Seed Database
+
+```bash
+npm run seed
+```
+
+
+##  Next Steps
+
+1. Done: Tạo API routes cho Floor, Location, Table
+2.  Tạo API routes cho các entity khác (Order, Invoice, Reservation, etc.)
+3.  Implement authentication & authorization middleware
+4.  Add validation middleware
+5.  Create API documentation (Swagger/OpenAPI)
+6.  Add unit tests
+7.  Implement real-time features (Socket.io)
