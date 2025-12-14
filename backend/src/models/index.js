@@ -314,13 +314,6 @@ const RatingReplySchema = new Schema({
   reply_date: { type: Date, default: Date.now },
 });
 
-// ==================== INDEXES ====================
-
-StaffSchema.index({ email: 1 });
-CustomerSchema.index({ email: 1 });
-OrderSchema.index({ order_number: 1 });
-InvoiceSchema.index({ invoice_number: 1 });
-
 // ==================== EXPORTS ====================
 
 const Staff = mongoose.model('Staff', StaffSchema);

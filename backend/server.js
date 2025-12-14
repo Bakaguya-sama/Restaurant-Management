@@ -7,6 +7,8 @@ const connectDB = require('./config/database');
 const floorsRouter = require('./src/routes/floors');
 const locationsRouter = require('./src/routes/locations');
 const tablesRouter = require('./src/routes/tables');
+const staffRouter = require('./src/presentation_layer/routes/staff.routes');
+const customerRouter = require('./src/presentation_layer/routes/customer.routes');
 
 // Load environment variables
 dotenv.config();
@@ -45,6 +47,12 @@ app.use('/api/v1/floors', floorsRouter);
 app.use('/api/v1/locations', locationsRouter);
 app.use('/api/v1/tables', tablesRouter);
 
+// Staff Routes
+app.use('/api/v1/staff', staffRouter);
+
+// Customer Routes
+app.use('/api/v1/customers', customerRouter);
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -65,8 +73,10 @@ app.use((req, res) => {
 
 const PORT = process.env.PORT || 5001;
 
-app.listen(PORT, () => {
-  console.log(`
+// Only listen if not in test environment
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`
 ╔═════════════════════════════════════════════════════╗
 ║       RESTAURANT MANAGEMENT API SERVER             ║
 ║       Port: ${PORT}                                       ║
@@ -75,6 +85,31 @@ app.listen(PORT, () => {
 ║       Available Routes:                            ║
 ║  • GET    /                                        ║
 ║  • GET    /api/v1/health                              ║
+║                                                    ║
+║  STAFF MANAGEMENT:                                 ║
+║  • POST   /api/v1/staff/login                         ║
+║  • GET    /api/v1/staff/statistics                    ║
+║  • GET    /api/v1/staff                               ║
+║  • GET    /api/v1/staff/:id                           ║
+║  • POST   /api/v1/staff                               ║
+║  • PUT    /api/v1/staff/:id                           ║
+║  • DELETE /api/v1/staff/:id                           ║
+║  • PATCH  /api/v1/staff/:id/activate                  ║
+║  • PATCH  /api/v1/staff/:id/deactivate                ║
+║                                                    ║
+║  CUSTOMER MANAGEMENT:                              ║
+║  • POST   /api/v1/customers/login                     ║
+║  • GET    /api/v1/customers/statistics                ║
+║  • GET    /api/v1/customers/top                       ║
+║  • GET    /api/v1/customers                           ║
+║  • GET    /api/v1/customers/:id                       ║
+║  • POST   /api/v1/customers                           ║
+║  • PUT    /api/v1/customers/:id                       ║
+║  • DELETE /api/v1/customers/:id                       ║
+║  • PATCH  /api/v1/customers/:id/ban                   ║
+║  • PATCH  /api/v1/customers/:id/unban                 ║
+║  • PATCH  /api/v1/customers/:id/points                ║
+║  • PATCH  /api/v1/customers/:id/spending              ║
 ║                                                    ║
 ║  TABLE MANAGEMENT:                                 ║
 ║  • GET    /api/v1/floors                              ║
@@ -101,6 +136,7 @@ app.listen(PORT, () => {
 ║  • DELETE /api/v1/tables/:id                          ║
 ╚═════════════════════════════════════════════════════╝
 `);
-});
+  });
+}
 
 module.exports = app;
