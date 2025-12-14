@@ -169,3 +169,163 @@ Content-Type: application/json
 
 ### Delete Customer
 DELETE {{baseUrl}}/customers/674da30bb19ecab3d0c9f0b1
+### ============================================
+### FLOOR API ENDPOINTS
+### ============================================
+
+### Get All Floors
+GET {{baseUrl}}/floors
+
+### Get Floor by ID
+GET {{baseUrl}}/floors/674da30bb19ecab3d0c9f0c1
+
+### Create New Floor
+POST {{baseUrl}}/floors
+Content-Type: application/json
+
+{
+  "name": "Ground Floor",
+  "level": 0,
+  "description": "Main entrance and dining area"
+}
+
+### Update Floor
+PUT {{baseUrl}}/floors/674da30bb19ecab3d0c9f0c1
+Content-Type: application/json
+
+{
+  "name": "Ground Floor Updated",
+  "level": 0,
+  "description": "Updated main dining area"
+}
+
+### Delete Floor
+DELETE {{baseUrl}}/floors/674da30bb19ecab3d0c9f0c1
+
+### ============================================
+### LOCATION API ENDPOINTS
+### ============================================
+
+### Get All Locations
+GET {{baseUrl}}/locations
+
+### Get All Locations Filtered by Floor
+GET {{baseUrl}}/locations?floor=674da30bb19ecab3d0c9f0c1
+
+### Get Location by ID
+GET {{baseUrl}}/locations/674da30bb19ecab3d0c9f0c2
+
+### Get Locations by Floor ID
+GET {{baseUrl}}/locations/floor/674da30bb19ecab3d0c9f0c1
+
+### Create New Location
+POST {{baseUrl}}/locations
+Content-Type: application/json
+
+{
+  "name": "Section A",
+  "floor_id": "674da30bb19ecab3d0c9f0c1",
+  "description": "VIP section near window"
+}
+
+### Update Location
+PUT {{baseUrl}}/locations/674da30bb19ecab3d0c9f0c2
+Content-Type: application/json
+
+{
+  "name": "Section A Updated",
+  "floor_id": "674da30bb19ecab3d0c9f0c1",
+  "description": "Updated VIP section"
+}
+
+### Delete Location
+DELETE {{baseUrl}}/locations/674da30bb19ecab3d0c9f0c2
+
+### ============================================
+### TABLE API ENDPOINTS
+### ============================================
+
+### Get All Tables
+GET {{baseUrl}}/tables
+
+### Get All Tables Filtered by Status
+GET {{baseUrl}}/tables?status=free
+
+### Get All Tables Filtered by Location
+GET {{baseUrl}}/tables?area=674da30bb19ecab3d0c9f0c2
+
+### Get Table by ID
+GET {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3
+
+### Get Tables by Location ID
+GET {{baseUrl}}/tables/location/674da30bb19ecab3d0c9f0c2
+
+### Get Tables by Status
+GET {{baseUrl}}/tables/status/free
+
+### Get Table Status Summary/Statistics
+GET {{baseUrl}}/tables/status/summary
+
+### Create New Table
+POST {{baseUrl}}/tables
+Content-Type: application/json
+
+{
+  "number": 101,
+  "seats": 4,
+  "area": "674da30bb19ecab3d0c9f0c2"
+}
+
+### Update Table
+PUT {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3
+Content-Type: application/json
+
+{
+  "number": 102,
+  "seats": 6,
+  "area": "674da30bb19ecab3d0c9f0c2"
+}
+
+### Update Table Status to Occupied
+PATCH {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3/status
+Content-Type: application/json
+
+{
+  "status": "occupied"
+}
+
+### Update Table Status to Reserved
+PATCH {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3/status
+Content-Type: application/json
+
+{
+  "status": "reserved"
+}
+
+### Update Table Status to Dirty
+PATCH {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3/status
+Content-Type: application/json
+
+{
+  "status": "dirty"
+}
+
+### Update Table Status to Broken (with reason)
+PATCH {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3/status
+Content-Type: application/json
+
+{
+  "status": "broken",
+  "brokenReason": "Chair leg is broken"
+}
+
+### Update Table Status back to Free (clears brokenReason)
+PATCH {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3/status
+Content-Type: application/json
+
+{
+  "status": "free"
+}
+
+### Delete Table
+DELETE {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3
