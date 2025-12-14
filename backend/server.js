@@ -32,7 +32,7 @@ app.get('/', (req, res) => {
 });
 
 // API Routes
-app.get('/api/health', (req, res) => {
+app.get('/api/v1/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     database: 'Connected',
@@ -74,31 +74,31 @@ app.listen(PORT, () => {
 ╠═════════════════════════════════════════════════════╣
 ║       Available Routes:                            ║
 ║  • GET    /                                        ║
-║  • GET    /api/health                              ║
+║  • GET    /api/v1/health                              ║
 ║                                                    ║
 ║  TABLE MANAGEMENT:                                 ║
-║  • GET    /api/floors                              ║
-║  • POST   /api/floors                              ║
-║  • GET    /api/floors/:id                          ║
-║  • PUT    /api/floors/:id                          ║
-║  • DELETE /api/floors/:id                          ║
+║  • GET    /api/v1/floors                              ║
+║  • POST   /api/v1/floors                              ║
+║  • GET    /api/v1/floors/:id                          ║
+║  • PUT    /api/v1/floors/:id                          ║
+║  • DELETE /api/v1/floors/:id                          ║
 ║                                                    ║
-║  • GET    /api/locations                           ║
-║  • POST   /api/locations                           ║
-║  • GET    /api/locations/:id                       ║
-║  • GET    /api/locations/floor/:floorId            ║
-║  • PUT    /api/locations/:id                       ║
-║  • DELETE /api/locations/:id                       ║
+║  • GET    /api/v1/locations                           ║
+║  • POST   /api/v1/locations                           ║
+║  • GET    /api/v1/locations/:id                       ║
+║  • GET    /api/v1/locations/floor/:floorId            ║
+║  • PUT    /api/v1/locations/:id                       ║
+║  • DELETE /api/v1/locations/:id                       ║
 ║                                                    ║
-║  • GET    /api/tables                              ║
-║  • POST   /api/tables                              ║
-║  • GET    /api/tables/:id                          ║
-║  • GET    /api/tables/location/:locationId         ║
-║  • GET    /api/tables/status/available             ║
-║  • GET    /api/tables/status/summary               ║
-║  • PUT    /api/tables/:id                          ║
-║  • PATCH  /api/tables/:id/status                   ║
-║  • DELETE /api/tables/:id                          ║
+║  • GET    /api/v1/tables                              ║
+║  • POST   /api/v1/tables                              ║
+║  • GET    /api/v1/tables/:id                          ║
+║  • GET    /api/v1/tables/location/:locationId         ║
+║  • GET    /api/v1/tables/status/available             ║
+║  • GET    /api/v1/tables/status/summary               ║
+║  • PUT    /api/v1/tables/:id                          ║
+║  • PATCH  /api/v1/tables/:id/status                   ║
+║  • DELETE /api/v1/tables/:id                          ║
 ╚═════════════════════════════════════════════════════╝
 `);
 });
