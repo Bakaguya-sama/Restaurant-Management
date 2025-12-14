@@ -3,11 +3,11 @@ const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 const {
-  Staff, Customer, Table, Reservation, ReservationDetail, Complaint,
+  Staff, Customer, Floor, Location, Table, Reservation, ReservationDetail, Complaint,
   Ingredient, StockImport, StockImportDetail, Dish, DishIngredient,
   Menu, MenuEntry, Order, OrderDetail, Promotion, Invoice, InvoicePromotion,
   Violation, Rating, RatingReply
-} = require('../models');
+} = require('../src/models');
 
 async function connectDB() {
   try {
@@ -27,8 +27,9 @@ async function seedDatabase() {
     // XÓA DỮ LIỆU CŨ
     console.log('🗑️  Xóa dữ liệu cũ...');
     await Promise.all([
-      Staff.deleteMany({}), Customer.deleteMany({}),
-      Table.deleteMany({}), Reservation.deleteMany({}), ReservationDetail.deleteMany({}), Complaint.deleteMany({}),
+      Staff.deleteMany({}), Customer.deleteMany({}), 
+      Floor.deleteMany({}), Location.deleteMany({}), Table.deleteMany({}), 
+      Reservation.deleteMany({}), ReservationDetail.deleteMany({}), Complaint.deleteMany({}),
       Ingredient.deleteMany({}), StockImport.deleteMany({}), StockImportDetail.deleteMany({}),
       Dish.deleteMany({}), DishIngredient.deleteMany({}), Menu.deleteMany({}),
       MenuEntry.deleteMany({}), Order.deleteMany({}), OrderDetail.deleteMany({}),
@@ -132,9 +133,9 @@ async function seedDatabase() {
         phone: '0912345678', 
         address: '100 Đường Đông Khởi, Q.1, TP.HCM',
         date_of_birth: new Date('1990-03-10'),
-        membership_level: 'gold', 
-        points: 2500, 
-        total_spent: 12500000, 
+        membership_level: 'diamond', 
+        points: 5000, 
+        total_spent: 50000000, 
         image_url: '/images/customers/customer1.jpg', 
         password_hash: password,
         isBanned: false
@@ -145,9 +146,9 @@ async function seedDatabase() {
         phone: '0912345679', 
         address: '200 Đường Hàm Nghi, Q.1, TP.HCM',
         date_of_birth: new Date('1992-07-22'),
-        membership_level: 'silver', 
-        points: 1200, 
-        total_spent: 6000000, 
+        membership_level: 'platinum', 
+        points: 3000, 
+        total_spent: 30000000, 
         image_url: '/images/customers/customer2.jpg', 
         password_hash: password,
         isBanned: false
@@ -160,7 +161,7 @@ async function seedDatabase() {
         date_of_birth: new Date('1988-11-14'),
         membership_level: 'gold', 
         points: 1800, 
-        total_spent: 9000000, 
+        total_spent: 15000000, 
         image_url: '/images/customers/customer3.jpg', 
         password_hash: password,
         isBanned: false
@@ -171,9 +172,9 @@ async function seedDatabase() {
         phone: '0912345681', 
         address: '400 Đường Ngô Đức Kế, Q.1, TP.HCM',
         date_of_birth: new Date('1995-05-30'),
-        membership_level: 'regular', 
-        points: 350, 
-        total_spent: 1750000, 
+        membership_level: 'silver', 
+        points: 800, 
+        total_spent: 5000000, 
         image_url: '/images/customers/customer4.jpg', 
         password_hash: password,
         isBanned: false
@@ -184,34 +185,65 @@ async function seedDatabase() {
         phone: '0912345682', 
         address: '500 Đường Trần Hưng Đạo, Q.5, TP.HCM',
         date_of_birth: new Date('1993-09-18'),
-        membership_level: 'silver', 
-        points: 900, 
-        total_spent: 4500000, 
+        membership_level: 'bronze', 
+        points: 300, 
+        total_spent: 2000000, 
         image_url: '/images/customers/customer5.jpg', 
+        password_hash: password,
+        isBanned: false
+      },
+      {
+        full_name: 'Hoàng Văn Sơn',
+        email: 'son.hoang@gmail.com',
+        phone: '0912345683',
+        address: '600 Đường Ba Tháng Hai, Q.10, TP.HCM',
+        date_of_birth: new Date('1994-12-12'),
+        membership_level: 'regular',
+        points: 50,
+        total_spent: 500000,
+        image_url: '/images/customers/customer6.jpg',
         password_hash: password,
         isBanned: false
       }
     ]);
     console.log(`   ✅ ${customers.length} customers\n`);
 
-    // ==================== 3. TABLES ====================
-    console.log('3/20 🪑 Tạo Tables...');
+    // ==================== 3. FLOORS & LOCATIONS ====================
+    console.log('3/20 🏢 Tạo Floors...');
+    const floors = await Floor.insertMany([
+      { floor_name: 'Tầng 1 - Khu trong nhà', floor_number: 1, description: 'Khu vực ăn trong nhà' },
+      { floor_name: 'Tầng 2 - VIP', floor_number: 2, description: 'Khu vực VIP riêng tư' }
+    ]);
+    console.log(`   ✅ ${floors.length} floors\n`);
+
+    console.log('4/20 📍 Tạo Locations...');
+    const locations = await Location.insertMany([
+      { name: 'Trong nhà phía trước', floor_id: floors[0]._id, description: 'Phía trước cửa chính' },
+      { name: 'Trong nhà phía sau', floor_id: floors[0]._id, description: 'Phía sau nhà hàng' },
+      { name: 'Sân ngoài trời', floor_id: floors[0]._id, description: 'Bàn ngoài trời' },
+      { name: 'Phòng VIP A', floor_id: floors[1]._id, description: 'Phòng riêng VIP A' },
+      { name: 'Phòng VIP B', floor_id: floors[1]._id, description: 'Phòng riêng VIP B' }
+    ]);
+    console.log(`   ✅ ${locations.length} locations\n`);
+
+    // ==================== 5. TABLES ====================
+    console.log('5/20 🪑 Tạo Tables...');
     const tables = await Table.insertMany([
-      { table_number: 'T01', capacity: 2, location: 'indoor', floor: 1, status: 'available' },
-      { table_number: 'T02', capacity: 4, location: 'indoor', floor: 1, status: 'available' },
-      { table_number: 'T03', capacity: 4, location: 'indoor', floor: 1, status: 'occupied' },
-      { table_number: 'T04', capacity: 6, location: 'outdoor', floor: 1, status: 'available' },
-      { table_number: 'T05', capacity: 8, location: 'vip', floor: 2, status: 'reserved' },
-      { table_number: 'T06', capacity: 4, location: 'indoor', floor: 1, status: 'available' },
-      { table_number: 'T07', capacity: 2, location: 'outdoor', floor: 1, status: 'available' },
-      { table_number: 'T08', capacity: 6, location: 'vip', floor: 2, status: 'available' },
-      { table_number: 'T09', capacity: 4, location: 'indoor', floor: 1, status: 'maintenance' },
-      { table_number: 'T10', capacity: 10, location: 'vip', floor: 2, status: 'available' }
+      { table_number: 'T01', capacity: 2, location_id: locations[0]._id, status: 'free' },
+      { table_number: 'T02', capacity: 4, location_id: locations[0]._id, status: 'free' },
+      { table_number: 'T03', capacity: 4, location_id: locations[0]._id, status: 'occupied' },
+      { table_number: 'T04', capacity: 6, location_id: locations[1]._id, status: 'free' },
+      { table_number: 'T05', capacity: 8, location_id: locations[3]._id, status: 'reserved' },
+      { table_number: 'T06', capacity: 4, location_id: locations[1]._id, status: 'free' },
+      { table_number: 'T07', capacity: 2, location_id: locations[2]._id, status: 'free' },
+      { table_number: 'T08', capacity: 6, location_id: locations[4]._id, status: 'free' },
+      { table_number: 'T09', capacity: 4, location_id: locations[0]._id, status: 'dirty' },
+      { table_number: 'T10', capacity: 10, location_id: locations[3]._id, status: 'free' }
     ]);
     console.log(`   ✅ ${tables.length} tables\n`);
 
-    // ==================== 4. RESERVATIONS ====================
-    console.log('4/20 📅 Tạo Reservations...');
+    // ==================== 6. RESERVATIONS ====================
+    console.log('6/20 📅 Tạo Reservations...');
     const reservations = await Reservation.insertMany([
       { 
         customer_id: customers[0]._id, 
@@ -219,7 +251,7 @@ async function seedDatabase() {
         reservation_time: '19:00', 
         number_of_guests: 6, 
         status: 'confirmed', 
-        special_requests: 'Cần ghế cao cho em bé, không có dưa chuột' 
+        special_requests: 'Trang trí bàn sinh nhật, không có cà chua' 
       },
       { 
         customer_id: customers[2]._id, 
@@ -227,7 +259,7 @@ async function seedDatabase() {
         reservation_time: '20:00', 
         number_of_guests: 8, 
         status: 'pending',
-        special_requests: 'Trang trí bàn sinh nhật'
+        special_requests: 'Bàn yên tĩnh, có đèn nến'
       },
       { 
         customer_id: customers[1]._id, 
@@ -235,7 +267,7 @@ async function seedDatabase() {
         reservation_time: '18:30', 
         number_of_guests: 4, 
         status: 'completed',
-        special_requests: 'Vegetarian only'
+        special_requests: 'Menu vegetarian'
       },
       { 
         customer_id: customers[4]._id, 
@@ -247,8 +279,8 @@ async function seedDatabase() {
     ]);
     console.log(`   ✅ ${reservations.length} reservations\n`);
 
-    // ==================== 5. RESERVATION DETAILS ====================
-    console.log('5/20 📋 Tạo Reservation Details...');
+    // ==================== 7. RESERVATION DETAILS ====================
+    console.log('7/20 📋 Tạo Reservation Details...');
     const reservationDetails = await ReservationDetail.insertMany([
       { reservation_id: reservations[0]._id, table_id: tables[4]._id },
       { reservation_id: reservations[1]._id, table_id: tables[7]._id },
@@ -257,8 +289,8 @@ async function seedDatabase() {
     ]);
     console.log(`   ✅ ${reservationDetails.length} reservation details\n`);
 
-    // ==================== 6. COMPLAINTS ====================
-    console.log('6/20 💬 Tạo Complaints...');
+    // ==================== 8. COMPLAINTS ====================
+    console.log('8/20 💬 Tạo Complaints...');
     const complaints = await Complaint.insertMany([
       { 
         customer_id: customers[3]._id, 
@@ -292,33 +324,167 @@ async function seedDatabase() {
     ]);
     console.log(`   ✅ ${complaints.length} complaints\n`);
 
-    // ==================== 7. INGREDIENTS ====================
-    console.log('7/20 🥬 Tạo Ingredients...');
+    // ==================== 9. INGREDIENTS ====================
+    console.log('9/20 🥬 Tạo Ingredients...');
     const ingredients = await Ingredient.insertMany([
-      { name: 'Thịt bò Úc', unit: 'kg', quantity_in_stock: 50, minimum_quantity: 20, unit_price: 350000, supplier_name: 'Meat Pro', supplier_contact: '0906-111-222', status: 'available' },
-      { name: 'Cá hồi Na Uy', unit: 'kg', quantity_in_stock: 30, minimum_quantity: 10, unit_price: 450000, supplier_name: 'Seafood Vietnam', supplier_contact: '0906-333-444', status: 'available' },
-      { name: 'Tôm sú', unit: 'kg', quantity_in_stock: 25, minimum_quantity: 15, unit_price: 280000, supplier_name: 'Seafood Vietnam', supplier_contact: '0906-333-444', status: 'available' },
-      { name: 'Rau xà lách', unit: 'kg', quantity_in_stock: 15, minimum_quantity: 10, unit_price: 25000, supplier_name: 'Dalat Farm', supplier_contact: '0906-555-666', status: 'available' },
-      { name: 'Cà chua', unit: 'kg', quantity_in_stock: 20, minimum_quantity: 10, unit_price: 30000, supplier_name: 'Dalat Farm', supplier_contact: '0906-555-666', status: 'available' },
-      { name: 'Hành tây', unit: 'kg', quantity_in_stock: 18, minimum_quantity: 8, unit_price: 20000, supplier_name: 'Dalat Farm', supplier_contact: '0906-555-666', status: 'available' },
-      { name: 'Bơ', unit: 'kg', quantity_in_stock: 10, minimum_quantity: 5, unit_price: 120000, supplier_name: 'Metro', supplier_contact: '0906-777-888', status: 'available' },
-      { name: 'Nước mắm', unit: 'l', quantity_in_stock: 20, minimum_quantity: 10, unit_price: 45000, supplier_name: 'Phú Quốc', supplier_contact: '0906-999-000', status: 'available' },
-      { name: 'Gạo Japonica', unit: 'kg', quantity_in_stock: 100, minimum_quantity: 50, unit_price: 35000, supplier_name: 'Lộc Trời', supplier_contact: '0906-111-333', status: 'available' },
-      { name: 'Dầu ô liu', unit: 'l', quantity_in_stock: 8, minimum_quantity: 5, unit_price: 180000, supplier_name: 'Metro', supplier_contact: '0906-777-888', status: 'low_stock' }
+      { 
+        name: 'Thịt bò Úc', 
+        unit: 'kg', 
+        quantity_in_stock: 50, 
+        minimum_quantity: 20, 
+        unit_price: 350000, 
+        supplier_name: 'Meat Pro', 
+        supplier_contact: '0906-111-222',
+        expiry_date: new Date('2026-01-15'),
+        stock_status: 'available',
+        expiry_status: 'valid'
+      },
+      { 
+        name: 'Cá hồi Na Uy', 
+        unit: 'kg', 
+        quantity_in_stock: 30, 
+        minimum_quantity: 10, 
+        unit_price: 450000, 
+        supplier_name: 'Seafood Vietnam', 
+        supplier_contact: '0906-333-444',
+        expiry_date: new Date('2025-12-25'),
+        stock_status: 'available',
+        expiry_status: 'valid'
+      },
+      { 
+        name: 'Tôm sú', 
+        unit: 'kg', 
+        quantity_in_stock: 15, 
+        minimum_quantity: 15, 
+        unit_price: 280000, 
+        supplier_name: 'Seafood Vietnam', 
+        supplier_contact: '0906-333-444',
+        expiry_date: new Date('2025-12-20'),
+        stock_status: 'low_stock',
+        expiry_status: 'near_expiry'
+      },
+      { 
+        name: 'Rau xà lách', 
+        unit: 'kg', 
+        quantity_in_stock: 15, 
+        minimum_quantity: 10, 
+        unit_price: 25000, 
+        supplier_name: 'Dalat Farm', 
+        supplier_contact: '0906-555-666',
+        expiry_date: new Date('2025-12-16'),
+        stock_status: 'available',
+        expiry_status: 'valid'
+      },
+      { 
+        name: 'Cà chua', 
+        unit: 'kg', 
+        quantity_in_stock: 20, 
+        minimum_quantity: 10, 
+        unit_price: 30000, 
+        supplier_name: 'Dalat Farm', 
+        supplier_contact: '0906-555-666',
+        expiry_date: new Date('2025-12-18'),
+        stock_status: 'available',
+        expiry_status: 'valid'
+      },
+      { 
+        name: 'Hành tây', 
+        unit: 'kg', 
+        quantity_in_stock: 8, 
+        minimum_quantity: 8, 
+        unit_price: 20000, 
+        supplier_name: 'Dalat Farm', 
+        supplier_contact: '0906-555-666',
+        expiry_date: new Date('2025-12-17'),
+        stock_status: 'low_stock',
+        expiry_status: 'valid'
+      },
+      { 
+        name: 'Bơ', 
+        unit: 'kg', 
+        quantity_in_stock: 10, 
+        minimum_quantity: 5, 
+        unit_price: 120000, 
+        supplier_name: 'Metro', 
+        supplier_contact: '0906-777-888',
+        expiry_date: new Date('2025-12-19'),
+        stock_status: 'available',
+        expiry_status: 'valid'
+      },
+      { 
+        name: 'Nước mắm', 
+        unit: 'l', 
+        quantity_in_stock: 20, 
+        minimum_quantity: 10, 
+        unit_price: 45000, 
+        supplier_name: 'Phú Quốc', 
+        supplier_contact: '0906-999-000',
+        expiry_date: new Date('2026-06-14'),
+        stock_status: 'available',
+        expiry_status: 'valid'
+      },
+      { 
+        name: 'Gạo Japonica', 
+        unit: 'kg', 
+        quantity_in_stock: 100, 
+        minimum_quantity: 50, 
+        unit_price: 35000, 
+        supplier_name: 'Lộc Trời', 
+        supplier_contact: '0906-111-333',
+        expiry_date: new Date('2026-03-14'),
+        stock_status: 'available',
+        expiry_status: 'valid'
+      },
+      { 
+        name: 'Dầu ô liu', 
+        unit: 'l', 
+        quantity_in_stock: 3, 
+        minimum_quantity: 5, 
+        unit_price: 180000, 
+        supplier_name: 'Metro', 
+        supplier_contact: '0906-777-888',
+        expiry_date: new Date('2025-12-16'),
+        stock_status: 'out_of_stock',
+        expiry_status: 'near_expiry'
+      }
     ]);
     console.log(`   ✅ ${ingredients.length} ingredients\n`);
 
-    // ==================== 8. STOCK IMPORT ====================
-    console.log('8/20 📦 Tạo Stock Imports...');
+    // ==================== 10. STOCK IMPORTS ====================
+    console.log('10/20 📦 Tạo Stock Imports...');
     const stockImports = await StockImport.insertMany([
-      { import_number: 'IMP-001', staff_id: staffs[4]._id, import_date: new Date('2025-12-01'), total_cost: 17500000, supplier_name: 'Meat Pro', notes: 'Nhập 50kg thịt bò Úc chất lượng cao', status: 'completed' },
-      { import_number: 'IMP-002', staff_id: staffs[4]._id, import_date: new Date('2025-12-05'), total_cost: 20500000, supplier_name: 'Seafood Vietnam', notes: 'Nhập cá hồi và tôm sú', status: 'completed' },
-      { import_number: 'IMP-003', staff_id: staffs[4]._id, import_date: new Date('2025-12-10'), total_cost: 3500000, supplier_name: 'Dalat Farm', notes: 'Rau tươi hàng ngày', status: 'completed' }
+      { 
+        import_number: 'IMP-001', 
+        staff_id: staffs[4]._id, 
+        import_date: new Date('2025-12-01'), 
+        total_cost: 17500000, 
+        supplier_name: 'Meat Pro', 
+        notes: 'Nhập 50kg thịt bò Úc chất lượng cao', 
+        status: 'completed' 
+      },
+      { 
+        import_number: 'IMP-002', 
+        staff_id: staffs[4]._id, 
+        import_date: new Date('2025-12-05'), 
+        total_cost: 20500000, 
+        supplier_name: 'Seafood Vietnam', 
+        notes: 'Nhập cá hồi và tôm sú', 
+        status: 'completed' 
+      },
+      { 
+        import_number: 'IMP-003', 
+        staff_id: staffs[4]._id, 
+        import_date: new Date('2025-12-10'), 
+        total_cost: 3500000, 
+        supplier_name: 'Dalat Farm', 
+        notes: 'Rau tươi hàng ngày', 
+        status: 'completed' 
+      }
     ]);
     console.log(`   ✅ ${stockImports.length} stock imports\n`);
 
-    // ==================== 9. STOCK IMPORT DETAILS ====================
-    console.log('9/20 📋 Tạo Stock Import Details...');
+    // ==================== 11. STOCK IMPORT DETAILS ====================
+    console.log('11/20 📋 Tạo Stock Import Details...');
     const stockImportDetails = await StockImportDetail.insertMany([
       { import_id: stockImports[0]._id, ingredient_id: ingredients[0]._id, quantity: 50, unit_price: 350000, line_total: 17500000, expiry_date: new Date('2026-01-01') },
       { import_id: stockImports[1]._id, ingredient_id: ingredients[1]._id, quantity: 30, unit_price: 450000, line_total: 13500000, expiry_date: new Date('2025-12-25') },
@@ -329,22 +495,22 @@ async function seedDatabase() {
     ]);
     console.log(`   ✅ ${stockImportDetails.length} import details\n`);
 
-    // ==================== 10. DISHES ====================
-    console.log('10/20 🍽️  Tạo Dishes...');
+    // ==================== 12. DISHES ====================
+    console.log('12/20 🍽️  Tạo Dishes...');
     const dishes = await Dish.insertMany([
-      { name: 'Bò bít tết Úc', description: 'Bò Úc nướng chín vừa, kèm khoai tây chiên vàng, salad rau tươi và sốt tiêu đen', category: 'main_course', price: 350000, preparation_time: 25, is_available: true, image_url: '/images/dishes/beef-steak.jpg' },
-      { name: 'Cá hồi nướng chanh bơ', description: 'Cá hồi Na Uy nướng lửa, kèm bơ tươi, chanh và rau thơm', category: 'main_course', price: 420000, preparation_time: 30, is_available: true, image_url: '/images/dishes/salmon.jpg' },
-      { name: 'Tôm sú nướng bơ tỏi', description: 'Tôm sú to tươi, nướng bơ tỏi thơm phức, kèm bánh mì nướng', category: 'main_course', price: 280000, preparation_time: 20, is_available: true, image_url: '/images/dishes/garlic-shrimp.jpg' },
-      { name: 'Salad rau xà lách tươi', description: 'Rau xà lách, cà chua, bơ tươi, sốt dầu giấm balsamic', category: 'appetizer', price: 85000, preparation_time: 10, is_available: true, image_url: '/images/dishes/salad.jpg' },
-      { name: 'Gỏi tôm', description: 'Tôm sú, nước mắm chua cay vừa vặn, kèm rau sống', category: 'appetizer', price: 120000, preparation_time: 15, is_available: true, image_url: '/images/dishes/shrimp-salad.jpg' },
-      { name: 'Coca Cola', description: 'Nước ngọt Coca Cola lạnh mát', category: 'beverage', price: 25000, preparation_time: 2, is_available: true, image_url: '/images/dishes/cola.jpg' },
-      { name: 'Nước cam vắt tươi', description: 'Nước cam tươi vắt 100%, không đường', category: 'beverage', price: 35000, preparation_time: 5, is_available: true, image_url: '/images/dishes/orange-juice.jpg' },
-      { name: 'Cơm hến', description: 'Cơm hến truyền thống miền Trung, hương vị đặc trưng', category: 'main_course', price: 65000, preparation_time: 15, is_available: true, image_url: '/images/dishes/clam-rice.jpg' }
+      { name: 'Bò bít tết Úc', description: 'Bò Úc nướng chín vừa, kèm khoai tây chiên vàng, salad rau tươi và sốt tiêu đen', category: 'main_course', price: 350000, is_available: true, image_url: '/images/dishes/beef-steak.jpg' },
+      { name: 'Cá hồi nướng chanh bơ', description: 'Cá hồi Na Uy nướng lửa, kèm bơ tươi, chanh và rau thơm', category: 'main_course', price: 420000, is_available: true, image_url: '/images/dishes/salmon.jpg' },
+      { name: 'Tôm sú nướng bơ tỏi', description: 'Tôm sú to tươi, nướng bơ tỏi thơm phức, kèm bánh mì nướng', category: 'main_course', price: 280000, is_available: true, image_url: '/images/dishes/garlic-shrimp.jpg' },
+      { name: 'Salad rau xà lách tươi', description: 'Rau xà lách, cà chua, bơ tươi, sốt dầu giấm balsamic', category: 'appetizer', price: 85000, is_available: true, image_url: '/images/dishes/salad.jpg' },
+      { name: 'Gỏi tôm', description: 'Tôm sú, nước mắm chua cay vừa vặn, kèm rau sống', category: 'appetizer', price: 120000, is_available: true, image_url: '/images/dishes/shrimp-salad.jpg' },
+      { name: 'Tiramisu', description: 'Bánh Tiramisu truyền thống Ý, kem mịn mềm', category: 'dessert', price: 95000, is_available: true, image_url: '/images/dishes/tiramisu.jpg' },
+      { name: 'Coca Cola', description: 'Nước ngọt Coca Cola lạnh mát', category: 'beverage', price: 25000, is_available: true, image_url: '/images/dishes/cola.jpg' },
+      { name: 'Nước cam vắt tươi', description: 'Nước cam tươi vắt 100%, không đường', category: 'beverage', price: 35000, is_available: true, image_url: '/images/dishes/orange-juice.jpg' }
     ]);
     console.log(`   ✅ ${dishes.length} dishes\n`);
 
-    // ==================== 11. DISH INGREDIENTS ====================
-    console.log('11/20 🥘 Tạo Dish Ingredients...');
+    // ==================== 13. DISH INGREDIENTS ====================
+    console.log('13/20 🥘 Tạo Dish Ingredients...');
     const dishIngredients = await DishIngredient.insertMany([
       { dish_id: dishes[0]._id, ingredient_id: ingredients[0]._id, quantity_required: 0.25, unit: 'kg' },
       { dish_id: dishes[0]._id, ingredient_id: ingredients[3]._id, quantity_required: 0.05, unit: 'kg' },
@@ -359,43 +525,43 @@ async function seedDatabase() {
     ]);
     console.log(`   ✅ ${dishIngredients.length} dish-ingredient links\n`);
 
-    // ==================== 12. MENUS ====================
-    console.log('12/20 📖 Tạo Menus...');
+    // ==================== 14. MENUS ====================
+    console.log('14/20 📖 Tạo Menus...');
     const menus = await Menu.insertMany([
       { name: 'Menu Chính', description: 'Thực đơn chính phục vụ hàng ngày', menu_type: 'regular', is_active: true },
-      { name: 'Menu Trưa', description: 'Menu ăn trưa với giá ưu đãi', menu_type: 'lunch', is_active: true, valid_from: new Date('2025-11-01'), valid_to: new Date('2025-01-31') },
-      { name: 'Menu Tối', description: 'Menu ăn tối sang trọng', menu_type: 'dinner', is_active: true, valid_from: new Date('2025-11-01'), valid_to: new Date('2025-01-31') }
+      { name: 'Menu Trưa', description: 'Menu ăn trưa với giá ưu đãi', menu_type: 'lunch', is_active: true, valid_from: new Date('2025-11-01'), valid_to: new Date('2026-01-31') },
+      { name: 'Menu Tối', description: 'Menu ăn tối sang trọng', menu_type: 'dinner', is_active: true, valid_from: new Date('2025-11-01'), valid_to: new Date('2026-01-31') }
     ]);
     console.log(`   ✅ ${menus.length} menus\n`);
 
-    // ==================== 13. MENU ENTRIES ====================
-    console.log('13/20 📑 Tạo Menu Entries...');
+    // ==================== 15. MENU ENTRIES ====================
+    console.log('15/20 📑 Tạo Menu Entries...');
     const menuEntries = await MenuEntry.insertMany([
       { menu_id: menus[0]._id, dish_id: dishes[0]._id, display_order: 1, is_featured: true },
       { menu_id: menus[0]._id, dish_id: dishes[1]._id, display_order: 2, is_featured: true },
       { menu_id: menus[0]._id, dish_id: dishes[2]._id, display_order: 3, is_featured: false },
       { menu_id: menus[0]._id, dish_id: dishes[3]._id, display_order: 4, is_featured: false },
       { menu_id: menus[0]._id, dish_id: dishes[4]._id, display_order: 5, is_featured: false },
-      { menu_id: menus[0]._id, dish_id: dishes[5]._id, display_order: 6, is_featured: false },
-      { menu_id: menus[0]._id, dish_id: dishes[6]._id, display_order: 7, is_featured: false },
-      { menu_id: menus[1]._id, dish_id: dishes[7]._id, display_order: 1, is_featured: true },
-      { menu_id: menus[1]._id, dish_id: dishes[3]._id, display_order: 2, is_featured: false },
+      { menu_id: menus[0]._id, dish_id: dishes[6]._id, display_order: 6, is_featured: false },
+      { menu_id: menus[0]._id, dish_id: dishes[7]._id, display_order: 7, is_featured: false },
+      { menu_id: menus[1]._id, dish_id: dishes[3]._id, display_order: 1, is_featured: true },
+      { menu_id: menus[1]._id, dish_id: dishes[4]._id, display_order: 2, is_featured: false },
       { menu_id: menus[2]._id, dish_id: dishes[0]._id, display_order: 1, is_featured: true },
       { menu_id: menus[2]._id, dish_id: dishes[1]._id, display_order: 2, is_featured: true }
     ]);
     console.log(`   ✅ ${menuEntries.length} menu entries\n`);
 
-    // ==================== 14. PROMOTIONS ====================
-    console.log('14/20 🎁 Tạo Promotions...');
+    // ==================== 16. PROMOTIONS ====================
+    console.log('16/20 🎁 Tạo Promotions...');
     const promotions = await Promotion.insertMany([
-      { name: 'Giảm 20% Tháng 12', description: 'Giảm 20% toàn bộ hóa đơn trong tháng 12', promotion_type: 'percentage', discount_value: 20, minimum_order_amount: 500000, promo_code: 'DEC20', start_date: new Date('2025-12-01'), end_date: new Date('2025-12-31'), is_active: true, max_uses: 100 },
-      { name: 'Giảm 150k', description: 'Giảm 150,000đ cho hóa đơn trên 1.5 triệu', promotion_type: 'fixed_amount', discount_value: 150000, minimum_order_amount: 1500000, promo_code: 'SAVE150K', start_date: new Date('2025-12-01'), end_date: new Date('2025-12-31'), is_active: true, max_uses: 50 },
-      { name: 'Happy Hour 14h-16h', description: 'Giảm 25% từ 14h-16h hàng ngày', promotion_type: 'percentage', discount_value: 25, minimum_order_amount: 200000, promo_code: 'HAPPY25', start_date: new Date('2025-12-01'), end_date: new Date('2025-12-31'), is_active: true, max_uses: -1 }
+      { name: 'Giảm 20% Tháng 12', description: 'Giảm 20% toàn bộ hóa đơn trong tháng 12', promotion_type: 'percentage', discount_value: 20, minimum_order_amount: 500000, promo_code: 'DEC20', start_date: new Date('2025-12-01'), end_date: new Date('2025-12-31'), is_active: true, max_uses: 100, current_uses: 5 },
+      { name: 'Giảm 150k', description: 'Giảm 150,000đ cho hóa đơn trên 1.5 triệu', promotion_type: 'fixed_amount', discount_value: 150000, minimum_order_amount: 1500000, promo_code: 'SAVE150K', start_date: new Date('2025-12-01'), end_date: new Date('2025-12-31'), is_active: true, max_uses: 50, current_uses: 8 },
+      { name: 'Happy Hour 14h-16h', description: 'Giảm 25% từ 14h-16h hàng ngày', promotion_type: 'percentage', discount_value: 25, minimum_order_amount: 200000, promo_code: 'HAPPY25', start_date: new Date('2025-12-01'), end_date: new Date('2025-12-31'), is_active: true, max_uses: -1, current_uses: 25 }
     ]);
     console.log(`   ✅ ${promotions.length} promotions\n`);
 
-    // ==================== 15. ORDERS ====================
-    console.log('15/20 📝 Tạo Orders...');
+    // ==================== 17. ORDERS ====================
+    console.log('17/20 📝 Tạo Orders...');
     const orders = await Order.insertMany([
       { 
         order_number: 'ORD-001', 
@@ -415,7 +581,7 @@ async function seedDatabase() {
         order_type: 'dine-in-waiter',
         order_date: new Date('2025-12-11'),
         order_time: '13:15', 
-        status: 'preparing', 
+        status: 'completed', 
         subtotal: 360000, 
         tax: 36000, 
         total_amount: 396000,
@@ -440,7 +606,7 @@ async function seedDatabase() {
         order_type: 'takeaway-customer',
         order_date: new Date('2025-12-11'),
         order_time: '15:30', 
-        status: 'ready', 
+        status: 'completed', 
         subtotal: 635000, 
         tax: 63500, 
         total_amount: 698500,
@@ -450,24 +616,24 @@ async function seedDatabase() {
     ]);
     console.log(`   ✅ ${orders.length} orders\n`);
 
-    // ==================== 16. ORDER DETAILS ====================
-    console.log('16/20 🍴 Tạo Order Details...');
+    // ==================== 18. ORDER DETAILS ====================
+    console.log('18/20 🍴 Tạo Order Details...');
     const orderDetails = await OrderDetail.insertMany([
       { order_id: orders[0]._id, dish_id: dishes[0]._id, quantity: 1, unit_price: 350000, line_total: 350000, status: 'served' },
       { order_id: orders[0]._id, dish_id: dishes[1]._id, quantity: 1, unit_price: 420000, line_total: 420000, status: 'served' },
-      { order_id: orders[1]._id, dish_id: dishes[7]._id, quantity: 2, unit_price: 65000, line_total: 130000, status: 'preparing' },
-      { order_id: orders[1]._id, dish_id: dishes[3]._id, quantity: 1, unit_price: 85000, line_total: 85000, status: 'preparing' },
-      { order_id: orders[1]._id, dish_id: dishes[6]._id, quantity: 1, unit_price: 35000, line_total: 35000, special_instructions: 'Không đường', status: 'preparing' },
+      { order_id: orders[1]._id, dish_id: dishes[3]._id, quantity: 2, unit_price: 85000, line_total: 170000, status: 'served' },
+      { order_id: orders[1]._id, dish_id: dishes[7]._id, quantity: 1, unit_price: 35000, line_total: 35000, special_instructions: 'Không đường', status: 'served' },
+      { order_id: orders[1]._id, dish_id: dishes[6]._id, quantity: 1, unit_price: 25000, line_total: 25000, status: 'served' },
       { order_id: orders[2]._id, dish_id: dishes[3]._id, quantity: 1, unit_price: 85000, line_total: 85000, status: 'served' },
-      { order_id: orders[2]._id, dish_id: dishes[6]._id, quantity: 1, unit_price: 35000, line_total: 35000, status: 'served' },
+      { order_id: orders[2]._id, dish_id: dishes[7]._id, quantity: 1, unit_price: 35000, line_total: 35000, status: 'served' },
       { order_id: orders[3]._id, dish_id: dishes[0]._id, quantity: 1, unit_price: 350000, line_total: 350000, status: 'ready' },
       { order_id: orders[3]._id, dish_id: dishes[2]._id, quantity: 1, unit_price: 280000, line_total: 280000, status: 'ready' },
-      { order_id: orders[3]._id, dish_id: dishes[5]._id, quantity: 1, unit_price: 25000, line_total: 25000, status: 'ready' }
+      { order_id: orders[3]._id, dish_id: dishes[6]._id, quantity: 1, unit_price: 25000, line_total: 25000, status: 'ready' }
     ]);
     console.log(`   ✅ ${orderDetails.length} order details\n`);
 
-    // ==================== 17. INVOICES ====================
-    console.log('17/20 🧾 Tạo Invoices...');
+    // ==================== 19. INVOICES ====================
+    console.log('19/20 🧾 Tạo Invoices...');
     const invoices = await Invoice.insertMany([
       { 
         invoice_number: 'INV-001', 
@@ -506,33 +672,39 @@ async function seedDatabase() {
         discount_amount: 0, 
         total_amount: 396000, 
         payment_method: 'e-wallet', 
-        payment_status: 'pending'
+        payment_status: 'paid',
+        paid_at: new Date('2025-12-11')
       }
     ]);
     console.log(`   ✅ ${invoices.length} invoices\n`);
 
-    // ==================== 18. INVOICE PROMOTIONS ====================
-    console.log('18/20 🏷️  Tạo Invoice Promotions...');
+    // ==================== 20. INVOICE PROMOTIONS ====================
+    console.log('20/20 🏷️  Tạo Invoice Promotions...');
     const invoicePromotions = await InvoicePromotion.insertMany([
       { invoice_id: invoices[0]._id, promotion_id: promotions[0]._id, discount_applied: 170000 }
     ]);
     console.log(`   ✅ ${invoicePromotions.length} invoice promotions\n`);
 
-    // ==================== 19. VIOLATIONS ====================
-    console.log('19/20 ⚠️  Tạo Violations...');
+    // ==================== 21. VIOLATIONS ====================
+    console.log('21/22 ⚠️  Tạo Violations...');
     const violations = await Violation.insertMany([
       { 
         customer_id: customers[1]._id, 
         description: 'Khách gọi 3 lần để hủy đặt bàn mà không thông báo trước', 
         violation_date: new Date('2025-12-01'),
-        resolution: 'Hội thoại và hiểu rõ nhu cầu của khách',
-        resolved_at: new Date('2025-12-02')
+        violation_type: 'late_cancel'
+      },
+      {
+        customer_id: customers[4]._id,
+        description: 'Không có mặt vào giờ đặt bàn, đã hủy phòng VIP',
+        violation_date: new Date('2025-12-05'),
+        violation_type: 'no_show'
       }
     ]);
     console.log(`   ✅ ${violations.length} violations\n`);
 
-    // ==================== 20. RATINGS ====================
-    console.log('20/20 ⭐ Tạo Ratings và Replies...');
+    // ==================== 22. RATINGS & REPLIES ====================
+    console.log('22/22 ⭐ Tạo Ratings và Replies...');
     const ratings = await Rating.insertMany([
       { 
         customer_id: customers[0]._id, 
@@ -583,34 +755,37 @@ async function seedDatabase() {
     console.log('📊 TỔNG KẾT DỮ LIỆU:');
     console.log(`   1. Staff: ${staffs.length}`);
     console.log(`   2. Customers: ${customers.length}`);
-    console.log(`   3. Tables: ${tables.length}`);
-    console.log(`   4. Reservations: ${reservations.length}`);
-    console.log(`   5. Reservation Details: ${reservationDetails.length}`);
-    console.log(`   6. Complaints: ${complaints.length}`);
-    console.log(`   7. Ingredients: ${ingredients.length}`);
-    console.log(`   8. Stock Imports: ${stockImports.length}`);
-    console.log(`   9. Stock Import Details: ${stockImportDetails.length}`);
-    console.log(`   10. Dishes: ${dishes.length}`);
-    console.log(`   11. Dish Ingredients: ${dishIngredients.length}`);
-    console.log(`   12. Menus: ${menus.length}`);
-    console.log(`   13. Menu Entries: ${menuEntries.length}`);
-    console.log(`   14. Promotions: ${promotions.length}`);
-    console.log(`   15. Orders: ${orders.length}`);
-    console.log(`   16. Order Details: ${orderDetails.length}`);
-    console.log(`   17. Invoices: ${invoices.length}`);
-    console.log(`   18. Invoice Promotions: ${invoicePromotions.length}`);
-    console.log(`   19. Violations: ${violations.length}`);
-    console.log(`   20. Ratings: ${ratings.length}`);
+    console.log(`   3. Floors: ${floors.length}`);
+    console.log(`   4. Locations: ${locations.length}`);
+    console.log(`   5. Tables: ${tables.length}`);
+    console.log(`   6. Reservations: ${reservations.length}`);
+    console.log(`   7. Reservation Details: ${reservationDetails.length}`);
+    console.log(`   8. Complaints: ${complaints.length}`);
+    console.log(`   9. Ingredients: ${ingredients.length}`);
+    console.log(`   10. Stock Imports: ${stockImports.length}`);
+    console.log(`   11. Stock Import Details: ${stockImportDetails.length}`);
+    console.log(`   12. Dishes: ${dishes.length}`);
+    console.log(`   13. Dish Ingredients: ${dishIngredients.length}`);
+    console.log(`   14. Menus: ${menus.length}`);
+    console.log(`   15. Menu Entries: ${menuEntries.length}`);
+    console.log(`   16. Promotions: ${promotions.length}`);
+    console.log(`   17. Orders: ${orders.length}`);
+    console.log(`   18. Order Details: ${orderDetails.length}`);
+    console.log(`   19. Invoices: ${invoices.length}`);
+    console.log(`   20. Invoice Promotions: ${invoicePromotions.length}`);
+    console.log(`   21. Violations: ${violations.length}`);
+    console.log(`   22. Ratings: ${ratings.length}`);
     console.log('========================================');
     console.log('🔑 Test Accounts:');
     console.log('   Waiter: hung.waiter@restaurant.vn / password123');
     console.log('   Cashier: nam.cashier@restaurant.vn / password123');
     console.log('   Manager: minh.manager@restaurant.vn / password123');
-    console.log('   Customer: tuan.nguyen@gmail.com / password123');
+    console.log('   Customer (Diamond): tuan.nguyen@gmail.com / password123');
+    console.log('   Customer (Regular): hoang.son@gmail.com / password123');
     console.log('========================================\n');
 
   } catch (error) {
-    console.error('❌ LỖI:', error.message);
+    console.error('LỖI:', error.message);
     console.error(error.stack);
     process.exit(1);
   } finally {
