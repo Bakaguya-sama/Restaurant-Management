@@ -7,7 +7,7 @@ const {
   Ingredient, StockImport, StockImportDetail, Dish, DishIngredient,
   Menu, MenuEntry, Order, OrderDetail, Promotion, Invoice, InvoicePromotion,
   Violation, Rating, RatingReply
-} = require('../models');
+} = require('../src/models');
 
 async function connectDB() {
   try {
