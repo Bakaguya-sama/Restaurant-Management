@@ -80,6 +80,37 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// GET locations by floor ID
+router.get('/floor/:floorId', async (req, res) => {
+  try {
+    const locations = await Location.find({ floor_id: req.params.floorId })
+      .populate('floor_id', 'floor_name')
+      .select('_id name floor_id description created_at');
+
+    const formattedLocations = locations.map(location => ({
+      id: location._id,
+      name: location.name,
+      floor: location.floor_id ? location.floor_id.floor_name : null,
+      floor_id: location.floor_id ? location.floor_id._id : null,
+      description: location.description,
+      createdAt: location.created_at
+    }));
+
+    res.json({
+      success: true,
+      data: formattedLocations,
+      message: 'Locations retrieved successfully'
+    });
+  } catch (error) {
+    console.error('Error fetching locations by floor:', error);
+    res.status(500).json({
+      success: false,
+      data: null,
+      message: 'Error fetching locations by floor'
+    });
+  }
+});
+
 // POST create new location
 router.post('/', async (req, res) => {
   try {

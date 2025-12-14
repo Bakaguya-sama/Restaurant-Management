@@ -483,7 +483,7 @@ Violation:
 
 ## API Routes
 
-### Floor Management (`/api/floors`)
+### Floor Management (`/api/v1/floors`)
 | Method | Endpoint | Mô tả |
 |--------|----------|-------|
 | GET | `/` | Lấy danh sách tất cả tầng |
@@ -496,7 +496,7 @@ Violation:
 - Tầng 1 - Khu trong nhà (floor_number: 1)
 - Tầng 2 - VIP (floor_number: 2)
 
-### Location Management (`/api/locations`)
+### Location Management (`/api/v1/locations`)
 | Method | Endpoint | Mô tả |
 |--------|----------|-------|
 | GET | `/` | Lấy danh sách tất cả khu vực |
@@ -513,7 +513,7 @@ Violation:
 - Phòng VIP A (Tầng 2)
 - Phòng VIP B (Tầng 2)
 
-### Table Management (`/api/tables`)
+### Table Management (`/api/v1/tables`)
 | Method | Endpoint | Mô tả |
 |--------|----------|-------|
 | GET | `/` | Lấy danh sách bàn (filter: status, location_id) |
