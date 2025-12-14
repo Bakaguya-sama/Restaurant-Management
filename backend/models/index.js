@@ -322,6 +322,8 @@ InvoiceSchema.index({ invoice_number: 1 });
 
 const Staff = mongoose.model('Staff', StaffSchema);
 const Customer = mongoose.model('Customer', CustomerSchema);
+const Floor = mongoose.model('Floor', FLoorSchema);
+const Location = mongoose.model('Location', LocationSchema);
 const Table = mongoose.model('Table', TableSchema);
 const Reservation = mongoose.model('Reservation', ReservationSchema);
 const ReservationDetail = mongoose.model('ReservationDetail', ReservationDetailSchema);
@@ -345,6 +347,8 @@ const RatingReply = mongoose.model('RatingReply', RatingReplySchema);
 module.exports = {
   Staff,
   Customer,
+  Floor,
+  Location,
   Table,
   Reservation,
   ReservationDetail,
