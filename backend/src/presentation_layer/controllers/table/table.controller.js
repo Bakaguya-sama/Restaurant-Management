@@ -110,8 +110,7 @@ class TableController {
       res.json({
         success: true,
         data: {
-          validStatuses,
-          summary,
+          ...summary,
           total
         },
         message: 'Table status summary retrieved successfully'
@@ -129,11 +128,11 @@ class TableController {
     try {
       const { number, seats, area, floor } = req.body;
 
-      if (!number || seats === undefined) {
+      if (!number || seats === undefined || !area) {
         return res.status(400).json({
           success: false,
           data: null,
-          message: 'number and seats are required'
+          message: 'number, seats, and area are required'
         });
       }
 
@@ -151,7 +150,8 @@ class TableController {
         message: 'Table created successfully'
       });
     } catch (error) {
-      const statusCode = error.message.includes('already exists') ? 409 : 400;
+      const statusCode = error.message.includes('Location not found') ? 404 :
+                        error.message.includes('already exists') ? 409 : 400;
       res.status(statusCode).json({
         success: false,
         data: null,
@@ -187,7 +187,8 @@ class TableController {
         message: 'Table updated successfully'
       });
     } catch (error) {
-      const statusCode = error.message === 'Table not found' ? 404 : 
+      const statusCode = error.message === 'Table not found' ? 404 :
+                        error.message.includes('Location not found') ? 404 :
                         error.message.includes('already exists') ? 409 : 400;
       res.status(statusCode).json({
         success: false,

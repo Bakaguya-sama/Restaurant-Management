@@ -20,7 +20,6 @@ class LocationController {
 
       const locations = await this.locationService.getAllLocations(filters);
 
-      // Format response with floor name
       const formattedLocations = locations.map(location => {
         return location.formatResponse();
       });
@@ -63,7 +62,6 @@ class LocationController {
     try {
       const locations = await this.locationService.getLocationsByFloorId(req.params.floorId);
       
-      // Format response with floor name
       const formattedLocations = locations.map(location => {
         return location.formatResponse();
       });

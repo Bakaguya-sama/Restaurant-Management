@@ -59,12 +59,6 @@ class TableService {
     }
 
     
-    const existingTable = await this.tableRepository.findByNumber(tableData.number);
-    if (existingTable) {
-      throw new Error('Table with this number already exists');
-    }
-
-    
     let locationId = null;
     if (tableData.area) {
       const location = await Location.findById(tableData.area);
@@ -72,6 +66,12 @@ class TableService {
         throw new Error('Location not found');
       }
       locationId = location._id;
+    }
+
+    
+    const existingTable = await this.tableRepository.findByNumber(tableData.number);
+    if (existingTable) {
+      throw new Error('Table with this number already exists');
     }
 
     
