@@ -41,9 +41,9 @@ app.get('/api/health', (req, res) => {
 });
 
 // Table Management Routes
-app.use('/api/floors', floorsRouter);
-app.use('/api/locations', locationsRouter);
-app.use('/api/tables', tablesRouter);
+app.use('/api/v1/floors', floorsRouter);
+app.use('/api/v1/locations', locationsRouter);
+app.use('/api/v1/tables', tablesRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

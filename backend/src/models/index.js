@@ -50,13 +50,15 @@ const CustomerSchema = new Schema({
 const FloorSchema = new Schema({
   floor_name: { type: String, required: true, unique: true },
   floor_number: { type: Number, required: true, unique: true },
-  description: String
+  description: String,
+  created_at: { type: Date, default: Date.now }
 });
 
 const LocationSchema = new Schema({
   name: { type: String, required: true, unique: true },
   floor_id: { type: Schema.Types.ObjectId, ref: 'Floor', required: true },
-  description: String
+  description: String,
+  created_at: { type: Date, default: Date.now }
 });
 
 const TableSchema = new Schema({
@@ -64,8 +66,9 @@ const TableSchema = new Schema({
   capacity: { type: Number, required: true },
   location_id: { type: Schema.Types.ObjectId, ref: 'Location' },
   //floor: { type: Number, default: 1 },
-  status: { type: String, enum: ['available', 'occupied', 'reserved', 'cleaning', 'maintenance'], default: 'available' },
-  created_at: { type: Date, default: Date.now }
+  status: { type: String, enum: ['free', 'occupied', 'reserved', 'dirty', 'broken'], default: 'free' },
+  created_at: { type: Date, default: Date.now },
+  brokenReason: String
 });
 
 // ==================== RESERVATION ====================
