@@ -98,7 +98,7 @@ export function RegisterPage() {
           alt="Food"
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#10B981]/80 to-transparent flex items-center justify-center">
+        {/* <div className="absolute inset-0 bg-gradient-to-r from-[#10B981]/80 to-transparent flex items-center justify-center">
           <div className="text-white px-12">
             <h1 className="text-white mb-4">Trở thành thành viên</h1>
             <h3 className="text-white mb-6">Nhận nhiều ưu đãi hấp dẫn</h3>
@@ -117,7 +117,7 @@ export function RegisterPage() {
               </li>
             </ul>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Right Side - Form */}
@@ -125,9 +125,9 @@ export function RegisterPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <h2 className="mb-2">Đăng ký tài khoản</h2>
-            <p className="text-gray-600">
+            {/* <p className="text-gray-600">
               Tạo tài khoản để nhận ưu đãi hấp dẫn
-            </p>
+            </p> */}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -221,26 +221,6 @@ export function RegisterPage() {
                   {errors.confirmPassword}
                 </p>
               )}
-            </div>
-
-            <div className="pt-2">
-              <label className="flex items-start gap-2 cursor-pointer text-sm text-gray-600">
-                <input
-                  type="checkbox"
-                  className="mt-0.5 rounded border-gray-300"
-                  required
-                />
-                <span>
-                  Tôi đồng ý với{" "}
-                  <a href="#" className="text-[#0056D2] hover:underline">
-                    Điều khoản sử dụng
-                  </a>{" "}
-                  và{" "}
-                  <a href="#" className="text-[#0056D2] hover:underline">
-                    Chính sách bảo mật
-                  </a>
-                </span>
-              </label>
             </div>
 
             <Button type="submit" fullWidth size="lg">

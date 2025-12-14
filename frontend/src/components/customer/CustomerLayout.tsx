@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import {
   Home,
@@ -13,6 +13,7 @@ import {
   Search,
   History,
   ClipboardList,
+  ChevronDown,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -20,6 +21,7 @@ export function CustomerLayout() {
   const navigate = useNavigate();
   const { logout, userProfile } = useAuth();
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   const navItems = [
     { id: "home", label: "Trang chủ", icon: Home, path: "/customer/home" },
@@ -116,15 +118,6 @@ export function CustomerLayout() {
             );
           })}
         </nav>
-
-        {/* Logout */}
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition-all border-t"
-        >
-          <LogOut className="w-5 h-5 flex-shrink-0" />
-          {sidebarOpen && <span>Đăng xuất</span>}
-        </button>
       </aside>
 
       {/* Main Content */}
@@ -147,15 +140,34 @@ export function CustomerLayout() {
             </div>
 
             {/* User */}
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-[#10B981] rounded-full flex items-center justify-center">
-                <span className="text-white text-sm">
-                  {userProfile?.email?.charAt(0).toUpperCase() || "K"}
+            <div className="relative">
+              <button
+                onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                className="flex items-center gap-2 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors"
+              >
+                <div className="w-8 h-8 bg-[#10B981] rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm">
+                    {userProfile?.email?.charAt(0).toUpperCase() || "K"}
+                  </span>
+                </div>
+                <span className="text-sm">
+                  {userProfile?.email || "Khách hàng"}
                 </span>
-              </div>
-              <span className="text-sm">
-                {userProfile?.email || "Khách hàng"}
-              </span>
+                <ChevronDown className="w-4 h-4 text-gray-600" />
+              </button>
+
+              {/* Dropdown Menu */}
+              {userDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Đăng xuất</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </header>
