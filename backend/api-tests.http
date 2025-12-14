@@ -1,0 +1,171 @@
+@baseUrl = http://localhost:5001/api/v1
+
+### Health Check
+GET {{baseUrl}}/health
+
+### ============================================
+### STAFF API ENDPOINTS
+### ============================================
+
+### Staff Login
+POST {{baseUrl}}/staff/login
+Content-Type: application/json
+
+{
+  "username": "manager1",
+  "password": "password123"
+}
+
+### Get All Staff
+GET {{baseUrl}}/staff
+
+### Get All Staff with Filters (by role)
+GET {{baseUrl}}/staff?role=waiter
+
+### Get All Staff with Filters (by active status)
+GET {{baseUrl}}/staff?is_active=true
+
+### Get All Staff with Search
+GET {{baseUrl}}/staff?search=john
+
+### Get Staff by ID
+GET {{baseUrl}}/staff/674da30bb19ecab3d0c9f0a1
+
+### Get Staff Statistics
+GET {{baseUrl}}/staff/statistics
+
+### Create New Staff
+POST {{baseUrl}}/staff
+Content-Type: application/json
+
+{
+  "full_name": "Nguyen Van A",
+  "email": "nguyenvana@example.com",
+  "phone": "0123456789",
+  "address": "123 Main St, Ho Chi Minh City",
+  "date_of_birth": "1995-05-15",
+  "role": "waiter",
+  "username": "nguyenvana",
+  "password": "password123",
+  "image_url": "https://example.com/image.jpg"
+}
+
+### Update Staff
+PUT {{baseUrl}}/staff/674da30bb19ecab3d0c9f0a1
+Content-Type: application/json
+
+{
+  "full_name": "Nguyen Van A Updated",
+  "phone": "0987654321",
+  "address": "456 New Address"
+}
+
+### Update Staff Password
+PUT {{baseUrl}}/staff/674da30bb19ecab3d0c9f0a1
+Content-Type: application/json
+
+{
+  "password": "newpassword123"
+}
+
+### Deactivate Staff
+PATCH {{baseUrl}}/staff/674da30bb19ecab3d0c9f0a1/deactivate
+
+### Activate Staff
+PATCH {{baseUrl}}/staff/674da30bb19ecab3d0c9f0a1/activate
+
+### Delete Staff
+DELETE {{baseUrl}}/staff/674da30bb19ecab3d0c9f0a1
+
+### ============================================
+### CUSTOMER API ENDPOINTS
+### ============================================
+
+### Customer Login
+POST {{baseUrl}}/customers/login
+Content-Type: application/json
+
+{
+  "email": "customer@example.com",
+  "password": "password123"
+}
+
+### Get All Customers
+GET {{baseUrl}}/customers
+
+### Get All Customers with Filters (by membership level)
+GET {{baseUrl}}/customers?membership_level=gold
+
+### Get All Customers with Filters (by banned status)
+GET {{baseUrl}}/customers?isBanned=false
+
+### Get All Customers with Search
+GET {{baseUrl}}/customers?search=nguyen
+
+### Get Customer by ID
+GET {{baseUrl}}/customers/674da30bb19ecab3d0c9f0b1
+
+### Get Customer Statistics
+GET {{baseUrl}}/customers/statistics
+
+### Get Top Customers
+GET {{baseUrl}}/customers/top
+
+### Get Top 20 Customers
+GET {{baseUrl}}/customers/top?limit=20
+
+### Create New Customer
+POST {{baseUrl}}/customers
+Content-Type: application/json
+
+{
+  "full_name": "Tran Thi B",
+  "email": "tranthib@example.com",
+  "phone": "0987654321",
+  "address": "789 Street, Ho Chi Minh City",
+  "date_of_birth": "1998-08-20",
+  "password": "password123"
+}
+
+### Update Customer
+PUT {{baseUrl}}/customers/674da30bb19ecab3d0c9f0b1
+Content-Type: application/json
+
+{
+  "full_name": "Tran Thi B Updated",
+  "phone": "0123456789",
+  "address": "New Address 123"
+}
+
+### Update Customer Password
+PUT {{baseUrl}}/customers/674da30bb19ecab3d0c9f0b1
+Content-Type: application/json
+
+{
+  "password": "newpassword456"
+}
+
+### Ban Customer
+PATCH {{baseUrl}}/customers/674da30bb19ecab3d0c9f0b1/ban
+
+### Unban Customer
+PATCH {{baseUrl}}/customers/674da30bb19ecab3d0c9f0b1/unban
+
+### Add Points to Customer
+PATCH {{baseUrl}}/customers/674da30bb19ecab3d0c9f0b1/points
+Content-Type: application/json
+
+{
+  "points": 100
+}
+
+### Add Spending to Customer
+PATCH {{baseUrl}}/customers/674da30bb19ecab3d0c9f0b1/spending
+Content-Type: application/json
+
+{
+  "amount": 500000
+}
+
+### Delete Customer
+DELETE {{baseUrl}}/customers/674da30bb19ecab3d0c9f0b1
