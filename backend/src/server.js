@@ -3,6 +3,11 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/database');
 
+// Import routes
+const floorsRouter = require('./src/routes/floors');
+const locationsRouter = require('./src/routes/locations');
+const tablesRouter = require('./src/routes/tables');
+
 // Load environment variables
 dotenv.config();
 
@@ -26,14 +31,19 @@ app.get('/', (req, res) => {
   });
 });
 
-// API Routes (sẽ thêm sau)
-app.get('/api/health', (req, res) => {
+// API Routes
+app.get('/api/v1/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     database: 'Connected',
     uptime: process.uptime()
   });
 });
+
+// Table Management Routes
+app.use('/api/v1/floors', floorsRouter);
+app.use('/api/v1/locations', locationsRouter);
+app.use('/api/v1/tables', tablesRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -57,15 +67,39 @@ const PORT = process.env.PORT || 5001;
 
 app.listen(PORT, () => {
   console.log(`
-╔═══════════════════════════════════════╗
-║   RESTAURANT MANAGEMENT API      ║
-║   Server running on port ${PORT}     ║
-║   Environment: ${process.env.NODE_ENV || 'development'}      ║
-║                                       ║
-║   Available Routes:                ║
-║   • GET  /                            ║
-║   • GET  /api/health                  ║
-╚═══════════════════════════════════════╝
+╔═════════════════════════════════════════════════════╗
+║       RESTAURANT MANAGEMENT API SERVER             ║
+║       Port: ${PORT}                                       ║
+║       Environment: ${process.env.NODE_ENV || 'development'}                    ║
+╠═════════════════════════════════════════════════════╣
+║       Available Routes:                            ║
+║  • GET    /                                        ║
+║  • GET    /api/v1/health                              ║
+║                                                    ║
+║  TABLE MANAGEMENT:                                 ║
+║  • GET    /api/v1/floors                              ║
+║  • POST   /api/v1/floors                              ║
+║  • GET    /api/v1/floors/:id                          ║
+║  • PUT    /api/v1/floors/:id                          ║
+║  • DELETE /api/v1/floors/:id                          ║
+║                                                    ║
+║  • GET    /api/v1/locations                           ║
+║  • POST   /api/v1/locations                           ║
+║  • GET    /api/v1/locations/:id                       ║
+║  • GET    /api/v1/locations/floor/:floorId            ║
+║  • PUT    /api/v1/locations/:id                       ║
+║  • DELETE /api/v1/locations/:id                       ║
+║                                                    ║
+║  • GET    /api/v1/tables                              ║
+║  • POST   /api/v1/tables                              ║
+║  • GET    /api/v1/tables/:id                          ║
+║  • GET    /api/v1/tables/location/:locationId         ║
+║  • GET    /api/v1/tables/status/available             ║
+║  • GET    /api/v1/tables/status/summary               ║
+║  • PUT    /api/v1/tables/:id                          ║
+║  • PATCH  /api/v1/tables/:id/status                   ║
+║  • DELETE /api/v1/tables/:id                          ║
+╚═════════════════════════════════════════════════════╝
 `);
 });
 

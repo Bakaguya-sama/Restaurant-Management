@@ -34,7 +34,7 @@ const CustomerSchema = new Schema({
   phone: { type: String, required: true },
   address: String,
   date_of_birth: Date,
-  membership_level: { type: String, enum: ['regular', 'silver', 'gold'], default: 'regular' },
+  membership_level: { type: String, enum: ['regular', 'bronze', 'silver', 'gold', 'platinum', 'diamond'], default: 'regular' },
   points: { type: Number, default: 0 },
   total_spent: { type: Number, default: 0 },
   image_url: String,
@@ -47,14 +47,28 @@ const CustomerSchema = new Schema({
 });
 
 // ==================== TABLE ====================
+const FloorSchema = new Schema({
+  floor_name: { type: String, required: true, unique: true },
+  floor_number: { type: Number, required: true, unique: true },
+  description: String,
+  created_at: { type: Date, default: Date.now }
+});
+
+const LocationSchema = new Schema({
+  name: { type: String, required: true, unique: true },
+  floor_id: { type: Schema.Types.ObjectId, ref: 'Floor', required: true },
+  description: String,
+  created_at: { type: Date, default: Date.now }
+});
 
 const TableSchema = new Schema({
   table_number: { type: String, required: true, unique: true },
   capacity: { type: Number, required: true },
-  location: { type: String, enum: ['indoor', 'outdoor', 'vip'], default: 'indoor' },
-  floor: { type: Number, default: 1 },
-  status: { type: String, enum: ['available', 'occupied', 'reserved', 'maintenance'], default: 'available' },
-  created_at: { type: Date, default: Date.now }
+  location_id: { type: Schema.Types.ObjectId, ref: 'Location' },
+  //floor: { type: Number, default: 1 },
+  status: { type: String, enum: ['free', 'occupied', 'reserved', 'dirty', 'broken'], default: 'free' },
+  created_at: { type: Date, default: Date.now },
+  brokenReason: String
 });
 
 // ==================== RESERVATION ====================
@@ -91,7 +105,12 @@ const ComplaintSchema = new Schema({
   resolved_at: Date
 });
 
-// ==================== INGREDIENT ====================
+// ==================== SUPPLIES ====================
+const SupplierSchema = new Schema({
+  name: { type: String, required: true },
+  phone_contact: String,
+  address: String,
+});
 
 const IngredientSchema = new Schema({
   name: { type: String, required: true },
@@ -102,7 +121,8 @@ const IngredientSchema = new Schema({
   supplier_name: String,
   supplier_contact: String,
   expiry_date: Date,
-  status: { type: String, enum: ['available', 'low_stock', 'out_of_stock'], default: 'available' },
+  stock_status: { type: String, enum: ['available', 'low_stock', 'out_of_stock'], default: 'available' },
+  expiry_status: { type: String, enum: ['valid', 'near_expiry', 'expired'], default: 'valid' },
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now }
 });
@@ -136,12 +156,12 @@ const DishSchema = new Schema({
   description: String,
   category: { 
     type: String, 
-    enum: ['appetizer', 'main_course', 'beverage'], 
+    enum: ['appetizer', 'main_course', 'dessert', 'beverage'], 
     required: true 
   },
   price: { type: Number, required: true },
   image_url: String,
-  preparation_time: { type: Number, default: 15 }, // minutes
+  //preparation_time: { type: Number, default: 15 }, // minutes
   is_available: { type: Boolean, default: true },
   //is_special: { type: Boolean, default: false },
   //calories: Number,
@@ -232,8 +252,8 @@ const OrderDetailSchema = new Schema({
 
 const PromotionSchema = new Schema({
   name: { type: String, required: true },
-  description: String,
-  promotion_type: { type: String, enum: ['percentage', 'fixed_amount', 'buy_x_get_y'], default: 'percentage' },
+  //description: String,
+  promotion_type: { type: String, enum: ['percentage', 'fixed_amount'], default: 'percentage' }, // 'buy_x_get_y'
   discount_value: { type: Number, required: true }, // 20 for 20% or 50000 for 50k VND depending on type
   minimum_order_amount: { type: Number, default: 0 },
   promo_code: { type: String, unique: true, sparse: true },
@@ -274,8 +294,9 @@ const ViolationSchema = new Schema({
   customer_id: { type: Schema.Types.ObjectId, ref: 'Customer', required: true },
   description: { type: String, required: true },
   violation_date: { type: Date, default: Date.now },
-  resolution: String,
-  resolved_at: Date,
+  violation_type: { type: String, enum: ['no_show', 'late_cancel', 'property_damage', 'other'], default: 'no_show' },
+  // resolution: String,
+  // resolved_at: Date,
 });
 // ==================== RATINGS ====================
 const RatingSchema = new Schema({
@@ -304,6 +325,8 @@ InvoiceSchema.index({ invoice_number: 1 });
 
 const Staff = mongoose.model('Staff', StaffSchema);
 const Customer = mongoose.model('Customer', CustomerSchema);
+const Floor = mongoose.model('Floor', FloorSchema);
+const Location = mongoose.model('Location', LocationSchema);
 const Table = mongoose.model('Table', TableSchema);
 const Reservation = mongoose.model('Reservation', ReservationSchema);
 const ReservationDetail = mongoose.model('ReservationDetail', ReservationDetailSchema);
@@ -327,6 +350,8 @@ const RatingReply = mongoose.model('RatingReply', RatingReplySchema);
 module.exports = {
   Staff,
   Customer,
+  Floor,
+  Location,
   Table,
   Reservation,
   ReservationDetail,
