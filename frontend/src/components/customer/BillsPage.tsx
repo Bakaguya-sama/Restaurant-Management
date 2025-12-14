@@ -18,15 +18,13 @@ import { Textarea } from "../ui/textarea";
 import { Input } from "../ui/Input";
 import { mockPromotions } from "../../lib/mockData";
 import { toast } from "sonner";
+import { Calendar } from "lucide-react";
 
-interface BillsPageProps {
-  onNavigate: (page: string) => void;
-}
-
-export function BillsPage({ onNavigate }: BillsPageProps) {
+export function BillsPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showVoucherModal, setShowVoucherModal] = useState(false);
+  const [selectedBill, setSelectedBill] = useState<any>(null);
   const [paymentMethod, setPaymentMethod] = useState<
     "wallet" | "card" | "cash" | null
   >(null);
@@ -40,80 +38,224 @@ export function BillsPage({ onNavigate }: BillsPageProps) {
   // Mock customer data
   const customerPoints = 1500;
 
-  // Mock current bill at table
-  const [currentBill, setCurrentBill] = useState({
-    id: "BILL001",
-    tableNumber: "T02",
-    items: [
-      {
-        id: "1",
-        name: "Phở Bò Đặc Biệt",
-        quantity: 2,
-        price: 85000,
-        status: "served",
-        notes: "Không hành",
+  // Mock all bills (current + history combined)
+  const [allBills, setAllBills] = useState([
+    {
+      id: "BILL004",
+      tableNumber: "T08",
+      date: new Date().toISOString().split("T")[0],
+      time: new Date().toLocaleTimeString("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      items: [
+        {
+          id: "1",
+          name: "Lẩu Thái",
+          quantity: 1,
+          price: 250000,
+          status: "pending",
+        },
+        {
+          id: "2",
+          name: "Gà Nướng Muối Ớt",
+          quantity: 1,
+          price: 180000,
+          status: "pending",
+        },
+        {
+          id: "3",
+          name: "Salad Rau Trộn",
+          quantity: 2,
+          price: 55000,
+          status: "pending",
+        },
+        {
+          id: "4",
+          name: "Nước Ngọt Có Gas",
+          quantity: 3,
+          price: 25000,
+          status: "pending",
+        },
+      ],
+      subtotal: 605000,
+      tax: 60500,
+      discount: 0,
+      voucherDiscount: 0,
+      pointsDiscount: 0,
+      total: 665500,
+      status: "pending",
+      createdAt: new Date().toISOString(),
+      voucherCode: null,
+      voucherUsed: null,
+      pointsUsed: 0,
+      paymentMethod: null,
+      bookingId: "BK005",
+      booking: {
+        customerName: "Phạm Hoàng Nam",
+        phone: "0909123456",
+        guests: 5,
+        bookingDate: "2025-12-12",
+        bookingTime: "20:00",
+        notes: "Cần không gian riêng tư",
+        depositPaid: 200000,
       },
-      {
-        id: "2",
-        name: "Gỏi Cuốn Tôm Thịt",
-        quantity: 1,
-        price: 45000,
-        status: "cooking",
+    },
+    {
+      id: "BILL001",
+      tableNumber: "T05",
+      date: new Date().toISOString().split("T")[0],
+      time: new Date().toLocaleTimeString("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      items: [
+        {
+          id: "1",
+          name: "Phở Bò Đặc Biệt",
+          quantity: 2,
+          price: 85000,
+          status: "served",
+          notes: "Không hành",
+        },
+        {
+          id: "2",
+          name: "Gỏi Cuốn Tôm Thịt",
+          quantity: 1,
+          price: 45000,
+          status: "cooking",
+        },
+        {
+          id: "3",
+          name: "Trà Đá Chanh",
+          quantity: 2,
+          price: 20000,
+          status: "served",
+        },
+      ],
+      subtotal: 215000,
+      tax: 21500,
+      discount: 0,
+      voucherDiscount: 0,
+      pointsDiscount: 0,
+      total: 236500,
+      status: "pending",
+      createdAt: new Date().toISOString(),
+      voucherCode: null,
+      voucherUsed: null,
+      pointsUsed: 0,
+      paymentMethod: null,
+      bookingId: "BK001",
+      booking: {
+        customerName: "Nguyễn Văn An",
+        phone: "0912345678",
+        guests: 4,
+        bookingDate: new Date().toISOString().split("T")[0],
+        bookingTime: "19:00",
+        notes: "Gần cửa sổ",
+        depositPaid: 150000,
       },
-      {
-        id: "3",
-        name: "Trà Đá Chanh",
-        quantity: 2,
-        price: 20000,
-        status: "served",
-      },
-    ],
-    subtotal: 215000,
-    tax: 21500,
-    discount: 0,
-    voucherDiscount: 0,
-    pointsDiscount: 0,
-    total: 236500,
-    status: "pending",
-    createdAt: new Date().toISOString(),
-    voucherCode: null,
-    pointsUsed: 0,
-  });
-
-  // Mock bill history
-  const billHistory = [
+    },
     {
       id: "BILL-H001",
       date: "2025-12-09",
       time: "19:30",
+      items: [
+        {
+          id: "1",
+          name: "Bò Né",
+          quantity: 2,
+          price: 120000,
+          status: "served",
+        },
+        {
+          id: "2",
+          name: "Cà phê sữa đá",
+          quantity: 2,
+          price: 30000,
+          status: "served",
+        },
+      ],
       subtotal: 450000,
+      tax: 45000,
       voucherUsed: "WINTER2025",
       voucherDiscount: 67500,
       pointsUsed: 0,
+      pointsDiscount: 0,
       total: 382500,
       status: "paid",
       tableNumber: "T05",
       paymentMethod: "online",
+      bookingId: "BK002",
+      booking: {
+        customerName: "Trần Thị Bình",
+        phone: "0987654321",
+        guests: 6,
+        bookingDate: "2025-12-09",
+        bookingTime: "19:00",
+        notes: "Tổ chức sinh nhật, cần bành kem",
+        depositPaid: 200000,
+      },
     },
     {
       id: "BILL-H002",
       date: "2025-12-05",
       time: "18:15",
+      items: [
+        {
+          id: "1",
+          name: "Cơm Tấm Sườn",
+          quantity: 1,
+          price: 65000,
+          status: "served",
+        },
+        {
+          id: "2",
+          name: "Trà đá",
+          quantity: 1,
+          price: 10000,
+          status: "served",
+        },
+      ],
       subtotal: 320000,
+      tax: 32000,
       pointsUsed: 1000,
       pointsDiscount: 1000,
+      voucherDiscount: 0,
       total: 319000,
       status: "paid",
       tableNumber: "T03",
       paymentMethod: "cash",
+      bookingId: "BK003",
+      booking: {
+        customerName: "Lê Minh Tú",
+        phone: "0901234567",
+        guests: 2,
+        bookingDate: "2025-12-05",
+        bookingTime: "18:00",
+        notes: "",
+        depositPaid: 200000,
+      },
     },
-  ];
+  ]);
+
+  // Mock current bill at table - kept for backward compatibility
+  const currentBill = allBills[0];
 
   const handleApplyVoucher = () => {
     const voucher = mockPromotions.find(
       (p) => p.code === voucherCode && p.active
     );
     if (voucher) {
+      // Check if promotion has available quantity
+      if (
+        voucher.promotionQuantity !== undefined &&
+        voucher.promotionQuantity <= 0
+      ) {
+        toast.error("Đã hết lượt sử dụng cho mã khuyến mãi này");
+        return;
+      }
+
       let discount = 0;
       if (voucher.discountType === "percentage") {
         discount = Math.floor(
@@ -125,16 +267,20 @@ export function BillsPage({ onNavigate }: BillsPageProps) {
       }
 
       setAppliedVoucher(voucher);
-      setCurrentBill({
-        ...currentBill,
+      const updatedBills = [...allBills];
+      const billIndex = updatedBills.findIndex((b) => b.id === selectedBill.id);
+      updatedBills[billIndex] = {
+        ...updatedBills[billIndex],
         voucherDiscount: discount,
         voucherCode: voucher.code as any,
         total:
-          currentBill.subtotal +
-          currentBill.tax -
+          updatedBills[billIndex].subtotal +
+          updatedBills[billIndex].tax -
           discount -
-          currentBill.pointsDiscount,
-      });
+          updatedBills[billIndex].pointsDiscount,
+      };
+      setAllBills(updatedBills);
+      setSelectedBill(updatedBills[billIndex]);
       setShowVoucherModal(false);
       toast.success("Áp dụng voucher thành công!");
     } else {
@@ -143,10 +289,16 @@ export function BillsPage({ onNavigate }: BillsPageProps) {
   };
 
   const handleSelectPromotion = (promo: any) => {
+    // Check if promotion has available quantity
+    if (promo.promotionQuantity !== undefined && promo.promotionQuantity <= 0) {
+      toast.error("Đã hết lượt sử dụng cho mã khuyến mãi này");
+      return;
+    }
+
     let discount = 0;
     if (promo.discountType === "percentage") {
       discount = Math.floor(
-        (currentBill.subtotal + currentBill.tax) * (promo.discountValue / 100)
+        (selectedBill.subtotal + selectedBill.tax) * (promo.discountValue / 100)
       );
     } else {
       discount = promo.discountValue;
@@ -154,16 +306,20 @@ export function BillsPage({ onNavigate }: BillsPageProps) {
 
     setAppliedVoucher(promo);
     setVoucherCode(promo.code);
-    setCurrentBill({
-      ...currentBill,
+    const updatedBills = [...allBills];
+    const billIndex = updatedBills.findIndex((b) => b.id === selectedBill.id);
+    updatedBills[billIndex] = {
+      ...updatedBills[billIndex],
       voucherDiscount: discount,
       voucherCode: promo.code,
       total:
-        currentBill.subtotal +
-        currentBill.tax -
+        updatedBills[billIndex].subtotal +
+        updatedBills[billIndex].tax -
         discount -
-        currentBill.pointsDiscount,
-    });
+        updatedBills[billIndex].pointsDiscount,
+    };
+    setAllBills(updatedBills);
+    setSelectedBill(updatedBills[billIndex]);
     setShowVoucherModal(false);
     toast.success("Áp dụng voucher thành công!");
   };
@@ -179,16 +335,20 @@ export function BillsPage({ onNavigate }: BillsPageProps) {
     }
 
     const discount = pointsToUse; // 1000 points = 1000đ
-    setCurrentBill({
-      ...currentBill,
+    const updatedBills = [...allBills];
+    const billIndex = updatedBills.findIndex((b) => b.id === selectedBill.id);
+    updatedBills[billIndex] = {
+      ...updatedBills[billIndex],
       pointsDiscount: discount,
       pointsUsed: pointsToUse,
       total:
-        currentBill.subtotal +
-        currentBill.tax -
-        currentBill.voucherDiscount -
+        updatedBills[billIndex].subtotal +
+        updatedBills[billIndex].tax -
+        updatedBills[billIndex].voucherDiscount -
         discount,
-    });
+    };
+    setAllBills(updatedBills);
+    setSelectedBill(updatedBills[billIndex]);
     toast.success(
       `Đã quy đổi ${pointsToUse} điểm = ${discount.toLocaleString()}đ`
     );
@@ -260,269 +420,383 @@ export function BillsPage({ onNavigate }: BillsPageProps) {
         </p>
       </div>
 
-      {/* Current Bill Section */}
-      <Card className="mb-8 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="mb-2">Hóa đơn hiện tại</h3>
-            <p className="text-gray-600">Bàn số: {currentBill.tableNumber}</p>
-          </div>
-          <Badge className="bg-blue-100 text-blue-700">Đang sử dụng</Badge>
-        </div>
-
-        {/* Items List */}
-        <div className="space-y-4 mb-6">
-          {currentBill.items.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg"
-            >
-              <Utensils className="w-5 h-5 text-gray-400 mt-1" />
-              <div className="flex-1">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h4 className="mb-1">{item.name}</h4>
-                    {item.notes && (
-                      <p className="text-sm text-gray-600">
-                        Ghi chú: {item.notes}
-                      </p>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <p className="mb-1">
-                      {item.price.toLocaleString()}đ x {item.quantity}
-                    </p>
-                    <p className="text-[#0056D2]">
-                      {(item.price * item.quantity).toLocaleString()}đ
-                    </p>
+      {/* All Bills List */}
+      <div className="space-y-4">
+        {allBills.map((bill) => (
+          <Card
+            key={bill.id}
+            className="p-4 hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => setSelectedBill(bill)}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-4">
+                <div
+                  className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                    bill.status === "paid" ? "bg-green-100" : "bg-blue-100"
+                  }`}
+                >
+                  {bill.status === "paid" ? (
+                    <Check className="w-6 h-6 text-green-600" />
+                  ) : (
+                    <Clock className="w-6 h-6 text-blue-600" />
+                  )}
+                </div>
+                <div>
+                  <h4 className="mb-1">{bill.id}</h4>
+                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      {bill.date} {bill.time}
+                    </span>
+                    <span>Bàn {bill.tableNumber}</span>
                   </div>
                 </div>
-                <Badge className={getStatusColor(item.status)}>
-                  {getStatusText(item.status)}
+              </div>
+              <div className="text-right">
+                <p className="text-xl mb-1">{bill.total.toLocaleString()}đ</p>
+                <Badge
+                  className={
+                    bill.status === "paid"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-blue-100 text-blue-700"
+                  }
+                >
+                  {bill.status === "paid" ? "Đã thanh toán" : "Đang tiến hành"}
                 </Badge>
               </div>
             </div>
-          ))}
-        </div>
 
-        {/* Voucher/Points Section */}
-        <div className="mb-6 border-t pt-4">
-          <button
-            onClick={() => setShowVoucherSection(!showVoucherSection)}
-            className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <Tag className="w-5 h-5 text-[#0056D2]" />
-              <span>Áp dụng voucher hoặc quy đổi điểm</span>
-            </div>
-            <ChevronDown
-              className={`w-5 h-5 transition-transform ${
-                showVoucherSection ? "rotate-180" : ""
-              }`}
-            />
-          </button>
-
-          {showVoucherSection && (
-            <div className="mt-4 space-y-4">
-              {/* Voucher Section */}
-              <div className="p-4 border rounded-lg">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm">Voucher giảm giá</h4>
-                  {appliedVoucher ? (
-                    <Badge className="bg-green-100 text-green-700">
-                      Đã áp dụng: {appliedVoucher.code}
-                    </Badge>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => setShowVoucherModal(true)}
-                    >
-                      Chọn voucher
-                    </Button>
-                  )}
-                </div>
-                {appliedVoucher && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">{appliedVoucher.name}</span>
+            {/* Discount Info */}
+            {(bill.voucherUsed || bill.pointsUsed > 0) && (
+              <div className="mt-3 pt-3 border-t space-y-1 text-sm">
+                {bill.voucherUsed && (
+                  <div className="flex items-center justify-between text-gray-600">
+                    <span className="flex items-center gap-1">
+                      <Tag className="w-4 h-4" />
+                      Voucher: {bill.voucherUsed}
+                    </span>
                     <span className="text-green-600">
-                      -{currentBill.voucherDiscount.toLocaleString()}đ
+                      -{bill.voucherDiscount?.toLocaleString()}đ
+                    </span>
+                  </div>
+                )}
+                {bill.pointsUsed > 0 && (
+                  <div className="flex items-center justify-between text-gray-600">
+                    <span className="flex items-center gap-1">
+                      <Gift className="w-4 h-4" />
+                      Điểm: {bill.pointsUsed} điểm
+                    </span>
+                    <span className="text-green-600">
+                      -{bill.pointsDiscount?.toLocaleString()}đ
                     </span>
                   </div>
                 )}
               </div>
+            )}
+          </Card>
+        ))}
+      </div>
 
-              {/* Points Section */}
-              <div className="p-4 border rounded-lg">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm">Quy đổi điểm</h4>
-                  <span className="text-sm text-gray-600">
-                    Có: {customerPoints.toLocaleString()} điểm
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  <Input
-                    type="number"
-                    placeholder="Nhập số điểm (1000 điểm = 1.000đ)"
-                    value={pointsToUse || ""}
-                    onChange={(e) =>
-                      setPointsToUse(parseInt(e.target.value) || 0)
-                    }
-                    disabled={currentBill.pointsUsed > 0}
-                  />
-                  {currentBill.pointsUsed > 0 ? (
-                    <Button
-                      variant="secondary"
-                      onClick={() => {
-                        setCurrentBill({
-                          ...currentBill,
-                          pointsDiscount: 0,
-                          pointsUsed: 0,
-                          total:
-                            currentBill.subtotal +
-                            currentBill.tax -
-                            currentBill.voucherDiscount,
-                        });
-                        setPointsToUse(0);
-                      }}
-                    >
-                      Hủy
-                    </Button>
-                  ) : (
-                    <Button onClick={handleUsePoints}>Áp dụng</Button>
-                  )}
-                </div>
-                {currentBill.pointsUsed > 0 && (
-                  <div className="flex items-center justify-between text-sm mt-2">
-                    <span className="text-gray-600">
-                      Đã quy đổi: {currentBill.pointsUsed} điểm
-                    </span>
-                    <span className="text-green-600">
-                      -{currentBill.pointsDiscount.toLocaleString()}đ
-                    </span>
-                  </div>
-                )}
+      {/* Bill Detail Modal */}
+      <Modal
+        isOpen={selectedBill !== null}
+        onClose={() => {
+          setSelectedBill(null);
+          setShowVoucherSection(false);
+        }}
+        title={`Chi tiết hóa đơn - ${selectedBill?.id}`}
+        size="lg"
+      >
+        {selectedBill && (
+          <div className="space-y-6">
+            {/* Bill Info */}
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div>
+                <p className="text-sm text-gray-600">Bàn số</p>
+                <p className="text-lg">{selectedBill.tableNumber}</p>
               </div>
+              <div className="text-center">
+                <p className="text-sm text-gray-600">Ngày giờ</p>
+                <p className="text-lg">
+                  {selectedBill.date} {selectedBill.time}
+                </p>
+              </div>
+              <Badge
+                className={
+                  selectedBill.status === "paid"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-blue-100 text-blue-700"
+                }
+              >
+                {selectedBill.status === "paid"
+                  ? "Đã thanh toán"
+                  : "Đang tiến hành"}
+              </Badge>
             </div>
-          )}
-        </div>
 
-        {/* Bill Summary */}
-        <div className="border-t pt-4 space-y-2">
-          <div className="flex justify-between text-gray-600">
-            <span>Tạm tính:</span>
-            <span>{currentBill.subtotal.toLocaleString()}đ</span>
-          </div>
-          <div className="flex justify-between text-gray-600">
-            <span>Thuế VAT (10%):</span>
-            <span>{currentBill.tax.toLocaleString()}đ</span>
-          </div>
-          {currentBill.voucherDiscount > 0 && (
-            <div className="flex justify-between text-green-600">
-              <span>Giảm giá (Voucher):</span>
-              <span>-{currentBill.voucherDiscount.toLocaleString()}đ</span>
-            </div>
-          )}
-          {currentBill.pointsDiscount > 0 && (
-            <div className="flex justify-between text-green-600">
-              <span>Giảm giá (Điểm):</span>
-              <span>-{currentBill.pointsDiscount.toLocaleString()}đ</span>
-            </div>
-          )}
-          <div className="flex justify-between text-xl pt-2 border-t">
-            <span>Tổng cộng:</span>
-            <span className="text-[#0056D2]">
-              {currentBill.total.toLocaleString()}đ
-            </span>
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="mt-6">
-          <Button fullWidth onClick={() => setShowPaymentModal(true)}>
-            <CreditCard className="w-4 h-4 mr-2" />
-            Thanh toán
-          </Button>
-        </div>
-      </Card>
-
-      {/* Bill History */}
-      <div>
-        <h3 className="mb-4">Lịch sử hóa đơn</h3>
-        <div className="space-y-4">
-          {billHistory.map((bill) => (
-            <Card
-              key={bill.id}
-              className="p-4 hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <Check className="w-6 h-6 text-green-600" />
+            {/* Booking Details */}
+            {selectedBill.booking && (
+              <div className="border rounded-lg p-4 bg-blue-50">
+                <h4 className="mb-3 flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-[#0056D2]" />
+                  Thông tin đặt bàn
+                </h4>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="col-span-2 pb-3 mb-3 border-b border-blue-200">
+                    <p className="text-gray-600 text-xs mb-1">
+                      Mã phiếu đặt bàn
+                    </p>
+                    <p className="font-bold text-xl text-[#0056D2]">
+                      {selectedBill.bookingId}
+                    </p>
                   </div>
                   <div>
-                    <h4 className="mb-1">{bill.id}</h4>
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {bill.date} {bill.time}
+                    <p className="text-gray-600">Tên khách hàng:</p>
+                    <p className="font-medium">
+                      {selectedBill.booking.customerName}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Số điện thoại:</p>
+                    <p className="font-medium">{selectedBill.booking.phone}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Số người:</p>
+                    <p className="font-medium">
+                      {selectedBill.booking.guests} người
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Giờ đặt:</p>
+                    <p className="font-medium">
+                      {selectedBill.booking.bookingTime}
+                    </p>
+                  </div>
+                  {selectedBill.booking.notes && (
+                    <div className="col-span-2">
+                      <p className="text-gray-600">Ghi chú:</p>
+                      <p className="font-medium">
+                        {selectedBill.booking.notes}
+                      </p>
+                    </div>
+                  )}
+                  <div className="col-span-2 pt-2 border-t border-blue-200">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">
+                        Tiền cọc đã thanh toán:
                       </span>
-                      <span>Bàn {bill.tableNumber}</span>
+                      <span className="font-medium text-[#0056D2]">
+                        {selectedBill.booking.depositPaid.toLocaleString()}đ
+                      </span>
                     </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-xl mb-1">{bill.total.toLocaleString()}đ</p>
-                  <Badge className="bg-green-100 text-green-700">
-                    Đã thanh toán
-                  </Badge>
-                </div>
               </div>
+            )}
 
-              {/* Discount Info */}
-              {(bill.voucherUsed || bill.pointsUsed) && (
-                <div className="mt-3 pt-3 border-t space-y-1 text-sm">
-                  {bill.voucherUsed && (
-                    <div className="flex items-center justify-between text-gray-600">
-                      <span className="flex items-center gap-1">
-                        <Tag className="w-4 h-4" />
-                        Voucher: {bill.voucherUsed}
-                      </span>
-                      <span className="text-green-600">
-                        -{bill.voucherDiscount?.toLocaleString()}đ
-                      </span>
+            {/* Items List */}
+            <div>
+              <h4 className="mb-3">Món đã gọi</h4>
+              <div className="space-y-3">
+                {selectedBill.items.map((item: any) => (
+                  <div
+                    key={item.id}
+                    className="flex items-start gap-4 p-3 bg-gray-50 rounded-lg"
+                  >
+                    <Utensils className="w-5 h-5 text-gray-400 mt-1" />
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h4 className="text-sm mb-1">{item.name}</h4>
+                          {item.notes && (
+                            <p className="text-xs text-gray-600">
+                              Ghi chú: {item.notes}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm mb-1">
+                            {item.price.toLocaleString()}đ x {item.quantity}
+                          </p>
+                          <p className="text-[#0056D2] text-sm">
+                            {(item.price * item.quantity).toLocaleString()}đ
+                          </p>
+                        </div>
+                      </div>
+                      {item.status && (
+                        <Badge className={getStatusColor(item.status)}>
+                          {getStatusText(item.status)}
+                        </Badge>
+                      )}
                     </div>
-                  )}
-                  {bill.pointsUsed && (
-                    <div className="flex items-center justify-between text-gray-600">
-                      <span className="flex items-center gap-1">
-                        <Gift className="w-4 h-4" />
-                        Điểm: {bill.pointsUsed} điểm
-                      </span>
-                      <span className="text-green-600">
-                        -{bill.pointsDiscount?.toLocaleString()}đ
-                      </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Voucher/Points Section - Only for pending bills */}
+            {selectedBill.status === "pending" && (
+              <div className="border-t pt-4">
+                <button
+                  onClick={() => setShowVoucherSection(!showVoucherSection)}
+                  className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Tag className="w-5 h-5 text-[#0056D2]" />
+                    <span>Áp dụng voucher hoặc quy đổi điểm</span>
+                  </div>
+                  <ChevronDown
+                    className={`w-5 h-5 transition-transform ${
+                      showVoucherSection ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {showVoucherSection && (
+                  <div className="mt-4 space-y-4">
+                    {/* Voucher Section */}
+                    <div className="p-4 border rounded-lg">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-sm">Voucher giảm giá</h4>
+                        {appliedVoucher ? (
+                          <Badge className="bg-green-100 text-green-700">
+                            Đã áp dụng: {appliedVoucher.code}
+                          </Badge>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => setShowVoucherModal(true)}
+                          >
+                            Chọn voucher
+                          </Button>
+                        )}
+                      </div>
+                      {appliedVoucher && (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">
+                            {appliedVoucher.name}
+                          </span>
+                          <span className="text-green-600">
+                            -{selectedBill.voucherDiscount.toLocaleString()}đ
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  )}
+
+                    {/* Points Section */}
+                    <div className="p-4 border rounded-lg">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-sm">Quy đổi điểm</h4>
+                        <span className="text-sm text-gray-600">
+                          Có: {customerPoints.toLocaleString()} điểm
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Input
+                          type="number"
+                          placeholder="Nhập số điểm (1000 điểm = 1.000đ)"
+                          value={pointsToUse || ""}
+                          onChange={(e) =>
+                            setPointsToUse(parseInt(e.target.value) || 0)
+                          }
+                          disabled={selectedBill.pointsUsed > 0}
+                        />
+                        {selectedBill.pointsUsed > 0 ? (
+                          <Button
+                            variant="secondary"
+                            onClick={() => {
+                              const updatedBills = [...allBills];
+                              const billIndex = updatedBills.findIndex(
+                                (b) => b.id === selectedBill.id
+                              );
+                              updatedBills[billIndex] = {
+                                ...updatedBills[billIndex],
+                                pointsDiscount: 0,
+                                pointsUsed: 0,
+                                total:
+                                  updatedBills[billIndex].subtotal +
+                                  updatedBills[billIndex].tax -
+                                  updatedBills[billIndex].voucherDiscount,
+                              };
+                              setAllBills(updatedBills);
+                              setSelectedBill(updatedBills[billIndex]);
+                              setPointsToUse(0);
+                            }}
+                          >
+                            Hủy
+                          </Button>
+                        ) : (
+                          <Button onClick={handleUsePoints}>Áp dụng</Button>
+                        )}
+                      </div>
+                      {selectedBill.pointsUsed > 0 && (
+                        <div className="flex items-center justify-between text-sm mt-2">
+                          <span className="text-gray-600">
+                            Đã quy đổi: {selectedBill.pointsUsed} điểm
+                          </span>
+                          <span className="text-green-600">
+                            -{selectedBill.pointsDiscount?.toLocaleString()}đ
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Bill Summary */}
+            <div className="border-t pt-4 space-y-2">
+              <div className="flex justify-between text-gray-600">
+                <span>Tạm tính:</span>
+                <span>{selectedBill.subtotal.toLocaleString()}đ</span>
+              </div>
+              <div className="flex justify-between text-gray-600">
+                <span>Thuế VAT (10%):</span>
+                <span>{selectedBill.tax.toLocaleString()}đ</span>
+              </div>
+              {selectedBill.voucherDiscount > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>Giảm giá (Voucher):</span>
+                  <span>-{selectedBill.voucherDiscount.toLocaleString()}đ</span>
                 </div>
               )}
+              {selectedBill.pointsDiscount > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>Giảm giá (Điểm):</span>
+                  <span>-{selectedBill.pointsDiscount.toLocaleString()}đ</span>
+                </div>
+              )}
+              <div className="flex justify-between text-xl pt-2 border-t">
+                <span>Tổng cộng:</span>
+                <span className="text-[#0056D2]">
+                  {selectedBill.total.toLocaleString()}đ
+                </span>
+              </div>
+            </div>
 
-              {/* Feedback Button */}
-              <div className="mt-3">
+            {/* Actions */}
+            <div className="flex gap-3">
+              {selectedBill.status === "pending" ? (
+                <Button fullWidth onClick={() => setShowPaymentModal(true)}>
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Thanh toán
+                </Button>
+              ) : (
                 <Button
-                  size="sm"
-                  variant="secondary"
                   fullWidth
+                  variant="secondary"
                   onClick={() => setShowFeedbackModal(true)}
                 >
                   <MessageSquare className="w-4 h-4 mr-2" />
                   Gửi đánh giá
                 </Button>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </div>
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Voucher Selection Modal */}
       <Modal
@@ -551,7 +825,12 @@ export function BillsPage({ onNavigate }: BillsPageProps) {
             </label>
             <div className="space-y-3">
               {mockPromotions
-                .filter((p) => p.active)
+                .filter(
+                  (p) =>
+                    p.active &&
+                    (p.promotionQuantity === undefined ||
+                      p.promotionQuantity > 0)
+                )
                 .map((promo) => (
                   <div
                     key={promo.id}
@@ -569,9 +848,17 @@ export function BillsPage({ onNavigate }: BillsPageProps) {
                     <p className="text-sm text-gray-600 mb-1">
                       Mã: {promo.code}
                     </p>
-                    <p className="text-xs text-gray-500">
-                      HSD: {new Date(promo.endDate).toLocaleDateString("vi-VN")}
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-gray-500">
+                        HSD:{" "}
+                        {new Date(promo.endDate).toLocaleDateString("vi-VN")}
+                      </p>
+                      {promo.promotionQuantity !== undefined && (
+                        <p className="text-xs text-gray-500">
+                          Còn {promo.promotionQuantity} lượt
+                        </p>
+                      )}
+                    </div>
                   </div>
                 ))}
             </div>
@@ -590,7 +877,7 @@ export function BillsPage({ onNavigate }: BillsPageProps) {
             <div className="flex justify-between mb-2">
               <span className="text-gray-600">Tổng tiền:</span>
               <span className="text-2xl text-[#0056D2]">
-                {currentBill.total.toLocaleString()}đ
+                {selectedBill?.total.toLocaleString()}đ
               </span>
             </div>
           </div>

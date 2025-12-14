@@ -1,5 +1,38 @@
 # API Integration Documentation
 
+**Version**: 1.3  
+**Last Updated**: December 14, 2025
+
+## Changelog
+
+### Version 1.3 (December 14, 2025)
+
+- ✅ Thêm automatic inventory deduction khi waiter gọi món (POST /orders)
+- ✅ Thêm logic hoàn nguyên liệu khi hủy món ở trạng thái `pending`
+- ✅ Thêm chi tiết xử lý Race Conditions và Conflicts trong inventory management
+- ✅ Cập nhật GET /menu: thêm `unavailableReason` khi món hết nguyên liệu
+- ✅ Thêm Business Logic Notes về Inventory Management với database transaction patterns
+- ✅ Thêm error handling cho `INSUFFICIENT_INVENTORY` và `CANNOT_CANCEL`
+
+### Version 1.2 (December 13, 2025)
+
+- ✅ Cập nhật Menu Management APIs: chi tiết về ingredients từ inventory
+- ✅ Cập nhật Upload APIs: hỗ trợ base64 image upload
+- ✅ Thêm ConfirmationModal component documentation
+
+### Version 1.1 (December 13, 2025)
+
+- ✅ Thêm 5 membership tiers: diamond, platinum, gold, silver, bronze (thay vì 3 tiers)
+- ✅ Thêm `promotionQuantity` vào Promotion để quản lý số lượng lượt dùng
+- ✅ Thêm `customerSelectedVoucher` và `customerSelectedPoints` vào Invoice
+- ✅ Thêm `isBlacklisted` vào Customer response
+- ✅ Thêm `brokenReason` vào Table khi status = "broken"
+- ✅ Thêm Location & Floor Management APIs (section 2.8)
+- ✅ Thêm Booking eligibility check API (section 5.0)
+- ✅ Cập nhật Business Logic Notes với logic blacklist và promotion quantity
+- ✅ Thêm `paymentMethod` và `paidAt` vào Invoice response
+- ✅ Cập nhật invoice status: thêm "payment-requested"
+
 ## Overview
 
 Tài liệu này mô tả các API endpoints cần thiết để tích hợp backend với frontend của hệ thống quản lý nhà hàng.
@@ -108,8 +141,9 @@ GET /auth/me
     "email": "string",
     "phone": "string",
     "role": "string",
-    "membershipTier": "gold" | "silver" | "bronze", // chỉ customer
-    "points": 0 // chỉ customer
+    "membershipTier": "diamond" | "platinum" | "gold" | "silver" | "bronze", // chỉ customer
+    "points": 0, // chỉ customer
+    "isBlacklisted": false // chỉ customer
   }
 }
 ```
@@ -142,7 +176,8 @@ GET /tables
       "area": "string",
       "seats": 4,
       "status": "free" | "occupied" | "reserved" | "dirty" | "broken",
-      "floor": "string"
+      "floor": "string",
+      "brokenReason": "string" // optional, chỉ khi status = "broken"
     }
   ]
 }
@@ -253,6 +288,119 @@ POST /tables/:id/assign
 
 ---
 
+## 2.8 Location & Floor Management APIs (Manager only)
+
+### 2.8.1 Lấy danh sách locations
+
+```
+GET /locations
+```
+
+**Query Parameters:**
+
+- `floor`: string (optional) - Lọc theo tầng
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "string",
+      "name": "string",
+      "floor": "string",
+      "description": "string",
+      "createdAt": "2025-12-11T09:00:00Z"
+    }
+  ]
+}
+```
+
+### 2.8.2 Tạo location mới
+
+```
+POST /locations
+```
+
+**Request Body:**
+
+```json
+{
+  "name": "string",
+  "floor": "string",
+  "description": "string"
+}
+```
+
+### 2.8.3 Cập nhật location
+
+```
+PUT /locations/:id
+```
+
+### 2.8.4 Xóa location
+
+```
+DELETE /locations/:id
+```
+
+**Note:** Không được xóa location nếu còn bàn thuộc location đó
+
+### 2.8.5 Lấy danh sách floors
+
+```
+GET /floors
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "string",
+      "name": "string",
+      "level": 1,
+      "description": "string"
+    }
+  ]
+}
+```
+
+### 2.8.6 Tạo floor mới
+
+```
+POST /floors
+```
+
+**Request Body:**
+
+```json
+{
+  "name": "string",
+  "level": 1,
+  "description": "string"
+}
+```
+
+### 2.8.7 Cập nhật floor
+
+```
+PUT /floors/:id
+```
+
+### 2.8.8 Xóa floor
+
+```
+DELETE /floors/:id
+```
+
+**Note:** Không được xóa floor nếu còn location trên floor đó
+
+---
+
 ## 3. Menu Management APIs
 
 ### 3.1 Lấy danh sách món ăn
@@ -279,13 +427,29 @@ GET /menu
       "category": "string",
       "price": 85000,
       "description": "string",
-      "image": "string",
+      "image": "string", // base64 hoặc URL
       "available": true,
-      "ingredients": ["string"]
+      "unavailableReason": "Hết nguyên liệu", // chỉ hiển thị khi available = false
+      "ingredients": [
+        {
+          "inventoryItemId": "string",
+          "name": "string",
+          "quantity": 0.5,
+          "unit": "kg"
+        }
+      ]
     }
   ]
 }
 ```
+
+**Business Logic:**
+
+- Khi load danh sách món ăn, backend cần kiểm tra tồn kho (inventory) của từng nguyên liệu
+- Nếu bất kỳ nguyên liệu nào trong `ingredients` không đủ số lượng:
+  - Set `available = false`
+  - Thêm `unavailableReason` (VD: "Hết nguyên liệu: Tôm hùm", "Nguyên liệu không đủ")
+- Frontend hiển thị món ăn không khả dụng với badge "Hết món" và ghi chú lý do
 
 ### 3.2 Tạo món ăn mới (Manager only)
 
@@ -301,10 +465,40 @@ POST /menu
   "category": "string",
   "price": 85000,
   "description": "string",
-  "image": "string",
-  "ingredients": ["string"]
+  "image": "string", // base64 encoded image hoặc URL
+  "ingredients": [
+    {
+      "inventoryItemId": "string",
+      "quantity": 0.5
+    }
+  ]
 }
 ```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "string",
+    "name": "string",
+    "category": "string",
+    "price": 85000,
+    "description": "string",
+    "image": "string",
+    "available": true,
+    "ingredients": [...]
+  }
+}
+```
+
+**Note:**
+
+- `ingredients` chứa danh sách nguyên liệu từ inventory
+- Frontend sẽ chọn nguyên liệu từ dropdown (inventory items)
+- Backend cần validate `inventoryItemId` có tồn tại
+- Khi tạo món mới, mặc định `available = true`
 
 ### 3.3 Cập nhật món ăn (Manager only)
 
@@ -312,13 +506,31 @@ POST /menu
 PUT /menu/:id
 ```
 
+**Request Body:** Same as POST /menu
+
+**Response:** Same as POST /menu
+
+**Note:**
+
+- Có thể cập nhật cả image (base64 mới) hoặc giữ nguyên image cũ
+- Ingredients có thể được thay đổi hoàn toàn
+
 ### 3.4 Xóa món ăn (Manager only)
 
 ```
 DELETE /menu/:id
 ```
 
-### 3.5 Cập nhật trạng thái món (Staff)
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Xóa món ăn thành công"
+}
+```
+
+### 3.5 Cập nhật trạng thái món (Manager/Staff)
 
 ```
 PATCH /menu/:id/availability
@@ -331,6 +543,31 @@ PATCH /menu/:id/availability
   "available": true
 }
 ```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "string",
+    "available": true
+  }
+}
+```
+
+**Note:**
+
+- Manager có thể thủ công set `available = false` khi muốn tạm ngưng phục vụ món (không phụ thuộc vào inventory)
+- Tuy nhiên, **backend vẫn luôn tự động override `available = false`** nếu thiếu nguyên liệu trong inventory
+- Logic ưu tiên:
+  1. Check inventory trước → nếu thiếu nguyên liệu → force `available = false`
+  2. Nếu đủ nguyên liệu → check giá trị `available` do manager/staff set
+- Khi manager xem danh sách món trong MenuPromotionPage, món nào hết nguyên liệu sẽ hiển thị badge "Hết món" và có `unavailableReason`
+- Manager có thể:
+  - Nhập thêm nguyên liệu vào kho → món tự động available trở lại
+  - Tạm ngưng món thủ công (VD: nghỉ phục vụ tạm thời)
+  - Xem lý do món không available (thiếu nguyên liệu hay bị tắt thủ công)
 
 ---
 
@@ -372,6 +609,50 @@ POST /orders
 }
 ```
 
+**Business Logic - Tự động trừ nguyên liệu khi tạo order:**
+
+1. **Validate tồn kho trước khi tạo order:**
+   - Với mỗi `menuItemId`, lấy danh sách `ingredients` và `quantity` cần thiết
+   - Tính tổng nguyên liệu cần = `ingredient.quantity * orderItem.quantity`
+   - Kiểm tra inventory có đủ nguyên liệu không
+   - Nếu KHÔNG ĐỦ → Return error: `INSUFFICIENT_INVENTORY` với chi tiết nguyên liệu thiếu
+2. **Trừ nguyên liệu ngay lập tức (Pessimistic Locking):**
+   - Khi order được tạo thành công, tự động trừ số lượng nguyên liệu trong inventory
+   - Sử dụng database transaction để đảm bảo tính nhất quán
+   - Log lại việc trừ kho với `reason = "order_created"`, `orderId`, `orderItemId`
+3. **Xử lý xung đột (Race Condition):**
+   - Sử dụng database row-level locking khi cập nhật inventory
+   - Nếu có nhiều waiter cùng order món cần cùng nguyên liệu:
+     - Transaction đầu tiên thành công → order được tạo, nguyên liệu bị trừ
+     - Transaction sau nếu không đủ nguyên liệu → rollback và báo lỗi
+   - Pattern: `SELECT ... FOR UPDATE` trong transaction
+4. **Đảm bảo Atomicity:**
+   - Toàn bộ quá trình (tạo order + trừ inventory) phải trong 1 database transaction
+   - Nếu trừ inventory thất bại → rollback việc tạo order
+   - Nếu tạo order thất bại → không trừ inventory
+
+**Error Responses:**
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "INSUFFICIENT_INVENTORY",
+    "message": "Không đủ nguyên liệu để phục vụ món ăn",
+    "details": {
+      "missingIngredients": [
+        {
+          "name": "Tôm hùm",
+          "required": 1.5,
+          "available": 0.8,
+          "unit": "kg"
+        }
+      ]
+    }
+  }
+}
+```
+
 ### 4.2 Lấy orders theo bàn
 
 ```
@@ -408,15 +689,168 @@ POST /orders/:orderId/items
 }
 ```
 
+**Business Logic - Tự động trừ nguyên liệu:**
+
+- Áp dụng CÙNG logic như `POST /orders` (section 4.1)
+- Validate tồn kho → Trừ nguyên liệu ngay lập tức
+- Sử dụng transaction với row-level locking
+- Log: `reason = "order_item_added"`
+
 ### 4.5 Hủy món trong order
 
 ```
 DELETE /orders/:orderId/items/:itemId
 ```
 
+**Business Logic - Hoàn lại nguyên liệu khi hủy món:**
+
+1. **Kiểm tra trạng thái món ăn:**
+   - Lấy trạng thái hiện tại của order item: `pending` | `cooking` | `served`
+2. **Logic hoàn nguyên liệu:**
+
+   - **TRẠNG THÁI `pending` (Chờ xử lý):**
+
+     - Món chưa vào bếp → Hoàn lại TOÀN BỘ nguyên liệu đã trừ
+     - Cộng lại số lượng vào inventory
+     - Log: `reason = "order_item_cancelled"`, `orderId`, `orderItemId`
+
+   - **TRẠNG THÁI `cooking` (Đang nấu):**
+
+     - Món đã vào bếp → KHÔNG hoàn lại nguyên liệu
+     - Nguyên liệu đã được sử dụng/đang chế biến
+
+   - **TRẠNG THÁI `served` (Đã phục vụ):**
+     - Món đã ra khách → KHÔNG hoàn lại nguyên liệu
+     - Món đã được tiêu thụ
+
+3. **Xử lý xung đột (Race Condition):**
+
+   - **Trường hợp 1: Waiter hủy món ĐỒNG THỜI với việc bếp chuyển status sang `cooking`:**
+
+     - Sử dụng row-level locking trên order_items table
+     - Transaction lock order item trước khi check status
+     - Nếu status đã thay đổi → báo lỗi không thể hủy
+
+   - **Trường hợp 2: Nhiều waiter cùng hủy món:**
+
+     - Transaction đầu tiên lock order item → hủy thành công
+     - Transaction sau nhận lỗi `ORDER_ITEM_NOT_FOUND` hoặc `ALREADY_DELETED`
+
+   - **Trường hợp 3: Hủy món ĐỒNG THỜI với việc tạo món mới cần cùng nguyên liệu:**
+     - Transaction hoàn nguyên liệu (DELETE) lock inventory row
+     - Transaction tạo món mới (POST) phải chờ lock được release
+     - Đảm bảo inventory quantity luôn chính xác
+
+4. **Database Transaction Pattern:**
+
+   ```sql
+   BEGIN TRANSACTION;
+
+   -- Lock order item
+   SELECT status FROM order_items
+   WHERE id = :orderItemId
+   FOR UPDATE;
+
+   IF status = 'pending' THEN
+     -- Lock inventory rows
+     SELECT quantity FROM inventory
+     WHERE id IN (:ingredientIds)
+     FOR UPDATE;
+
+     -- Restore ingredients
+     UPDATE inventory
+     SET quantity = quantity + :returnAmount
+     WHERE id = :ingredientId;
+
+     -- Log inventory transaction
+     INSERT INTO inventory_logs (...);
+   END IF;
+
+   -- Delete order item
+   DELETE FROM order_items WHERE id = :orderItemId;
+
+   COMMIT;
+   ```
+
+5. **Đảm bảo Consistency:**
+   - Toàn bộ quá trình (kiểm tra status + hoàn nguyên liệu + xóa item) trong 1 transaction
+   - Nếu bất kỳ bước nào thất bại → rollback toàn bộ
+   - Inventory quantity luôn chính xác dù có bao nhiêu concurrent requests
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Đã hủy món",
+    "ingredientsRestored": true, // true nếu hoàn nguyên liệu, false nếu không
+    "restoredItems": [
+      {
+        "name": "Tôm hùm",
+        "quantity": 0.5,
+        "unit": "kg"
+      }
+    ]
+  }
+}
+```
+
+**Error Responses:**
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "CANNOT_CANCEL",
+    "message": "Không thể hủy món đang nấu hoặc đã phục vụ",
+    "details": {
+      "currentStatus": "cooking",
+      "reason": "Món đã vào bếp, không thể hoàn nguyên liệu"
+    }
+  }
+}
+```
+
+**Note quan trọng:**
+
+- **Pessimistic Locking Strategy**: Sử dụng database locks để đảm bảo consistency
+- **ACID Transactions**: Mọi thao tác phải tuân thủ ACID properties
+- **Idempotency**: API hủy món nên idempotent - gọi nhiều lần không gây side effects
+- **Audit Trail**: Log đầy đủ mọi thay đổi inventory để audit và debug
+- **Performance**: Monitor lock wait time, optimize query nếu cần
+- **Deadlock Prevention**: Luôn lock resources theo thứ tự nhất định (order_items → inventory)
+
 ---
 
 ## 5. Booking APIs
+
+### 5.0 Kiểm tra điều kiện đặt bàn (Customer)
+
+```
+GET /bookings/check-eligibility
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "canBook": false,
+    "isBlacklisted": true,
+    "violations": [
+      {
+        "id": "string",
+        "type": "no-show" | "late-cancel" | "damage",
+        "description": "string",
+        "date": "2025-11-20"
+      }
+    ],
+    "message": "Tài khoản bị hạn chế do vi phạm chính sách"
+  }
+}
+```
 
 ### 5.1 Tạo booking (Customer)
 
@@ -520,7 +954,11 @@ POST /invoices
     "tax": 50000,
     "discount": 0,
     "total": 550000,
-    "status": "pending"
+    "status": "pending" | "payment-requested" | "paid" | "cancelled",
+    "paymentMethod": "cash" | "card" | "wallet" | "online", // optional
+    "paidAt": "2025-12-11T09:00:00Z", // optional
+    "customerSelectedVoucher": false, // optional
+    "customerSelectedPoints": 0 // optional
   }
 }
 ```
@@ -667,7 +1105,7 @@ GET /customers
       "name": "string",
       "phone": "string",
       "email": "string",
-      "membershipTier": "gold",
+      "membershipTier": "diamond" | "platinum" | "gold" | "silver" | "bronze",
       "points": 1500,
       "totalSpent": 15000000,
       "violations": [...],
@@ -682,6 +1120,35 @@ GET /customers
 ```
 GET /customers/:id
 ```
+
+### 7.2.1 Tìm kiếm khách hàng theo số điện thoại (Waiter)
+
+```
+GET /customers/search-by-phone
+```
+
+**Query Parameters:**
+
+- `phone`: string (required) - Số điện thoại khách hàng
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "string",
+    "name": "string",
+    "phone": "string",
+    "email": "string",
+    "membershipTier": "gold",
+    "points": 1500,
+    "isBlacklisted": false
+  }
+}
+```
+
+**Note:** API này dùng cho waiter khi tạo order mới và cần tìm thông tin customer
 
 ### 7.3 Cập nhật thông tin khách hàng
 
@@ -931,6 +1398,7 @@ GET /promotions
       "description": "string",
       "minOrderAmount": 200000,
       "maxDiscountAmount": 100000,
+      "promotionQuantity": 100, // optional, số lượng lượt dùng còn lại
       "startDate": "2025-12-01",
       "endDate": "2025-12-31",
       "active": true
@@ -1376,6 +1844,36 @@ GET /search
 
 ### 15.1 Upload ảnh món ăn
 
+**Option 1: Base64 Upload (Recommended for quick implementation)**
+
+```
+POST /upload/menu-image
+Content-Type: application/json
+```
+
+**Request Body:**
+
+```json
+{
+  "image": "data:image/jpeg;base64,/9j/4AAQSkZJRg...", // base64 encoded image
+  "menuItemId": "string" // optional, ID món ăn nếu đang cập nhật
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "imageUrl": "https://storage.example.com/menu/abc123.jpg",
+    "base64": "data:image/jpeg;base64,/9j/4AAQSkZJRg..." // optional, trả về base64 nếu không dùng storage
+  }
+}
+```
+
+**Option 2: File Upload (For production with cloud storage)**
+
 ```
 POST /upload/menu-image
 Content-Type: multipart/form-data
@@ -1398,36 +1896,28 @@ Content-Type: multipart/form-data
 }
 ```
 
+**Note:**
+
+- Frontend hiện đang sử dụng FileReader để convert image thành base64
+- Backend có thể:
+  - **Development**: Lưu trực tiếp base64 trong DB (nhanh, không cần storage service)
+  - **Production**: Upload base64 lên cloud storage (S3, Cloudinary) và trả về URL
+
 ### 15.2 Upload ảnh khuyến mãi
 
-```
-POST /upload/promotion-image
-Content-Type: multipart/form-data
-```
+**Same as 15.1**, endpoint: `POST /upload/promotion-image`
 
-**Request Body:**
+### 15.3 Upload avatar
 
-- `image`: File (required) - File ảnh (jpg, jpeg, png)
-- `promotionId`: string (optional) - ID khuyến mãi nếu đang cập nhật
-
-**Response:**
-
-```json
-{
-  "success": true,
-  "data": {
-    "imageUrl": "https://storage.example.com/promotions/xyz456.jpg",
-    "thumbnailUrl": "https://storage.example.com/promotions/xyz456_thumb.jpg"
-  }
-}
-```
+**Same as 15.1**, endpoint: `POST /upload/avatar`
 
 **Validation Rules:**
 
 - Chỉ chấp nhận: image/jpeg, image/jpg, image/png
-- Max file size: 5MB
-- Tự động resize và tạo thumbnail
+- Max file size: 5MB (base64 encoded ~ 6.7MB)
+- Tự động resize và tạo thumbnail (nếu dùng storage)
 - Compress quality: 80%
+- Base64 format: `data:image/jpeg;base64,<encoded_string>`
 
 ---
 
@@ -1615,13 +2105,121 @@ socket.on("inventory:low-stock", (data) => {
 
 ### 6. Business Logic Notes
 
-- **Points**: 1000 VND chi tiêu = 1 điểm
-- **Membership tiers**:
-  - Bronze: 0-5M VND
-  - Silver: 5M-10M VND
-  - Gold: >10M VND
-- **Violations**: 3 vi phạm no-show = blacklist
-- **Booking deposit**: 200,000 VND cố định
+- **Points**:
+  - 10,000 VND chi tiêu = 10 điểm tích lũy
+  - 1000 điểm = 1,000 VND giảm giá khi quy đổi
+- **Membership tiers** (5 cấp):
+  - **Bronze (Đồng)**: 0-5M VND tổng chi tiêu
+  - **Silver (Bạc)**: 5M-10M VND tổng chi tiêu
+  - **Gold (Vàng)**: 10M-20M VND tổng chi tiêu
+  - **Platinum (Bạch kim)**: 20M-50M VND tổng chi tiêu
+  - **Diamond (Kim cương)**: >50M VND tổng chi tiêu
+- **Violations & Blacklist**:
+  - **No-show**: Không đến nhận bàn đã đặt
+  - **Late-cancel**: Hủy bàn muộn (< 2 giờ trước giờ đặt)
+  - **Damage**: Gây hư hại tài sản nhà hàng
+  - 3 vi phạm no-show → tự động blacklist
+  - Customer bị blacklist không thể đặt bàn online
+- **Booking & Deposit**:
+
+  - Deposit cố định: 200,000 VND
+  - Deposit được hoàn lại khi check-in thành công
+  - Deposit bị mất nếu no-show
+
+- **Inventory Management - Automatic Deduction**:
+
+  - **Khi load menu (GET /menu)**:
+
+    - Backend tự động check tồn kho của tất cả nguyên liệu
+    - Món nào thiếu nguyên liệu → `available = false`
+    - Thêm `unavailableReason` để frontend hiển thị (VD: "Hết nguyên liệu: Tôm hùm")
+    - Frontend disable món hết và hiển thị badge "Hết món"
+
+  - **Khi waiter gọi món (POST /orders, POST /orders/:id/items)**:
+
+    - Backend validate đủ nguyên liệu trước khi tạo order
+    - TỰ ĐỘNG TRỪ nguyên liệu trong inventory NGAY LẬP TỨC
+    - Sử dụng database transaction với row-level locking (`SELECT ... FOR UPDATE`)
+    - Nếu không đủ → return error `INSUFFICIENT_INVENTORY` với chi tiết
+    - Log: `reason = "order_created"` hoặc `"order_item_added"`
+
+  - **Khi hủy món (DELETE /orders/:orderId/items/:itemId)**:
+
+    - **Status = `pending` (Chờ xử lý)**:
+      - Món chưa vào bếp → HOÀN LẠI toàn bộ nguyên liệu vào inventory
+      - Cộng lại số lượng đã trừ
+      - Log: `reason = "order_item_cancelled"`
+    - **Status = `cooking` hoặc `served`**:
+      - Món đã vào bếp/đã phục vụ → KHÔNG hoàn nguyên liệu
+      - Nguyên liệu đã được sử dụng/tiêu thụ
+    - Return response với `ingredientsRestored: true/false`
+
+  - **Xử lý Race Conditions & Conflicts**:
+
+    - **Problem 1**: Nhiều waiter cùng order món cần cùng nguyên liệu
+
+      - Solution: Row-level locking trên inventory table
+      - Transaction đầu tiên thành công, transaction sau fail nếu hết hàng
+
+    - **Problem 2**: Waiter hủy món ĐỒNG THỜI bếp chuyển status sang `cooking`
+
+      - Solution: Lock order_items row trước khi check status
+      - Nếu status đã thay đổi → báo lỗi không thể hủy
+
+    - **Problem 3**: Hủy món ĐỒNG THỜI tạo món mới cùng nguyên liệu
+
+      - Solution: Transaction hoàn nguyên liệu lock inventory
+      - Transaction tạo món mới phải chờ lock release
+      - Đảm bảo inventory quantity luôn chính xác
+
+    - **Deadlock Prevention**:
+      - Luôn lock theo thứ tự: order_items → inventory
+      - Timeout cho transactions (VD: 5 seconds)
+      - Retry mechanism với exponential backoff
+
+  - **Database Transaction Pattern**:
+
+    ```
+    1. BEGIN TRANSACTION
+    2. Lock order_items (FOR UPDATE)
+    3. Check status
+    4. If status allows → Lock inventory rows (FOR UPDATE)
+    5. Update inventory quantities
+    6. Insert inventory_logs
+    7. Delete/Update order_items
+    8. COMMIT (hoặc ROLLBACK nếu có lỗi)
+    ```
+
+  - **Monitoring & Alerts**:
+    - Log tất cả inventory transactions với timestamp, user, reason
+    - Alert manager khi nguyên liệu sắp hết (< 20% threshold)
+    - Dashboard hiển thị realtime inventory status
+    - Track lock wait times và optimize nếu > 1s
+
+- **Promotion Quantity**:
+  - Mỗi promotion có thể giới hạn số lượng lượt dùng (`promotionQuantity`)
+  - Mỗi lần áp dụng khuyến mãi → trừ 1 từ `promotionQuantity`
+  - Khi `promotionQuantity = 0` → promotion không khả dụng
+  - Frontend hiển thị số lượng còn lại
+- **Promotions**:
+
+  - Mỗi promotion có `promotionQuantity` (số lượt dùng)
+  - Khi `promotionQuantity = 0`: không thể sử dụng
+  - Customer chỉ được chọn 1 trong: voucher HOẶC quy đổi điểm
+  - Cashier có thể áp dụng promotion cho customer nếu customer chưa chọn
+
+- **Invoice & Payment**:
+
+  - Customer có thể yêu cầu thanh toán từ bàn (`payment-requested`)
+  - Cashier xử lý thanh toán và invoice chuyển sang `paid`
+  - Invoice có thể có: voucherCode, pointsUsed, hoặc promotion do cashier áp dụng
+
+- **Menu & Ingredients**:
+  - Mỗi món ăn có danh sách nguyên liệu từ inventory
+  - Khi tạo/sửa món, ingredients được chọn từ inventory items có sẵn
+  - Frontend hiển thị dropdown với format: "Tên nguyên liệu (SL đơn vị trong kho)"
+  - Mỗi ingredient trong menu item có: inventoryItemId, quantity cần dùng
+  - Backend cần check tồn kho khi nhận order để xác nhận món có thể làm được
 
 ### 7. Performance Considerations
 
@@ -1642,3 +2240,139 @@ socket.on("inventory:low-stock", (data) => {
 ## Contact
 
 Nếu có thắc mắc về API spec, liên hệ Frontend Team.
+
+---
+
+## Appendix A: Frontend UI Components
+
+### A.1 ConfirmationModal Component
+
+**Location:** `frontend/src/components/ui/ConfirmationModal.tsx`
+
+**Purpose:** Reusable confirmation dialog cho các hành động quan trọng (xóa, đăng xuất, etc.)
+
+**Props:**
+
+- `isOpen`: boolean - Điều khiển hiển thị modal
+- `onClose`: () => void - Callback khi đóng modal
+- `onConfirm`: () => void - Callback khi xác nhận (tự động đóng modal)
+- `title?`: string - Tiêu đề (default: "Xác nhận")
+- `message?`: string - Nội dung (default: "Bạn có chắc chắn...")
+- `confirmText?`: string - Text nút confirm (default: "Xác nhận")
+- `cancelText?`: string - Text nút cancel (default: "Hủy")
+- `variant?`: 'danger' | 'warning' | 'info' - Style variant (default: 'warning')
+
+**Variants:**
+
+- `danger`: Màu đỏ - dùng cho hành động nguy hiểm (xóa, hủy vĩnh viễn)
+- `warning`: Màu vàng - dùng cho cảnh báo (đăng xuất, rời khỏi trang)
+- `info`: Màu xanh - dùng cho thông tin (lưu, xác nhận thay đổi)
+
+**Usage Example:**
+
+```tsx
+import { ConfirmationModal } from "../../ui/ConfirmationModal";
+import { useState } from "react";
+
+function MyComponent() {
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  return (
+    <>
+      <Button onClick={() => setShowConfirm(true)}>Xóa món ăn</Button>
+
+      <ConfirmationModal
+        isOpen={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        onConfirm={() => {
+          handleDelete(itemId);
+          toast.success("Xóa thành công!");
+        }}
+        title="Xóa món ăn"
+        message="Bạn có chắc chắn muốn xóa món ăn này? Hành động này không thể hoàn tác."
+        confirmText="Xóa"
+        cancelText="Hủy"
+        variant="danger"
+      />
+    </>
+  );
+}
+```
+
+### A.2 User Dropdown Menu
+
+**Location:**
+
+- `frontend/src/components/customer/CustomerLayout.tsx`
+- `frontend/src/components/staff/StaffLayout.tsx`
+
+**Changes (v1.2):**
+
+- Đã di chuyển nút "Đăng xuất" từ sidebar lên header
+- User click vào tên/avatar ở góc phải header để mở dropdown
+- Dropdown chứa: Đăng xuất (có thể thêm Profile, Settings sau)
+
+**UI Details:**
+
+- Icon: ChevronDown từ lucide-react
+- Dropdown position: absolute right-0
+- Styling: white background, shadow, border, rounded corners
+- Hover effect: background color change
+
+### A.3 Image Upload Component (Menu Items)
+
+**Location:** `frontend/src/components/staff/manager/MenuPromotionPage.tsx`
+
+**Implementation:**
+
+- File selection via `<input type="file" accept="image/*">`
+- FileReader API để convert sang base64
+- Preview ảnh với overlay hover effects
+- Buttons: Edit (blue) và Delete (red) hiện khi hover
+- Empty state: Dashed border box với ImageIcon và text "Nhấn để chọn ảnh"
+
+**Features:**
+
+- Click anywhere on box để chọn ảnh mới
+- Hover lên ảnh hiện overlay với 2 buttons
+- Edit button: cho phép thay đổi ảnh
+- Delete button: xóa ảnh hiện tại
+- Support format: PNG, JPG, GIF up to 10MB
+
+**Integration Notes:**
+
+- Image được lưu dưới dạng base64 string trong state
+- Khi submit, gửi base64 string lên backend
+- Backend có thể lưu trực tiếp base64 hoặc upload lên cloud storage
+
+---
+
+## Appendix B: Frontend State Management
+
+### B.1 Menu Form State
+
+```tsx
+const [menuForm, setMenuForm] = useState({
+  name: "",
+  category: "Món chính",
+  price: 0,
+  description: "",
+  image: "", // base64 string hoặc URL
+});
+```
+
+### B.2 Ingredient Rows State
+
+```tsx
+const [ingredientRows, setIngredientRows] = useState<
+  Array<{ ingredientId: string; quantity: number }>
+>([{ ingredientId: "", quantity: 0 }]);
+```
+
+**Note:**
+
+- Frontend chỉ lưu `ingredientId` và `quantity`
+- Tên nguyên liệu và unit được lấy từ `mockInventory` để hiển thị
+- Khi submit, gửi array of `{ inventoryItemId: string, quantity: number }`
+
+---

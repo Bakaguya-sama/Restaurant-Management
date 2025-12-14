@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState } from 'react';
-import { UserRole } from '../types';
+import React, { createContext, useContext, useState } from "react";
+import { UserRole } from "../types";
 
 interface UserProfile {
   name: string;
@@ -25,14 +25,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = (role: UserRole) => {
     setIsAuthenticated(true);
+
     // Mock user profile based on role
+    // TEST BLACKLIST: Switch between customers to test different scenarios
+
+    // Option 1: Normal customer (NOT blacklisted) - C001
+    const customerProfile = {
+      name: "Nguyễn Văn An",
+      email: "an.nguyen@email.com",
+      phone: "0912345678",
+    };
+
+    // Option 2: Blacklisted customer - C002
+    // const customerProfile = {
+    //   name: "Trần Thị Bình",
+    //   email: "binh.tran@email.com",
+    //   phone: "0987654321",
+    // };
+
     setUserProfile({
-      name: role === 'customer' ? 'Nguyễn Văn An' : 'Nhân viên',
-      email: role === 'customer' ? 'an.nguyen@email.com' : 'staff@restaurant.com',
-      phone: '0912345678',
+      name: role === "customer" ? customerProfile.name : "Nhân viên",
+      email:
+        role === "customer" ? customerProfile.email : "staff@restaurant.com",
+      phone: role === "customer" ? customerProfile.phone : "0123456789",
       role,
-      // Customer by default doesn't have address
-      address: role === 'customer' ? undefined : '123 Đường ABC, Hà Nội',
+      address: role === "customer" ? undefined : "123 Đường ABC, Hà Nội",
     });
   };
 
@@ -65,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

@@ -171,5 +171,16 @@ export function validateFutureDate(
     };
   }
 
+  // Check if date is within 3 months from today
+  const threeMonthsFromNow = new Date(today);
+  threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
+
+  if (selectedDate > threeMonthsFromNow) {
+    return {
+      isValid: false,
+      error: `${fieldName} chỉ có thể đặt trong vòng 3 tháng tới`,
+    };
+  }
+
   return { isValid: true };
 }

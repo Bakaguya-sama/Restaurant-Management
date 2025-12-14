@@ -18,12 +18,15 @@ import {
   mockPromotions,
   mockPointHistory,
   mockVoucherHistory,
+  mockCustomers,
 } from "../../lib/mockData";
 import { toast } from "sonner";
 import { copyToClipboard } from "../../lib/clipboard";
 import { PromotionCard } from "./PromotionCard";
+import { useAuth } from "../../contexts/AuthContext";
 
 export function MembershipPage() {
+  const { userProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<
     "rewards" | "promotions" | "history"
   >("rewards");
@@ -32,15 +35,50 @@ export function MembershipPage() {
   const [showPointsRedemption, setShowPointsRedemption] = useState(false);
   const [pointsToRedeem, setPointsToRedeem] = useState(0);
 
+  // Lấy thông tin customer hiện tại
+  const currentCustomer = mockCustomers.find(
+    (c) => c.phone === userProfile?.phone || c.email === userProfile?.email
+  );
+
+  // Lọc lịch sử điểm theo customer hiện tại
+  const userPointHistory = currentCustomer
+    ? mockPointHistory.filter(
+        (history) =>
+          // Lọc theo invoiceId của customer hoặc theo logic khác
+          // Tạm thời hiển thị tất cả (sẽ update khi có API thực)
+          true
+      )
+    : [];
+
+  // Lọc lịch sử voucher theo customer hiện tại
+  const userVoucherHistory = currentCustomer
+    ? mockVoucherHistory.filter(
+        (history) =>
+          // Lọc theo invoiceId của customer hoặc theo logic khác
+          // Tạm thời hiển thị tất cả (sẽ update khi có API thực)
+          true
+      )
+    : [];
+
   const memberData = {
-    name: "Nguyễn Văn An",
-    tier: "gold",
-    points: 1500,
+    name: currentCustomer?.name || userProfile?.name || "Khách hàng",
+    tier: currentCustomer?.membershipTier || "bronze",
+    points: currentCustomer?.points || 0,
     nextTierPoints: 2000,
-    totalSpent: 15000000,
+    totalSpent: 15000000, // Tạm thời hardcode, sẽ tính từ invoices
   };
 
   const tierConfig = {
+    diamond: {
+      name: "Kim cương",
+      color: "from-cyan-400 to-cyan-600",
+      icon: "💎",
+    },
+    platinum: {
+      name: "Bạch kim",
+      color: "from-slate-300 to-slate-500",
+      icon: "⚪",
+    },
     gold: { name: "Vàng", color: "from-yellow-400 to-yellow-600", icon: "👑" },
     silver: { name: "Bạc", color: "from-gray-300 to-gray-500", icon: "🥈" },
     bronze: { name: "Đồng", color: "from-amber-600 to-amber-800", icon: "🥉" },
@@ -89,72 +127,42 @@ export function MembershipPage() {
       </div>
 
       {/* Membership Card */}
-      <Card
-        className={`mb-8 bg-gradient-to-r ${currentTier.color} text-white overflow-hidden`}
-      >
-        <div className="p-8 relative">
-          <div className="absolute top-0 right-0 text-9xl opacity-10">
-            {currentTier.icon}
-          </div>
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <p className="text-white/80 mb-1">Thành viên</p>
-                <h2 className="text-white">{memberData.name}</h2>
-              </div>
-              <div className="text-right">
-                <div className="flex items-center gap-2 justify-end mb-2">
-                  <Award className="w-8 h-8" />
-                  <span className="text-2xl">{currentTier.name}</span>
-                </div>
-                <p className="text-white/80 text-sm">Hạng thành viên</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-6 mb-6">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <Star className="w-5 h-5" />
-                  <span className="text-2xl">{memberData.points}</span>
-                </div>
-                <p className="text-white/80 text-sm">Điểm tích lũy</p>
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <TrendingUp className="w-5 h-5" />
-                  <span className="text-2xl">
-                    {memberData.totalSpent.toLocaleString()}đ
-                  </span>
-                </div>
-                <p className="text-white/80 text-sm">Tổng chi tiêu</p>
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <Gift className="w-5 h-5" />
-                  <span className="text-2xl">{mockRewards.length}</span>
-                </div>
-                <p className="text-white/80 text-sm">Quà có thể đổi</p>
-              </div>
-            </div>
-
+      <Card className="mb-8 bg-white border-2 border-gray-200">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <div className="flex items-center justify-between text-sm mb-2">
-                <span className="text-white/80">
-                  Tiến độ lên hạng tiếp theo
-                </span>
-                <span className="text-white">
-                  {memberData.points}/{memberData.nextTierPoints} điểm
-                </span>
+              <p className="text-sm text-gray-500 mb-1">Thành viên</p>
+              <h3 className="text-xl font-semibold text-gray-800">
+                {memberData.name}
+              </h3>
+            </div>
+            <div
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r ${currentTier.color}`}
+            >
+              <Award className="w-5 h-5 text-gray-600" />
+              <span className="font-medium text-gray-700">
+                {currentTier.name}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-blue-50 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Star className="w-4 h-4 text-blue-600" />
+                <span className="text-sm text-gray-600">Điểm tích lũy</span>
               </div>
-              <div className="w-full h-3 bg-white/20 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-white rounded-full transition-all duration-500"
-                  style={{ width: `${progress}%` }}
-                />
+              <p className="text-2xl font-semibold text-blue-600">
+                {memberData.points}
+              </p>
+            </div>
+            <div className="bg-green-50 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <TrendingUp className="w-4 h-4 text-green-600" />
+                <span className="text-sm text-gray-600">Tổng chi tiêu</span>
               </div>
-              <p className="text-white/80 text-sm mt-2">
-                Còn {memberData.nextTierPoints - memberData.points} điểm nữa để
-                lên hạng Platinum
+              <p className="text-2xl font-semibold text-green-600">
+                {(memberData.totalSpent / 1000000).toFixed(1)}M
               </p>
             </div>
           </div>
@@ -209,7 +217,7 @@ export function MembershipPage() {
             </p>
           </div>
 
-          <Card className="p-6 bg-gradient-to-br from-blue-50 to-purple-50">
+          {/* <Card className="p-6 bg-gradient-to-br from-blue-50 to-purple-50">
             <div className="text-center mb-6">
               <div className="w-20 h-20 bg-[#0056D2] rounded-full flex items-center justify-center mx-auto mb-4">
                 <Star className="w-10 h-10 text-white fill-white" />
@@ -240,7 +248,7 @@ export function MembershipPage() {
                 </p>
               </div>
             </div>
-          </Card>
+          </Card> */}
         </div>
       )}
 
@@ -254,13 +262,18 @@ export function MembershipPage() {
             </p>
           </div>
           <div className="space-y-4">
-            {mockPromotions.map((promotion) => (
-              <PromotionCard
-                key={promotion.id}
-                promotion={promotion}
-                variant="list"
-              />
-            ))}
+            {mockPromotions
+              .filter(
+                (p) =>
+                  p.promotionQuantity === undefined || p.promotionQuantity > 0
+              )
+              .map((promotion) => (
+                <PromotionCard
+                  key={promotion.id}
+                  promotion={promotion}
+                  variant="list"
+                />
+              ))}
           </div>
         </div>
       )}
@@ -282,50 +295,57 @@ export function MembershipPage() {
               Lịch sử điểm
             </h4>
             <div className="space-y-3">
-              {mockPointHistory.map((history) => (
-                <Card key={history.id} className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-xs ${
-                            history.type === "earned"
-                              ? "bg-green-100 text-green-700"
+              {userPointHistory.length > 0 ? (
+                userPointHistory.map((history) => (
+                  <Card key={history.id} className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-xs ${
+                              history.type === "earned"
+                                ? "bg-green-100 text-green-700"
+                                : history.type === "redeemed"
+                                ? "bg-blue-100 text-blue-700"
+                                : "bg-gray-100 text-gray-700"
+                            }`}
+                          >
+                            {history.type === "earned"
+                              ? "Tích điểm"
                               : history.type === "redeemed"
-                              ? "bg-blue-100 text-blue-700"
-                              : "bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          {history.type === "earned"
-                            ? "Tích điểm"
-                            : history.type === "redeemed"
-                            ? "Quy đổi"
-                            : "Hết hạn"}
-                        </span>
-                        {history.invoiceId && (
-                          <span className="text-xs text-gray-500">
-                            HĐ: {history.invoiceId}
+                              ? "Quy đổi"
+                              : "Hết hạn"}
                           </span>
-                        )}
+                          {history.invoiceId && (
+                            <span className="text-xs text-gray-500">
+                              HĐ: {history.invoiceId}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 mb-1">
+                          {history.description}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(history.date).toLocaleString("vi-VN")}
+                        </p>
                       </div>
-                      <p className="text-sm text-gray-600 mb-1">
-                        {history.description}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(history.date).toLocaleString("vi-VN")}
-                      </p>
+                      <div
+                        className={`text-lg ${
+                          history.amount > 0 ? "text-green-600" : "text-red-600"
+                        }`}
+                      >
+                        {history.amount > 0 ? "+" : ""}
+                        {history.amount.toLocaleString()}
+                      </div>
                     </div>
-                    <div
-                      className={`text-lg ${
-                        history.amount > 0 ? "text-green-600" : "text-red-600"
-                      }`}
-                    >
-                      {history.amount > 0 ? "+" : ""}
-                      {history.amount.toLocaleString()}
-                    </div>
-                  </div>
+                  </Card>
+                ))
+              ) : (
+                <Card className="p-8 text-center">
+                  <Star className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">Chưa có lịch sử sử dụng điểm</p>
                 </Card>
-              ))}
+              )}
             </div>
           </div>
 
@@ -336,8 +356,8 @@ export function MembershipPage() {
               Lịch sử sử dụng voucher
             </h4>
             <div className="space-y-3">
-              {mockVoucherHistory.length > 0 ? (
-                mockVoucherHistory.map((history) => (
+              {userVoucherHistory.length > 0 ? (
+                userVoucherHistory.map((history) => (
                   <Card key={history.id} className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">

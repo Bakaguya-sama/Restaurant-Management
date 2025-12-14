@@ -1,11 +1,18 @@
 import React, { useState } from "react";
-import { Plus, AlertTriangle, Package, Trash2, X } from "lucide-react";
+import { Plus, AlertTriangle, Package, Trash2, X, Search } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Card } from "../../ui/Card";
 import { Modal } from "../../ui/Modal";
 import { Input } from "../../ui/Input";
 import { Badge } from "../../ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../ui/select";
 import { mockInventory, mockSuppliers } from "../../../lib/mockData";
 import { InventoryItem, Supplier } from "../../../types";
 import { toast } from "sonner";
@@ -13,12 +20,33 @@ import { toast } from "sonner";
 export function InventoryPage() {
   const [inventory, setInventory] = useState<InventoryItem[]>(mockInventory);
   const [suppliers, setSuppliers] = useState<Supplier[]>(mockSuppliers);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showImportModal, setShowImportModal] = useState(false);
   const [showDisposeModal, setShowDisposeModal] = useState(false);
   const [showAddSupplierModal, setShowAddSupplierModal] = useState(false);
   const [importItems, setImportItems] = useState<
-    Array<{ itemName: string; quantity: number; price: number }>
-  >([{ itemName: "", quantity: 0, price: 0 }]);
+    Array<{
+      type: "new" | "existing";
+      existingItemId?: string;
+      itemName: string;
+      quantity: number;
+      unit: string;
+      price: number;
+      expiryDate: string;
+      storageLocation: string;
+    }>
+  >([
+    {
+      type: "new",
+      itemName: "",
+      quantity: 0,
+      unit: "",
+      price: 0,
+      expiryDate: "",
+      storageLocation: "",
+    },
+  ]);
   const [selectedSupplier, setSelectedSupplier] = useState("");
   const [disposeData, setDisposeData] = useState({
     itemId: "",
@@ -47,8 +75,46 @@ export function InventoryPage() {
     return getDaysUntilExpiry(expiryDate) < 0;
   };
 
+  const filteredInventory = inventory.filter((item) => {
+    const matchesSearch = item.name
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+
+    if (statusFilter === "all") {
+      return matchesSearch;
+    } else if (statusFilter === "expired") {
+      return matchesSearch && item.expiryDate && isExpired(item.expiryDate);
+    } else if (statusFilter === "expiring") {
+      return (
+        matchesSearch &&
+        item.expiryDate &&
+        isExpiringSoon(item.expiryDate) &&
+        !isExpired(item.expiryDate)
+      );
+    } else if (statusFilter === "low-stock") {
+      return matchesSearch && item.quantity < 10;
+    } else if (statusFilter === "normal") {
+      const expired = item.expiryDate && isExpired(item.expiryDate);
+      const expiring = item.expiryDate && isExpiringSoon(item.expiryDate);
+      const lowStock = item.quantity < 10;
+      return matchesSearch && !expired && !expiring && !lowStock;
+    }
+    return matchesSearch;
+  });
+
   const addImportRow = () => {
-    setImportItems([...importItems, { itemName: "", quantity: 0, price: 0 }]);
+    setImportItems([
+      ...importItems,
+      {
+        type: "new",
+        itemName: "",
+        quantity: 0,
+        unit: "",
+        price: 0,
+        expiryDate: "",
+        storageLocation: "",
+      },
+    ]);
   };
 
   const removeImportRow = (index: number) => {
@@ -68,16 +134,88 @@ export function InventoryPage() {
     }
 
     const validItems = importItems.filter(
-      (item) => item.itemName && item.quantity > 0
+      (item) =>
+        item.quantity > 0 &&
+        (item.type === "existing" ? item.existingItemId : item.itemName)
     );
     if (validItems.length === 0) {
       toast.error("Vui lòng nhập ít nhất một nguyên liệu");
       return;
     }
 
-    toast.success(`Đã nhập ${validItems.length} nguyên liệu thành công!`);
+    let updatedInventory = [...inventory];
+    let addedCount = 0;
+    let updatedCount = 0;
+
+    validItems.forEach((importItem) => {
+      if (importItem.type === "existing" && importItem.existingItemId) {
+        // Nhập tiếp nguyên liệu cũ: chỉ cộng thêm số lượng
+        const existingItemIndex = updatedInventory.findIndex(
+          (item) => item.id === importItem.existingItemId
+        );
+        if (existingItemIndex !== -1) {
+          updatedInventory[existingItemIndex] = {
+            ...updatedInventory[existingItemIndex],
+            quantity:
+              updatedInventory[existingItemIndex].quantity +
+              importItem.quantity,
+            lastUpdated: new Date().toISOString().split("T")[0],
+          };
+          updatedCount++;
+        }
+      } else if (importItem.type === "new" && importItem.itemName) {
+        // Nhập mới: kiểm tra trùng tên
+        const isDuplicate = updatedInventory.some(
+          (item) =>
+            item.name.toLowerCase() === importItem.itemName.toLowerCase()
+        );
+        if (isDuplicate) {
+          toast.error(
+            `Nguyên liệu "${importItem.itemName}" đã tồn tại. Vui lòng chọn "Nhập tiếp" nếu muốn cộng thêm số lượng.`
+          );
+          return;
+        }
+
+        // Thêm nguyên liệu mới
+        const newItem: InventoryItem = {
+          id: `INV${String(updatedInventory.length + 1).padStart(3, "0")}`,
+          name: importItem.itemName,
+          quantity: importItem.quantity,
+          unit: importItem.unit,
+          expiryDate: importItem.expiryDate || undefined,
+          supplierId: selectedSupplier,
+          lastUpdated: new Date().toISOString().split("T")[0],
+        };
+        updatedInventory.push(newItem);
+        addedCount++;
+      }
+    });
+
+    setInventory(updatedInventory);
+
+    // Thông báo kết quả
+    if (addedCount > 0 && updatedCount > 0) {
+      toast.success(
+        `Đã nhập kho: ${addedCount} nguyên liệu mới, ${updatedCount} nguyên liệu cập nhật số lượng`
+      );
+    } else if (addedCount > 0) {
+      toast.success(`Đã thêm ${addedCount} nguyên liệu mới vào kho`);
+    } else if (updatedCount > 0) {
+      toast.success(`Đã cập nhật số lượng cho ${updatedCount} nguyên liệu`);
+    }
+
     setShowImportModal(false);
-    setImportItems([{ itemName: "", quantity: 0, price: 0 }]);
+    setImportItems([
+      {
+        type: "new",
+        itemName: "",
+        quantity: 0,
+        unit: "",
+        price: 0,
+        expiryDate: "",
+        storageLocation: "",
+      },
+    ]);
     setSelectedSupplier("");
   };
 
@@ -142,9 +280,13 @@ export function InventoryPage() {
       </div>
 
       <Tabs defaultValue="inventory" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="inventory">Tồn kho</TabsTrigger>
-          <TabsTrigger value="suppliers">Nhà cung cấp</TabsTrigger>
+        <TabsList className="h-14 p-1">
+          <TabsTrigger value="inventory" className="px-6 py-2 text-base">
+            Tồn kho
+          </TabsTrigger>
+          <TabsTrigger value="suppliers" className="px-6 py-2 text-base">
+            Nhà cung cấp
+          </TabsTrigger>
         </TabsList>
 
         {/* Inventory Tab */}
@@ -163,8 +305,35 @@ export function InventoryPage() {
             </Button>
           </div>
 
+          {/* Search and Filter */}
+          <div className="flex gap-4 items-center">
+            <div className="flex-1">
+              <Input
+                placeholder="Tìm kiếm nguyên liệu..."
+                icon={<Search className="w-4 h-4" />}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-10"
+              />
+            </div>
+            <div className="w-48">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="h-10">
+                  <SelectValue placeholder="Trạng thái" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                  <SelectItem value="normal">Bình thường</SelectItem>
+                  <SelectItem value="low-stock">Sắp hết hàng</SelectItem>
+                  <SelectItem value="expiring">Sắp hết hạn</SelectItem>
+                  <SelectItem value="expired">Hết hạn</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           {/* Alerts */}
-          {inventory.some(
+          {/* {inventory.some(
             (item) => item.expiryDate && isExpiringSoon(item.expiryDate)
           ) && (
             <Card className="p-4 bg-yellow-50 border-yellow-200">
@@ -187,7 +356,7 @@ export function InventoryPage() {
                 </div>
               </div>
             </Card>
-          )}
+          )} */}
 
           {/* Inventory Table */}
           <Card>
@@ -205,7 +374,7 @@ export function InventoryPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {inventory.map((item) => {
+                  {filteredInventory.map((item) => {
                     const daysLeft = item.expiryDate
                       ? getDaysUntilExpiry(item.expiryDate)
                       : null;
@@ -215,11 +384,13 @@ export function InventoryPage() {
                     const expiring =
                       item.expiryDate && isExpiringSoon(item.expiryDate);
 
+                    // className={`border-b hover:bg-gray-50 ${
+                    //     expired ? "bg-red-50" : expiring ? "bg-yellow-50" : ""
+                    //   }`}
                     return (
                       <tr
                         key={item.id}
-                        className={`border-b hover:bg-gray-50 ${
-                          expired ? "bg-red-50" : expiring ? "bg-yellow-50" : ""
+                        className={`border-b hover:bg-gray-50 
                         }`}
                       >
                         <td className="p-4 text-gray-600">{item.id}</td>
@@ -365,49 +536,198 @@ export function InventoryPage() {
 
             <div className="space-y-3">
               {importItems.map((item, index) => (
-                <div key={index} className="flex gap-3 items-start">
-                  <Input
-                    placeholder="Tên nguyên liệu"
-                    value={item.itemName}
-                    onChange={(e) =>
-                      updateImportRow(index, "itemName", e.target.value)
-                    }
-                    className="flex-1"
-                  />
-                  <Input
-                    type="number"
-                    placeholder="Số lượng"
-                    value={item.quantity || ""}
-                    onChange={(e) =>
-                      updateImportRow(
-                        index,
-                        "quantity",
-                        parseFloat(e.target.value) || 0
-                      )
-                    }
-                    className="w-24"
-                  />
-                  <Input
-                    type="number"
-                    placeholder="Đơn giá"
-                    value={item.price || ""}
-                    onChange={(e) =>
-                      updateImportRow(
-                        index,
-                        "price",
-                        parseFloat(e.target.value) || 0
-                      )
-                    }
-                    className="w-32"
-                  />
-                  {importItems.length > 1 && (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => removeImportRow(index)}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
+                <div key={index} className="space-y-3 p-4 border rounded-lg">
+                  {/* Chọn loại nhập */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Loại nhập
+                    </label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name={`type-${index}`}
+                          value="new"
+                          checked={item.type === "new"}
+                          onChange={(e) =>
+                            updateImportRow(index, "type", "new")
+                          }
+                          className="w-4 h-4"
+                        />
+                        <span>Nhập mới</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name={`type-${index}`}
+                          value="existing"
+                          checked={item.type === "existing"}
+                          onChange={(e) =>
+                            updateImportRow(index, "type", "existing")
+                          }
+                          className="w-4 h-4"
+                        />
+                        <span>Nhập tiếp nguyên liệu cũ</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Nếu chọn nhập tiếp: chỉ hiển thị dropdown chọn nguyên liệu và số lượng */}
+                  {item.type === "existing" ? (
+                    <div className="space-y-2">
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-1">
+                          Nguyên liệu
+                        </label>
+                        <select
+                          value={item.existingItemId || ""}
+                          onChange={(e) =>
+                            updateImportRow(
+                              index,
+                              "existingItemId",
+                              e.target.value
+                            )
+                          }
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        >
+                          <option value="">Chọn nguyên liệu</option>
+                          {inventory.map((invItem) => (
+                            <option key={invItem.id} value={invItem.id}>
+                              {invItem.name} (Tồn: {invItem.quantity}{" "}
+                              {invItem.unit})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex gap-3 items-start">
+                        <Input
+                          type="number"
+                          placeholder="Số lượng nhập thêm"
+                          value={item.quantity || ""}
+                          onChange={(e) =>
+                            updateImportRow(
+                              index,
+                              "quantity",
+                              parseFloat(e.target.value) || 0
+                            )
+                          }
+                          className="flex-1"
+                        />
+                        <Input
+                          type="number"
+                          placeholder="Đơn giá"
+                          value={item.price || ""}
+                          onChange={(e) =>
+                            updateImportRow(
+                              index,
+                              "price",
+                              parseFloat(e.target.value) || 0
+                            )
+                          }
+                          className="flex-1"
+                        />
+                        {importItems.length > 1 && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => removeImportRow(index)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    /* Nếu chọn nhập mới: hiển thị form đầy đủ */
+                    <>
+                      <div className="flex gap-3 items-start">
+                        <Input
+                          placeholder="Tên nguyên liệu"
+                          value={item.itemName}
+                          onChange={(e) =>
+                            updateImportRow(index, "itemName", e.target.value)
+                          }
+                          className="flex-1"
+                        />
+                        <Input
+                          type="number"
+                          placeholder="Số lượng"
+                          value={item.quantity || ""}
+                          onChange={(e) =>
+                            updateImportRow(
+                              index,
+                              "quantity",
+                              parseFloat(e.target.value) || 0
+                            )
+                          }
+                          className="w-24"
+                        />
+                        <Input
+                          placeholder="Đơn vị"
+                          value={item.unit}
+                          onChange={(e) =>
+                            updateImportRow(index, "unit", e.target.value)
+                          }
+                          className="w-24"
+                        />
+                        <Input
+                          type="number"
+                          placeholder="Đơn giá"
+                          value={item.price || ""}
+                          onChange={(e) =>
+                            updateImportRow(
+                              index,
+                              "price",
+                              parseFloat(e.target.value) || 0
+                            )
+                          }
+                          className="w-32"
+                        />
+                        {importItems.length > 1 && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => removeImportRow(index)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                      <div className="flex gap-3">
+                        <div className="flex-1">
+                          <label className="block text-sm text-gray-600 mb-1">
+                            Hạn sử dụng
+                          </label>
+                          <Input
+                            type="date"
+                            value={item.expiryDate}
+                            onChange={(e) =>
+                              updateImportRow(
+                                index,
+                                "expiryDate",
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-sm text-gray-600 mb-1">
+                            Vị trí lưu trữ
+                          </label>
+                          <Input
+                            placeholder="VD: Kệ A1, Tủ lạnh B2"
+                            value={item.storageLocation}
+                            onChange={(e) =>
+                              updateImportRow(
+                                index,
+                                "storageLocation",
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
+                      </div>
+                    </>
                   )}
                 </div>
               ))}
