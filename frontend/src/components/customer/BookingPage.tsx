@@ -38,7 +38,9 @@ export function BookingPage() {
   const isBlacklisted = currentCustomer?.isBlacklisted || false;
 
   const availableTables = mockTables.filter(
-    (t) => t.status === "free" || t.status === "reserved"
+    (t) =>
+      (t.status === "free" || t.status === "reserved") &&
+      t.seats >= bookingData.guests
   );
 
   const handleTableSelect = (table: Table) => {
@@ -302,27 +304,35 @@ export function BookingPage() {
             <div>
               <Card className="p-8 mb-6">
                 <h3 className="mb-6">Chọn vị trí bàn</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {availableTables.map((table) => (
-                    <button
-                      key={table.id}
-                      onClick={() => handleTableSelect(table)}
-                      className={`p-4 rounded-lg border-2 transition-all ${
-                        selectedTable?.id === table.id
-                          ? "border-[#0056D2] bg-blue-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
-                    >
-                      <div className="text-center">
-                        <p className="mb-1">{table.number}</p>
-                        <p className="text-sm text-gray-600">{table.area}</p>
-                        <p className="text-xs text-gray-500">
-                          {table.seats} chỗ ngồi
-                        </p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+                {availableTables.length > 0 ? (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {availableTables.map((table) => (
+                      <button
+                        key={table.id}
+                        onClick={() => handleTableSelect(table)}
+                        className={`p-4 rounded-lg border-2 transition-all ${
+                          selectedTable?.id === table.id
+                            ? "border-[#0056D2] bg-blue-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <div className="text-center">
+                          <p className="mb-1">{table.number}</p>
+                          <p className="text-sm text-gray-600">{table.area}</p>
+                          <p className="text-xs text-gray-500">
+                            {table.seats} chỗ ngồi
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 mb-2">
+                      Không có bàn phù hợp cho {bookingData.guests} người
+                    </p>
+                  </div>
+                )}
               </Card>
               <div className="flex gap-4">
                 <Button variant="secondary" onClick={() => setStep(1)}>

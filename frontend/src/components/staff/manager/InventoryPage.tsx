@@ -280,9 +280,13 @@ export function InventoryPage() {
       </div>
 
       <Tabs defaultValue="inventory" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="inventory">Tồn kho</TabsTrigger>
-          <TabsTrigger value="suppliers">Nhà cung cấp</TabsTrigger>
+        <TabsList className="h-14 p-1">
+          <TabsTrigger value="inventory" className="px-6 py-2 text-base">
+            Tồn kho
+          </TabsTrigger>
+          <TabsTrigger value="suppliers" className="px-6 py-2 text-base">
+            Nhà cung cấp
+          </TabsTrigger>
         </TabsList>
 
         {/* Inventory Tab */}
@@ -329,7 +333,7 @@ export function InventoryPage() {
           </div>
 
           {/* Alerts */}
-          {inventory.some(
+          {/* {inventory.some(
             (item) => item.expiryDate && isExpiringSoon(item.expiryDate)
           ) && (
             <Card className="p-4 bg-yellow-50 border-yellow-200">
@@ -352,7 +356,7 @@ export function InventoryPage() {
                 </div>
               </div>
             </Card>
-          )}
+          )} */}
 
           {/* Inventory Table */}
           <Card>
@@ -380,11 +384,13 @@ export function InventoryPage() {
                     const expiring =
                       item.expiryDate && isExpiringSoon(item.expiryDate);
 
+                    // className={`border-b hover:bg-gray-50 ${
+                    //     expired ? "bg-red-50" : expiring ? "bg-yellow-50" : ""
+                    //   }`}
                     return (
                       <tr
                         key={item.id}
-                        className={`border-b hover:bg-gray-50 ${
-                          expired ? "bg-red-50" : expiring ? "bg-yellow-50" : ""
+                        className={`border-b hover:bg-gray-50 
                         }`}
                       >
                         <td className="p-4 text-gray-600">{item.id}</td>

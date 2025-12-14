@@ -1,5 +1,14 @@
-import React, { useState } from "react";
-import { Plus, Edit, Trash2, Power, Search, X } from "lucide-react";
+import React, { useState, useRef } from "react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Power,
+  Search,
+  X,
+  Upload,
+  Image as ImageIcon,
+} from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Card } from "../../ui/Card";
 import { Modal } from "../../ui/Modal";
@@ -7,7 +16,11 @@ import { Input, Textarea } from "../../ui/Input";
 import { Badge } from "../../ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
 import { Switch } from "../../ui/switch";
-import { mockMenuItems, mockPromotions } from "../../../lib/mockData";
+import {
+  mockMenuItems,
+  mockPromotions,
+  mockInventory,
+} from "../../../lib/mockData";
 import { MenuItem, Promotion } from "../../../types";
 import { toast } from "sonner";
 import {
@@ -20,18 +33,21 @@ export function MenuPromotionPage() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>(mockMenuItems);
   const [promotions, setPromotions] = useState<Promotion[]>(mockPromotions);
   const [showAddMenuModal, setShowAddMenuModal] = useState(false);
+  const [showEditMenuModal, setShowEditMenuModal] = useState(false);
   const [showAddPromoModal, setShowAddPromoModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
+  const [editingDish, setEditingDish] = useState<MenuItem | null>(null);
   const [ingredientRows, setIngredientRows] = useState<
-    Array<{ name: string; quantity: number; unit: string }>
-  >([{ name: "", quantity: 0, unit: "" }]);
+    Array<{ ingredientId: string; quantity: number }>
+  >([{ ingredientId: "", quantity: 0 }]);
   const [menuForm, setMenuForm] = useState({
     name: "",
     category: "Món chính",
     price: 0,
     description: "",
+    image: "",
   });
   const [promoForm, setPromoForm] = useState({
     name: "",
@@ -44,7 +60,7 @@ export function MenuPromotionPage() {
   });
 
   const addIngredientRow = () => {
-    setIngredientRows([...ingredientRows, { name: "", quantity: 0, unit: "" }]);
+    setIngredientRows([...ingredientRows, { ingredientId: "", quantity: 0 }]);
   };
 
   const removeIngredientRow = (index: number) => {
@@ -77,8 +93,16 @@ export function MenuPromotionPage() {
 
     // Build ingredients array from valid rows
     const validIngredients = ingredientRows
-      .filter((row) => row.name.trim() !== "")
-      .map((row) => `${row.name} (${row.quantity} ${row.unit})`);
+      .filter((row) => row.ingredientId !== "")
+      .map((row) => {
+        const ingredient = mockInventory.find(
+          (inv) => inv.id === row.ingredientId
+        );
+        return ingredient
+          ? `${ingredient.name} (${row.quantity} ${ingredient.unit})`
+          : "";
+      })
+      .filter((ing) => ing !== "");
 
     const newItem: MenuItem = {
       id: String(menuItems.length + 1),
@@ -95,8 +119,14 @@ export function MenuPromotionPage() {
     setMenuItems([...menuItems, newItem]);
     toast.success("Thêm món ăn thành công!");
     setShowAddMenuModal(false);
-    setMenuForm({ name: "", category: "Món chính", price: 0, description: "" });
-    setIngredientRows([{ name: "", quantity: 0, unit: "" }]);
+    setMenuForm({
+      name: "",
+      category: "Món chính",
+      price: 0,
+      description: "",
+      image: "",
+    });
+    setIngredientRows([{ ingredientId: "", quantity: 0 }]);
   };
 
   const handleToggleAvailability = (id: string) => {
@@ -105,6 +135,84 @@ export function MenuPromotionPage() {
         item.id === id ? { ...item, available: !item.available } : item
       )
     );
+  };
+
+  const handleEditMenuItem = () => {
+    if (!editingDish) return;
+
+    // Validate
+    const nameValidation = validateRequired(menuForm.name, "Tên món ăn");
+    if (!nameValidation.isValid) {
+      toast.error(nameValidation.error);
+      return;
+    }
+
+    const priceValidation = validatePositiveNumber(
+      menuForm.price,
+      "Giá món ăn"
+    );
+    if (!priceValidation.isValid) {
+      toast.error(priceValidation.error);
+      return;
+    }
+
+    // Build ingredients
+    const validIngredients = ingredientRows
+      .filter((row) => row.ingredientId !== "")
+      .map((row) => {
+        const ingredient = mockInventory.find(
+          (inv) => inv.id === row.ingredientId
+        );
+        return ingredient
+          ? `${ingredient.name} (${row.quantity} ${ingredient.unit})`
+          : "";
+      })
+      .filter((ing) => ing !== "");
+
+    // Update menu item
+    setMenuItems(
+      menuItems.map((item) =>
+        item.id === editingDish.id
+          ? {
+              ...item,
+              name: menuForm.name,
+              category: menuForm.category,
+              price: menuForm.price,
+              description: menuForm.description,
+              image: menuForm.image || item.image,
+              ingredients:
+                validIngredients.length > 0 ? validIngredients : undefined,
+            }
+          : item
+      )
+    );
+
+    toast.success("Cập nhật món ăn thành công!");
+    setShowEditMenuModal(false);
+    setEditingDish(null);
+    setMenuForm({
+      name: "",
+      category: "Món chính",
+      price: 0,
+      description: "",
+      image: "",
+    });
+    setIngredientRows([{ ingredientId: "", quantity: 0 }]);
+  };
+
+  const openEditModal = (dish: MenuItem) => {
+    setEditingDish(dish);
+    setMenuForm({
+      name: dish.name,
+      category: dish.category,
+      price: dish.price,
+      description: dish.description || "",
+      image: dish.image || "",
+    });
+
+    // Parse ingredients back to rows (simplified - just empty rows for now)
+    setIngredientRows([{ ingredientId: "", quantity: 0 }]);
+    setShowEditMenuModal(true);
   };
 
   const handleDeleteMenuItem = (id: string) => {
@@ -253,7 +361,7 @@ export function MenuPromotionPage() {
               <Card
                 key={item.id}
                 hover
-                onClick={() => setSelectedDish(item)}
+                onClick={() => openEditModal(item)}
                 className="overflow-hidden cursor-pointer"
               >
                 <div className="relative">
@@ -423,12 +531,92 @@ export function MenuPromotionPage() {
             category: "Món chính",
             price: 0,
             description: "",
+            image: "",
           });
-          setIngredientRows([{ name: "", quantity: 0, unit: "" }]);
+          setIngredientRows([{ ingredientId: "", quantity: 0 }]);
         }}
         title="Thêm món ăn mới"
       >
         <div className="space-y-4">
+          {/* Ảnh món ăn */}
+          <div>
+            <label className="block mb-2 text-sm font-medium">Ảnh món ăn</label>
+            {menuForm.image ? (
+              <div className="relative group">
+                <img
+                  src={menuForm.image}
+                  alt="Preview"
+                  className="w-full h-48 object-cover rounded-lg"
+                />
+                <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      const input = document.createElement("input");
+                      input.type = "file";
+                      input.accept = "image/*";
+                      input.onchange = (e: any) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setMenuForm({
+                              ...menuForm,
+                              image: reader.result as string,
+                            });
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      };
+                      input.click();
+                    }}
+                    className="bg-blue-500 text-white hover:bg-blue-600"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setMenuForm({ ...menuForm, image: "" })}
+                    className="bg-red-500 text-white hover:bg-red-600"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div
+                onClick={() => {
+                  const input = document.createElement("input");
+                  input.type = "file";
+                  input.accept = "image/*";
+                  input.onchange = (e: any) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setMenuForm({
+                          ...menuForm,
+                          image: reader.result as string,
+                        });
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  };
+                  input.click();
+                }}
+                className="border-2 border-dashed border-gray-300 rounded-lg p-12 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+              >
+                <div className="flex flex-col items-center gap-2 text-gray-500">
+                  <ImageIcon className="w-12 h-12" />
+                  <p className="text-sm font-medium">Nhấn để chọn ảnh</p>
+                  <p className="text-xs">PNG, JPG, GIF up to 10MB</p>
+                </div>
+              </div>
+            )}
+          </div>
+
           <Input
             label="Tên món"
             value={menuForm.name}
@@ -445,11 +633,13 @@ export function MenuPromotionPage() {
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg"
               >
-                {categories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
+                {categories
+                  .filter((cat) => cat !== "all")
+                  .map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
               </select>
             </div>
             <Input
@@ -489,18 +679,31 @@ export function MenuPromotionPage() {
 
             <div className="space-y-3">
               {ingredientRows.map((row, index) => (
-                <div key={index} className="flex gap-3 items-start">
-                  <Input
-                    placeholder="Tên nguyên liệu"
-                    value={row.name}
-                    onChange={(e) =>
-                      updateIngredientRow(index, "name", e.target.value)
-                    }
-                    className="flex-1"
-                  />
-                  <Input
+                <div key={index} className="flex gap-2 items-start">
+                  <div className="flex-1 min-w-0">
+                    <select
+                      value={row.ingredientId}
+                      onChange={(e) =>
+                        updateIngredientRow(
+                          index,
+                          "ingredientId",
+                          e.target.value
+                        )
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    >
+                      <option value="">-- Chọn nguyên liệu --</option>
+                      {mockInventory.map((ingredient) => (
+                        <option key={ingredient.id} value={ingredient.id}>
+                          {ingredient.name} ({ingredient.quantity}{" "}
+                          {ingredient.unit} trong kho)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <input
                     type="number"
-                    placeholder="Số lượng"
+                    placeholder="SL"
                     value={row.quantity || ""}
                     onChange={(e) =>
                       updateIngredientRow(
@@ -509,22 +712,22 @@ export function MenuPromotionPage() {
                         parseFloat(e.target.value) || 0
                       )
                     }
-                    className="w-24"
+                    className="w-16 px-2 py-2 border border-gray-300 rounded-lg text-sm"
+                    min="0.01"
+                    step="0.1"
                   />
-                  <Input
-                    placeholder="Đơn vị"
-                    value={row.unit}
-                    onChange={(e) =>
-                      updateIngredientRow(index, "unit", e.target.value)
-                    }
-                    className="w-24"
-                  />
+                  {row.ingredientId && (
+                    <div className="flex items-center px-2 py-2 bg-gray-100 rounded-lg text-sm text-gray-600 whitespace-nowrap min-w-[50px] justify-center">
+                      {mockInventory.find((inv) => inv.id === row.ingredientId)
+                        ?.unit || ""}
+                    </div>
+                  )}
                   {ingredientRows.length > 1 && (
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={() => removeIngredientRow(index)}
-                      className="text-red-600 hover:bg-red-50"
+                      className="text-red-600 hover:bg-red-50 px-2"
                     >
                       <X className="w-4 h-4" />
                     </Button>
@@ -534,7 +737,7 @@ export function MenuPromotionPage() {
             </div>
           </div>
 
-          <div className="flex gap-4 pt-4">
+          <div className="flex gap-4 pt-8 mt-6 border-t">
             <Button
               variant="secondary"
               fullWidth
@@ -749,6 +952,238 @@ export function MenuPromotionPage() {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Edit Menu Item Modal */}
+      <Modal
+        isOpen={showEditMenuModal}
+        onClose={() => {
+          setShowEditMenuModal(false);
+          setEditingDish(null);
+          setMenuForm({
+            name: "",
+            category: "Món chính",
+            price: 0,
+            description: "",
+            image: "",
+          });
+          setIngredientRows([{ ingredientId: "", quantity: 0 }]);
+        }}
+        title="Chỉnh sửa món ăn"
+      >
+        <div className="space-y-4">
+          {/* Ảnh món ăn */}
+          <div>
+            <label className="block mb-2 text-sm font-medium">Ảnh món ăn</label>
+            {menuForm.image ? (
+              <div className="relative group">
+                <img
+                  src={menuForm.image}
+                  alt="Preview"
+                  className="w-full h-48 object-cover rounded-lg"
+                />
+                <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      const input = document.createElement("input");
+                      input.type = "file";
+                      input.accept = "image/*";
+                      input.onchange = (e: any) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setMenuForm({
+                              ...menuForm,
+                              image: reader.result as string,
+                            });
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      };
+                      input.click();
+                    }}
+                    className="bg-blue-500 text-white hover:bg-blue-600"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setMenuForm({ ...menuForm, image: "" })}
+                    className="bg-red-500 text-white hover:bg-red-600"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div
+                onClick={() => {
+                  const input = document.createElement("input");
+                  input.type = "file";
+                  input.accept = "image/*";
+                  input.onchange = (e: any) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setMenuForm({
+                          ...menuForm,
+                          image: reader.result as string,
+                        });
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  };
+                  input.click();
+                }}
+                className="border-2 border-dashed border-gray-300 rounded-lg p-12 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+              >
+                <div className="flex flex-col items-center gap-2 text-gray-500">
+                  <ImageIcon className="w-12 h-12" />
+                  <p className="text-sm font-medium">Nhấn để chọn ảnh</p>
+                  <p className="text-xs">PNG, JPG, GIF up to 10MB</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <Input
+            label="Tên món"
+            value={menuForm.name}
+            onChange={(e) => setMenuForm({ ...menuForm, name: e.target.value })}
+            placeholder="Nhập tên món"
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block mb-2">Danh mục</label>
+              <select
+                value={menuForm.category}
+                onChange={(e) =>
+                  setMenuForm({ ...menuForm, category: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+              >
+                {categories
+                  .filter((cat) => cat !== "all")
+                  .map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <Input
+              label="Giá (VNĐ)"
+              type="number"
+              value={menuForm.price || ""}
+              onChange={(e) =>
+                setMenuForm({
+                  ...menuForm,
+                  price: parseFloat(e.target.value) || 0,
+                })
+              }
+              placeholder="Nhập giá"
+              min="0"
+              step="1000"
+            />
+          </div>
+          <Textarea
+            label="Mô tả"
+            value={menuForm.description}
+            onChange={(e) =>
+              setMenuForm({ ...menuForm, description: e.target.value })
+            }
+            placeholder="Nhập mô tả món ăn..."
+            rows={3}
+          />
+
+          {/* Nguyên liệu */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <label className="block">Nguyên liệu</label>
+              <Button size="sm" variant="secondary" onClick={addIngredientRow}>
+                <Plus className="w-4 h-4 mr-1" />
+                Thêm nguyên liệu
+              </Button>
+            </div>
+
+            <div className="space-y-3">
+              {ingredientRows.map((row, index) => (
+                <div key={index} className="flex gap-2 items-start">
+                  <div className="flex-1 min-w-0">
+                    <select
+                      value={row.ingredientId}
+                      onChange={(e) =>
+                        updateIngredientRow(
+                          index,
+                          "ingredientId",
+                          e.target.value
+                        )
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    >
+                      <option value="">-- Chọn nguyên liệu --</option>
+                      {mockInventory.map((ingredient) => (
+                        <option key={ingredient.id} value={ingredient.id}>
+                          {ingredient.name} ({ingredient.quantity}{" "}
+                          {ingredient.unit} trong kho)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <input
+                    type="number"
+                    placeholder="SL"
+                    value={row.quantity || ""}
+                    onChange={(e) =>
+                      updateIngredientRow(
+                        index,
+                        "quantity",
+                        parseFloat(e.target.value) || 0
+                      )
+                    }
+                    className="w-16 px-2 py-2 border border-gray-300 rounded-lg text-sm"
+                    min="0"
+                    step="0.1"
+                  />
+                  {row.ingredientId && (
+                    <div className="flex items-center px-2 py-2 bg-gray-100 rounded-lg text-sm text-gray-600 whitespace-nowrap min-w-[50px] justify-center">
+                      {mockInventory.find((inv) => inv.id === row.ingredientId)
+                        ?.unit || ""}
+                    </div>
+                  )}
+                  {ingredientRows.length > 1 && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => removeIngredientRow(index)}
+                      className="text-red-600 hover:bg-red-50 px-2"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex gap-4 pt-8 mt-6 border-t">
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={() => setShowEditMenuModal(false)}
+            >
+              Hủy
+            </Button>
+            <Button fullWidth onClick={handleEditMenuItem}>
+              Lưu thay đổi
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

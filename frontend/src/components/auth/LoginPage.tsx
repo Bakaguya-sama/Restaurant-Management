@@ -55,11 +55,7 @@ export function LoginPage() {
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0056D2]/80 to-transparent flex items-center justify-center">
           <div className="text-white px-12">
-            <h1 className="text-white mb-4">Chào mừng đến với</h1>
-            <h2 className="text-white mb-6">Restaurant Management System</h2>
-            <p className="text-white/90 text-lg">
-              Hệ thống quản lý nhà hàng hiện đại và chuyên nghiệp
-            </p>
+            <h1 className="text-white mb-6">Restaurant Management System</h1>
           </div>
         </div>
       </div>
@@ -69,9 +65,7 @@ export function LoginPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <h2 className="mb-2">Đăng nhập</h2>
-            <p className="text-gray-600">
-              Vui lòng chọn loại tài khoản của bạn
-            </p>
+            <p className="text-gray-600">Chọn loại tài khoản</p>
           </div>
 
           {/* Tab Switcher */}
