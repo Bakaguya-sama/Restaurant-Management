@@ -138,10 +138,12 @@ export function StaffLayout() {
         <div className="h-16 flex items-center justify-between px-4 border-b">
           {sidebarOpen && (
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-[#0056D2] rounded-lg flex items-center justify-center">
-                <UtensilsCrossed className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-lg text-[#0056D2]">RMS</span>
+              <img
+                src="/logo.png"
+                alt="Restaurant Logo"
+                className="w-8 h-8 rounded-lg"
+              />
+              <span className="text-lg text-[#625EE8]">RMS</span>
             </div>
           )}
           <button
@@ -163,7 +165,7 @@ export function StaffLayout() {
                 className={({ isActive }) =>
                   `w-full flex items-center gap-3 px-4 py-3 transition-all ${
                     isActive
-                      ? "bg-[#0056D2] text-white"
+                      ? "bg-[#625EE8] text-white"
                       : "text-gray-700 hover:bg-gray-50"
                   }`
                 }
@@ -189,14 +191,14 @@ export function StaffLayout() {
 
           <div className="flex items-center gap-4">
             {/* Search */}
-            <div className="relative">
+            {/* <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
                 placeholder="Tìm kiếm..."
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0056D2] w-64"
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#625EE8] w-64"
               />
-            </div>
+            </div> */}
 
             {/* User */}
             <div className="relative">
@@ -204,7 +206,7 @@ export function StaffLayout() {
                 onClick={() => setUserDropdownOpen(!userDropdownOpen)}
                 className="flex items-center gap-2 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors"
               >
-                <div className="w-8 h-8 bg-[#0056D2] rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-[#625EE8] rounded-full flex items-center justify-center">
                   <span className="text-white text-sm">NV</span>
                 </div>
                 <span className="text-sm">Nhân viên</span>

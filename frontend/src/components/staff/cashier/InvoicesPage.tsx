@@ -352,7 +352,7 @@ export function InvoicesPage() {
                       onClick={() => setSelectedInvoice(invoice)}
                       className={`p-4 cursor-pointer ${
                         selectedInvoice?.id === invoice.id
-                          ? "ring-2 ring-[#0056D2]"
+                          ? "ring-2 ring-[#625EE8]"
                           : ""
                       } ${
                         invoice.paymentRequested
@@ -515,7 +515,7 @@ export function InvoicesPage() {
                             onClick={() => setCashierSelectedPromotion(null)}
                             className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
                               !cashierSelectedPromotion
-                                ? "border-[#0056D2] bg-blue-50"
+                                ? "border-[#625EE8] bg-blue-50"
                                 : "border-gray-200 hover:border-gray-300"
                             }`}
                           >
@@ -539,7 +539,7 @@ export function InvoicesPage() {
                                 }
                                 className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
                                   cashierSelectedPromotion?.id === promo.id
-                                    ? "border-[#0056D2] bg-blue-50"
+                                    ? "border-[#625EE8] bg-blue-50"
                                     : "border-gray-200 hover:border-gray-300"
                                 }`}
                               >
@@ -599,7 +599,7 @@ export function InvoicesPage() {
                             onClick={() => setPaymentMethod("cash")}
                             className={`p-4 rounded-lg border-2 transition-all ${
                               paymentMethod === "cash"
-                                ? "border-[#0056D2] bg-blue-50"
+                                ? "border-[#625EE8] bg-blue-50"
                                 : "border-gray-200 hover:border-gray-300"
                             }`}
                           >
@@ -610,7 +610,7 @@ export function InvoicesPage() {
                             onClick={() => setPaymentMethod("card")}
                             className={`p-4 rounded-lg border-2 transition-all ${
                               paymentMethod === "card"
-                                ? "border-[#0056D2] bg-blue-50"
+                                ? "border-[#625EE8] bg-blue-50"
                                 : "border-gray-200 hover:border-gray-300"
                             }`}
                           >
@@ -621,7 +621,7 @@ export function InvoicesPage() {
                             onClick={() => setPaymentMethod("wallet")}
                             className={`p-4 rounded-lg border-2 transition-all ${
                               paymentMethod === "wallet"
-                                ? "border-[#0056D2] bg-blue-50"
+                                ? "border-[#625EE8] bg-blue-50"
                                 : "border-gray-200 hover:border-gray-300"
                             }`}
                           >
@@ -687,7 +687,7 @@ export function InvoicesPage() {
                       )}
                       <div className="flex justify-between pt-2 border-t">
                         <span>Tổng cộng:</span>
-                        <span className="text-2xl text-[#0056D2]">
+                        <span className="text-2xl text-[#625EE8]">
                           {finalTotal.toLocaleString()}đ
                         </span>
                       </div>
@@ -769,7 +769,7 @@ export function InvoicesPage() {
                               : "Tiền mặt"}
                           </span>
                         </td>
-                        <td className="text-right py-3 px-4 text-[#0056D2]">
+                        <td className="text-right py-3 px-4 text-[#625EE8]">
                           {invoice.total.toLocaleString()}đ
                         </td>
                         <td className="text-center py-3 px-4">
@@ -865,7 +865,7 @@ export function InvoicesPage() {
                 )}
                 <div className="flex justify-between pt-2 border-t">
                   <span>Tổng cộng:</span>
-                  <span className="text-xl text-[#0056D2]">
+                  <span className="text-xl text-[#625EE8]">
                     {viewInvoice.total.toLocaleString()}đ
                   </span>
                 </div>

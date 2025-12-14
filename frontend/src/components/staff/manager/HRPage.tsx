@@ -12,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../ui/select";
-import { Checkbox } from "../../ui/checkbox";
 import { toast } from "sonner";
 import {
   validateEmail,
@@ -20,6 +19,7 @@ import {
   validateRequired,
   validatePassword,
 } from "../../../lib/validation";
+import { ConfirmationModal } from "../../ui/ConfirmationModal";
 
 interface Employee {
   id: string;
@@ -72,6 +72,16 @@ const availableRoles = [
 ];
 
 export function HRPage() {
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmTitle, setConfirmTitle] = useState("");
+  const [confirmMessage, setConfirmMessage] = useState("");
+  const [confirmText, setConfirmText] = useState("");
+  const [confirmCancelText, setConfirmCancelText] = useState("Hủy");
+  const [confirmVariant, setConfirmVariant] = useState<
+    "info" | "warning" | "danger"
+  >("info");
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+
   const [employees, setEmployees] = useState<Employee[]>(mockEmployees);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
@@ -166,10 +176,17 @@ export function HRPage() {
   };
 
   const handleDeleteEmployee = (id: string) => {
-    if (confirm("Bạn có chắc muốn xóa nhân viên này?")) {
+    setConfirmTitle(`Xóa nhân viên`);
+    setConfirmMessage(`Bạn có chắc muốn xóa nhân viên này?`);
+    setConfirmText("Xóa");
+    setConfirmCancelText("Hủy");
+    setConfirmVariant(`warning`);
+    setPendingAction(() => () => {
+      //TODO: Api xóa nhân viên
       setEmployees(employees.filter((emp) => emp.id !== id));
       toast.success("Đã xóa nhân viên");
-    }
+    });
+    setShowConfirmModal(true);
   };
 
   const handleOpenRole = (employee: Employee) => {
@@ -219,6 +236,27 @@ export function HRPage() {
 
   return (
     <div>
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => {
+          setShowConfirmModal(false);
+          setPendingAction(null);
+        }}
+        onConfirm={() => {
+          if (pendingAction) {
+            pendingAction();
+          }
+          setShowConfirmModal(false);
+          setPendingAction(null);
+        }}
+        title={confirmTitle}
+        message={confirmMessage}
+        confirmText={confirmText}
+        cancelText={confirmCancelText}
+        variant={confirmVariant}
+      />
+
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2>Quản lý nhân sự</h2>
@@ -302,7 +340,7 @@ export function HRPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b">
-                <th className="text-left p-4">Mã NV</th>
+                {/* <th className="text-left p-4">Mã NV</th> */}
                 <th className="text-left p-4">Họ tên</th>
                 <th className="text-left p-4">Username</th>
                 <th className="text-left p-4">Vai trò</th>
@@ -314,7 +352,7 @@ export function HRPage() {
             <tbody>
               {filteredEmployees.map((employee) => (
                 <tr key={employee.id} className="border-b hover:bg-gray-50">
-                  <td className="p-4">{employee.id}</td>
+                  {/* <td className="p-4">{employee.id}</td> */}
                   <td className="p-4">{employee.name}</td>
                   <td className="p-4 text-gray-600">{employee.username}</td>
                   <td className="p-4">

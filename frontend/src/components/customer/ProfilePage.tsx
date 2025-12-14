@@ -167,7 +167,7 @@ export function CustomerProfilePage() {
           <Card className="p-6">
             <div className="text-center">
               <div className="relative inline-block mb-4">
-                <div className="w-32 h-32 bg-gradient-to-br from-[#0056D2] to-[#0041A3] rounded-full flex items-center justify-center mx-auto overflow-hidden">
+                <div className="w-32 h-32 bg-gradient-to-br from-[#625EE8] to-[#0041A3] rounded-full flex items-center justify-center mx-auto overflow-hidden">
                   {avatarUrl ? (
                     <img
                       src={avatarUrl}

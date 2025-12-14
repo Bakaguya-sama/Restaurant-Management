@@ -28,6 +28,7 @@ import {
   validatePositiveNumber,
   validateNumberRange,
 } from "../../../lib/validation";
+import { ConfirmationModal } from "../../ui/ConfirmationModal";
 
 export function MenuPromotionPage() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>(mockMenuItems);
@@ -36,6 +37,8 @@ export function MenuPromotionPage() {
   const [showEditMenuModal, setShowEditMenuModal] = useState(false);
   const [showAddPromoModal, setShowAddPromoModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [promoSearchQuery, setPromoSearchQuery] = useState("");
+  const [selectedPromoStatus, setSelectedPromoStatus] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
   const [editingDish, setEditingDish] = useState<MenuItem | null>(null);
@@ -58,6 +61,16 @@ export function MenuPromotionPage() {
     startDate: "",
     endDate: "",
   });
+
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmTitle, setConfirmTitle] = useState("");
+  const [confirmMessage, setConfirmMessage] = useState("");
+  const [confirmText, setConfirmText] = useState("");
+  const [confirmCancelText, setConfirmCancelText] = useState("Hủy");
+  const [confirmVariant, setConfirmVariant] = useState<
+    "info" | "warning" | "danger"
+  >("info");
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
   const addIngredientRow = () => {
     setIngredientRows([...ingredientRows, { ingredientId: "", quantity: 0 }]);
@@ -216,10 +229,17 @@ export function MenuPromotionPage() {
   };
 
   const handleDeleteMenuItem = (id: string) => {
-    if (confirm("Bạn có chắc muốn xóa món ăn này?")) {
+    setConfirmTitle(`Xóa món ăn`);
+    setConfirmMessage(`Bạn có chắc muốn xóa món ăn này?`);
+    setConfirmText("Xóa");
+    setConfirmCancelText("Hủy");
+    setConfirmVariant(`warning`);
+    setPendingAction(() => () => {
+      //TODO: Api xóa món ăn
       setMenuItems(menuItems.filter((item) => item.id !== id));
       toast.success("Đã xóa món ăn");
-    }
+    });
+    setShowConfirmModal(true);
   };
 
   const handleAddPromotion = () => {
@@ -306,8 +326,40 @@ export function MenuPromotionPage() {
     return matchesSearch && matchesCategory;
   });
 
+  const filteredPromotions = promotions.filter((promo) => {
+    const matchesSearch =
+      promo.id.toLowerCase().includes(promoSearchQuery.toLowerCase()) ||
+      promo.name.toLowerCase().includes(promoSearchQuery.toLowerCase());
+    const matchesStatus =
+      selectedPromoStatus === "all" ||
+      (selectedPromoStatus === "active" && promo.active) ||
+      (selectedPromoStatus === "inactive" && !promo.active);
+    return matchesSearch && matchesStatus;
+  });
+
   return (
     <div>
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => {
+          setShowConfirmModal(false);
+          setPendingAction(null);
+        }}
+        onConfirm={() => {
+          if (pendingAction) {
+            pendingAction();
+          }
+          setShowConfirmModal(false);
+          setPendingAction(null);
+        }}
+        title={confirmTitle}
+        message={confirmMessage}
+        confirmText={confirmText}
+        cancelText={confirmCancelText}
+        variant={confirmVariant}
+      />
+
       <div className="mb-6">
         <h2>Quản lý thực đơn & Khuyến mãi</h2>
         <p className="text-gray-600 mt-1">
@@ -345,7 +397,7 @@ export function MenuPromotionPage() {
                   onClick={() => setSelectedCategory(cat)}
                   className={`px-4 py-2 rounded-lg whitespace-nowrap transition-all ${
                     selectedCategory === cat
-                      ? "bg-[#0056D2] text-white"
+                      ? "bg-[#625EE8] text-white"
                       : "bg-white text-gray-700 hover:bg-gray-100"
                   }`}
                 >
@@ -400,7 +452,7 @@ export function MenuPromotionPage() {
                     {item.description || "Món ăn ngon tuyệt vời"}
                   </p>
                   <div className="flex items-center justify-between">
-                    <span className="text-[#0056D2]">
+                    <span className="text-[#625EE8]">
                       {item.price.toLocaleString()}đ
                     </span>
                     <Button
@@ -434,6 +486,30 @@ export function MenuPromotionPage() {
             Thêm khuyến mãi
           </Button>
 
+          {/* Search & Filter */}
+          <div className="flex gap-4">
+            <div className="w-80">
+              <Input
+                placeholder="Tìm kiếm theo mã hoặc tên khuyến mãi..."
+                icon={<Search className="w-4 h-4" />}
+                value={promoSearchQuery}
+                onChange={(e) => setPromoSearchQuery(e.target.value)}
+              />
+            </div>
+
+            <div className="w-48">
+              <select
+                value={selectedPromoStatus}
+                onChange={(e) => setSelectedPromoStatus(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#625EE8] focus:border-transparent h-full"
+              >
+                <option value="all">Tất cả trạng thái</option>
+                <option value="active">Đang diễn ra</option>
+                <option value="inactive">Tạm dừng</option>
+              </select>
+            </div>
+          </div>
+
           <Card>
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -450,7 +526,7 @@ export function MenuPromotionPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {promotions.map((promo) => (
+                  {filteredPromotions.map((promo) => (
                     <tr key={promo.id} className="border-b hover:bg-gray-50">
                       <td className="p-4 text-gray-600">{promo.id}</td>
                       <td className="p-4">{promo.name}</td>
@@ -501,7 +577,7 @@ export function MenuPromotionPage() {
                               : "bg-gray-100 text-gray-700"
                           }
                         >
-                          {promo.active ? "Hoạt động" : "Tạm dừng"}
+                          {promo.active ? "Đang diễn ra" : "Tạm dừng"}
                         </Badge>
                       </td>
                       <td className="p-4">
@@ -518,6 +594,12 @@ export function MenuPromotionPage() {
               </table>
             </div>
           </Card>
+
+          {filteredPromotions.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-500">Không tìm thấy khuyến mãi phù hợp</p>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
@@ -860,7 +942,7 @@ export function MenuPromotionPage() {
       </Modal>
 
       {/* Dish Detail Modal */}
-      <Modal
+      {/* <Modal
         isOpen={selectedDish !== null}
         onClose={() => setSelectedDish(null)}
         title={selectedDish?.name || ""}
@@ -868,7 +950,6 @@ export function MenuPromotionPage() {
       >
         {selectedDish && (
           <div className="space-y-6">
-            {/* Ảnh ở trên */}
             <div>
               <img
                 src={
@@ -880,7 +961,6 @@ export function MenuPromotionPage() {
               />
             </div>
 
-            {/* Thông tin ở dưới */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-gray-600 text-lg">
@@ -913,7 +993,7 @@ export function MenuPromotionPage() {
 
               <div className="flex items-center justify-between pt-4 border-t">
                 <span className="text-gray-600 text-lg">Giá:</span>
-                <span className="text-3xl text-[#0056D2] font-medium">
+                <span className="text-3xl text-[#625EE8] font-medium">
                   {selectedDish.price.toLocaleString()}đ
                 </span>
               </div>
@@ -938,10 +1018,16 @@ export function MenuPromotionPage() {
                   variant="ghost"
                   fullWidth
                   onClick={() => {
-                    if (confirm("Bạn có chắc muốn xóa món ăn này?")) {
+                    setConfirmTitle(`Xóa món ăn`);
+                    setConfirmMessage(`Bạn có chắc muốn xóa món ăn này?`);
+                    setConfirmText("Xóa");
+                    setConfirmCancelText("Hủy");
+                    setConfirmVariant(`warning`);
+                    setPendingAction(() => () => {
                       handleDeleteMenuItem(selectedDish.id);
                       setSelectedDish(null);
-                    }
+                    });
+                    setShowConfirmModal(true);
                   }}
                   className="text-red-600 hover:bg-red-50"
                 >
@@ -952,7 +1038,7 @@ export function MenuPromotionPage() {
             </div>
           </div>
         )}
-      </Modal>
+      </Modal> */}
 
       {/* Edit Menu Item Modal */}
       <Modal

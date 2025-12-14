@@ -915,6 +915,93 @@ PATCH /bookings/:id/status
 DELETE /bookings/:id
 ```
 
+**Request Body:**
+
+```json
+{
+  "reason": "string" // optional - lý do hủy
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "bookingId": "string",
+    "refundAmount": 200000, // số tiền cọc được hoàn
+    "refundPercentage": 100, // % hoàn cọc
+    "message": "Đã hủy đặt bàn và hoàn 100% tiền cọc"
+  }
+}
+```
+
+**Business Logic - Chính sách hoàn cọc:**
+
+1. **Điều kiện hủy:**
+
+   - Customer chỉ có thể hủy booking với status `pending` hoặc `confirmed`
+   - Không thể hủy booking đã `checked-in`, `completed`, hoặc `no-show`
+   - Staff có thể hủy bất kỳ booking nào (trừ `completed`)
+
+2. **Chính sách hoàn tiền cọc:**
+
+   - **Hủy trước >= 24 giờ**: Hoàn 100% tiền cọc (200,000đ)
+   - **Hủy trước 12-24 giờ**: Hoàn 50% tiền cọc (100,000đ)
+   - **Hủy trước 2-12 giờ**: Hoàn 30% tiền cọc (60,000đ)
+   - **Hủy < 2 giờ hoặc no-show**: Không hoàn tiền cọc (0đ)
+
+3. **Cập nhật trạng thái:**
+
+   - Booking status → `cancelled`
+   - Table status → `free` (nếu đang `reserved`)
+   - Ghi lại lý do hủy và thời điểm hủy
+
+4. **Vi phạm và Blacklist:**
+
+   - Nếu hủy < 2 giờ: Ghi nhận vi phạm `late-cancel`
+   - Nếu không đến (no-show): Ghi nhận vi phạm `no-show`
+   - 3 vi phạm no-show → tự động blacklist
+
+5. **Notifications:**
+   - Gửi email/SMS thông báo hủy booking cho customer
+   - Thông báo số tiền được hoàn và thời gian xử lý
+   - Nếu có vi phạm → cảnh báo về chính sách
+
+**Error Responses:**
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "CANNOT_CANCEL",
+    "message": "Không thể hủy booking đã check-in",
+    "details": {
+      "currentStatus": "checked-in",
+      "reason": "Booking đã được check-in, vui lòng liên hệ nhân viên"
+    }
+  }
+}
+```
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "LATE_CANCELLATION",
+    "message": "Hủy muộn - chỉ được hoàn 30% tiền cọc",
+    "details": {
+      "hoursUntilBooking": 3,
+      "refundAmount": 60000,
+      "refundPercentage": 30,
+      "willAddViolation": true,
+      "violationType": "late-cancel"
+    }
+  }
+}
+```
+
 ### 5.6 Check-in booking (Staff)
 
 ```
@@ -1063,7 +1150,7 @@ POST /invoices/:id/process-payment
 }
 ```
 
-### 6.9 Gửi đánh giá
+### 6.9 Gửi đánh giá (Customer)
 
 ```
 POST /invoices/:id/feedback
@@ -1075,6 +1162,159 @@ POST /invoices/:id/feedback
 {
   "rating": 5,
   "comment": "string"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "feedbackId": "string",
+    "message": "Cảm ơn bạn đã gửi đánh giá!"
+  }
+}
+```
+
+**Business Logic:**
+
+- Customer chỉ có thể feedback cho invoice đã thanh toán (`status = "paid"`)
+- Mỗi invoice chỉ được feedback 1 lần
+- Nếu đã có feedback → return error `FEEDBACK_ALREADY_EXISTS`
+- Rating: 1-5 sao (bắt buộc)
+- Comment: text (bắt buộc)
+
+### 6.10 Lấy danh sách feedback (Manager)
+
+```
+GET /feedbacks
+```
+
+**Query Parameters:**
+
+- `status`: "pending" | "replied" (optional) - Lọc theo trạng thái
+- `rating`: 1-5 (optional) - Lọc theo rating
+- `from`: date (optional)
+- `to`: date (optional)
+- `limit`: number (optional, default: 20)
+- `page`: number (optional, default: 1)
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "string",
+      "invoiceId": "string",
+      "customerId": "string",
+      "customerName": "string",
+      "rating": 5,
+      "comment": "Món ăn rất ngon!",
+      "createdAt": "2025-12-14T10:00:00Z",
+      "reply": {
+        "content": "Cảm ơn bạn đã đánh giá!",
+        "repliedBy": "Manager Nguyễn Văn A",
+        "repliedAt": "2025-12-14T11:00:00Z"
+      } // null if not replied yet
+    }
+  ],
+  "pagination": {
+    "total": 150,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 8
+  }
+}
+```
+
+### 6.11 Phản hồi feedback (Manager)
+
+```
+POST /feedbacks/:id/reply
+```
+
+**Request Body:**
+
+```json
+{
+  "content": "string"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "feedbackId": "string",
+    "reply": {
+      "content": "Cảm ơn bạn đã đánh giá!",
+      "repliedBy": "Manager Nguyễn Văn A",
+      "repliedAt": "2025-12-14T11:00:00Z"
+    }
+  }
+}
+```
+
+**Business Logic:**
+
+- Chỉ Manager mới có quyền reply feedback
+- Mỗi feedback chỉ được reply 1 lần
+- Nếu đã reply → return error `FEEDBACK_ALREADY_REPLIED`
+- Customer không thể feedback lại sau khi Manager đã reply
+- Reply được lưu vào database với thông tin manager (name, id, timestamp)
+
+### 6.12 Xóa feedback (Manager)
+
+```
+DELETE /feedbacks/:id
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Đã xóa feedback"
+}
+```
+
+**Note:** Chỉ Manager mới có quyền xóa feedback
+
+### 6.13 Lấy chi tiết invoice (bao gồm feedback)
+
+Khi gọi API lấy invoice detail, response sẽ bao gồm cả feedback (nếu có):
+
+```
+GET /invoices/:id
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "string",
+    "items": [...],
+    "total": 500000,
+    "status": "paid",
+    "feedback": {
+      "id": "string",
+      "rating": 5,
+      "comment": "Món ăn rất ngon!",
+      "createdAt": "2025-12-14T10:00:00Z",
+      "reply": {
+        "content": "Cảm ơn bạn đã đánh giá!",
+        "repliedBy": "Manager Nguyễn Văn A",
+        "repliedAt": "2025-12-14T11:00:00Z"
+      } // null if not replied
+    } // null if no feedback
+  }
 }
 ```
 

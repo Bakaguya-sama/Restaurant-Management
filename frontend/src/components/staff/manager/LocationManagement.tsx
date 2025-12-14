@@ -15,6 +15,7 @@ import { Badge } from "../../ui/badge";
 import { Location, Floor, Table } from "../../../types";
 import { toast } from "sonner";
 import { validateRequired } from "../../../lib/validation";
+import { ConfirmationModal } from "../../ui/ConfirmationModal";
 
 interface LocationManagementProps {
   locations: Location[];
@@ -34,6 +35,15 @@ export function LocationManagement({
   const [activeTab, setActiveTab] = useState<"locations" | "floors">(
     "locations"
   );
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmTitle, setConfirmTitle] = useState("");
+  const [confirmMessage, setConfirmMessage] = useState("");
+  const [confirmText, setConfirmText] = useState("");
+  const [confirmCancelText, setConfirmCancelText] = useState("Hủy");
+  const [confirmVariant, setConfirmVariant] = useState<
+    "info" | "warning" | "danger"
+  >("info");
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
   // Location states
   const [showLocationModal, setShowLocationModal] = useState(false);
@@ -89,11 +99,18 @@ export function LocationManagement({
       return;
     }
 
-    if (confirm(`Bạn có chắc muốn xóa vị trí "${location.name}"?`)) {
+    setConfirmTitle(`Xóa vị trí`);
+    setConfirmMessage(`Bạn có chắc muốn xóa vị trí này?`);
+    setConfirmText("Xóa");
+    setConfirmCancelText("Hủy");
+    setConfirmVariant(`warning`);
+    setPendingAction(() => () => {
+      //TODO: Api xóa vị trí
       const updatedLocations = locations.filter((l) => l.id !== locationId);
       onLocationsChange(updatedLocations);
       toast.success("Đã xóa vị trí");
-    }
+    });
+    setShowConfirmModal(true);
   };
 
   const handleSubmitLocation = () => {
@@ -195,11 +212,18 @@ export function LocationManagement({
       return;
     }
 
-    if (confirm(`Bạn có chắc muốn xóa tầng "${floor.name}"?`)) {
+    setConfirmTitle(`Xóa vị trí`);
+    setConfirmMessage(`Bạn có chắc muốn xóa tầng này?`);
+    setConfirmText("Xóa");
+    setConfirmCancelText("Hủy");
+    setConfirmVariant(`warning`);
+    setPendingAction(() => () => {
+      //TODO: Api xóa tầng
       const updatedFloors = floors.filter((f) => f.id !== floorId);
       onFloorsChange(updatedFloors);
       toast.success("Đã xóa tầng");
-    }
+    });
+    setShowConfirmModal(true);
   };
 
   const handleSubmitFloor = () => {
@@ -274,6 +298,26 @@ export function LocationManagement({
 
   return (
     <div>
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => {
+          setShowConfirmModal(false);
+          setPendingAction(null);
+        }}
+        onConfirm={() => {
+          if (pendingAction) {
+            pendingAction();
+          }
+          setShowConfirmModal(false);
+          setPendingAction(null);
+        }}
+        title={confirmTitle}
+        message={confirmMessage}
+        confirmText={confirmText}
+        cancelText={confirmCancelText}
+        variant={confirmVariant}
+      />
       {/* Tab Switcher */}
       <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1 mb-6">
         <button

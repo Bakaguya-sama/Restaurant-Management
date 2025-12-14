@@ -175,7 +175,7 @@ export function MembershipPage() {
           onClick={() => setActiveTab("rewards")}
           className={`flex-1 py-3 rounded-lg transition-all ${
             activeTab === "rewards"
-              ? "bg-[#0056D2] text-white"
+              ? "bg-[#625EE8] text-white"
               : "bg-white text-gray-700 hover:bg-gray-50"
           }`}
         >
@@ -186,7 +186,7 @@ export function MembershipPage() {
           onClick={() => setActiveTab("promotions")}
           className={`flex-1 py-3 rounded-lg transition-all ${
             activeTab === "promotions"
-              ? "bg-[#0056D2] text-white"
+              ? "bg-[#625EE8] text-white"
               : "bg-white text-gray-700 hover:bg-gray-50"
           }`}
         >
@@ -197,7 +197,7 @@ export function MembershipPage() {
           onClick={() => setActiveTab("history")}
           className={`flex-1 py-3 rounded-lg transition-all ${
             activeTab === "history"
-              ? "bg-[#0056D2] text-white"
+              ? "bg-[#625EE8] text-white"
               : "bg-white text-gray-700 hover:bg-gray-50"
           }`}
         >
@@ -219,13 +219,13 @@ export function MembershipPage() {
 
           {/* <Card className="p-6 bg-gradient-to-br from-blue-50 to-purple-50">
             <div className="text-center mb-6">
-              <div className="w-20 h-20 bg-[#0056D2] rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-20 h-20 bg-[#625EE8] rounded-full flex items-center justify-center mx-auto mb-4">
                 <Star className="w-10 h-10 text-white fill-white" />
               </div>
               <h3 className="mb-2">Quy đổi điểm</h3>
               <p className="text-gray-600">
                 Bạn có{" "}
-                <span className="text-[#0056D2]">
+                <span className="text-[#625EE8]">
                   {memberData.points.toLocaleString()} điểm
                 </span>
               </p>
@@ -237,7 +237,7 @@ export function MembershipPage() {
                 <div className="flex items-center justify-center gap-4 text-xl">
                   <span className="text-[#F59E0B]">1000 điểm</span>
                   <span>=</span>
-                  <span className="text-[#0056D2]">1.000đ</span>
+                  <span className="text-[#625EE8]">1.000đ</span>
                 </div>
               </div>
 
@@ -352,7 +352,7 @@ export function MembershipPage() {
           {/* Voucher History */}
           <div>
             <h4 className="mb-4 flex items-center gap-2">
-              <Ticket className="w-5 h-5 text-[#0056D2]" />
+              <Ticket className="w-5 h-5 text-[#625EE8]" />
               Lịch sử sử dụng voucher
             </h4>
             <div className="space-y-3">
@@ -420,7 +420,7 @@ export function MembershipPage() {
               value={pointsToRedeem || ""}
               onChange={(e) => setPointsToRedeem(parseInt(e.target.value) || 0)}
               placeholder="Nhập số điểm..."
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-[#0056D2]"
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-[#625EE8]"
               min="1000"
               step="1000"
             />

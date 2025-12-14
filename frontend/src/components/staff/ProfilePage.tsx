@@ -169,7 +169,7 @@ export function ProfilePage({ role }: ProfilePageProps) {
         <Card className="p-6">
           <div className="text-center">
             <div className="relative inline-block mb-4">
-              <div className="w-32 h-32 bg-[#0056D2] rounded-full flex items-center justify-center mx-auto overflow-hidden">
+              <div className="w-32 h-32 bg-[#625EE8] rounded-full flex items-center justify-center mx-auto overflow-hidden">
                 {avatarUrl ? (
                   <img
                     src={avatarUrl}
