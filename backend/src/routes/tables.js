@@ -129,6 +129,153 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// GET tables by location ID
+router.get('/location/:locationId', async (req, res) => {
+  try {
+    const tables = await Table.find({ location_id: req.params.locationId })
+      .populate('location_id', 'name')
+      .select('_id table_number location_id capacity status brokenReason created_at');
+
+    // Get floor info for each table
+    const formattedTables = await Promise.all(
+      tables.map(async (table) => {
+        let floorName = null;
+        if (table.location_id) {
+          const location = await Location.findById(table.location_id).populate('floor_id', 'floor_name');
+          if (location && location.floor_id) {
+            floorName = location.floor_id.floor_name;
+          }
+        }
+
+        const result = {
+          id: table._id,
+          number: table.table_number,
+          area: table.location_id ? table.location_id.name : null,
+          location_id: table.location_id ? table.location_id._id : null,
+          seats: table.capacity,
+          status: table.status,
+          floor: floorName
+        };
+
+        if (table.brokenReason) {
+          result.brokenReason = table.brokenReason;
+        }
+
+        return result;
+      })
+    );
+
+    res.json({
+      success: true,
+      data: formattedTables,
+      message: 'Tables retrieved successfully'
+    });
+  } catch (error) {
+    console.error('Error fetching tables by location:', error);
+    res.status(500).json({
+      success: false,
+      data: null,
+      message: 'Error fetching tables by location'
+    });
+  }
+});
+
+// GET table status summary
+router.get('/status/summary', async (req, res) => {
+  try {
+    const validStatuses = ['free', 'occupied', 'reserved', 'dirty', 'broken'];
+    
+    // Count tables by each status
+    const statusSummary = {};
+    let totalTables = 0;
+
+    for (const status of validStatuses) {
+      const count = await Table.countDocuments({ status });
+      statusSummary[status] = count;
+      totalTables += count;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        validStatuses: validStatuses,
+        summary: statusSummary,
+        total: totalTables
+      },
+      message: 'Table status summary retrieved successfully'
+    });
+  } catch (error) {
+    console.error('Error fetching table status summary:', error);
+    res.status(500).json({
+      success: false,
+      data: null,
+      message: 'Error fetching table status summary'
+    });
+  }
+});
+
+// GET tables by status
+router.get('/status/:statusString', async (req, res) => {
+  try {
+    const { statusString } = req.params;
+    const validStatuses = ['free', 'occupied', 'reserved', 'dirty', 'broken'];
+
+    if (!validStatuses.includes(statusString)) {
+      return res.status(400).json({
+        success: false,
+        data: null,
+        message: `Invalid status. Valid values: ${validStatuses.join(', ')}`
+      });
+    }
+
+    const tables = await Table.find({ status: statusString })
+      .populate('location_id', 'name')
+      .select('_id table_number location_id capacity status brokenReason created_at');
+
+    // Get floor info for each table
+    const formattedTables = await Promise.all(
+      tables.map(async (table) => {
+        let floorName = null;
+        if (table.location_id) {
+          const location = await Location.findById(table.location_id).populate('floor_id', 'floor_name');
+          if (location && location.floor_id) {
+            floorName = location.floor_id.floor_name;
+          }
+        }
+
+        const result = {
+          id: table._id,
+          number: table.table_number,
+          area: table.location_id ? table.location_id.name : null,
+          location_id: table.location_id ? table.location_id._id : null,
+          seats: table.capacity,
+          status: table.status,
+          floor: floorName
+        };
+
+        if (table.brokenReason) {
+          result.brokenReason = table.brokenReason;
+        }
+
+        return result;
+      })
+    );
+
+    res.json({
+      success: true,
+      data: formattedTables,
+      message: `Tables with status '${statusString}' retrieved successfully`
+    });
+  } catch (error) {
+    console.error('Error fetching tables by status:', error);
+    res.status(500).json({
+      success: false,
+      data: null,
+      message: 'Error fetching tables by status'
+    });
+  }
+});
+
 // POST create new table
 router.post('/', async (req, res) => {
   try {
