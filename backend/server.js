@@ -5,7 +5,7 @@ const connectDB = require('./config/database');
 
 const inventoryRouter = require('./src/presentation_layer/routes/inventory.routes');
 const suppliersRouter = require('./src/presentation_layer/routes/supplier.routes');
-const menuRouter = require('./src/presentation_layer/routes/menu.routes');
+const dishRouter = require('./src/presentation_layer/routes/dish.routes');
 const floorsRouter = require('./src/presentation_layer/routes/floors.routes');
 const locationsRouter = require('./src/presentation_layer/routes/locations.routes');
 const tablesRouter = require('./src/presentation_layer/routes/tables.routes');
@@ -49,7 +49,8 @@ app.get('/api/health', (req, res) => {
 app.use('/api/v1/inventory', inventoryRouter);
 app.use('/api/v1/suppliers', suppliersRouter);
 
-app.use('/api/v1/menu', menuRouter);
+
+app.use('/api/v1/dishes', dishRouter);
 
 app.use('/api/v1/floors', floorsRouter);
 app.use('/api/v1/locations', locationsRouter);
@@ -153,12 +154,18 @@ if (process.env.NODE_ENV !== 'test') {
 ║  • POST   /api/v1/inventory/export                   ║
 ║  • PUT    /api/v1/inventory/:id                      ║
 ║                                                    ║
-║  MENU MANAGEMENT:                                  ║
-║  • GET    /api/v1/menu                              ║
-║  • POST   /api/v1/menu                              ║
-║  • PUT    /api/v1/menu/:id                          ║
-║  • PATCH  /api/v1/menu/:id/availability             ║
-║  • DELETE /api/v1/menu/:id                          ║
+║                                                    ║
+║  DISH MANAGEMENT:                                  ║
+║  • GET    /api/v1/dishes                              ║
+║  • POST   /api/v1/dishes                              ║
+║  • GET    /api/v1/dishes/:id                          ║
+║  • PUT    /api/v1/dishes/:id                          ║
+║  • PATCH  /api/v1/dishes/:id/availability            ║
+║  • DELETE /api/v1/dishes/:id                          ║
+║  • GET    /api/v1/dishes/:id/ingredients              ║
+║  • POST   /api/v1/dishes/:id/ingredients              ║
+║  • PUT    /api/v1/dishes/:id/ingredients/:ingredientId║
+║  • DELETE /api/v1/dishes/:id/ingredients/:ingredientId║
 ║                                                    ║
 ║  SUPPLIERS:                                        ║
 ║  • GET    /api/v1/suppliers                          ║
