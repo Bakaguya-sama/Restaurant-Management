@@ -13,6 +13,7 @@ const staffRouter = require('./src/presentation_layer/routes/staff.routes');
 const customerRouter = require('./src/presentation_layer/routes/customer.routes');
 const promotionRouter = require('./src/presentation_layer/routes/promotion.routes');
 const invoiceRouter = require('./src/presentation_layer/routes/invoice.routes');
+const orderRouter = require('./src/presentation_layer/routes/orders.routes');
 
 // Load environment variables
 dotenv.config();
@@ -63,6 +64,8 @@ app.use('/api/v1/customers', customerRouter);
 app.use('/api/v1/promotions', promotionRouter);
 
 app.use('/api/v1/invoices', invoiceRouter);
+
+app.use('/api/v1/orders', orderRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -171,6 +174,39 @@ if (process.env.NODE_ENV !== 'test') {
 ║  SUPPLIERS:                                        ║
 ║  • GET    /api/v1/suppliers                          ║
 ║  • POST   /api/v1/suppliers                          ║
+║                                                    ║
+║  PROMOTION MANAGEMENT:                             ║
+║  • GET    /api/v1/promotions/statistics               ║
+║  • POST   /api/v1/promotions/validate                 ║
+║  • GET    /api/v1/promotions/code/:code               ║
+║  • GET    /api/v1/promotions                          ║
+║  • GET    /api/v1/promotions/:id                      ║
+║  • POST   /api/v1/promotions                          ║
+║  • PUT    /api/v1/promotions/:id                      ║
+║  • DELETE /api/v1/promotions/:id                      ║
+║                                                    ║
+║  INVOICE MANAGEMENT:                               ║
+║  • GET    /api/v1/invoices/statistics                 ║
+║  • GET    /api/v1/invoices                            ║
+║  • GET    /api/v1/invoices/:id                        ║
+║  • POST   /api/v1/invoices                            ║
+║  • PUT    /api/v1/invoices/:id                        ║
+║  • DELETE /api/v1/invoices/:id                        ║
+║                                                    ║
+║  ORDER MANAGEMENT:                                 ║
+║  • GET    /api/v1/orders                              ║
+║  • POST   /api/v1/orders                              ║
+║  • GET    /api/v1/orders/statistics                   ║
+║  • GET    /api/v1/orders/:id                          ║
+║  • GET    /api/v1/orders/table/:tableId               ║
+║  • GET    /api/v1/orders/customer/:customerId         ║
+║  • PUT    /api/v1/orders/:id                          ║
+║  • DELETE /api/v1/orders/:id                          ║
+║  • POST   /api/v1/orders/:id/calculate                ║
+║  • GET    /api/v1/orders/:orderId/details             ║
+║  • POST   /api/v1/orders/:orderId/details             ║
+║  • PUT    /api/v1/orders/:orderId/details/:detailId   ║
+║  • DELETE /api/v1/orders/:orderId/details/:detailId   ║
 ╚═════════════════════════════════════════════════════╝
 Server is up at ${timestamp}
 `);
