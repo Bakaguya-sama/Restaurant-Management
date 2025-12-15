@@ -6,8 +6,10 @@ const connectDB = async () => {
       // Mongoose 6+ không cần các options này nữa
     });
 
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-    console.log(`Database: ${conn.connection.name}`);
+    if (process.env.NODE_ENV !== 'test') {
+      console.log(`MongoDB Connected: ${conn.connection.host}`);
+      console.log(`Database: ${conn.connection.name}`);
+    }
   } catch (error) {
     console.error(`MongoDB Connection Error: ${error.message}`);
     process.exit(1);

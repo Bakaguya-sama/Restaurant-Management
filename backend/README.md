@@ -15,11 +15,44 @@ backend/
 ├── src/
 │   ├── models/
 │   │   └── index.js         # All Mongoose schemas & models (24 bảng)
-│   ├── routes/
-│   │   ├── floors.js        # Floor management routes
-│   │   ├── locations.js     # Location management routes
-│   │   └── tables.js        # Table management routes
-│   └── middleware/          # Authentication & validation middleware
+│   ├── presentation_layer/
+│   │   ├── controllers/     # HTTP request handlers
+│   │   │   ├── floor/
+│   │   │   ├── location/
+│   │   │   ├── table/
+│   │   │   ├── staff/
+│   │   │   └── customer/
+│   │   └── routes/          # API route definitions
+│   │       ├── floors.routes.js
+│   │       ├── locations.routes.js
+│   │       ├── tables.routes.js
+│   │       ├── staff.routes.js
+│   │       └── customer.routes.js
+│   ├── application_layer/
+│   │   ├── floor/           # Business logic for floors
+│   │   ├── location/        # Business logic for locations
+│   │   ├── table/           # Business logic for tables
+│   │   ├── staff/           # Business logic for staff
+│   │   └── customer/        # Business logic for customers
+│   ├── domain_layer/
+│   │   ├── floor/           # Floor entity & validation
+│   │   ├── location/        # Location entity & validation
+│   │   ├── table/           # Table entity & validation
+│   │   ├── staff/           # Staff entity & validation
+│   │   └── customer/        # Customer entity & validation
+│   ├── infrastructure_layer/
+│   │   ├── floor/           # Floor data access (repository)
+│   │   ├── location/        # Location data access (repository)
+│   │   ├── table/           # Table data access (repository)
+│   │   ├── staff/           # Staff data access (repository)
+│   │   └── customer/        # Customer data access (repository)
+│   ├── middleware/          # Authentication & validation middleware
+│   └── test/                # Integration tests
+│       ├── floor/
+│       ├── location/
+│       ├── table/
+│       ├── staff/
+│       └── customer/
 └── README.md
 ```
 
@@ -81,7 +114,8 @@ backend/
 | table_number | String | Số bàn (bắt buộc, duy nhất) |
 | capacity | Number | Sức chứa (bắt buộc) |
 | location_id | ObjectId | Khu vực (tham chiếu Location) |
-| status | String | Trạng thái: available, occupied, reserved, cleaning, maintenance (mặc định: available) |
+| status | String | Trạng thái: free, occupied, reserved, dirty, broken (mặc định: free) |
+| brokenReason | String | Lý do bàn bị hỏng (optional, chỉ khi status = broken) |
 | created_at | Date | Ngày tạo |
 
 #### 6. **Reservation** (Đặt bàn)

@@ -234,3 +234,332 @@ Content-Type: application/json
 
 ### DELETE /menu/:id - Delete dish
 DELETE {{baseUrl}}/menu/PUT_DISH_ID_HERE
+### Health Check
+GET {{baseUrl}}/health
+
+### ============================================
+### STAFF API ENDPOINTS
+### ============================================
+
+### Staff Login
+POST {{baseUrl}}/staff/login
+Content-Type: application/json
+
+{
+  "username": "manager1",
+  "password": "password123"
+}
+
+### Get All Staff
+GET {{baseUrl}}/staff
+
+### Get All Staff with Filters (by role)
+GET {{baseUrl}}/staff?role=waiter
+
+### Get All Staff with Filters (by active status)
+GET {{baseUrl}}/staff?is_active=true
+
+### Get All Staff with Search
+GET {{baseUrl}}/staff?search=john
+
+### Get Staff by ID
+GET {{baseUrl}}/staff/674da30bb19ecab3d0c9f0a1
+
+### Get Staff Statistics
+GET {{baseUrl}}/staff/statistics
+
+### Create New Staff
+POST {{baseUrl}}/staff
+Content-Type: application/json
+
+{
+  "full_name": "Nguyen Van A",
+  "email": "nguyenvana@example.com",
+  "phone": "0123456789",
+  "address": "123 Main St, Ho Chi Minh City",
+  "date_of_birth": "1995-05-15",
+  "role": "waiter",
+  "username": "nguyenvana",
+  "password": "password123",
+  "image_url": "https://example.com/image.jpg"
+}
+
+### Update Staff
+PUT {{baseUrl}}/staff/674da30bb19ecab3d0c9f0a1
+Content-Type: application/json
+
+{
+  "full_name": "Nguyen Van A Updated",
+  "phone": "0987654321",
+  "address": "456 New Address"
+}
+
+### Update Staff Password
+PUT {{baseUrl}}/staff/674da30bb19ecab3d0c9f0a1
+Content-Type: application/json
+
+{
+  "password": "newpassword123"
+}
+
+### Deactivate Staff
+PATCH {{baseUrl}}/staff/674da30bb19ecab3d0c9f0a1/deactivate
+
+### Activate Staff
+PATCH {{baseUrl}}/staff/674da30bb19ecab3d0c9f0a1/activate
+
+### Delete Staff
+DELETE {{baseUrl}}/staff/674da30bb19ecab3d0c9f0a1
+
+### ============================================
+### CUSTOMER API ENDPOINTS
+### ============================================
+
+### Customer Login
+POST {{baseUrl}}/customers/login
+Content-Type: application/json
+
+{
+  "email": "customer@example.com",
+  "password": "password123"
+}
+
+### Get All Customers
+GET {{baseUrl}}/customers
+
+### Get All Customers with Filters (by membership level)
+GET {{baseUrl}}/customers?membership_level=gold
+
+### Get All Customers with Filters (by banned status)
+GET {{baseUrl}}/customers?isBanned=false
+
+### Get All Customers with Search
+GET {{baseUrl}}/customers?search=nguyen
+
+### Get Customer by ID
+GET {{baseUrl}}/customers/674da30bb19ecab3d0c9f0b1
+
+### Get Customer Statistics
+GET {{baseUrl}}/customers/statistics
+
+### Get Top Customers
+GET {{baseUrl}}/customers/top
+
+### Get Top 20 Customers
+GET {{baseUrl}}/customers/top?limit=20
+
+### Create New Customer
+POST {{baseUrl}}/customers
+Content-Type: application/json
+
+{
+  "full_name": "Tran Thi B",
+  "email": "tranthib@example.com",
+  "phone": "0987654321",
+  "address": "789 Street, Ho Chi Minh City",
+  "date_of_birth": "1998-08-20",
+  "password": "password123"
+}
+
+### Update Customer
+PUT {{baseUrl}}/customers/674da30bb19ecab3d0c9f0b1
+Content-Type: application/json
+
+{
+  "full_name": "Tran Thi B Updated",
+  "phone": "0123456789",
+  "address": "New Address 123"
+}
+
+### Update Customer Password
+PUT {{baseUrl}}/customers/674da30bb19ecab3d0c9f0b1
+Content-Type: application/json
+
+{
+  "password": "newpassword456"
+}
+
+### Ban Customer
+PATCH {{baseUrl}}/customers/674da30bb19ecab3d0c9f0b1/ban
+
+### Unban Customer
+PATCH {{baseUrl}}/customers/674da30bb19ecab3d0c9f0b1/unban
+
+### Add Points to Customer
+PATCH {{baseUrl}}/customers/674da30bb19ecab3d0c9f0b1/points
+Content-Type: application/json
+
+{
+  "points": 100
+}
+
+### Add Spending to Customer
+PATCH {{baseUrl}}/customers/674da30bb19ecab3d0c9f0b1/spending
+Content-Type: application/json
+
+{
+  "amount": 500000
+}
+
+### Delete Customer
+DELETE {{baseUrl}}/customers/674da30bb19ecab3d0c9f0b1
+### ============================================
+### FLOOR API ENDPOINTS
+### ============================================
+
+### Get All Floors
+GET {{baseUrl}}/floors
+
+### Get Floor by ID
+GET {{baseUrl}}/floors/674da30bb19ecab3d0c9f0c1
+
+### Create New Floor
+POST {{baseUrl}}/floors
+Content-Type: application/json
+
+{
+  "name": "Ground Floor",
+  "level": 0,
+  "description": "Main entrance and dining area"
+}
+
+### Update Floor
+PUT {{baseUrl}}/floors/674da30bb19ecab3d0c9f0c1
+Content-Type: application/json
+
+{
+  "name": "Ground Floor Updated",
+  "level": 0,
+  "description": "Updated main dining area"
+}
+
+### Delete Floor
+DELETE {{baseUrl}}/floors/674da30bb19ecab3d0c9f0c1
+
+### ============================================
+### LOCATION API ENDPOINTS
+### ============================================
+
+### Get All Locations
+GET {{baseUrl}}/locations
+
+### Get All Locations Filtered by Floor
+GET {{baseUrl}}/locations?floor=674da30bb19ecab3d0c9f0c1
+
+### Get Location by ID
+GET {{baseUrl}}/locations/674da30bb19ecab3d0c9f0c2
+
+### Get Locations by Floor ID
+GET {{baseUrl}}/locations/floor/674da30bb19ecab3d0c9f0c1
+
+### Create New Location
+POST {{baseUrl}}/locations
+Content-Type: application/json
+
+{
+  "name": "Section A",
+  "floor_id": "674da30bb19ecab3d0c9f0c1",
+  "description": "VIP section near window"
+}
+
+### Update Location
+PUT {{baseUrl}}/locations/674da30bb19ecab3d0c9f0c2
+Content-Type: application/json
+
+{
+  "name": "Section A Updated",
+  "floor_id": "674da30bb19ecab3d0c9f0c1",
+  "description": "Updated VIP section"
+}
+
+### Delete Location
+DELETE {{baseUrl}}/locations/674da30bb19ecab3d0c9f0c2
+
+### ============================================
+### TABLE API ENDPOINTS
+### ============================================
+
+### Get All Tables
+GET {{baseUrl}}/tables
+
+### Get All Tables Filtered by Status
+GET {{baseUrl}}/tables?status=free
+
+### Get All Tables Filtered by Location
+GET {{baseUrl}}/tables?area=674da30bb19ecab3d0c9f0c2
+
+### Get Table by ID
+GET {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3
+
+### Get Tables by Location ID
+GET {{baseUrl}}/tables/location/674da30bb19ecab3d0c9f0c2
+
+### Get Tables by Status
+GET {{baseUrl}}/tables/status/free
+
+### Get Table Status Summary/Statistics
+GET {{baseUrl}}/tables/status/summary
+
+### Create New Table
+POST {{baseUrl}}/tables
+Content-Type: application/json
+
+{
+  "number": 101,
+  "seats": 4,
+  "area": "674da30bb19ecab3d0c9f0c2"
+}
+
+### Update Table
+PUT {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3
+Content-Type: application/json
+
+{
+  "number": 102,
+  "seats": 6,
+  "area": "674da30bb19ecab3d0c9f0c2"
+}
+
+### Update Table Status to Occupied
+PATCH {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3/status
+Content-Type: application/json
+
+{
+  "status": "occupied"
+}
+
+### Update Table Status to Reserved
+PATCH {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3/status
+Content-Type: application/json
+
+{
+  "status": "reserved"
+}
+
+### Update Table Status to Dirty
+PATCH {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3/status
+Content-Type: application/json
+
+{
+  "status": "dirty"
+}
+
+### Update Table Status to Broken (with reason)
+PATCH {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3/status
+Content-Type: application/json
+
+{
+  "status": "broken",
+  "brokenReason": "Chair leg is broken"
+}
+
+### Update Table Status back to Free (clears brokenReason)
+PATCH {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3/status
+Content-Type: application/json
+
+{
+  "status": "free"
+}
+
+### Delete Table
+DELETE {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3

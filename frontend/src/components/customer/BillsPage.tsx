@@ -26,9 +26,9 @@ export function BillsPage() {
   const [showVoucherModal, setShowVoucherModal] = useState(false);
   const [selectedBill, setSelectedBill] = useState<any>(null);
   const [paymentMethod, setPaymentMethod] = useState<
-    "wallet" | "card" | "cash" | null
+    "wallet" | "card" | "cash" | "online" | null
   >(null);
-  const [rating, setRating] = useState(0);
+  // const [rating, setRating] = useState(0); // Not implemented
   const [feedback, setFeedback] = useState("");
   const [voucherCode, setVoucherCode] = useState("");
   const [appliedVoucher, setAppliedVoucher] = useState<any>(null);
@@ -186,6 +186,10 @@ export function BillsPage() {
       status: "paid",
       tableNumber: "T05",
       paymentMethod: "online",
+      feedback: "Món ăn rất ngon, phục vụ tận tình!",
+      feedbackDate: "2025-12-09",
+      // managerReply: "Cảm ơn bạn đã đánh giá!...", // NOT IN API SPEC
+      // managerReplyDate: "2025-12-10", // NOT IN API SPEC
       bookingId: "BK002",
       booking: {
         customerName: "Trần Thị Bình",
@@ -374,14 +378,15 @@ export function BillsPage() {
   };
 
   const handleSubmitFeedback = () => {
-    if (rating === 0) {
-      toast.error("Vui lòng chọn số sao đánh giá");
+    if (feedback === "") {
+      toast.error("Vui lòng nhập nhận xét");
       return;
     }
 
+    // TODO: Call API POST /invoices/:id/feedback
+    // Body: { rating: 5, comment: feedback } - rating fixed at 5 since not implemented in UI
     toast.success("Cảm ơn bạn đã gửi đánh giá!");
     setShowFeedbackModal(false);
-    setRating(0);
     setFeedback("");
   };
 
@@ -493,6 +498,32 @@ export function BillsPage() {
                 )}
               </div>
             )}
+
+            {/* Manager Reply - NOT IN API SPEC - COMMENTED OUT FOR NOW */}
+            {/* {bill.managerReply && (
+              <div className="mt-3 pt-3 border-t">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="flex items-start gap-2">
+                    <MessageSquare className="w-4 h-4 text-[#625EE8] mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-xs text-[#625EE8] font-medium mb-1">
+                        Phản hồi từ nhà hàng
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        {bill.managerReply}
+                      </p>
+                      {bill.managerReplyDate && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(bill.managerReplyDate).toLocaleDateString(
+                            "vi-VN"
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )} */}
           </Card>
         ))}
       </div>
@@ -538,7 +569,7 @@ export function BillsPage() {
             {selectedBill.booking && (
               <div className="border rounded-lg p-4 bg-blue-50">
                 <h4 className="mb-3 flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-[#0056D2]" />
+                  <Calendar className="w-5 h-5 text-[#625EE8]" />
                   Thông tin đặt bàn
                 </h4>
                 <div className="grid grid-cols-2 gap-3 text-sm">
@@ -546,7 +577,7 @@ export function BillsPage() {
                     <p className="text-gray-600 text-xs mb-1">
                       Mã phiếu đặt bàn
                     </p>
-                    <p className="font-bold text-xl text-[#0056D2]">
+                    <p className="font-bold text-xl text-[#625EE8]">
                       {selectedBill.bookingId}
                     </p>
                   </div>
@@ -585,7 +616,7 @@ export function BillsPage() {
                       <span className="text-gray-600">
                         Tiền cọc đã thanh toán:
                       </span>
-                      <span className="font-medium text-[#0056D2]">
+                      <span className="font-medium text-[#625EE8]">
                         {selectedBill.booking.depositPaid.toLocaleString()}đ
                       </span>
                     </div>
@@ -618,7 +649,7 @@ export function BillsPage() {
                           <p className="text-sm mb-1">
                             {item.price.toLocaleString()}đ x {item.quantity}
                           </p>
-                          <p className="text-[#0056D2] text-sm">
+                          <p className="text-[#625EE8] text-sm">
                             {(item.price * item.quantity).toLocaleString()}đ
                           </p>
                         </div>
@@ -642,7 +673,7 @@ export function BillsPage() {
                   className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <Tag className="w-5 h-5 text-[#0056D2]" />
+                    <Tag className="w-5 h-5 text-[#625EE8]" />
                     <span>Áp dụng voucher hoặc quy đổi điểm</span>
                   </div>
                   <ChevronDown
@@ -770,7 +801,7 @@ export function BillsPage() {
               )}
               <div className="flex justify-between text-xl pt-2 border-t">
                 <span>Tổng cộng:</span>
-                <span className="text-[#0056D2]">
+                <span className="text-[#625EE8]">
                   {selectedBill.total.toLocaleString()}đ
                 </span>
               </div>
@@ -784,14 +815,16 @@ export function BillsPage() {
                   Thanh toán
                 </Button>
               ) : (
-                <Button
-                  fullWidth
-                  variant="secondary"
-                  onClick={() => setShowFeedbackModal(true)}
-                >
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  Gửi đánh giá
-                </Button>
+                !selectedBill.feedback && (
+                  <Button
+                    fullWidth
+                    variant="secondary"
+                    onClick={() => setShowFeedbackModal(true)}
+                  >
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Gửi đánh giá
+                  </Button>
+                )
               )}
             </div>
           </div>
@@ -835,11 +868,11 @@ export function BillsPage() {
                   <div
                     key={promo.id}
                     onClick={() => handleSelectPromotion(promo)}
-                    className="p-4 border-2 rounded-lg hover:border-[#0056D2] cursor-pointer transition-all"
+                    className="p-4 border-2 rounded-lg hover:border-[#625EE8] cursor-pointer transition-all"
                   >
                     <div className="flex items-center justify-between mb-2">
                       <h4>{promo.name}</h4>
-                      <span className="px-3 py-1 bg-[#0056D2] text-white rounded-full text-sm">
+                      <span className="px-3 py-1 bg-[#625EE8] text-white rounded-full text-sm">
                         {promo.discountType === "percentage"
                           ? `${promo.discountValue}%`
                           : `${promo.discountValue.toLocaleString()}đ`}
@@ -876,7 +909,7 @@ export function BillsPage() {
           <div className="bg-gray-50 rounded-lg p-4">
             <div className="flex justify-between mb-2">
               <span className="text-gray-600">Tổng tiền:</span>
-              <span className="text-2xl text-[#0056D2]">
+              <span className="text-2xl text-[#625EE8]">
                 {selectedBill?.total.toLocaleString()}đ
               </span>
             </div>
@@ -884,12 +917,12 @@ export function BillsPage() {
 
           <div>
             <label className="block mb-3">Chọn phương thức thanh toán:</label>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <button
                 onClick={() => setPaymentMethod("cash")}
                 className={`p-4 border-2 rounded-lg text-left transition-all ${
                   paymentMethod === "cash"
-                    ? "border-[#0056D2] bg-blue-50"
+                    ? "border-[#625EE8] bg-blue-50"
                     : "border-gray-200 hover:border-gray-300"
                 }`}
               >
@@ -901,11 +934,11 @@ export function BillsPage() {
                 onClick={() => setPaymentMethod("wallet")}
                 className={`p-4 border-2 rounded-lg text-left transition-all ${
                   paymentMethod === "wallet"
-                    ? "border-[#0056D2] bg-blue-50"
+                    ? "border-[#625EE8] bg-blue-50"
                     : "border-gray-200 hover:border-gray-300"
                 }`}
               >
-                <CreditCard className="w-6 h-6 text-[#0056D2] mb-2" />
+                <CreditCard className="w-6 h-6 text-[#625EE8] mb-2" />
                 <p className="mb-1">Ví điện tử</p>
                 <p className="text-xs text-gray-600">MoMo, ZaloPay</p>
               </button>
@@ -913,13 +946,25 @@ export function BillsPage() {
                 onClick={() => setPaymentMethod("card")}
                 className={`p-4 border-2 rounded-lg text-left transition-all ${
                   paymentMethod === "card"
-                    ? "border-[#0056D2] bg-blue-50"
+                    ? "border-[#625EE8] bg-blue-50"
                     : "border-gray-200 hover:border-gray-300"
                 }`}
               >
-                <CreditCard className="w-6 h-6 text-[#0056D2] mb-2" />
+                <CreditCard className="w-6 h-6 text-[#625EE8] mb-2" />
                 <p className="mb-1">Thẻ ngân hàng</p>
                 <p className="text-xs text-gray-600">ATM, Visa, Master</p>
+              </button>
+              <button
+                onClick={() => setPaymentMethod("online")}
+                className={`p-4 border-2 rounded-lg text-left transition-all ${
+                  paymentMethod === "online"
+                    ? "border-[#625EE8] bg-blue-50"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <div className="text-2xl mb-2">🌐</div>
+                <p className="mb-1">Chuyển khoản</p>
+                <p className="text-xs text-gray-600">QR Banking</p>
               </button>
             </div>
           </div>
@@ -956,32 +1001,7 @@ export function BillsPage() {
       >
         <div className="space-y-6">
           <div>
-            <label className="block mb-3 text-center">
-              Bạn đánh giá thế nào về trải nghiệm?
-            </label>
-            <div className="flex justify-center gap-2">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  onClick={() => setRating(star)}
-                  className="transition-transform hover:scale-110"
-                >
-                  <Star
-                    className={`w-10 h-10 ${
-                      star <= rating
-                        ? "fill-yellow-400 text-yellow-400"
-                        : "text-gray-300"
-                    }`}
-                  />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="block mb-2">
-              Chia sẻ cảm nhận của bạn (tùy chọn)
-            </label>
+            <label className="block mb-2">Chia sẻ cảm nhận của bạn</label>
             <Textarea
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}

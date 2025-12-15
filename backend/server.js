@@ -7,6 +7,11 @@ const connectDB = require('./config/database');
 const inventoryRouter = require('./src/presentation_layer/routes/inventory.routes');
 const suppliersRouter = require('./src/presentation_layer/routes/supplier.routes');
 const menuRouter = require('./src/presentation_layer/routes/menu.routes');
+const floorsRouter = require('./src/presentation_layer/routes/floors.routes');
+const locationsRouter = require('./src/presentation_layer/routes/locations.routes');
+const tablesRouter = require('./src/presentation_layer/routes/tables.routes');
+const staffRouter = require('./src/presentation_layer/routes/staff.routes');
+const customerRouter = require('./src/presentation_layer/routes/customer.routes');
 
 // Load environment variables
 dotenv.config();
@@ -32,7 +37,7 @@ app.get('/', (req, res) => {
 });
 
 // API Routes
-app.get('/api/v1/health', (req, res) => {
+app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     database: 'Connected',
@@ -46,6 +51,12 @@ app.use('/api/v1/suppliers', suppliersRouter);
 
 // Menu management
 app.use('/api/v1/menu', menuRouter);
+
+// Staff Routes
+app.use('/api/v1/staff', staffRouter);
+
+// Customer Routes
+app.use('/api/v1/customers', customerRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -67,10 +78,10 @@ app.use((req, res) => {
 
 const PORT = process.env.PORT || 5001;
 
-// Only start listening when not running tests to allow supertest to use the app
+// Only listen if not in test environment
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
-  console.log(`
+    console.log(`
 ╔═════════════════════════════════════════════════════╗
 ║       RESTAURANT MANAGEMENT API SERVER             ║
 ║       Port: ${PORT}                                       ║
@@ -79,6 +90,31 @@ if (process.env.NODE_ENV !== 'test') {
 ║       Available Routes:                            ║
 ║  • GET    /                                        ║
 ║  • GET    /api/v1/health                              ║
+║                                                    ║
+║  STAFF MANAGEMENT:                                 ║
+║  • POST   /api/v1/staff/login                         ║
+║  • GET    /api/v1/staff/statistics                    ║
+║  • GET    /api/v1/staff                               ║
+║  • GET    /api/v1/staff/:id                           ║
+║  • POST   /api/v1/staff                               ║
+║  • PUT    /api/v1/staff/:id                           ║
+║  • DELETE /api/v1/staff/:id                           ║
+║  • PATCH  /api/v1/staff/:id/activate                  ║
+║  • PATCH  /api/v1/staff/:id/deactivate                ║
+║                                                    ║
+║  CUSTOMER MANAGEMENT:                              ║
+║  • POST   /api/v1/customers/login                     ║
+║  • GET    /api/v1/customers/statistics                ║
+║  • GET    /api/v1/customers/top                       ║
+║  • GET    /api/v1/customers                           ║
+║  • GET    /api/v1/customers/:id                       ║
+║  • POST   /api/v1/customers                           ║
+║  • PUT    /api/v1/customers/:id                       ║
+║  • DELETE /api/v1/customers/:id                       ║
+║  • PATCH  /api/v1/customers/:id/ban                   ║
+║  • PATCH  /api/v1/customers/:id/unban                 ║
+║  • PATCH  /api/v1/customers/:id/points                ║
+║  • PATCH  /api/v1/customers/:id/spending              ║
 ║                                                    ║
 ║  TABLE MANAGEMENT:                                 ║
 ║  • GET    /api/v1/locations                           ║

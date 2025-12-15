@@ -341,8 +341,6 @@ const RatingReplySchema = new Schema({
   reply_date: { type: Date, default: Date.now },
 });
 
-
-
 // ==================== EXPORTS ====================
 
 const Staff = mongoose.model('Staff', StaffSchema);
