@@ -27,21 +27,21 @@ class FloorService {
     }
 
     
-    const existingByName = await this.floorRepository.checkDuplicate('floor_name', floorData.name);
+    const existingByName = await this.floorRepository.checkDuplicate('floor_name', floorData.floor_name);
     if (existingByName) {
-      throw new Error('Floor with this name already exists');
+      throw new Error('Floor with this floor_name already exists');
     }
 
     
-    const existingByLevel = await this.floorRepository.checkDuplicate('floor_number', floorData.level);
+    const existingByLevel = await this.floorRepository.checkDuplicate('floor_number', floorData.floor_number);
     if (existingByLevel) {
-      throw new Error('Floor with this level already exists');
+      throw new Error('Floor with this floor_number already exists');
     }
 
     
     const dbData = {
-      floor_name: floorData.name,
-      floor_number: floorData.level,
+      floor_name: floorData.floor_name,
+      floor_number: floorData.floor_number,
       description: floorData.description || ''
     };
 
@@ -57,8 +57,8 @@ class FloorService {
 
     
     const validationData = {
-      floor_name: updateData.name || existingFloor.floor_name,
-      floor_number: updateData.level !== undefined ? updateData.level : existingFloor.floor_number,
+      floor_name: updateData.floor_name || existingFloor.floor_name,
+      floor_number: updateData.floor_number !== undefined ? updateData.floor_number : existingFloor.floor_number,
       description: updateData.description || existingFloor.description
     };
 
@@ -69,25 +69,25 @@ class FloorService {
     }
 
     
-    if (updateData.name && updateData.name !== existingFloor.floor_name) {
-      const duplicateByName = await this.floorRepository.checkDuplicate('floor_name', updateData.name, id);
+    if (updateData.floor_name && updateData.floor_name !== existingFloor.floor_name) {
+      const duplicateByName = await this.floorRepository.checkDuplicate('floor_name', updateData.floor_name, id);
       if (duplicateByName) {
-        throw new Error('Floor with this name already exists');
+        throw new Error('Floor with this floor_name already exists');
       }
     }
 
     
-    if (updateData.level !== undefined && updateData.level !== existingFloor.floor_number) {
-      const duplicateByLevel = await this.floorRepository.checkDuplicate('floor_number', updateData.level, id);
+    if (updateData.floor_number !== undefined && updateData.floor_number !== existingFloor.floor_number) {
+      const duplicateByLevel = await this.floorRepository.checkDuplicate('floor_number', updateData.floor_number, id);
       if (duplicateByLevel) {
-        throw new Error('Floor with this level already exists');
+        throw new Error('Floor with this floor_number already exists');
       }
     }
 
     
     const dbData = {};
-    if (updateData.name) dbData.floor_name = updateData.name;
-    if (updateData.level !== undefined) dbData.floor_number = updateData.level;
+    if (updateData.floor_name) dbData.floor_name = updateData.floor_name;
+    if (updateData.floor_number !== undefined) dbData.floor_number = updateData.floor_number;
     if (updateData.description) dbData.description = updateData.description;
 
     return await this.floorRepository.update(id, dbData);
@@ -110,11 +110,15 @@ class FloorService {
   }
 
   formatFloorResponse(floor) {
+    if (floor instanceof FloorEntity) {
+      return floor.formatResponse();
+    }
     return {
-      id: floor.id,
-      name: floor.floor_name,
-      level: floor.floor_number,
-      description: floor.description
+      id: floor._id || floor.id,
+      floor_name: floor.floor_name,
+      floor_number: floor.floor_number,
+      description: floor.description,
+      created_at: floor.created_at
     };
   }
 }

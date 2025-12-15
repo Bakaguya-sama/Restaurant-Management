@@ -13,8 +13,8 @@ POST {{baseUrl}}/floors
 Content-Type: application/json
 
 {
-  "name": "Ground Floor",
-  "level": 0,
+  "floor_name": "Ground Floor",
+  "floor_number": 0,
   "description": "Main entrance and dining area"
 }
 
@@ -24,8 +24,8 @@ POST {{baseUrl}}/floors
 Content-Type: application/json
 
 {
-  "name": "Second Floor",
-  "level": 1,
+  "floor_name": "Second Floor",
+  "floor_number": 1,
   "description": "Upper dining area with garden view"
 }
 
@@ -35,8 +35,8 @@ POST {{baseUrl}}/floors
 Content-Type: application/json
 
 {
-  "level": 2,
-  "description": "Missing name"
+  "floor_number": 2,
+  "description": "Missing floor_name"
 }
 
 
@@ -45,8 +45,8 @@ POST {{baseUrl}}/floors
 Content-Type: application/json
 
 {
-  "name": "Third Floor",
-  "description": "Missing level"
+  "floor_name": "Third Floor",
+  "description": "Missing floor_number"
 }
 
 
@@ -55,8 +55,8 @@ POST {{baseUrl}}/floors
 Content-Type: application/json
 
 {
-  "name": "Ground Floor",
-  "level": 3,
+  "floor_name": "Ground Floor",
+  "floor_number": 3,
   "description": "Trying to create duplicate name"
 }
 
@@ -66,8 +66,8 @@ POST {{baseUrl}}/floors
 Content-Type: application/json
 
 {
-  "name": "Basement Level",
-  "level": 0,
+  "floor_name": "Basement Level",
+  "floor_number": 0,
   "description": "Trying to create duplicate level"
 }
 
@@ -89,8 +89,8 @@ PUT {{baseUrl}}/floors/674da30bb19ecab3d0c9f0c1
 Content-Type: application/json
 
 {
-  "name": "Ground Floor - Updated",
-  "level": 0,
+  "floor_name": "Ground Floor - Updated",
+  "floor_number": 0,
   "description": "Updated main entrance and dining area"
 }
 
@@ -100,8 +100,8 @@ PUT {{baseUrl}}/floors/674da30bb19ecab3d0c9f0c1
 Content-Type: application/json
 
 {
-  "level": 1,
-  "description": "Missing name field"
+  "floor_number": 1,
+  "description": "Missing floor_name field"
 }
 
 
@@ -110,8 +110,8 @@ PUT {{baseUrl}}/floors/000000000000000000000000
 Content-Type: application/json
 
 {
-  "name": "Non-existent Floor",
-  "level": 99,
+  "floor_name": "Non-existent Floor",
+  "floor_number": 99,
   "description": "Trying to update non-existent floor"
 }
 
