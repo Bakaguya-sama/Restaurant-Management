@@ -330,7 +330,7 @@ const RatingSchema = new Schema({
   customer_id: { type: Schema.Types.ObjectId, ref: 'Customer', required: true },
   description: String,
   rating_date: { type: Date, default: Date.now },
-  score: { type: Number, required: true, min: 1, max: 5 },
+  //score: { type: Number, required: true, min: 1, max: 5 },
 });
 
 //Replies to ratings
