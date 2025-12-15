@@ -180,7 +180,7 @@ class TableService {
       id: table.id,
       table_number: table.table_number,
       capacity: table.capacity,
-      location_id: table.location_id ? table.location_id._id || table.location_id : null,
+      location_id: table.location_id,// ? table.location_id._id || table.location_id : null,
       status: table.status,
       created_at: table.created_at
     };

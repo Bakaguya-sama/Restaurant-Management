@@ -28,7 +28,7 @@ class LocationEntity {
     return {
       id: this.id,
       name: this.name,
-      floor_id: this.floor_id ? (this.floor_id._id ? this.floor_id._id.toString() : this.floor_id.toString()) : null,
+      floor_id: this.floor_id,
       description: this.description,
       created_at: this.created_at
     };

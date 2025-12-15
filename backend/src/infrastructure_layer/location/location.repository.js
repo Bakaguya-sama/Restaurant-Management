@@ -9,7 +9,7 @@ class LocationRepository {
     }
 
     const locations = await Location.find(query)
-      .populate('floor_id', 'floor_name')
+      //.populate('floor_id', 'floor_name')
       .select('_id name floor_id description created_at');
 
     return locations.map(location => new LocationEntity(location.toObject()));
@@ -17,7 +17,7 @@ class LocationRepository {
 
   async findById(id) {
     const location = await Location.findById(id)
-      .populate('floor_id', 'floor_name')
+      //.populate('floor_id', 'floor_name')
       .select('_id name floor_id description created_at');
 
     if (!location) return null;
@@ -26,7 +26,7 @@ class LocationRepository {
 
   async findByName(name) {
     const location = await Location.findOne({ name })
-      .populate('floor_id', 'floor_name');
+      //.populate('floor_id', 'floor_name');
 
     if (!location) return null;
     return new LocationEntity(location.toObject());
@@ -34,7 +34,7 @@ class LocationRepository {
 
   async findByFloorId(floorId) {
     const locations = await Location.find({ floor_id: floorId })
-      .populate('floor_id', 'floor_name')
+      //.populate('floor_id', 'floor_name')
       .select('_id name floor_id description created_at');
 
     return locations.map(location => new LocationEntity(location.toObject()));
@@ -48,7 +48,7 @@ class LocationRepository {
 
   async update(id, updateData) {
     const location = await Location.findByIdAndUpdate(id, updateData, { new: true })
-      .populate('floor_id', 'floor_name')
+      //.populate('floor_id', 'floor_name')
       .select('_id name floor_id description created_at');
 
     if (!location) return null;
@@ -57,7 +57,7 @@ class LocationRepository {
 
   async delete(id) {
     const location = await Location.findByIdAndDelete(id)
-      .populate('floor_id', 'floor_name');
+      //.populate('floor_id', 'floor_name');
 
     if (!location) return null;
     return new LocationEntity(location.toObject());

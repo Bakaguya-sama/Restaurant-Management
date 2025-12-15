@@ -37,6 +37,10 @@ class DishIngredientRepository {
     return await DishIngredient.deleteOne({ dish_id: dishId, ingredient_id: ingredientId });
   }
 
+  async deleteByDishId(dishId) {
+    return await DishIngredient.deleteMany({ dish_id: dishId });
+  }
+
   async findById(id) {
     return await DishIngredient.findById(id);
   }
