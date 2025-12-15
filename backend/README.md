@@ -21,38 +21,57 @@ backend/
 │   │   │   ├── location/
 │   │   │   ├── table/
 │   │   │   ├── staff/
-│   │   │   └── customer/
+│   │   │   ├── customer/
+│   │   │   ├── order/
+│   │   │   ├── orderdetail/
+│   │   │   └── ...
 │   │   └── routes/          # API route definitions
 │   │       ├── floors.routes.js
 │   │       ├── locations.routes.js
 │   │       ├── tables.routes.js
 │   │       ├── staff.routes.js
-│   │       └── customer.routes.js
+│   │       ├── customer.routes.js
+│   │       ├── orders.routes.js       # Order routes (13 endpoints)
+│   │       └── ...
 │   ├── application_layer/
 │   │   ├── floor/           # Business logic for floors
 │   │   ├── location/        # Business logic for locations
 │   │   ├── table/           # Business logic for tables
 │   │   ├── staff/           # Business logic for staff
-│   │   └── customer/        # Business logic for customers
+│   │   ├── customer/        # Business logic for customers
+│   │   ├── order/           # Business logic for orders
+│   │   ├── orderdetail/     # Business logic for order items
+│   │   └── ...
 │   ├── domain_layer/
 │   │   ├── floor/           # Floor entity & validation
 │   │   ├── location/        # Location entity & validation
 │   │   ├── table/           # Table entity & validation
 │   │   ├── staff/           # Staff entity & validation
-│   │   └── customer/        # Customer entity & validation
+│   │   ├── customer/        # Customer entity & validation
+│   │   ├── order/           # Order entity & validation
+│   │   ├── orderdetail/     # OrderDetail entity & validation
+│   │   └── ...
 │   ├── infrastructure_layer/
 │   │   ├── floor/           # Floor data access (repository)
 │   │   ├── location/        # Location data access (repository)
 │   │   ├── table/           # Table data access (repository)
 │   │   ├── staff/           # Staff data access (repository)
-│   │   └── customer/        # Customer data access (repository)
+│   │   ├── customer/        # Customer data access (repository)
+│   │   ├── order/           # Order data access (repository)
+│   │   ├── orderdetail/     # OrderDetail data access (repository)
+│   │   └── ...
 │   ├── middleware/          # Authentication & validation middleware
 │   └── test/                # Integration tests
 │       ├── floor/
 │       ├── location/
 │       ├── table/
 │       ├── staff/
-│       └── customer/
+│       ├── customer/
+│       ├── order/           # Order integration tests (26 tests)
+│       │   ├── order.integration.js
+│       │   ├── orderdetail.integration.js
+│       │   └── orders.http
+│       └── ...
 └── README.md
 ```
 
@@ -360,23 +379,22 @@ net start MongoDB
 npm run seed
 ```
 
-Seed sẽ tạo dữ liệu đầy đủ cho 22 bảng:
+Seed sẽ tạo dữ liệu đầy đủ cho 24 bảng:
 - **6 Staff** (2 waiter, 2 cashier, 2 manager)
 - **6 Customers** (các membership level: diamond, platinum, gold, silver, bronze, regular)
 - **2 Floors** (tầng 1, tầng 2)
 - **5 Locations** (trong nhà, ngoài trời, VIP phòng)
-- **10 Tables** (với location_id)
+- **15 Tables** (với location_id)
 - **4 Reservations** với chi tiết đầy đủ
 - **3 Complaints** với resolution
 - **10 Ingredients** với supplier, expiry_date, stock_status, expiry_status
 - **3 Stock Imports** và 6 chi tiết import
+- **3 Stock Exports** và 6 chi tiết export
 - **8 Dishes** (appetizer, main_course, dessert, beverage)
 - **10 Dish-Ingredient links**
-- **3 Menus** (regular, lunch, dinner)
-- **11 Menu Entries**
+- **4 Orders** (4 loại khác nhau: dine-in-customer, dine-in-waiter, takeaway-customer, takeaway-staff)
+- **10 Order Details** (các item trong order)
 - **3 Promotions** (percentage, fixed_amount, happy hour)
-- **4 Orders** với discriminators khác nhau
-- **10 Order Details**
 - **3 Invoices** với payment tracking
 - **1 Invoice Promotion**
 - **2 Violations** (no_show, late_cancel)
@@ -574,6 +592,45 @@ Violation:
 - `cleaning` - Bàn đang làm sạch
 - `maintenance` - Bàn bảo trì
 
+### Order Management (`/api/v1/orders`)
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET | `/` | Lấy danh sách đơn hàng (filter: status, type, customer_id, table_id) |
+| GET | `/statistics` | Lấy thống kê đơn hàng theo ngày |
+| GET | `/table/:tableId` | Lấy đơn hàng hiện tại của bàn |
+| GET | `/customer/:customerId` | Lấy danh sách đơn hàng của khách hàng |
+| GET | `/:id` | Lấy chi tiết đơn hàng |
+| POST | `/` | Tạo đơn hàng mới |
+| PUT | `/:id` | Cập nhật đơn hàng (status, notes) |
+| DELETE | `/:id` | Xóa đơn hàng (cascade delete order details) |
+| POST | `/:id/calculate` | Tính toán lại tổng tiền đơn hàng |
+| GET | `/:orderId/details` | Lấy danh sách item trong đơn hàng |
+| POST | `/:orderId/details` | Thêm item vào đơn hàng |
+| PUT | `/:orderId/details/:detailId` | Cập nhật item trong đơn hàng |
+| DELETE | `/:orderId/details/:detailId` | Xóa item khỏi đơn hàng |
+
+**Order Types (4 loại):**
+- `dine-in-customer`: Khách hàng ăn tại chỗ (yêu cầu: table_id, customer_id)
+- `dine-in-waiter`: Nhân viên tạo đơn tại bàn (yêu cầu: table_id, staff_id)
+- `takeaway-customer`: Khách hàng mang đi (yêu cầu: customer_id)
+- `takeaway-staff`: Nhân viên tạo đơn mang đi (yêu cầu: staff_id)
+
+**Order Status Flow:**
+- `pending` → `preparing` → `ready` → `served` → `completed` (hoặc `cancelled` tại bất kỳ điểm)
+
+**OrderDetail Status:**
+- `pending` → `preparing` → `ready` → `served`
+
+**Calculations:**
+- `line_total = quantity × unit_price`
+- `subtotal = Σ(line_total)`
+- `tax = subtotal × 10%`
+- `total_amount = subtotal + tax`
+
+**Testing:**
+- Integration tests: 26 Order tests + 18 OrderDetail tests (44 total, ✅ 100% passing)
+- Manual testing: [orders.http](src/test/order/orders.http) với 40+ request examples
+
 ---
 
 ##  Notes
@@ -645,10 +702,11 @@ npm run seed
 
 ##  Next Steps
 
-1. Done: Tạo API routes cho Floor, Location, Table
-2.  Tạo API routes cho các entity khác (Order, Invoice, Reservation, etc.)
-3.  Implement authentication & authorization middleware
-4.  Add validation middleware
-5.  Create API documentation (Swagger/OpenAPI)
-6.  Add unit tests
-7.  Implement real-time features (Socket.io)
+1. Done Tạo API routes cho Floor, Location, Table
+2. Done Tạo API routes cho Order & OrderDetail (13 endpoints, 44 integration tests)
+3.  Tạo API routes cho các entity khác (Invoice, Reservation, Promotion, etc.)
+4.  Implement authentication & authorization middleware
+5.  Add validation middleware
+6.  Create API documentation (Swagger/OpenAPI)
+7.  Add more unit tests
+8.  Implement real-time features (Socket.io)

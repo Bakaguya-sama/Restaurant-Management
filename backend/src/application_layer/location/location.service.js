@@ -41,7 +41,7 @@ class LocationService {
     
     const tempEntity = new LocationEntity({
       name: locationData.name,
-      floor_id: locationData.floorId
+      floor_id: locationData.floor_id
     });
 
     const validation = tempEntity.validate();
@@ -50,7 +50,7 @@ class LocationService {
     }
 
     
-    const floor = await Floor.findById(locationData.floorId);
+    const floor = await Floor.findById(locationData.floor_id);
     if (!floor) {
       throw new Error('Floor not found');
     }
@@ -64,7 +64,7 @@ class LocationService {
     
     const dbData = {
       name: locationData.name,
-      floor_id: locationData.floorId,
+      floor_id: locationData.floor_id,
       description: locationData.description || ''
     };
 
@@ -81,7 +81,7 @@ class LocationService {
     
     const validationData = {
       name: updateData.name || existingLocation.name,
-      floor_id: updateData.floorId || existingLocation.floor_id
+      floor_id: updateData.floor_id || existingLocation.floor_id
     };
 
     const tempEntity = new LocationEntity(validationData);
@@ -99,8 +99,8 @@ class LocationService {
     }
 
     
-    if (updateData.floorId && updateData.floorId !== existingLocation.floor_id.toString()) {
-      const floor = await Floor.findById(updateData.floorId);
+    if (updateData.floor_id && updateData.floor_id !== existingLocation.floor_id.toString()) {
+      const floor = await Floor.findById(updateData.floor_id);
       if (!floor) {
         throw new Error('Floor not found');
       }
@@ -109,7 +109,7 @@ class LocationService {
     
     const dbData = {};
     if (updateData.name) dbData.name = updateData.name;
-    if (updateData.floorId) dbData.floor_id = updateData.floorId;
+    if (updateData.floor_id) dbData.floor_id = updateData.floor_id;
     if (updateData.description) dbData.description = updateData.description;
 
     return await this.locationRepository.update(id, dbData);
@@ -130,8 +130,9 @@ class LocationService {
     return await this.locationRepository.delete(id);
   }
 
-  async formatLocationResponse(location, floorName = null) {
-    return location.formatResponse();
+  formatLocationResponse(location) {
+    const entity = new LocationEntity(location);
+    return entity.formatResponse();
   }
 }
 

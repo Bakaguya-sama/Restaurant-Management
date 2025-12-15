@@ -46,9 +46,9 @@ describe('Table Integration Tests', () => {
   describe('POST /api/v1/tables - Create Table', () => {
     it('should create a new table successfully', async () => {
       const newTable = {
-        number: Math.floor(Math.random() * 100),
-        area: locationId,
-        seats: 4,
+        table_number: `T${Date.now()}`,
+        location_id: locationId,
+        capacity: 4,
         description: 'Standard dining table'
       };
 
@@ -59,17 +59,17 @@ describe('Table Integration Tests', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('id');
-      expect(response.body.data.number).toBe(newTable.number.toString());
-      expect(response.body.data.seats).toBe(newTable.seats);
+      expect(response.body.data.table_number).toBe(newTable.table_number);
+      expect(response.body.data.capacity).toBe(newTable.capacity);
       expect(response.body.data.status).toBe('free');
 
       createdTableId = response.body.data.id;
     });
 
-    it('should fail when creating table without number', async () => {
+    it('should fail when creating table without table_number', async () => {
       const invalidTable = {
-        area: locationId,
-        seats: 4
+        location_id: locationId,
+        capacity: 4
       };
 
       const response = await request(app)
@@ -80,10 +80,10 @@ describe('Table Integration Tests', () => {
       expect(response.body.success).toBe(false);
     });
 
-    it('should fail when creating table without area', async () => {
+    it('should fail when creating table without location_id', async () => {
       const invalidTable = {
-        number: Math.floor(Math.random() * 100),
-        seats: 4
+        table_number: Math.floor(Math.random() * 100).toString(),
+        capacity: 4
       };
 
       const response = await request(app)
@@ -94,10 +94,10 @@ describe('Table Integration Tests', () => {
       expect(response.body.success).toBe(false);
     });
 
-    it('should fail when creating table without seats', async () => {
+    it('should fail when creating table without capacity', async () => {
       const invalidTable = {
-        number: 10,
-        area: locationId
+        table_number: Math.floor(Math.random() * 100).toString(),
+        location_id: locationId
       };
 
       const response = await request(app)
@@ -111,9 +111,9 @@ describe('Table Integration Tests', () => {
     it('should fail when creating table with non-existent location', async () => {
       const fakeLocationId = new mongoose.Types.ObjectId();
       const newTable = {
-        number: Math.floor(Math.random() * 100),
-        area: fakeLocationId.toString(),
-        seats: 4
+        table_number: Math.floor(Math.random() * 100).toString(),
+        location_id: fakeLocationId.toString(),
+        capacity: 4
       };
 
       const response = await request(app)
@@ -126,11 +126,11 @@ describe('Table Integration Tests', () => {
     });
 
     it('should fail when creating table with duplicate number', async () => {
-      const tableNumber = Math.floor(Math.random() * 10000);
+      const tableNumber = `DUP${Date.now()}`;
       const firstTable = {
-        number: tableNumber,
-        area: locationId,
-        seats: 4
+        table_number: tableNumber,
+        location_id: locationId,
+        capacity: 4
       };
 
       
@@ -176,7 +176,7 @@ describe('Table Integration Tests', () => {
 
     it('should filter tables by location', async () => {
       const response = await request(app)
-        .get(`/api/v1/tables?location=${locationId}`)
+        .get(`/api/v1/tables?location_id=${locationId}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -203,8 +203,8 @@ describe('Table Integration Tests', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.id).toBe(createdTableId);
-      expect(response.body.data).toHaveProperty('number');
-      expect(response.body.data).toHaveProperty('seats');
+      expect(response.body.data).toHaveProperty('table_number');
+      expect(response.body.data).toHaveProperty('capacity');
       expect(response.body.data).toHaveProperty('status');
     });
 
@@ -263,7 +263,7 @@ describe('Table Integration Tests', () => {
   describe('PUT /api/v1/tables/:id - Update Table', () => {
     beforeEach(async () => {
       const table = new Table({
-        table_number: Math.floor(Math.random() * 10000),
+        table_number: `BEE${Date.now()}`,
         location_id: locationId,
         capacity: 4,
         status: 'free'
@@ -274,9 +274,9 @@ describe('Table Integration Tests', () => {
 
     it('should update table successfully', async () => {
       const updateData = {
-        number: Math.floor(Math.random() * 100),
-        area: locationId,
-        seats: 6
+        table_number: `UPD${Date.now()}`,
+        location_id: locationId,
+        capacity: 6
       };
 
       const response = await request(app)
@@ -285,15 +285,15 @@ describe('Table Integration Tests', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data.seats).toBe(updateData.seats);
+      expect(response.body.data.capacity).toBe(updateData.capacity);
     });
 
     it('should return 404 when updating non-existent table', async () => {
       const fakeId = new mongoose.Types.ObjectId();
       const updateData = {
-        number: 10,
-        area: locationId,
-        seats: 4
+        table_number: "10",
+        location_id: locationId,
+        capacity: 4
       };
 
       const response = await request(app)
@@ -308,7 +308,7 @@ describe('Table Integration Tests', () => {
   describe('PATCH /api/v1/tables/:id/status - Update Table Status', () => {
     beforeEach(async () => {
       const table = new Table({
-        table_number: Math.floor(Math.random() * 10000),
+        table_number: `STS${Date.now()}${Math.random()}`,
         location_id: locationId,
         capacity: 4,
         status: 'free'
@@ -410,7 +410,7 @@ describe('Table Integration Tests', () => {
 
     beforeEach(async () => {
       const table = new Table({
-        table_number: Math.floor(Math.random() * 1000000),
+        table_number: `DEL${Date.now()}${Math.random()}`,
         location_id: locationId,
         capacity: 4,
         status: 'free'

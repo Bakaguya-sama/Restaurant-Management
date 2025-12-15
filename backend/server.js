@@ -5,7 +5,7 @@ const connectDB = require('./config/database');
 
 const inventoryRouter = require('./src/presentation_layer/routes/inventory.routes');
 const suppliersRouter = require('./src/presentation_layer/routes/supplier.routes');
-const menuRouter = require('./src/presentation_layer/routes/menu.routes');
+const dishRouter = require('./src/presentation_layer/routes/dish.routes');
 const floorsRouter = require('./src/presentation_layer/routes/floors.routes');
 const locationsRouter = require('./src/presentation_layer/routes/locations.routes');
 const tablesRouter = require('./src/presentation_layer/routes/tables.routes');
@@ -13,6 +13,7 @@ const staffRouter = require('./src/presentation_layer/routes/staff.routes');
 const customerRouter = require('./src/presentation_layer/routes/customer.routes');
 const promotionRouter = require('./src/presentation_layer/routes/promotion.routes');
 const invoiceRouter = require('./src/presentation_layer/routes/invoice.routes');
+const orderRouter = require('./src/presentation_layer/routes/orders.routes');
 
 // Load environment variables
 dotenv.config();
@@ -30,7 +31,7 @@ app.use(express.urlencoded({ extended: true }));
 // Health check route
 app.get('/', (req, res) => {
   res.json({
-    message: '🍽️ Restaurant Management API Server',
+    message: 'Restaurant Management API Server',
     status: 'Running',
     environment: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString()
@@ -49,7 +50,8 @@ app.get('/api/health', (req, res) => {
 app.use('/api/v1/inventory', inventoryRouter);
 app.use('/api/v1/suppliers', suppliersRouter);
 
-app.use('/api/v1/menu', menuRouter);
+
+app.use('/api/v1/dishes', dishRouter);
 
 app.use('/api/v1/floors', floorsRouter);
 app.use('/api/v1/locations', locationsRouter);
@@ -62,6 +64,8 @@ app.use('/api/v1/customers', customerRouter);
 app.use('/api/v1/promotions', promotionRouter);
 
 app.use('/api/v1/invoices', invoiceRouter);
+
+app.use('/api/v1/orders', orderRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -82,6 +86,7 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 5001;
+let timestamp = new Date().toLocaleString();
 
 // Only listen if not in test environment
 if (process.env.NODE_ENV !== 'test') {
@@ -153,17 +158,57 @@ if (process.env.NODE_ENV !== 'test') {
 ║  • POST   /api/v1/inventory/export                   ║
 ║  • PUT    /api/v1/inventory/:id                      ║
 ║                                                    ║
-║  MENU MANAGEMENT:                                  ║
-║  • GET    /api/v1/menu                              ║
-║  • POST   /api/v1/menu                              ║
-║  • PUT    /api/v1/menu/:id                          ║
-║  • PATCH  /api/v1/menu/:id/availability             ║
-║  • DELETE /api/v1/menu/:id                          ║
+║                                                    ║
+║  DISH MANAGEMENT:                                  ║
+║  • GET    /api/v1/dishes                              ║
+║  • POST   /api/v1/dishes                              ║
+║  • GET    /api/v1/dishes/:id                          ║
+║  • PUT    /api/v1/dishes/:id                          ║
+║  • PATCH  /api/v1/dishes/:id/availability            ║
+║  • DELETE /api/v1/dishes/:id                          ║
+║  • GET    /api/v1/dishes/:id/ingredients              ║
+║  • POST   /api/v1/dishes/:id/ingredients              ║
+║  • PUT    /api/v1/dishes/:id/ingredients/:ingredientId║
+║  • DELETE /api/v1/dishes/:id/ingredients/:ingredientId║
 ║                                                    ║
 ║  SUPPLIERS:                                        ║
 ║  • GET    /api/v1/suppliers                          ║
 ║  • POST   /api/v1/suppliers                          ║
+║                                                    ║
+║  PROMOTION MANAGEMENT:                             ║
+║  • GET    /api/v1/promotions/statistics               ║
+║  • POST   /api/v1/promotions/validate                 ║
+║  • GET    /api/v1/promotions/code/:code               ║
+║  • GET    /api/v1/promotions                          ║
+║  • GET    /api/v1/promotions/:id                      ║
+║  • POST   /api/v1/promotions                          ║
+║  • PUT    /api/v1/promotions/:id                      ║
+║  • DELETE /api/v1/promotions/:id                      ║
+║                                                    ║
+║  INVOICE MANAGEMENT:                               ║
+║  • GET    /api/v1/invoices/statistics                 ║
+║  • GET    /api/v1/invoices                            ║
+║  • GET    /api/v1/invoices/:id                        ║
+║  • POST   /api/v1/invoices                            ║
+║  • PUT    /api/v1/invoices/:id                        ║
+║  • DELETE /api/v1/invoices/:id                        ║
+║                                                    ║
+║  ORDER MANAGEMENT:                                 ║
+║  • GET    /api/v1/orders                              ║
+║  • POST   /api/v1/orders                              ║
+║  • GET    /api/v1/orders/statistics                   ║
+║  • GET    /api/v1/orders/:id                          ║
+║  • GET    /api/v1/orders/table/:tableId               ║
+║  • GET    /api/v1/orders/customer/:customerId         ║
+║  • PUT    /api/v1/orders/:id                          ║
+║  • DELETE /api/v1/orders/:id                          ║
+║  • POST   /api/v1/orders/:id/calculate                ║
+║  • GET    /api/v1/orders/:orderId/details             ║
+║  • POST   /api/v1/orders/:orderId/details             ║
+║  • PUT    /api/v1/orders/:orderId/details/:detailId   ║
+║  • DELETE /api/v1/orders/:orderId/details/:detailId   ║
 ╚═════════════════════════════════════════════════════╝
+Server is up at ${timestamp}
 `);
   });
 }

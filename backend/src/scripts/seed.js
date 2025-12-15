@@ -13,9 +13,9 @@ const {
 async function connectDB() {
   try {
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/restaurant_management');
-    console.log('✅ MongoDB Connected');
+    console.log('MongoDB Connected');
   } catch (error) {
-    console.error('❌ Connection Error:', error.message);
+    console.error('Connection Error:', error.message);
     process.exit(1);
   }
 }
@@ -23,10 +23,10 @@ async function connectDB() {
 async function seedDatabase() {
   try {
     await connectDB();
-    console.log('\n🌱 BẮT ĐẦU SEED DATABASE...\n');
+    console.log('\nBẮT ĐẦU SEED DATABASE...\n');
     
     // XÓA DỮ LIỆU CŨ
-    console.log('🗑️  Xóa dữ liệu cũ...');
+    console.log('Xóa dữ liệu cũ...');
     // Ensure all models are loaded; fail fast if any missing
     const modelsToCheck = {
       Staff, Customer, Floor, Location, Table, Reservation, ReservationDetail, Complaint,
@@ -46,12 +46,12 @@ async function seedDatabase() {
       Promotion.deleteMany({}), Invoice.deleteMany({}), InvoicePromotion.deleteMany({}),
       Violation.deleteMany({}), Rating.deleteMany({}), RatingReply.deleteMany({})
     ]);
-    console.log('✅ Đã xóa dữ liệu cũ\n');
+    console.log('Đã xóa dữ liệu cũ\n');
 
     const password = await bcrypt.hash('password123', 10);
     
     // ==================== 1. STAFF ====================
-    console.log('1/25 👥 Tạo Staff...');
+    console.log('1/24 Tạo Staff...');
     const staffs = await Staff.insertMany([
       { 
         full_name: 'Nguyễn Văn Hùng', 
@@ -132,10 +132,10 @@ async function seedDatabase() {
         is_active: true
       }
     ]);
-    console.log(`   ✅ ${staffs.length} staff\n`);
+    console.log(`   OK ${staffs.length} staff\n`);
 
     // ==================== 2. CUSTOMERS ====================
-    console.log('2/25 🛒 Tạo Customers...');
+    console.log('2/24 Tạo Customers...');
     const customers = await Customer.insertMany([
       { 
         full_name: 'Nguyễn Minh Tuấn', 
@@ -216,17 +216,17 @@ async function seedDatabase() {
         isBanned: false
       }
     ]);
-    console.log(`   ✅ ${customers.length} customers\n`);
+    console.log(`   OK ${customers.length} customers\n`);
 
     // ==================== 3. FLOORS & LOCATIONS ====================
-    console.log('3/25 🏢 Tạo Floors...');
+    console.log('3/24 Tạo Floors...');
     const floors = await Floor.insertMany([
       { floor_name: 'Tầng 1 - Khu trong nhà', floor_number: 1, description: 'Khu vực ăn trong nhà' },
       { floor_name: 'Tầng 2 - VIP', floor_number: 2, description: 'Khu vực VIP riêng tư' }
     ]);
-    console.log(`   ✅ ${floors.length} floors\n`);
+    console.log(`   OK ${floors.length} floors\n`);
 
-    console.log('4/25 📍 Tạo Locations...');
+    console.log('4/24 Tạo Locations...');
     const locations = await Location.insertMany([
       { name: 'Trong nhà phía trước', floor_id: floors[0]._id, description: 'Phía trước cửa chính' },
       { name: 'Trong nhà phía sau', floor_id: floors[0]._id, description: 'Phía sau nhà hàng' },
@@ -234,10 +234,10 @@ async function seedDatabase() {
       { name: 'Phòng VIP A', floor_id: floors[1]._id, description: 'Phòng riêng VIP A' },
       { name: 'Phòng VIP B', floor_id: floors[1]._id, description: 'Phòng riêng VIP B' }
     ]);
-    console.log(`   ✅ ${locations.length} locations\n`);
+    console.log(`   OK ${locations.length} locations\n`);
 
     // ==================== 5. TABLES ====================
-    console.log('5/25 🪑 Tạo Tables...');
+    console.log('5/24 Tạo Tables...');
     const tables = await Table.insertMany([
       { table_number: 'T01', capacity: 2, location_id: locations[0]._id, status: 'free' },
       { table_number: 'T02', capacity: 4, location_id: locations[0]._id, status: 'free' },
@@ -250,10 +250,10 @@ async function seedDatabase() {
       { table_number: 'T09', capacity: 4, location_id: locations[0]._id, status: 'dirty' },
       { table_number: 'T10', capacity: 10, location_id: locations[3]._id, status: 'free' }
     ]);
-    console.log(`   ✅ ${tables.length} tables\n`);
+    console.log(`   OK ${tables.length} tables\n`);
 
     // ==================== 6. RESERVATIONS ====================
-    console.log('6/25 📅 Tạo Reservations...');
+    console.log('6/24 Tạo Reservations...');
     const reservations = await Reservation.insertMany([
       { 
         customer_id: customers[0]._id, 
@@ -287,20 +287,20 @@ async function seedDatabase() {
         status: 'confirmed'
       }
     ]);
-    console.log(`   ✅ ${reservations.length} reservations\n`);
+    console.log(`   OK ${reservations.length} reservations\n`);
 
     // ==================== 7. RESERVATION DETAILS ====================
-    console.log('7/25 📋 Tạo Reservation Details...');
+    console.log('7/24 Tạo Reservation Details...');
     const reservationDetails = await ReservationDetail.insertMany([
       { reservation_id: reservations[0]._id, table_id: tables[4]._id },
       { reservation_id: reservations[1]._id, table_id: tables[7]._id },
       { reservation_id: reservations[2]._id, table_id: tables[3]._id },
       { reservation_id: reservations[3]._id, table_id: tables[0]._id }
     ]);
-    console.log(`   ✅ ${reservationDetails.length} reservation details\n`);
+    console.log(`   OK ${reservationDetails.length} reservation details\n`);
 
     // ==================== 8. COMPLAINTS ====================
-    console.log('8/25 💬 Tạo Complaints...');
+    console.log('8/24 Tạo Complaints...');
     const complaints = await Complaint.insertMany([
       { 
         customer_id: customers[3]._id, 
@@ -332,10 +332,10 @@ async function seedDatabase() {
         resolution: 'Vệ sinh lại ngay và tặng nước uống'
       }
     ]);
-    console.log(`   ✅ ${complaints.length} complaints\n`);
+    console.log(`   OK ${complaints.length} complaints\n`);
 
     // ==================== 9. SUPPLIERS ====================
-    console.log('9/25 🧾 Tạo Suppliers...');
+    console.log('9/24 Tạo Suppliers...');
     const suppliers = await Supplier.insertMany([
       { name: 'Meat Pro', phone_contact: '0906-111-222', address: '123 Meat St, HCMC' },
       { name: 'Seafood Vietnam', phone_contact: '0906-333-444', address: '45 Ocean Ave, Da Nang' },
@@ -344,10 +344,10 @@ async function seedDatabase() {
       { name: 'Phú Quốc', phone_contact: '0906-999-000', address: 'Phu Quoc Island' },
       { name: 'Lộc Trời', phone_contact: '0906-111-333', address: 'Loc Troi HQ' }
     ]);
-    console.log(`   ✅ ${suppliers.length} suppliers\n`);
+    console.log(`   OK ${suppliers.length} suppliers\n`);
 
     // ==================== 10. INGREDIENTS ====================
-    console.log('10/25 🥬 Tạo Ingredients...');
+    console.log('10/24 Tạo Ingredients...');
     const ingredients = await Ingredient.insertMany([
       { 
         name: 'Thịt bò Úc', 
@@ -470,10 +470,10 @@ async function seedDatabase() {
         expiry_status: 'near_expiry'
       }
     ]);
-    console.log(`   ✅ ${ingredients.length} ingredients\n`);
+    console.log(`   OK ${ingredients.length} ingredients\n`);
 
     // ==================== 11. STOCK IMPORTS ====================
-    console.log('11/25 📦 Tạo Stock Imports...');
+    console.log('11/24 Tạo Stock Imports...');
     const stockImports = await StockImport.insertMany([
       { 
         import_number: 'IMP-001', 
@@ -503,10 +503,10 @@ async function seedDatabase() {
         status: 'completed' 
       }
     ]);
-    console.log(`   ✅ ${stockImports.length} stock imports\n`);
+    console.log(`   OK ${stockImports.length} stock imports\n`);
 
     // ==================== 12. STOCK IMPORT DETAILS ====================
-    console.log('12/25 📋 Tạo Stock Import Details...');
+    console.log('12/24 Tạo Stock Import Details...');
     const stockImportDetails = await StockImportDetail.insertMany([
       { import_id: stockImports[0]._id, ingredient_id: ingredients[0]._id, quantity: 50, unit_price: 350000, line_total: 17500000, expiry_date: new Date('2026-01-01') },
       { import_id: stockImports[1]._id, ingredient_id: ingredients[1]._id, quantity: 30, unit_price: 450000, line_total: 13500000, expiry_date: new Date('2025-12-25') },
@@ -515,27 +515,27 @@ async function seedDatabase() {
       { import_id: stockImports[2]._id, ingredient_id: ingredients[4]._id, quantity: 20, unit_price: 30000, line_total: 600000, expiry_date: new Date('2025-12-18') },
       { import_id: stockImports[2]._id, ingredient_id: ingredients[5]._id, quantity: 18, unit_price: 20000, line_total: 360000, expiry_date: new Date('2025-12-16') }
     ]);
-    console.log(`   ✅ ${stockImportDetails.length} import details\n`);
+    console.log(`   OK ${stockImportDetails.length} import details\n`);
 
     // ==================== 13. STOCK EXPORTS ====================
-    console.log('13/25 📤 Tạo Stock Exports...');
+    console.log('13/24 Tạo Stock Exports...');
     const stockExports = await StockExport.insertMany([
       { export_number: 'EXP-001', staff_id: staffs[4]._id, export_date: new Date('2025-12-12'), total_cost: 1750000, notes: 'Xuất cho sự kiện', status: 'completed' },
       { export_number: 'EXP-002', staff_id: staffs[5]._id, export_date: new Date('2025-12-13'), total_cost: 360000, notes: 'Đơn mang đi', status: 'completed' }
     ]);
-    console.log(`   ✅ ${stockExports.length} stock exports\n`);
+    console.log(`   OK ${stockExports.length} stock exports\n`);
 
     // ==================== 14. STOCK EXPORT DETAILS ====================
-    console.log('14/25 📋 Tạo Stock Export Details...');
+    console.log('14/24 Tạo Stock Export Details...');
     const stockExportDetails = await StockExportDetail.insertMany([
       { export_id: stockExports[0]._id, ingredient_id: ingredients[0]._id, quantity: 5, unit_price: 350000, line_total: 1750000 },
       { export_id: stockExports[0]._id, ingredient_id: ingredients[3]._id, quantity: 2, unit_price: 25000, line_total: 50000 },
       { export_id: stockExports[1]._id, ingredient_id: ingredients[6]._id, quantity: 3, unit_price: 120000, line_total: 360000 }
     ]);
-    console.log(`   ✅ ${stockExportDetails.length} stock export details\n`);
+    console.log(`   OK ${stockExportDetails.length} stock export details\n`);
 
-    // ==================== 13. DISHES ====================
-    console.log('15/25 🍽️  Tạo Dishes...');
+    // ==================== 15. DISHES ====================
+    console.log('15/24 Tạo Dishes...');
     const dishes = await Dish.insertMany([
       { name: 'Bò bít tết Úc', description: 'Bò Úc nướng chín vừa, kèm khoai tây chiên vàng, salad rau tươi và sốt tiêu đen', category: 'main_course', price: 350000, is_available: true, image_url: '/images/dishes/beef-steak.jpg' },
       { name: 'Cá hồi nướng chanh bơ', description: 'Cá hồi Na Uy nướng lửa, kèm bơ tươi, chanh và rau thơm', category: 'main_course', price: 420000, is_available: true, image_url: '/images/dishes/salmon.jpg' },
@@ -546,10 +546,10 @@ async function seedDatabase() {
       { name: 'Coca Cola', description: 'Nước ngọt Coca Cola lạnh mát', category: 'beverage', price: 25000, is_available: true, image_url: '/images/dishes/cola.jpg' },
       { name: 'Nước cam vắt tươi', description: 'Nước cam tươi vắt 100%, không đường', category: 'beverage', price: 35000, is_available: true, image_url: '/images/dishes/orange-juice.jpg' }
     ]);
-    console.log(`   ✅ ${dishes.length} dishes\n`);
+    console.log(`   OK ${dishes.length} dishes\n`);
 
-    // ==================== 14. DISH INGREDIENTS ====================
-    console.log('16/25 🥘 Tạo Dish Ingredients...');
+    // ==================== 16. DISH INGREDIENTS ====================
+    console.log('16/24 Tạo Dish Ingredients...');
     const dishIngredients = await DishIngredient.insertMany([
       { dish_id: dishes[0]._id, ingredient_id: ingredients[0]._id, quantity_required: 0.25, unit: 'kg' },
       { dish_id: dishes[0]._id, ingredient_id: ingredients[3]._id, quantity_required: 0.05, unit: 'kg' },
@@ -562,19 +562,19 @@ async function seedDatabase() {
       { dish_id: dishes[4]._id, ingredient_id: ingredients[2]._id, quantity_required: 0.1, unit: 'kg' },
       { dish_id: dishes[4]._id, ingredient_id: ingredients[7]._id, quantity_required: 0.05, unit: 'l' }
     ]);
-    console.log(`   ✅ ${dishIngredients.length} dish-ingredient links\n`);
+    console.log(`   OK ${dishIngredients.length} dish-ingredient links\n`);
 
-    // ==================== 15. PROMOTIONS ====================
-    console.log('15/25 🎁 Tạo Promotions...');
+    // ==================== 17. PROMOTIONS ====================
+    console.log('17/24 Tạo Promotions...');
     const promotions = await Promotion.insertMany([
       { name: 'Giảm 20% Tháng 12', description: 'Giảm 20% toàn bộ hóa đơn trong tháng 12', promotion_type: 'percentage', discount_value: 20, minimum_order_amount: 500000, promo_code: 'DEC20', start_date: new Date('2025-12-01'), end_date: new Date('2025-12-31'), is_active: true, max_uses: 100, current_uses: 5 },
       { name: 'Giảm 150k', description: 'Giảm 150,000đ cho hóa đơn trên 1.5 triệu', promotion_type: 'fixed_amount', discount_value: 150000, minimum_order_amount: 1500000, promo_code: 'SAVE150K', start_date: new Date('2025-12-01'), end_date: new Date('2025-12-31'), is_active: true, max_uses: 50, current_uses: 8 },
       { name: 'Happy Hour 14h-16h', description: 'Giảm 25% từ 14h-16h hàng ngày', promotion_type: 'percentage', discount_value: 25, minimum_order_amount: 200000, promo_code: 'HAPPY25', start_date: new Date('2025-12-01'), end_date: new Date('2025-12-31'), is_active: true, max_uses: -1, current_uses: 25 }
     ]);
-    console.log(`   ✅ ${promotions.length} promotions\n`);
+    console.log(`   OK ${promotions.length} promotions\n`);
 
-    // ==================== 16. ORDERS ====================
-    console.log('16/25 📝 Tạo Orders...');
+    // ==================== 18. ORDERS ====================
+    console.log('18/24 Tạo Orders...');
     const orders = await Order.insertMany([
       { 
         order_number: 'ORD-001', 
@@ -627,10 +627,10 @@ async function seedDatabase() {
         notes: 'Đóng gói chắc chắn'
       }
     ]);
-    console.log(`   ✅ ${orders.length} orders\n`);
+    console.log(`   OK ${orders.length} orders\n`);
 
-    // ==================== 17. ORDER DETAILS ====================
-    console.log('17/25 🍴 Tạo Order Details...');
+    // ==================== 19. ORDER DETAILS ====================
+    console.log('19/24 Tạo Order Details...');
     const orderDetails = await OrderDetail.insertMany([
       { order_id: orders[0]._id, dish_id: dishes[0]._id, quantity: 1, unit_price: 350000, line_total: 350000, status: 'served' },
       { order_id: orders[0]._id, dish_id: dishes[1]._id, quantity: 1, unit_price: 420000, line_total: 420000, status: 'served' },
@@ -643,10 +643,10 @@ async function seedDatabase() {
       { order_id: orders[3]._id, dish_id: dishes[2]._id, quantity: 1, unit_price: 280000, line_total: 280000, status: 'ready' },
       { order_id: orders[3]._id, dish_id: dishes[6]._id, quantity: 1, unit_price: 25000, line_total: 25000, status: 'ready' }
     ]);
-    console.log(`   ✅ ${orderDetails.length} order details\n`);
+    console.log(`   OK ${orderDetails.length} order details\n`);
 
-    // ==================== 18. INVOICES ====================
-    console.log('18/25 🧾 Tạo Invoices...');
+    // ==================== 20. INVOICES ====================
+    console.log('20/24 Tạo Invoices...');
     const invoices = await Invoice.insertMany([
       { 
         invoice_number: 'INV-001', 
@@ -689,17 +689,17 @@ async function seedDatabase() {
         paid_at: new Date('2025-12-11')
       }
     ]);
-    console.log(`   ✅ ${invoices.length} invoices\n`);
+    console.log(`   OK ${invoices.length} invoices\n`);
 
-    // ==================== 19. INVOICE PROMOTIONS ====================
-    console.log('19/25 🏷️  Tạo Invoice Promotions...');
+    // ==================== 21. INVOICE PROMOTIONS ====================
+    console.log('21/24 Tạo Invoice Promotions...');
     const invoicePromotions = await InvoicePromotion.insertMany([
       { invoice_id: invoices[0]._id, promotion_id: promotions[0]._id, discount_applied: 170000 }
     ]);
-    console.log(`   ✅ ${invoicePromotions.length} invoice promotions\n`);
+    console.log(`   OK ${invoicePromotions.length} invoice promotions\n`);
 
-    // ==================== 20. VIOLATIONS ====================
-    console.log('20/25 ⚠️  Tạo Violations...');
+    // ==================== 22. VIOLATIONS ====================
+    console.log('22/24 Tạo Violations...');
     const violations = await Violation.insertMany([
       { 
         customer_id: customers[1]._id, 
@@ -714,37 +714,39 @@ async function seedDatabase() {
         violation_type: 'no_show'
       }
     ]);
-    console.log(`   ✅ ${violations.length} violations\n`);
+    console.log(`   OK ${violations.length} violations\n`);
 
-    // ==================== 21. RATINGS & REPLIES ====================
-    console.log('21/25 ⭐ Tạo Ratings và Replies...');
+    // ==================== 23. RATINGS & REPLIES ====================
+    console.log('23/24 Tạo Ratings...');
     const ratings = await Rating.insertMany([
       { 
         customer_id: customers[0]._id, 
         description: 'Thức ăn tuyệt vời, phục vụ rất tốt, sẽ quay lại!', 
         rating_date: new Date('2025-12-11'),
-        score: 5
+        //score: 5
       },
       { 
         customer_id: customers[1]._id, 
         description: 'Thức ăn ngon nhưng chờ đợi lâu, cải thiện tốc độ', 
         rating_date: new Date('2025-12-10'),
-        score: 3
+        //score: 3
       },
       { 
         customer_id: customers[2]._id, 
         description: 'Bình thường, không có gì đặc biệt, giá hơi cao', 
         rating_date: new Date('2025-12-09'),
-        score: 3
+        //score: 3
       },
       { 
         customer_id: customers[3]._id, 
         description: 'Rất tốt, được xử lý khiếu nại một cách chuyên nghiệp!', 
         rating_date: new Date('2025-12-08'),
-        score: 4
+        //score: 4
       }
     ]);
+    console.log(`   OK ${ratings.length} ratings\n`);
 
+    console.log('24/24 Tạo Replies...');
     const ratingReplies = await RatingReply.insertMany([
       { 
         rating_id: ratings[0]._id, 
@@ -759,13 +761,13 @@ async function seedDatabase() {
         reply_date: new Date('2025-12-11')
       }
     ]);
-    console.log(`   ✅ ${ratings.length} ratings + ${ratingReplies.length} replies\n`);
+    console.log(`   OK ${ratingReplies.length} replies\n`);
 
     // TỔNG KẾT
     console.log('\n========================================');
-    console.log('✨ SEED DATABASE HOÀN TẤT!');
+    console.log('SEED DATABASE HOÀN TẤT!');
     console.log('========================================');
-    console.log('📊 TỔNG KẾT DỮ LIỆU:');
+    console.log('TỔNG KẾT DỮ LIỆU:');
     console.log(`   1. Staff: ${staffs.length}`);
     console.log(`   2. Customers: ${customers.length}`);
     console.log(`   3. Floors: ${floors.length}`);
@@ -789,8 +791,9 @@ async function seedDatabase() {
     console.log(`   21. Invoice Promotions: ${invoicePromotions.length}`);
     console.log(`   22. Violations: ${violations.length}`);
     console.log(`   23. Ratings: ${ratings.length}`);
+    console.log(`   24. Rating Replies: ${ratingReplies.length}`);
     console.log('========================================');
-    console.log('🔑 Test Accounts:');
+    console.log('Test Accounts:');
     console.log('   Waiter: hung.waiter@restaurant.vn / password123');
     console.log('   Cashier: nam.cashier@restaurant.vn / password123');
     console.log('   Manager: minh.manager@restaurant.vn / password123');
@@ -804,7 +807,7 @@ async function seedDatabase() {
     process.exit(1);
   } finally {
     await mongoose.connection.close();
-    console.log('👋 Đã đóng kết nối database');
+    console.log('Đã đóng kết nối database');
     process.exit(0);
   }
 }

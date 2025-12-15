@@ -1,8 +1,8 @@
 class FloorEntity {
   constructor(data) {
     this.id = data._id || data.id;
-    this.floor_name = data.floor_name || data.name;
-    this.floor_number = data.floor_number || data.level;
+    this.floor_name = data.floor_name;
+    this.floor_number = data.floor_number;
     this.description = data.description;
     this.created_at = data.created_at;
   }
@@ -11,15 +11,15 @@ class FloorEntity {
     const errors = [];
 
     if (!this.floor_name || this.floor_name.toString().trim().length === 0) {
-      errors.push('Floor name is required');
+      errors.push('floor_name is required');
     }
 
     if (this.floor_number === undefined || this.floor_number === null) {
-      errors.push('Floor level is required');
+      errors.push('floor_number is required');
     }
 
     if (typeof this.floor_number !== 'number' || this.floor_number < 0) {
-      errors.push('Floor level must be a non-negative number');
+      errors.push('floor_number must be a non-negative number');
     }
 
     return {
@@ -31,9 +31,10 @@ class FloorEntity {
   formatResponse() {
     return {
       id: this.id,
-      name: this.floor_name,
-      level: this.floor_number,
-      description: this.description
+      floor_name: this.floor_name,
+      floor_number: this.floor_number,
+      description: this.description,
+      created_at: this.created_at
     };
   }
 }

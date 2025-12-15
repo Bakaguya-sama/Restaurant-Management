@@ -13,7 +13,7 @@ GET {{baseUrl}}/tables?status=free
 
 
 ### GET /tables - Lọc theo location
-GET {{baseUrl}}/tables?area=674da30bb19ecab3d0c9f0c2
+GET {{baseUrl}}/tables?location_id=674da30bb19ecab3d0c9f0c2
 
 
 ### GET /tables/status/summary - Lấy thống kê trạng thái bàn
@@ -25,9 +25,9 @@ POST {{baseUrl}}/tables
 Content-Type: application/json
 
 {
-  "number": 101,
-  "seats": 4,
-  "area": "674da30bb19ecab3d0c9f0c2"
+  "table_number": "101",
+  "capacity": 4,
+  "location_id": "674da30bb19ecab3d0c9f0c2"
 }
 
 
@@ -36,9 +36,9 @@ POST {{baseUrl}}/tables
 Content-Type: application/json
 
 {
-  "number": 102,
-  "seats": 6,
-  "area": "674da30bb19ecab3d0c9f0c2"
+  "table_number": "102",
+  "capacity": 6,
+  "location_id": "674da30bb19ecab3d0c9f0c2"
 }
 
 
@@ -47,39 +47,39 @@ POST {{baseUrl}}/tables
 Content-Type: application/json
 
 {
-  "number": 201,
-  "seats": 2,
-  "area": "674da30bb19ecab3d0c9f0c3"
+  "table_number": "201",
+  "capacity": 2,
+  "location_id": "674da30bb19ecab3d0c9f0c3"
 }
 
 
-### POST /tables - FAIL - Missing number field
+### POST /tables - FAIL - Missing table_number field
 POST {{baseUrl}}/tables
 Content-Type: application/json
 
 {
-  "seats": 4,
-  "area": "674da30bb19ecab3d0c9f0c2"
+  "capacity": 4,
+  "location_id": "674da30bb19ecab3d0c9f0c2"
 }
 
 
-### POST /tables - FAIL - Missing seats field
+### POST /tables - FAIL - Missing capacity field
 POST {{baseUrl}}/tables
 Content-Type: application/json
 
 {
-  "number": 103,
-  "area": "674da30bb19ecab3d0c9f0c2"
+  "table_number": "103",
+  "location_id": "674da30bb19ecab3d0c9f0c2"
 }
 
 
-### POST /tables - FAIL - Missing area field
+### POST /tables - FAIL - Missing location_id field
 POST {{baseUrl}}/tables
 Content-Type: application/json
 
 {
-  "number": 104,
-  "seats": 4
+  "table_number": "104",
+  "capacity": 4
 }
 
 
@@ -88,9 +88,9 @@ POST {{baseUrl}}/tables
 Content-Type: application/json
 
 {
-  "number": 105,
-  "seats": 4,
-  "area": "000000000000000000000000"
+  "table_number": "105",
+  "capacity": 4,
+  "location_id": "000000000000000000000000"
 }
 
 
@@ -99,9 +99,9 @@ POST {{baseUrl}}/tables
 Content-Type: application/json
 
 {
-  "number": 101,
-  "seats": 8,
-  "area": "674da30bb19ecab3d0c9f0c2"
+  "table_number": "101",
+  "capacity": 8,
+  "location_id": "674da30bb19ecab3d0c9f0c2"
 }
 
 
@@ -142,19 +142,19 @@ PUT {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3
 Content-Type: application/json
 
 {
-  "number": 101,
-  "seats": 5,
-  "area": "674da30bb19ecab3d0c9f0c2"
+  "table_number": "101",
+  "capacity": 5,
+  "location_id": "674da30bb19ecab3d0c9f0c2"
 }
 
 
-### PUT /tables/{id} - FAIL - Update without number
+### PUT /tables/{id} - FAIL - Update without table_number
 PUT {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3
 Content-Type: application/json
 
 {
-  "seats": 4,
-  "area": "674da30bb19ecab3d0c9f0c2"
+  "capacity": 4,
+  "location_id": "674da30bb19ecab3d0c9f0c2"
 }
 
 
@@ -163,9 +163,9 @@ PUT {{baseUrl}}/tables/000000000000000000000000
 Content-Type: application/json
 
 {
-  "number": 999,
-  "seats": 10,
-  "area": "674da30bb19ecab3d0c9f0c2"
+  "table_number": "999",
+  "capacity": 10,
+  "location_id": "674da30bb19ecab3d0c9f0c2"
 }
 
 

@@ -1,0 +1,361 @@
+@baseUrl = http://localhost:5001/api/v1
+
+# ======================
+# DISH API TESTS
+# ======================
+
+### GET /dishes - Lấy tất cả các món ăn
+GET {{baseUrl}}/dishes
+
+
+### GET /dishes - Lọc theo category
+GET {{baseUrl}}/dishes?category=main_course
+
+
+### GET /dishes - Lọc theo trạng thái có sẵn
+GET {{baseUrl}}/dishes?is_available=true
+
+
+### GET /dishes - Tìm kiếm theo tên
+GET {{baseUrl}}/dishes?search=chicken
+
+
+### POST /dishes - SUCCESS - Tạo món ăn mới
+POST {{baseUrl}}/dishes
+Content-Type: application/json
+
+{
+  "name": "Grilled Salmon",
+  "description": "Fresh salmon fillet grilled with lemon butter sauce",
+  "category": "main_course",
+  "price": 450000,
+  "image_url": "https://example.com/salmon.jpg"
+}
+
+
+### POST /dishes - SUCCESS - Tạo món ăn thứ 2
+POST {{baseUrl}}/dishes
+Content-Type: application/json
+
+{
+  "name": "Caesar Salad",
+  "description": "Classic Caesar salad with parmesan and croutons",
+  "category": "appetizer",
+  "price": 150000,
+  "image_url": "https://example.com/caesar.jpg"
+}
+
+
+### POST /dishes - SUCCESS - Tạo dessert
+POST {{baseUrl}}/dishes
+Content-Type: application/json
+
+{
+  "name": "Chocolate Cake",
+  "description": "Rich dark chocolate cake with ganache",
+  "category": "dessert",
+  "price": 120000,
+  "image_url": "https://example.com/cake.jpg"
+}
+
+
+### POST /dishes - SUCCESS - Tạo beverage
+POST {{baseUrl}}/dishes
+Content-Type: application/json
+
+{
+  "name": "Iced Tea",
+  "description": "Refreshing iced tea with lemon",
+  "category": "beverage",
+  "price": 50000,
+  "image_url": "https://example.com/tea.jpg"
+}
+
+
+### POST /dishes - FAIL - Missing name
+POST {{baseUrl}}/dishes
+Content-Type: application/json
+
+{
+  "description": "Missing name",
+  "category": "main_course",
+  "price": 300000
+}
+
+
+### POST /dishes - FAIL - Missing category
+POST {{baseUrl}}/dishes
+Content-Type: application/json
+
+{
+  "name": "Steak",
+  "description": "Grilled steak",
+  "price": 400000
+}
+
+
+### POST /dishes - FAIL - Missing price
+POST {{baseUrl}}/dishes
+Content-Type: application/json
+
+{
+  "name": "Pasta",
+  "description": "Italian pasta carbonara",
+  "category": "main_course"
+}
+
+
+### POST /dishes - FAIL - Invalid category
+POST {{baseUrl}}/dishes
+Content-Type: application/json
+
+{
+  "name": "Unknown Dish",
+  "description": "Unknown",
+  "category": "invalid_category",
+  "price": 250000
+}
+
+
+### POST /dishes - FAIL - Duplicate name
+POST {{baseUrl}}/dishes
+Content-Type: application/json
+
+{
+  "name": "Grilled Salmon",
+  "description": "Another salmon dish",
+  "category": "main_course",
+  "price": 500000
+}
+
+
+### GET /dishes - Verify multiple dishes created
+GET {{baseUrl}}/dishes
+
+
+### GET /dishes/{id} - Get dish by ID
+GET {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d1
+
+
+### GET /dishes/{id} - FAIL - Non-existent dish
+GET {{baseUrl}}/dishes/000000000000000000000000
+
+
+### PUT /dishes/{id} - SUCCESS - Update dish
+PUT {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d1
+Content-Type: application/json
+
+{
+  "name": "Grilled Salmon Premium",
+  "description": "Premium fresh salmon fillet grilled with imported lemon butter",
+  "category": "main_course",
+  "price": 550000,
+  "image_url": "https://example.com/salmon-premium.jpg"
+}
+
+
+### PUT /dishes/{id} - FAIL - Missing required fields
+PUT {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d1
+Content-Type: application/json
+
+{
+  "name": "Salmon"
+}
+
+
+### PUT /dishes/{id} - FAIL - Non-existent dish
+PUT {{baseUrl}}/dishes/000000000000000000000000
+Content-Type: application/json
+
+{
+  "name": "Non-existent Dish",
+  "category": "main_course",
+  "price": 300000
+}
+
+
+### PATCH /dishes/{id}/availability - Make unavailable
+PATCH {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d1/availability
+Content-Type: application/json
+
+{
+  "is_available": false,
+  "reason": "Out of stock"
+}
+
+
+### PATCH /dishes/{id}/availability - Make available again
+PATCH {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d1/availability
+Content-Type: application/json
+
+{
+  "is_available": true
+}
+
+
+### PATCH /dishes/{id}/availability - FAIL - Missing reason
+PATCH {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d1/availability
+Content-Type: application/json
+
+{
+  "is_available": false
+}
+
+
+### DELETE /dishes/{id} - SUCCESS - Delete dish
+DELETE {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d1
+
+
+### DELETE /dishes/{id} - FAIL - Non-existent dish
+DELETE {{baseUrl}}/dishes/000000000000000000000000
+
+
+### GET /dishes - Verify remaining dishes
+GET {{baseUrl}}/dishes
+
+
+# ======================
+# DISH INGREDIENT API TESTS
+# ======================
+
+### GET /dishes/{id}/ingredients - Get all ingredients of a dish
+GET {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d2/ingredients
+
+
+### POST /dishes/{id}/ingredients - SUCCESS - Add ingredient to dish
+POST {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d2/ingredients
+Content-Type: application/json
+
+{
+  "ingredient_id": "693e93aed977b610436eb292",
+  "quantity_required": 200,
+  "unit": "g"
+}
+
+
+### POST /dishes/{id}/ingredients - SUCCESS - Add another ingredient
+POST {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d2/ingredients
+Content-Type: application/json
+
+{
+  "ingredient_id": "693e93aed977b610436eb293",
+  "quantity_required": 100,
+  "unit": "ml"
+}
+
+
+### POST /dishes/{id}/ingredients - FAIL - Missing ingredient_id
+POST {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d2/ingredients
+Content-Type: application/json
+
+{
+  "quantity_required": 200,
+  "unit": "g"
+}
+
+
+### POST /dishes/{id}/ingredients - FAIL - Missing quantity_required
+POST {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d2/ingredients
+Content-Type: application/json
+
+{
+  "ingredient_id": "693e93aed977b610436eb292",
+  "unit": "g"
+}
+
+
+### POST /dishes/{id}/ingredients - FAIL - Missing unit
+POST {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d2/ingredients
+Content-Type: application/json
+
+{
+  "ingredient_id": "693e93aed977b610436eb292",
+  "quantity_required": 200
+}
+
+
+### POST /dishes/{id}/ingredients - FAIL - Non-existent dish
+POST {{baseUrl}}/dishes/000000000000000000000000/ingredients
+Content-Type: application/json
+
+{
+  "ingredient_id": "693e93aed977b610436eb292",
+  "quantity_required": 200,
+  "unit": "g"
+}
+
+
+### POST /dishes/{id}/ingredients - FAIL - Non-existent ingredient
+POST {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d2/ingredients
+Content-Type: application/json
+
+{
+  "ingredient_id": "000000000000000000000000",
+  "quantity_required": 200,
+  "unit": "g"
+}
+
+
+### POST /dishes/{id}/ingredients - FAIL - Duplicate ingredient
+POST {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d2/ingredients
+Content-Type: application/json
+
+{
+  "ingredient_id": "693e93aed977b610436eb292",
+  "quantity_required": 300,
+  "unit": "g"
+}
+
+
+### GET /dishes/{id}/ingredients - Verify ingredients added
+GET {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d2/ingredients
+
+
+### PUT /dishes/{id}/ingredients/{ingredientId} - Update ingredient quantity
+PUT {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d2/ingredients/693e93aed977b610436eb292
+Content-Type: application/json
+
+{
+  "quantity_required": 250,
+  "unit": "g"
+}
+
+
+### PUT /dishes/{id}/ingredients/{ingredientId} - FAIL - Non-existent dish
+PUT {{baseUrl}}/dishes/000000000000000000000000/ingredients/693e93aed977b610436eb292
+Content-Type: application/json
+
+{
+  "quantity_required": 200,
+  "unit": "g"
+}
+
+
+### PUT /dishes/{id}/ingredients/{ingredientId} - FAIL - Ingredient not in dish
+PUT {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d2/ingredients/000000000000000000000000
+Content-Type: application/json
+
+{
+  "quantity_required": 200,
+  "unit": "g"
+}
+
+
+### DELETE /dishes/{id}/ingredients/{ingredientId} - Remove ingredient from dish
+DELETE {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d2/ingredients/693e93aed977b610436eb292
+
+
+### DELETE /dishes/{id}/ingredients/{ingredientId} - FAIL - Non-existent dish
+DELETE {{baseUrl}}/dishes/000000000000000000000000/ingredients/693e93aed977b610436eb292
+
+
+### DELETE /dishes/{id}/ingredients/{ingredientId} - FAIL - Ingredient not in dish
+DELETE {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d2/ingredients/000000000000000000000000
+
+
+### GET /dishes/{id}/ingredients - Verify ingredient removed
+GET {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d2/ingredients
+
+
+### GET /dishes - Final verification
+GET {{baseUrl}}/dishes
