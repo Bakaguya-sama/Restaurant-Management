@@ -3,7 +3,6 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/database');
 
-// Import routes
 const inventoryRouter = require('./src/presentation_layer/routes/inventory.routes');
 const suppliersRouter = require('./src/presentation_layer/routes/supplier.routes');
 const menuRouter = require('./src/presentation_layer/routes/menu.routes');
@@ -12,6 +11,8 @@ const locationsRouter = require('./src/presentation_layer/routes/locations.route
 const tablesRouter = require('./src/presentation_layer/routes/tables.routes');
 const staffRouter = require('./src/presentation_layer/routes/staff.routes');
 const customerRouter = require('./src/presentation_layer/routes/customer.routes');
+const promotionRouter = require('./src/presentation_layer/routes/promotion.routes');
+const invoiceRouter = require('./src/presentation_layer/routes/invoice.routes');
 
 // Load environment variables
 dotenv.config();
@@ -45,18 +46,18 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Inventory & Suppliers
 app.use('/api/v1/inventory', inventoryRouter);
 app.use('/api/v1/suppliers', suppliersRouter);
 
-// Menu management
 app.use('/api/v1/menu', menuRouter);
 
-// Staff Routes
 app.use('/api/v1/staff', staffRouter);
 
-// Customer Routes
 app.use('/api/v1/customers', customerRouter);
+
+app.use('/api/v1/promotions', promotionRouter);
+
+app.use('/api/v1/invoices', invoiceRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
