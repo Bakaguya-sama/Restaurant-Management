@@ -723,25 +723,25 @@ async function seedDatabase() {
         customer_id: customers[0]._id, 
         description: 'Thức ăn tuyệt vời, phục vụ rất tốt, sẽ quay lại!', 
         rating_date: new Date('2025-12-11'),
-        score: 5
+        //score: 5
       },
       { 
         customer_id: customers[1]._id, 
         description: 'Thức ăn ngon nhưng chờ đợi lâu, cải thiện tốc độ', 
         rating_date: new Date('2025-12-10'),
-        score: 3
+        //score: 3
       },
       { 
         customer_id: customers[2]._id, 
         description: 'Bình thường, không có gì đặc biệt, giá hơi cao', 
         rating_date: new Date('2025-12-09'),
-        score: 3
+        //score: 3
       },
       { 
         customer_id: customers[3]._id, 
         description: 'Rất tốt, được xử lý khiếu nại một cách chuyên nghiệp!', 
         rating_date: new Date('2025-12-08'),
-        score: 4
+        //score: 4
       }
     ]);
 
