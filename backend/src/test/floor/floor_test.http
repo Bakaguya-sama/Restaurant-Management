@@ -1,0 +1,128 @@
+@baseUrl = http://localhost:5001/api/v1
+
+# ======================
+# FLOOR API TESTS
+# ======================
+
+### GET /floors - Lấy tất cả các tầng
+GET {{baseUrl}}/floors
+
+
+### POST /floors - SUCCESS - Tạo tầng mới
+POST {{baseUrl}}/floors
+Content-Type: application/json
+
+{
+  "name": "Ground Floor",
+  "level": 0,
+  "description": "Main entrance and dining area"
+}
+
+
+### POST /floors - SUCCESS - Tạo tầng thứ 2
+POST {{baseUrl}}/floors
+Content-Type: application/json
+
+{
+  "name": "Second Floor",
+  "level": 1,
+  "description": "Upper dining area with garden view"
+}
+
+
+### POST /floors - FAIL - Missing name field
+POST {{baseUrl}}/floors
+Content-Type: application/json
+
+{
+  "level": 2,
+  "description": "Missing name"
+}
+
+
+### POST /floors - FAIL - Missing level field
+POST {{baseUrl}}/floors
+Content-Type: application/json
+
+{
+  "name": "Third Floor",
+  "description": "Missing level"
+}
+
+
+### POST /floors - FAIL - Duplicate floor name
+POST {{baseUrl}}/floors
+Content-Type: application/json
+
+{
+  "name": "Ground Floor",
+  "level": 3,
+  "description": "Trying to create duplicate name"
+}
+
+
+### POST /floors - FAIL - Duplicate floor level
+POST {{baseUrl}}/floors
+Content-Type: application/json
+
+{
+  "name": "Basement Level",
+  "level": 0,
+  "description": "Trying to create duplicate level"
+}
+
+
+### GET /floors - Verify multiple floors created
+GET {{baseUrl}}/floors
+
+
+### GET /floors/{id} - Get floor by ID (use existing floor ID)
+GET {{baseUrl}}/floors/674da30bb19ecab3d0c9f0c1
+
+
+### GET /floors/{id} - FAIL - Non-existent floor ID
+GET {{baseUrl}}/floors/000000000000000000000000
+
+
+### PUT /floors/{id} - SUCCESS - Update floor details
+PUT {{baseUrl}}/floors/674da30bb19ecab3d0c9f0c1
+Content-Type: application/json
+
+{
+  "name": "Ground Floor - Updated",
+  "level": 0,
+  "description": "Updated main entrance and dining area"
+}
+
+
+### PUT /floors/{id} - FAIL - Update without name
+PUT {{baseUrl}}/floors/674da30bb19ecab3d0c9f0c1
+Content-Type: application/json
+
+{
+  "level": 1,
+  "description": "Missing name field"
+}
+
+
+### PUT /floors/{id} - FAIL - Non-existent floor ID
+PUT {{baseUrl}}/floors/000000000000000000000000
+Content-Type: application/json
+
+{
+  "name": "Non-existent Floor",
+  "level": 99,
+  "description": "Trying to update non-existent floor"
+}
+
+
+### DELETE /floors/{id} - SUCCESS - Delete floor
+DELETE {{baseUrl}}/floors/674da30bb19ecab3d0c9f0c1
+
+
+### DELETE /floors/{id} - FAIL - Non-existent floor ID
+DELETE {{baseUrl}}/floors/000000000000000000000000
+
+
+### GET /floors - Verify remaining floors
+GET {{baseUrl}}/floors
