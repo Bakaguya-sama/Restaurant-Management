@@ -1,9 +1,9 @@
 class TableEntity {
   constructor(data) {
     this.id = data._id || data.id;
-    this.table_number = data.table_number || data.number;
-    this.capacity = data.capacity || data.seats;
-    this.location_id = data.location_id || data.area;
+    this.table_number = data.table_number;
+    this.capacity = data.capacity;
+    this.location_id = data.location_id;
     this.status = data.status || 'free';
     this.brokenReason = data.brokenReason;
     this.created_at = data.created_at;
@@ -13,11 +13,11 @@ class TableEntity {
     const errors = [];
 
     if (!this.table_number || this.table_number.toString().trim().length === 0) {
-      errors.push('Table number is required');
+      errors.push('table_number is required');
     }
 
     if (!this.capacity || this.capacity <= 0) {
-      errors.push('Capacity must be greater than 0');
+      errors.push('capacity must be greater than 0');
     }
 
     const validStatuses = ['free', 'occupied', 'reserved', 'dirty', 'broken'];
@@ -39,24 +39,14 @@ class TableEntity {
     return this.status === 'broken';
   }
 
-//   canChangeStatus(newStatus) {
-//     const validTransitions = {
-//       'free': ['occupied', 'reserved', 'dirty'],
-//       'occupied': ['free', 'reserved', 'dirty', 'broken'],
-//       'reserved': ['free', 'occupied', 'dirty', 'broken'],
-//       'dirty': ['free', 'broken'],
-//       'broken': ['dirty']
-//     };
-
-//     return validTransitions[this.status]?.includes(newStatus) || false;
-//   }
-
   formatResponse() {
     return {
       id: this.id,
-      number: this.table_number,
-      seats: this.capacity,
+      table_number: this.table_number,
+      capacity: this.capacity,
+      location_id: this.location_id,
       status: this.status,
+      created_at: this.created_at,
       ...(this.brokenReason && { brokenReason: this.brokenReason })
     };
   }

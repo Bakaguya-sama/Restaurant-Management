@@ -1,0 +1,151 @@
+@baseUrl = http://localhost:5001/api/v1
+
+# ======================
+# LOCATION API TESTS
+# ======================
+
+### GET /locations - Lấy tất cả các khu vực
+GET {{baseUrl}}/locations
+
+
+### GET /locations - Lọc theo floor
+GET {{baseUrl}}/locations?floor=674da30bb19ecab3d0c9f0c1
+
+
+### POST /locations - SUCCESS - Tạo khu vực mới
+POST {{baseUrl}}/locations
+Content-Type: application/json
+
+{
+  "name": "Section A",
+  "floor_id": "674da30bb19ecab3d0c9f0c1",
+  "description": "VIP section near window"
+}
+
+
+### POST /locations - SUCCESS - Tạo khu vực thứ 2
+POST {{baseUrl}}/locations
+Content-Type: application/json
+
+{
+  "name": "Section B",
+  "floor_id": "674da30bb19ecab3d0c9f0c1",
+  "description": "Regular dining area"
+}
+
+
+### POST /locations - FAIL - Missing name field
+POST {{baseUrl}}/locations
+Content-Type: application/json
+
+{
+  "floor_id": "674da30bb19ecab3d0c9f0c1",
+  "description": "Missing name"
+}
+
+
+### POST /locations - FAIL - Missing floor_id field
+POST {{baseUrl}}/locations
+Content-Type: application/json
+
+{
+  "name": "Section C",
+  "description": "Missing floor_id"
+}
+
+
+### POST /locations - FAIL - Non-existent floor ID
+POST {{baseUrl}}/locations
+Content-Type: application/json
+
+{
+  "name": "Invalid Floor Location",
+  "floor_id": "000000000000000000000000",
+  "description": "Trying to create with non-existent floor"
+}
+
+
+### POST /locations - FAIL - Duplicate location name
+POST {{baseUrl}}/locations
+Content-Type: application/json
+
+{
+  "name": "Section A",
+  "floor_id": "674da30bb19ecab3d0c9f0c1",
+  "description": "Trying to create duplicate name"
+}
+
+
+### GET /locations - Verify multiple locations created
+GET {{baseUrl}}/locations
+
+
+### GET /locations/{id} - Get location by ID (use existing location ID)
+GET {{baseUrl}}/locations/674da30bb19ecab3d0c9f0c2
+
+
+### GET /locations/{id} - FAIL - Non-existent location ID
+GET {{baseUrl}}/locations/000000000000000000000000
+
+
+### GET /locations/floor/{floorId} - Get locations by floor ID
+GET {{baseUrl}}/locations/floor/674da30bb19ecab3d0c9f0c1
+
+
+### GET /locations/floor/{floorId} - FAIL - Non-existent floor
+GET {{baseUrl}}/locations/floor/000000000000000000000000
+
+
+### PUT /locations/{id} - SUCCESS - Update location details
+PUT {{baseUrl}}/locations/674da30bb19ecab3d0c9f0c2
+Content-Type: application/json
+
+{
+  "name": "Section A - Updated",
+  "floor_id": "674da30bb19ecab3d0c9f0c1",
+  "description": "Updated VIP section with better view"
+}
+
+
+### PUT /locations/{id} - FAIL - Update without name
+PUT {{baseUrl}}/locations/674da30bb19ecab3d0c9f0c2
+Content-Type: application/json
+
+{
+  "floor_id": "674da30bb19ecab3d0c9f0c1",
+  "description": "Missing name field"
+}
+
+
+### PUT /locations/{id} - FAIL - Update with non-existent floor
+PUT {{baseUrl}}/locations/674da30bb19ecab3d0c9f0c2
+Content-Type: application/json
+
+{
+  "name": "Section A",
+  "floor_id": "000000000000000000000000",
+  "description": "Trying to update with non-existent floor"
+}
+
+
+### PUT /locations/{id} - FAIL - Non-existent location ID
+PUT {{baseUrl}}/locations/000000000000000000000000
+Content-Type: application/json
+
+{
+  "name": "Non-existent Location",
+  "floor_id": "674da30bb19ecab3d0c9f0c1",
+  "description": "Trying to update non-existent location"
+}
+
+
+### DELETE /locations/{id} - SUCCESS - Delete location
+DELETE {{baseUrl}}/locations/674da30bb19ecab3d0c9f0c2
+
+
+### DELETE /locations/{id} - FAIL - Non-existent location ID
+DELETE {{baseUrl}}/locations/000000000000000000000000
+
+
+### GET /locations - Verify remaining locations
+GET {{baseUrl}}/locations

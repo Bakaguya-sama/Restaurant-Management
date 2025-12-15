@@ -21,8 +21,8 @@ describe('Floor Integration Tests', () => {
   describe('POST /api/v1/floors - Create Floor', () => {
     it('should create a new floor successfully', async () => {
       const newFloor = {
-        name: `Ground Floor ${Date.now()}`,
-        level: Math.floor(Math.random() * 100000),
+        floor_name: `Ground Floor ${Date.now()}`,
+        floor_number: Math.floor(Math.random() * 100000),
         description: 'Main entrance and dining area'
       };
 
@@ -33,16 +33,16 @@ describe('Floor Integration Tests', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('id');
-      expect(response.body.data.name).toBe(newFloor.name);
-      expect(response.body.data.level).toBe(newFloor.level);
+      expect(response.body.data.floor_name).toBe(newFloor.floor_name);
+      expect(response.body.data.floor_number).toBe(newFloor.floor_number);
       expect(response.body.data.description).toBe(newFloor.description);
 
       createdFloorId = response.body.data.id;
     });
 
-    it('should fail when creating floor without name', async () => {
+    it('should fail when creating floor without floor_name', async () => {
       const invalidFloor = {
-        level: 1,
+        floor_number: 1,
         description: 'Test floor'
       };
 
@@ -52,12 +52,12 @@ describe('Floor Integration Tests', () => {
         .expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('name and level are required');
+      expect(response.body.message).toContain('floor_name and floor_number are required');
     });
 
-    it('should fail when creating floor without level', async () => {
+    it('should fail when creating floor without floor_number', async () => {
       const invalidFloor = {
-        name: 'Test Floor',
+        floor_name: 'Test Floor',
         description: 'Test floor'
       };
 
@@ -67,14 +67,14 @@ describe('Floor Integration Tests', () => {
         .expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('name and level are required');
+      expect(response.body.message).toContain('floor_name and floor_number are required');
     });
 
-    it('should fail when creating floor with duplicate name', async () => {
+    it('should fail when creating floor with duplicate floor_name', async () => {
       const floorName = `Unique Floor ${Date.now()}`;
       const firstFloor = {
-        name: floorName,
-        level: Math.floor(Math.random() * 10000),
+        floor_name: floorName,
+        floor_number: Math.floor(Math.random() * 10000),
         description: 'First floor'
       };
 
@@ -99,11 +99,11 @@ describe('Floor Integration Tests', () => {
       await Floor.findByIdAndDelete(firstFloorId);
     });
 
-    it('should fail when creating floor with duplicate level', async () => {
+    it('should fail when creating floor with duplicate floor_number', async () => {
       const uniqueLevel = Math.floor(Math.random() * 10000);
       const firstFloor = {
-        name: `Floor ${Date.now()}`,
-        level: uniqueLevel,
+        floor_name: `Floor ${Date.now()}`,
+        floor_number: uniqueLevel,
         description: 'First floor'
       };
 
@@ -117,8 +117,8 @@ describe('Floor Integration Tests', () => {
 
       
       const duplicateLevelFloor = {
-        name: `Floor ${Date.now() + 1}`,
-        level: uniqueLevel,
+        floor_name: `Floor ${Date.now() + 1}`,
+        floor_number: uniqueLevel,
         description: 'Duplicate level'
       };
 
@@ -165,8 +165,8 @@ describe('Floor Integration Tests', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.id).toBe(createdFloorId);
-      expect(response.body.data).toHaveProperty('name');
-      expect(response.body.data).toHaveProperty('level');
+      expect(response.body.data).toHaveProperty('floor_name');
+      expect(response.body.data).toHaveProperty('floor_number');
     });
 
     it('should return 404 for non-existent floor ID', async () => {
@@ -194,8 +194,8 @@ describe('Floor Integration Tests', () => {
 
     it('should update floor successfully', async () => {
       const updateData = {
-        name: `Updated Floor ${Date.now()}`,
-        level: Math.floor(Math.random() * 100000),
+        floor_name: `Updated Floor ${Date.now()}`,
+        floor_number: Math.floor(Math.random() * 100000),
         description: 'Updated description'
       };
 
@@ -205,14 +205,14 @@ describe('Floor Integration Tests', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data.name).toBe(updateData.name);
-      expect(response.body.data.level).toBe(updateData.level);
+      expect(response.body.data.floor_name).toBe(updateData.floor_name);
+      expect(response.body.data.floor_number).toBe(updateData.floor_number);
       expect(response.body.data.description).toBe(updateData.description);
     });
 
-    it('should fail when updating floor without name', async () => {
+    it('should fail when updating floor without floor_name', async () => {
       const invalidUpdateData = {
-        level: 99
+        floor_number: 99
       };
 
       const response = await request(app)
@@ -226,8 +226,8 @@ describe('Floor Integration Tests', () => {
     it('should return 404 when updating non-existent floor', async () => {
       const fakeId = new mongoose.Types.ObjectId();
       const updateData = {
-        name: 'Test',
-        level: 1
+        floor_name: 'Test',
+        floor_number: 1
       };
 
       const response = await request(app)

@@ -46,19 +46,19 @@ class FloorController {
 
   async createFloor(req, res) {
     try {
-      const { name, level, description } = req.body;
+      const { floor_name, floor_number, description } = req.body;
 
-      if (!name || level === undefined) {
+      if (!floor_name || floor_number === undefined) {
         return res.status(400).json({
           success: false,
           data: null,
-          message: 'name and level are required'
+          message: 'floor_name and floor_number are required'
         });
       }
 
       const floor = await this.floorService.createFloor({
-        name,
-        level,
+        floor_name,
+        floor_number,
         description
       });
 
@@ -81,19 +81,19 @@ class FloorController {
 
   async updateFloor(req, res) {
     try {
-      const { name, level, description } = req.body;
+      const { floor_name, floor_number, description } = req.body;
 
-      if (!name || level === undefined) {
+      if (!floor_name || floor_number === undefined) {
         return res.status(400).json({
           success: false,
           data: null,
-          message: 'name and level are required'
+          message: 'floor_name and floor_number are required'
         });
       }
 
       const floor = await this.floorService.updateFloor(req.params.id, {
-        name,
-        level,
+        floor_name,
+        floor_number,
         description
       });
 
