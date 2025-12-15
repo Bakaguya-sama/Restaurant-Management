@@ -5,8 +5,8 @@ process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/
 
 const request = require('supertest');
 const mongoose = require('mongoose');
-const app = require('../../server');
-const { Supplier } = require('../../src/models');
+const app = require('../../../../server');
+const { Supplier } = require('../../../models');
 
 describe('Supplier Integration Tests', () => {
   beforeAll(async () => {

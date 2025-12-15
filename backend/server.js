@@ -51,6 +51,10 @@ app.use('/api/v1/suppliers', suppliersRouter);
 
 app.use('/api/v1/menu', menuRouter);
 
+app.use('/api/v1/floors', floorsRouter);
+app.use('/api/v1/locations', locationsRouter);
+app.use('/api/v1/tables', tablesRouter);
+
 app.use('/api/v1/staff', staffRouter);
 
 app.use('/api/v1/customers', customerRouter);
@@ -117,7 +121,14 @@ if (process.env.NODE_ENV !== 'test') {
 ║  • PATCH  /api/v1/customers/:id/points                ║
 ║  • PATCH  /api/v1/customers/:id/spending              ║
 ║                                                    ║
-║  TABLE MANAGEMENT:                                 ║
+║  FLOOR & LOCATION MANAGEMENT:                      ║
+║  • GET    /api/v1/floors                              ║
+║  • POST   /api/v1/floors                              ║
+║  • GET    /api/v1/floors/:id                          ║
+║  • PUT    /api/v1/floors/:id                          ║
+║  • DELETE /api/v1/floors/:id                          ║
+║                                                    ║
+║  LOCATION MANAGEMENT:                              ║
 ║  • GET    /api/v1/locations                           ║
 ║  • POST   /api/v1/locations                           ║
 ║  • GET    /api/v1/locations/:id                       ║
@@ -125,11 +136,12 @@ if (process.env.NODE_ENV !== 'test') {
 ║  • PUT    /api/v1/locations/:id                       ║
 ║  • DELETE /api/v1/locations/:id                       ║
 ║                                                    ║
+║  TABLE MANAGEMENT:                                 ║
 ║  • GET    /api/v1/tables                              ║
 ║  • POST   /api/v1/tables                              ║
 ║  • GET    /api/v1/tables/:id                          ║
 ║  • GET    /api/v1/tables/location/:locationId         ║
-║  • GET    /api/v1/tables/status/available             ║
+║  • GET    /api/v1/tables/status/:status               ║
 ║  • GET    /api/v1/tables/status/summary               ║
 ║  • PUT    /api/v1/tables/:id                          ║
 ║  • PATCH  /api/v1/tables/:id/status                   ║
