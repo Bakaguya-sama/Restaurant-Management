@@ -51,7 +51,7 @@ class DishIngredientController {
       let statusCode = 400;
       if (error.message === 'Dish not found' || error.message === 'Ingredient not found') {
         statusCode = 404;
-      } else if (error.message.includes('already exists')) {
+      } else if (error.message.includes('already')) {
         statusCode = 409;
       }
 
@@ -117,3 +117,4 @@ class DishIngredientController {
 }
 
 module.exports = DishIngredientController;
+
