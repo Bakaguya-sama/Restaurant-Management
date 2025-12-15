@@ -4,9 +4,12 @@ const dotenv = require('dotenv');
 const connectDB = require('./config/database');
 
 // Import routes
-const floorsRouter = require('./src/routes/floors');
-const locationsRouter = require('./src/routes/locations');
-const tablesRouter = require('./src/routes/tables');
+const inventoryRouter = require('./src/presentation_layer/routes/inventory.routes');
+const suppliersRouter = require('./src/presentation_layer/routes/supplier.routes');
+const menuRouter = require('./src/presentation_layer/routes/menu.routes');
+const floorsRouter = require('./src/presentation_layer/routes/floors.routes');
+const locationsRouter = require('./src/presentation_layer/routes/locations.routes');
+const tablesRouter = require('./src/presentation_layer/routes/tables.routes');
 const staffRouter = require('./src/presentation_layer/routes/staff.routes');
 const customerRouter = require('./src/presentation_layer/routes/customer.routes');
 
@@ -34,7 +37,7 @@ app.get('/', (req, res) => {
 });
 
 // API Routes
-app.get('/api/v1/health', (req, res) => {
+app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     database: 'Connected',
@@ -42,10 +45,12 @@ app.get('/api/v1/health', (req, res) => {
   });
 });
 
-// Table Management Routes
-app.use('/api/v1/floors', floorsRouter);
-app.use('/api/v1/locations', locationsRouter);
-app.use('/api/v1/tables', tablesRouter);
+// Inventory & Suppliers
+app.use('/api/v1/inventory', inventoryRouter);
+app.use('/api/v1/suppliers', suppliersRouter);
+
+// Menu management
+app.use('/api/v1/menu', menuRouter);
 
 // Staff Routes
 app.use('/api/v1/staff', staffRouter);
@@ -112,12 +117,6 @@ if (process.env.NODE_ENV !== 'test') {
 ║  • PATCH  /api/v1/customers/:id/spending              ║
 ║                                                    ║
 ║  TABLE MANAGEMENT:                                 ║
-║  • GET    /api/v1/floors                              ║
-║  • POST   /api/v1/floors                              ║
-║  • GET    /api/v1/floors/:id                          ║
-║  • PUT    /api/v1/floors/:id                          ║
-║  • DELETE /api/v1/floors/:id                          ║
-║                                                    ║
 ║  • GET    /api/v1/locations                           ║
 ║  • POST   /api/v1/locations                           ║
 ║  • GET    /api/v1/locations/:id                       ║
@@ -134,6 +133,23 @@ if (process.env.NODE_ENV !== 'test') {
 ║  • PUT    /api/v1/tables/:id                          ║
 ║  • PATCH  /api/v1/tables/:id/status                   ║
 ║  • DELETE /api/v1/tables/:id                          ║
+║                                                    ║
+║  INVENTORY MANAGEMENT:                             ║
+║  • GET    /api/v1/inventory                          ║
+║  • POST   /api/v1/inventory/import                   ║
+║  • POST   /api/v1/inventory/export                   ║
+║  • PUT    /api/v1/inventory/:id                      ║
+║                                                    ║
+║  MENU MANAGEMENT:                                  ║
+║  • GET    /api/v1/menu                              ║
+║  • POST   /api/v1/menu                              ║
+║  • PUT    /api/v1/menu/:id                          ║
+║  • PATCH  /api/v1/menu/:id/availability             ║
+║  • DELETE /api/v1/menu/:id                          ║
+║                                                    ║
+║  SUPPLIERS:                                        ║
+║  • GET    /api/v1/suppliers                          ║
+║  • POST   /api/v1/suppliers                          ║
 ╚═════════════════════════════════════════════════════╝
 `);
   });

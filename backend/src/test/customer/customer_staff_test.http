@@ -1,5 +1,239 @@
 @baseUrl = http://localhost:5001/api/v1
 
+# ======================
+# INVENTORY API TESTS
+# ======================
+
+### GET /inventory - Lấy tất cả batch tồn kho
+GET {{baseUrl}}/inventory
+
+
+### GET /inventory - Lọc low stock
+GET {{baseUrl}}/inventory?lowStock=true
+
+
+### GET /inventory - Lọc expiring soon
+GET {{baseUrl}}/inventory?expiring=true
+
+
+### POST /inventory/import - SUCCESS
+POST {{baseUrl}}/inventory/import
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "itemId": "693e93aed977b610436eb292",
+      "quantity": 10,
+      "supplierId": "693e7df373919af5198ca0d3",
+      "expiryDate": "2026-12-31"
+    }
+  ]
+}
+
+
+### POST /inventory/import - FAIL (missing supplierId)
+POST {{baseUrl}}/inventory/import
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "itemId": "693e93aed977b610436eb292",
+      "quantity": 5,
+      "expiryDate": "2026-12-31"
+    }
+  ]
+}
+
+
+### Import batch A (expiry A)
+POST {{baseUrl}}/inventory/import
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "itemId": "693e93aed977b610436eb292",
+      "quantity": 3,
+      "supplierId": "693e7df373919af5198ca0d3",
+      "expiryDate": "2026-06-30"
+    }
+  ]
+}
+
+
+### Import batch B (expiry B)
+POST {{baseUrl}}/inventory/import
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "itemId": "693e93aed977b610436eb292",
+      "quantity": 4,
+      "supplierId": "693e7df373919af5198ca0d3",
+      "expiryDate": "2027-01-15"
+    }
+  ]
+}
+
+
+### GET /inventory - verify multiple batches
+GET {{baseUrl}}/inventory
+
+
+### POST /inventory/export - SUCCESS
+POST {{baseUrl}}/inventory/export
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "itemId": "693e93aed977b610436eb292",
+      "quantity": 1,
+      "reason": "Used in recipe test"
+    }
+  ]
+}
+
+
+### POST /inventory/export - FAIL (insufficient stock)
+POST {{baseUrl}}/inventory/export
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "itemId": "693e93aed977b610436eb292",
+      "quantity": 999999,
+      "reason": "Force insufficient stock error"
+    }
+  ]
+}
+
+
+
+# ======================
+# SUPPLIER API TESTS
+# ======================
+
+### GET /suppliers
+GET {{baseUrl}}/suppliers
+
+### POST /suppliers - SUCCESS
+POST {{baseUrl}}/suppliers
+Content-Type: application/json
+
+{
+  "name": "Manual Test Supplier",
+  "phone": "+84900000000",
+  "address": "123 Test St, HCMC"
+}
+
+### POST /suppliers - FAIL (duplicate name)
+POST {{baseUrl}}/suppliers
+Content-Type: application/json
+
+{
+  "name": "Manual Test Supplier",
+  "phone": "+84900000000",
+  "address": "Duplicate address"
+}
+
+### PUT /suppliers/:id - Update supplier
+# 👉 Thay ID bên dưới bằng id trả về từ GET /suppliers hoặc POST /suppliers
+PUT {{baseUrl}}/suppliers/PUT_SUPPLIER_ID_HERE
+Content-Type: application/json
+
+{
+  "name": "Manual Test Supplier Updated",
+  "phone": "+84911111111",
+  "address": "456 Updated St, HCMC"
+}
+
+### DELETE /suppliers/:id - Delete supplier
+# 👉 Thay ID bên dưới bằng id trả về từ GET /suppliers hoặc POST /suppliers
+DELETE {{baseUrl}}/suppliers/PUT_SUPPLIER_ID_HERE
+
+
+# ======================
+# MENU API TESTS
+# ======================
+
+### GET /menu - Lấy danh sách món
+GET {{baseUrl}}/menu
+
+
+### POST /menu - SUCCESS (tạo món mới)
+POST {{baseUrl}}/menu
+Content-Type: application/json
+
+{
+  "name": "Manual Test Dish",
+  "category": "main_course",
+  "price": 120000,
+  "description": "Tạo từ API test",
+  "image": "/images/test-dish.jpg",
+  "ingredients": [
+    {
+      "inventoryItemId": "693e93aed977b610436eb292",
+      "quantity": 0.25
+    }
+  ]
+}
+
+
+### POST /menu - FAIL (ingredient không tồn tại)
+POST {{baseUrl}}/menu
+Content-Type: application/json
+
+{
+  "name": "Bad Dish",
+  "category": "main_course",
+  "price": 10000,
+  "ingredients": [
+    {
+      "inventoryItemId": "000000000000000000000000",
+      "quantity": 1
+    }
+  ]
+}
+
+
+
+
+### PUT /menu/:id - Update dish
+# 👉 thay ID bên dưới bằng id trả về từ GET /menu
+PUT {{baseUrl}}/menu/693e93aed977b610436eb2b2
+Content-Type: application/json
+
+{
+  "name": "Manual Test Dish Updated",
+  "category": "main_course",
+  "price": 140000,
+  "description": "Updated via API test",
+  "ingredients": [
+    {
+      "inventoryItemId": "693e93aed977b610436eb292",
+      "quantity": 0.3
+    }
+  ]
+}
+
+
+### PATCH /menu/:id/availability - Manual disable
+PATCH {{baseUrl}}/menu/693f44b3bf6313a18b173007/availability
+Content-Type: application/json
+
+{
+  "available": false,
+  "reason": "Testing manual disable"
+}
+
+
+### DELETE /menu/:id - Delete dish
+DELETE {{baseUrl}}/menu/PUT_DISH_ID_HERE
 ### Health Check
 GET {{baseUrl}}/health
 
@@ -169,3 +403,163 @@ Content-Type: application/json
 
 ### Delete Customer
 DELETE {{baseUrl}}/customers/674da30bb19ecab3d0c9f0b1
+### ============================================
+### FLOOR API ENDPOINTS
+### ============================================
+
+### Get All Floors
+GET {{baseUrl}}/floors
+
+### Get Floor by ID
+GET {{baseUrl}}/floors/674da30bb19ecab3d0c9f0c1
+
+### Create New Floor
+POST {{baseUrl}}/floors
+Content-Type: application/json
+
+{
+  "name": "Ground Floor",
+  "level": 0,
+  "description": "Main entrance and dining area"
+}
+
+### Update Floor
+PUT {{baseUrl}}/floors/674da30bb19ecab3d0c9f0c1
+Content-Type: application/json
+
+{
+  "name": "Ground Floor Updated",
+  "level": 0,
+  "description": "Updated main dining area"
+}
+
+### Delete Floor
+DELETE {{baseUrl}}/floors/674da30bb19ecab3d0c9f0c1
+
+### ============================================
+### LOCATION API ENDPOINTS
+### ============================================
+
+### Get All Locations
+GET {{baseUrl}}/locations
+
+### Get All Locations Filtered by Floor
+GET {{baseUrl}}/locations?floor=674da30bb19ecab3d0c9f0c1
+
+### Get Location by ID
+GET {{baseUrl}}/locations/674da30bb19ecab3d0c9f0c2
+
+### Get Locations by Floor ID
+GET {{baseUrl}}/locations/floor/674da30bb19ecab3d0c9f0c1
+
+### Create New Location
+POST {{baseUrl}}/locations
+Content-Type: application/json
+
+{
+  "name": "Section A",
+  "floor_id": "674da30bb19ecab3d0c9f0c1",
+  "description": "VIP section near window"
+}
+
+### Update Location
+PUT {{baseUrl}}/locations/674da30bb19ecab3d0c9f0c2
+Content-Type: application/json
+
+{
+  "name": "Section A Updated",
+  "floor_id": "674da30bb19ecab3d0c9f0c1",
+  "description": "Updated VIP section"
+}
+
+### Delete Location
+DELETE {{baseUrl}}/locations/674da30bb19ecab3d0c9f0c2
+
+### ============================================
+### TABLE API ENDPOINTS
+### ============================================
+
+### Get All Tables
+GET {{baseUrl}}/tables
+
+### Get All Tables Filtered by Status
+GET {{baseUrl}}/tables?status=free
+
+### Get All Tables Filtered by Location
+GET {{baseUrl}}/tables?area=674da30bb19ecab3d0c9f0c2
+
+### Get Table by ID
+GET {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3
+
+### Get Tables by Location ID
+GET {{baseUrl}}/tables/location/674da30bb19ecab3d0c9f0c2
+
+### Get Tables by Status
+GET {{baseUrl}}/tables/status/free
+
+### Get Table Status Summary/Statistics
+GET {{baseUrl}}/tables/status/summary
+
+### Create New Table
+POST {{baseUrl}}/tables
+Content-Type: application/json
+
+{
+  "number": 101,
+  "seats": 4,
+  "area": "674da30bb19ecab3d0c9f0c2"
+}
+
+### Update Table
+PUT {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3
+Content-Type: application/json
+
+{
+  "number": 102,
+  "seats": 6,
+  "area": "674da30bb19ecab3d0c9f0c2"
+}
+
+### Update Table Status to Occupied
+PATCH {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3/status
+Content-Type: application/json
+
+{
+  "status": "occupied"
+}
+
+### Update Table Status to Reserved
+PATCH {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3/status
+Content-Type: application/json
+
+{
+  "status": "reserved"
+}
+
+### Update Table Status to Dirty
+PATCH {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3/status
+Content-Type: application/json
+
+{
+  "status": "dirty"
+}
+
+### Update Table Status to Broken (with reason)
+PATCH {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3/status
+Content-Type: application/json
+
+{
+  "status": "broken",
+  "brokenReason": "Chair leg is broken"
+}
+
+### Update Table Status back to Free (clears brokenReason)
+PATCH {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3/status
+Content-Type: application/json
+
+{
+  "status": "free"
+}
+
+### Delete Table
+DELETE {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3

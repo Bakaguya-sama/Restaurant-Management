@@ -55,7 +55,7 @@ export function HomePage() {
           className="p-6 text-center cursor-pointer"
         >
           <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-            <Calendar className="w-6 h-6 text-[#0056D2]" />
+            <Calendar className="w-6 h-6 text-[#625EE8]" />
           </div>
           <h4 className="mb-2">Đặt bàn</h4>
           <p className="text-sm text-gray-600">Đặt chỗ trước dễ dàng</p>
@@ -67,7 +67,7 @@ export function HomePage() {
           className="p-6 text-center cursor-pointer"
         >
           <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-            <UtensilsCrossed className="w-6 h-6 text-[#10B981]" />
+            <UtensilsCrossed className="w-6 h-6 text-[#625EE8]" />
           </div>
           <h4 className="mb-2">Thực đơn</h4>
           <p className="text-sm text-gray-600">Khám phá món ăn</p>
@@ -118,7 +118,7 @@ export function HomePage() {
                 <h4 className="mb-2">{item.name}</h4>
                 <p className="text-sm text-gray-600 mb-3">{item.description}</p>
                 <div className="flex items-center justify-between">
-                  <span className="text-[#0056D2]">
+                  <span className="text-[#625EE8]">
                     {item.price.toLocaleString()}đ
                   </span>
                   <Button size="sm" onClick={() => setSelectedDish(item)}>
@@ -192,7 +192,7 @@ export function HomePage() {
 
               <div className="flex items-center justify-between pt-4 border-t">
                 <span className="text-gray-600 text-lg">Giá:</span>
-                <span className="text-3xl text-[#0056D2] font-medium">
+                <span className="text-3xl text-[#625EE8] font-medium">
                   {selectedDish.price.toLocaleString()}đ
                 </span>
               </div>

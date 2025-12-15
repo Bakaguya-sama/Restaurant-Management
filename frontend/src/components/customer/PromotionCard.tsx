@@ -133,7 +133,7 @@ export function PromotionCard({
               <h3 className="mb-2">{promotion.name}</h3>
               <div className="inline-block bg-white px-4 py-2 rounded-lg shadow-sm">
                 <p className="text-sm text-gray-600 mb-1">Mã khuyến mãi</p>
-                <p className="text-xl text-[#0056D2] font-mono">
+                <p className="text-xl text-[#625EE8] font-mono">
                   {promotion.code}
                 </p>
               </div>
@@ -242,7 +242,7 @@ export function PromotionCard({
             <h3 className="mb-2">{promotion.name}</h3>
             <div className="inline-block bg-white px-4 py-2 rounded-lg shadow-sm">
               <p className="text-sm text-gray-600 mb-1">Mã khuyến mãi</p>
-              <p className="text-xl text-[#0056D2] font-mono">
+              <p className="text-xl text-[#625EE8] font-mono">
                 {promotion.code}
               </p>
             </div>
