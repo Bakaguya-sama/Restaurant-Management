@@ -110,16 +110,7 @@ class FloorService {
   }
 
   formatFloorResponse(floor) {
-    if (floor instanceof FloorEntity) {
-      return floor.formatResponse();
-    }
-    return {
-      id: floor._id || floor.id,
-      floor_name: floor.floor_name,
-      floor_number: floor.floor_number,
-      description: floor.description,
-      created_at: floor.created_at
-    };
+    return floor.formatResponse();
   }
 }
 

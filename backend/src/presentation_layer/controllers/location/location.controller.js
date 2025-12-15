@@ -21,7 +21,7 @@ class LocationController {
       const locations = await this.locationService.getAllLocations(filters);
 
       const formattedLocations = locations.map(location => {
-        return location.formatResponse();
+        return this.locationService.formatLocationResponse(location);
       });
 
       res.json({
@@ -41,7 +41,7 @@ class LocationController {
   async getLocationById(req, res) {
     try {
       const location = await this.locationService.getLocationById(req.params.id);
-      const formatted = location.formatResponse();
+      const formatted = this.locationService.formatLocationResponse(location);
 
       res.json({
         success: true,
@@ -63,7 +63,7 @@ class LocationController {
       const locations = await this.locationService.getLocationsByFloorId(req.params.floorId);
       
       const formattedLocations = locations.map(location => {
-        return location.formatResponse();
+        return this.locationService.formatLocationResponse(location);
       });
 
       res.json({
@@ -83,23 +83,23 @@ class LocationController {
 
   async createLocation(req, res) {
     try {
-      const { name, floor, description } = req.body;
+      const { name, floor_id, description } = req.body;
 
-      if (!name || !floor) {
+      if (!name || !floor_id) {
         return res.status(400).json({
           success: false,
           data: null,
-          message: 'name and floor are required'
+          message: 'name and floor_id are required'
         });
       }
 
       const location = await this.locationService.createLocation({
         name,
-        floorId: floor,
+        floor_id,
         description
       });
 
-      const formatted = location.formatResponse();
+      const formatted = this.locationService.formatLocationResponse(location);
 
       res.status(201).json({
         success: true,
@@ -119,23 +119,23 @@ class LocationController {
 
   async updateLocation(req, res) {
     try {
-      const { name, floor, description } = req.body;
+      const { name, floor_id, description } = req.body;
 
-      if (!name || !floor) {
+      if (!name || !floor_id) {
         return res.status(400).json({
           success: false,
           data: null,
-          message: 'name and floor are required'
+          message: 'name and floor_id are required'
         });
       }
 
       const location = await this.locationService.updateLocation(req.params.id, {
         name,
-        floorId: floor,
+        floor_id,
         description
       });
 
-      const formatted = location.formatResponse();
+      const formatted = this.locationService.formatLocationResponse(location);
 
       res.json({
         success: true,
@@ -157,7 +157,7 @@ class LocationController {
   async deleteLocation(req, res) {
     try {
       const location = await this.locationService.deleteLocation(req.params.id);
-      const formatted = location.formatResponse();
+      const formatted = this.locationService.formatLocationResponse(location);
 
       res.json({
         success: true,

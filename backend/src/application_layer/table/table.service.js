@@ -60,8 +60,8 @@ class TableService {
 
     
     let locationId = null;
-    if (tableData.area) {
-      const location = await Location.findById(tableData.area);
+    if (tableData.location_id) {
+      const location = await Location.findById(tableData.location_id);
       if (!location) {
         throw new Error('Location not found');
       }
@@ -69,15 +69,15 @@ class TableService {
     }
 
     
-    const existingTable = await this.tableRepository.findByNumber(tableData.number);
+    const existingTable = await this.tableRepository.findByNumber(tableData.table_number);
     if (existingTable) {
       throw new Error('Table with this number already exists');
     }
 
     
     const dbData = {
-      table_number: tableData.number,
-      capacity: tableData.seats,
+      table_number: tableData.table_number,
+      capacity: tableData.capacity,
       status: 'free',
       location_id: locationId
     };
@@ -95,8 +95,8 @@ class TableService {
     
     const validationData = {
       ...existingTable,
-      table_number: updateData.number || existingTable.table_number,
-      capacity: updateData.seats || existingTable.capacity,
+      table_number: updateData.table_number || existingTable.table_number,
+      capacity: updateData.capacity || existingTable.capacity,
       status: updateData.status || existingTable.status
     };
 
@@ -107,8 +107,8 @@ class TableService {
     }
 
     
-    if (updateData.number && updateData.number !== existingTable.table_number) {
-      const duplicate = await this.tableRepository.checkDuplicate(updateData.number, id);
+    if (updateData.table_number && updateData.table_number !== existingTable.table_number) {
+      const duplicate = await this.tableRepository.checkDuplicate(updateData.table_number, id);
       if (duplicate) {
         throw new Error('Table number already exists');
       }
@@ -116,8 +116,8 @@ class TableService {
 
     
     let locationId = null;
-    if (updateData.area) {
-      const location = await Location.findById(updateData.area);
+    if (updateData.location_id) {
+      const location = await Location.findById(updateData.location_id);
       if (!location) {
         throw new Error('Location not found');
       }
@@ -126,10 +126,10 @@ class TableService {
 
     
     const dbData = {};
-    if (updateData.number) dbData.table_number = updateData.number;
-    if (updateData.seats) dbData.capacity = updateData.seats;
+    if (updateData.table_number) dbData.table_number = updateData.table_number;
+    if (updateData.capacity) dbData.capacity = updateData.capacity;
     if (updateData.status) dbData.status = updateData.status;
-    if (updateData.area) dbData.location_id = locationId;
+    if (updateData.location_id) dbData.location_id = locationId;
 
     return await this.tableRepository.update(id, dbData);
   }
@@ -178,11 +178,11 @@ class TableService {
   async formatTableResponse(table, includeFloor = false) {
     const response = {
       id: table.id,
-      number: table.table_number,
-      seats: table.capacity,
+      table_number: table.table_number,
+      capacity: table.capacity,
+      location_id: table.location_id ? table.location_id._id || table.location_id : null,
       status: table.status,
-      area: table.location_id?.name || null,
-      location_id: table.location_id ? table.location_id._id || table.location_id : null
+      created_at: table.created_at
     };
 
     if (includeFloor && table.location_id) {

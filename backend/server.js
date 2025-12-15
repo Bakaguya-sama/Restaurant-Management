@@ -30,7 +30,7 @@ app.use(express.urlencoded({ extended: true }));
 // Health check route
 app.get('/', (req, res) => {
   res.json({
-    message: '🍽️ Restaurant Management API Server',
+    message: 'Restaurant Management API Server',
     status: 'Running',
     environment: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString()
@@ -83,6 +83,7 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 5001;
+let timestamp = new Date().toLocaleString();
 
 // Only listen if not in test environment
 if (process.env.NODE_ENV !== 'test') {
@@ -171,6 +172,7 @@ if (process.env.NODE_ENV !== 'test') {
 ║  • GET    /api/v1/suppliers                          ║
 ║  • POST   /api/v1/suppliers                          ║
 ╚═════════════════════════════════════════════════════╝
+Server is up at ${timestamp}
 `);
   });
 }
