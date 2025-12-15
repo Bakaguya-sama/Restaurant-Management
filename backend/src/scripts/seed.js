@@ -6,7 +6,7 @@ const {
   Staff, Customer, Floor, Location, Table, Reservation, ReservationDetail, Complaint,
   Supplier, Ingredient, StockImport, StockImportDetail, Dish, DishIngredient,
   StockExport, StockExportDetail,
-  Menu, MenuEntry, Order, OrderDetail, Promotion, Invoice, InvoicePromotion,
+  Order, OrderDetail, Promotion, Invoice, InvoicePromotion,
   Violation, Rating, RatingReply
 } = require('../models');
 
@@ -31,7 +31,7 @@ async function seedDatabase() {
     const modelsToCheck = {
       Staff, Customer, Floor, Location, Table, Reservation, ReservationDetail, Complaint,
       Supplier, Ingredient, StockImport, StockImportDetail, StockExport, StockExportDetail, Dish, DishIngredient,
-      Menu, MenuEntry, Order, OrderDetail, Promotion, Invoice, InvoicePromotion,
+      Order, OrderDetail, Promotion, Invoice, InvoicePromotion,
       Violation, Rating, RatingReply
     };
     const missing = Object.entries(modelsToCheck).filter(([, v]) => !v).map(([k]) => k);
@@ -41,8 +41,8 @@ async function seedDatabase() {
       Floor.deleteMany({}), Location.deleteMany({}), Table.deleteMany({}), 
       Reservation.deleteMany({}), ReservationDetail.deleteMany({}), Complaint.deleteMany({}),
       Ingredient.deleteMany({}), StockImport.deleteMany({}), StockImportDetail.deleteMany({}), StockExport.deleteMany({}), StockExportDetail.deleteMany({}),
-      Dish.deleteMany({}), DishIngredient.deleteMany({}), Menu.deleteMany({}),
-      MenuEntry.deleteMany({}), Order.deleteMany({}), OrderDetail.deleteMany({}),
+      Dish.deleteMany({}), DishIngredient.deleteMany({}),
+      Order.deleteMany({}), OrderDetail.deleteMany({}),
       Promotion.deleteMany({}), Invoice.deleteMany({}), InvoicePromotion.deleteMany({}),
       Violation.deleteMany({}), Rating.deleteMany({}), RatingReply.deleteMany({})
     ]);
@@ -564,34 +564,8 @@ async function seedDatabase() {
     ]);
     console.log(`   ✅ ${dishIngredients.length} dish-ingredient links\n`);
 
-    // ==================== 15. MENUS ====================
-    console.log('17/25 📖 Tạo Menus...');
-    const menus = await Menu.insertMany([
-      { name: 'Menu Chính', description: 'Thực đơn chính phục vụ hàng ngày', menu_type: 'regular', is_active: true },
-      { name: 'Menu Trưa', description: 'Menu ăn trưa với giá ưu đãi', menu_type: 'lunch', is_active: true, valid_from: new Date('2025-11-01'), valid_to: new Date('2026-01-31') },
-      { name: 'Menu Tối', description: 'Menu ăn tối sang trọng', menu_type: 'dinner', is_active: true, valid_from: new Date('2025-11-01'), valid_to: new Date('2026-01-31') }
-    ]);
-    console.log(`   ✅ ${menus.length} menus\n`);
-
-    // ==================== 16. MENU ENTRIES ====================
-    console.log('18/25 📑 Tạo Menu Entries...');
-    const menuEntries = await MenuEntry.insertMany([
-      { menu_id: menus[0]._id, dish_id: dishes[0]._id, display_order: 1, is_featured: true },
-      { menu_id: menus[0]._id, dish_id: dishes[1]._id, display_order: 2, is_featured: true },
-      { menu_id: menus[0]._id, dish_id: dishes[2]._id, display_order: 3, is_featured: false },
-      { menu_id: menus[0]._id, dish_id: dishes[3]._id, display_order: 4, is_featured: false },
-      { menu_id: menus[0]._id, dish_id: dishes[4]._id, display_order: 5, is_featured: false },
-      { menu_id: menus[0]._id, dish_id: dishes[6]._id, display_order: 6, is_featured: false },
-      { menu_id: menus[0]._id, dish_id: dishes[7]._id, display_order: 7, is_featured: false },
-      { menu_id: menus[1]._id, dish_id: dishes[3]._id, display_order: 1, is_featured: true },
-      { menu_id: menus[1]._id, dish_id: dishes[4]._id, display_order: 2, is_featured: false },
-      { menu_id: menus[2]._id, dish_id: dishes[0]._id, display_order: 1, is_featured: true },
-      { menu_id: menus[2]._id, dish_id: dishes[1]._id, display_order: 2, is_featured: true }
-    ]);
-    console.log(`   ✅ ${menuEntries.length} menu entries\n`);
-
-    // ==================== 17. PROMOTIONS ====================
-    console.log('19/25 🎁 Tạo Promotions...');
+    // ==================== 15. PROMOTIONS ====================
+    console.log('15/25 🎁 Tạo Promotions...');
     const promotions = await Promotion.insertMany([
       { name: 'Giảm 20% Tháng 12', description: 'Giảm 20% toàn bộ hóa đơn trong tháng 12', promotion_type: 'percentage', discount_value: 20, minimum_order_amount: 500000, promo_code: 'DEC20', start_date: new Date('2025-12-01'), end_date: new Date('2025-12-31'), is_active: true, max_uses: 100, current_uses: 5 },
       { name: 'Giảm 150k', description: 'Giảm 150,000đ cho hóa đơn trên 1.5 triệu', promotion_type: 'fixed_amount', discount_value: 150000, minimum_order_amount: 1500000, promo_code: 'SAVE150K', start_date: new Date('2025-12-01'), end_date: new Date('2025-12-31'), is_active: true, max_uses: 50, current_uses: 8 },
@@ -599,8 +573,8 @@ async function seedDatabase() {
     ]);
     console.log(`   ✅ ${promotions.length} promotions\n`);
 
-    // ==================== 18. ORDERS ====================
-    console.log('20/25 📝 Tạo Orders...');
+    // ==================== 16. ORDERS ====================
+    console.log('16/25 📝 Tạo Orders...');
     const orders = await Order.insertMany([
       { 
         order_number: 'ORD-001', 
@@ -655,8 +629,8 @@ async function seedDatabase() {
     ]);
     console.log(`   ✅ ${orders.length} orders\n`);
 
-    // ==================== 19. ORDER DETAILS ====================
-    console.log('21/25 🍴 Tạo Order Details...');
+    // ==================== 17. ORDER DETAILS ====================
+    console.log('17/25 🍴 Tạo Order Details...');
     const orderDetails = await OrderDetail.insertMany([
       { order_id: orders[0]._id, dish_id: dishes[0]._id, quantity: 1, unit_price: 350000, line_total: 350000, status: 'served' },
       { order_id: orders[0]._id, dish_id: dishes[1]._id, quantity: 1, unit_price: 420000, line_total: 420000, status: 'served' },
@@ -671,8 +645,8 @@ async function seedDatabase() {
     ]);
     console.log(`   ✅ ${orderDetails.length} order details\n`);
 
-    // ==================== 20. INVOICES ====================
-    console.log('22/25 🧾 Tạo Invoices...');
+    // ==================== 18. INVOICES ====================
+    console.log('18/25 🧾 Tạo Invoices...');
     const invoices = await Invoice.insertMany([
       { 
         invoice_number: 'INV-001', 
@@ -717,15 +691,15 @@ async function seedDatabase() {
     ]);
     console.log(`   ✅ ${invoices.length} invoices\n`);
 
-    // ==================== 21. INVOICE PROMOTIONS ====================
-    console.log('23/25 🏷️  Tạo Invoice Promotions...');
+    // ==================== 19. INVOICE PROMOTIONS ====================
+    console.log('19/25 🏷️  Tạo Invoice Promotions...');
     const invoicePromotions = await InvoicePromotion.insertMany([
       { invoice_id: invoices[0]._id, promotion_id: promotions[0]._id, discount_applied: 170000 }
     ]);
     console.log(`   ✅ ${invoicePromotions.length} invoice promotions\n`);
 
-    // ==================== 22. VIOLATIONS ====================
-    console.log('24/25 ⚠️  Tạo Violations...');
+    // ==================== 20. VIOLATIONS ====================
+    console.log('20/25 ⚠️  Tạo Violations...');
     const violations = await Violation.insertMany([
       { 
         customer_id: customers[1]._id, 
@@ -742,8 +716,8 @@ async function seedDatabase() {
     ]);
     console.log(`   ✅ ${violations.length} violations\n`);
 
-    // ==================== 23. RATINGS & REPLIES ====================
-    console.log('25/25 ⭐ Tạo Ratings và Replies...');
+    // ==================== 21. RATINGS & REPLIES ====================
+    console.log('21/25 ⭐ Tạo Ratings và Replies...');
     const ratings = await Rating.insertMany([
       { 
         customer_id: customers[0]._id, 
@@ -808,15 +782,13 @@ async function seedDatabase() {
     console.log(`   14. Stock Export Details: ${stockExportDetails.length}`);
     console.log(`   15. Dishes: ${dishes.length}`);
     console.log(`   16. Dish Ingredients: ${dishIngredients.length}`);
-    console.log(`   17. Menus: ${menus.length}`);
-    console.log(`   18. Menu Entries: ${menuEntries.length}`);
-    console.log(`   19. Promotions: ${promotions.length}`);
-    console.log(`   20. Orders: ${orders.length}`);
-    console.log(`   21. Order Details: ${orderDetails.length}`);
-    console.log(`   22. Invoices: ${invoices.length}`);
-    console.log(`   23. Invoice Promotions: ${invoicePromotions.length}`);
-    console.log(`   24. Violations: ${violations.length}`);
-    console.log(`   25. Ratings: ${ratings.length}`);
+    console.log(`   17. Promotions: ${promotions.length}`);
+    console.log(`   18. Orders: ${orders.length}`);
+    console.log(`   19. Order Details: ${orderDetails.length}`);
+    console.log(`   20. Invoices: ${invoices.length}`);
+    console.log(`   21. Invoice Promotions: ${invoicePromotions.length}`);
+    console.log(`   22. Violations: ${violations.length}`);
+    console.log(`   23. Ratings: ${ratings.length}`);
     console.log('========================================');
     console.log('🔑 Test Accounts:');
     console.log('   Waiter: hung.waiter@restaurant.vn / password123');
