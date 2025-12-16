@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { Plus, AlertTriangle, Package, Trash2, X, Search } from "lucide-react";
+import {
+  Plus,
+  AlertTriangle,
+  Package,
+  Trash2,
+  X,
+  Search,
+  Edit,
+} from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Card } from "../../ui/Card";
 import { Modal } from "../../ui/Modal";
@@ -16,6 +24,7 @@ import {
 import { mockInventory, mockSuppliers } from "../../../lib/mockData";
 import { InventoryItem, Supplier } from "../../../types";
 import { toast } from "sonner";
+import { ConfirmationModal } from "../../ui/ConfirmationModal";
 
 export function InventoryPage() {
   const [inventory, setInventory] = useState<InventoryItem[]>(mockInventory);
@@ -25,6 +34,9 @@ export function InventoryPage() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showDisposeModal, setShowDisposeModal] = useState(false);
   const [showAddSupplierModal, setShowAddSupplierModal] = useState(false);
+  const [showEditSupplierModal, setShowEditSupplierModal] = useState(false);
+  const [showDeleteSupplierModal, setShowDeleteSupplierModal] = useState(false);
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [importItems, setImportItems] = useState<
     Array<{
       type: "new" | "existing";
@@ -252,22 +264,124 @@ export function InventoryPage() {
   };
 
   const handleAddSupplier = () => {
-    if (!supplierForm.name || !supplierForm.phone) {
+    if (!supplierForm.name.trim() || !supplierForm.phone.trim()) {
       toast.error("Vui lòng điền đầy đủ thông tin");
+      return;
+    }
+
+    // Validate phone number format (10-11 digits)
+    const phoneRegex = /^[0-9]{10,11}$/;
+    if (!phoneRegex.test(supplierForm.phone.trim())) {
+      toast.error("Số điện thoại không hợp lệ");
+      return;
+    }
+
+    // Check if supplier name already exists
+    const isDuplicate = suppliers.some(
+      (s) =>
+        s.name.toLowerCase().trim() === supplierForm.name.toLowerCase().trim()
+    );
+    if (isDuplicate) {
+      toast.error("Tên nhà cung cấp đã tồn tại");
       return;
     }
 
     const newSupplier: Supplier = {
       id: `SUP${String(suppliers.length + 1).padStart(3, "0")}`,
-      name: supplierForm.name,
-      phone: supplierForm.phone,
-      address: supplierForm.address,
+      name: supplierForm.name.trim(),
+      phone: supplierForm.phone.trim(),
+      address: supplierForm.address.trim(),
     };
 
     setSuppliers([...suppliers, newSupplier]);
     toast.success("Thêm nhà cung cấp thành công!");
     setShowAddSupplierModal(false);
     setSupplierForm({ name: "", phone: "", address: "" });
+  };
+
+  const handleEditSupplier = (supplier: Supplier) => {
+    setEditingSupplier(supplier);
+    setSupplierForm({
+      name: supplier.name,
+      phone: supplier.phone,
+      address: supplier.address,
+    });
+    setShowEditSupplierModal(true);
+  };
+
+  const handleUpdateSupplier = () => {
+    if (
+      !editingSupplier ||
+      !supplierForm.name.trim() ||
+      !supplierForm.phone.trim()
+    ) {
+      toast.error("Vui lòng điền đầy đủ thông tin");
+      return;
+    }
+
+    // Validate phone number format (10-11 digits)
+    const phoneRegex = /^[0-9]{10,11}$/;
+    if (!phoneRegex.test(supplierForm.phone.trim())) {
+      toast.error("Số điện thoại không hợp lệ");
+      return;
+    }
+
+    // Check if supplier name already exists (excluding current supplier)
+    const isDuplicate = suppliers.some(
+      (s) =>
+        s.id !== editingSupplier.id &&
+        s.name.toLowerCase().trim() === supplierForm.name.toLowerCase().trim()
+    );
+    if (isDuplicate) {
+      toast.error("Tên nhà cung cấp đã tồn tại");
+      return;
+    }
+
+    const updatedSuppliers = suppliers.map((s) =>
+      s.id === editingSupplier.id
+        ? {
+            ...s,
+            name: supplierForm.name.trim(),
+            phone: supplierForm.phone.trim(),
+            address: supplierForm.address.trim(),
+          }
+        : s
+    );
+
+    setSuppliers(updatedSuppliers);
+    toast.success("Cập nhật nhà cung cấp thành công!");
+    setShowEditSupplierModal(false);
+    setEditingSupplier(null);
+    setSupplierForm({ name: "", phone: "", address: "" });
+  };
+
+  const handleDeleteSupplier = (supplier: Supplier) => {
+    // Check if supplier is assigned to any inventory item
+    const isAssigned = inventory.some(
+      (item) => item.supplierId === supplier.id
+    );
+
+    if (isAssigned) {
+      toast.error(
+        "Không thể xóa nhà cung cấp này vì đã được gán cho nguyên liệu"
+      );
+      return;
+    }
+
+    setEditingSupplier(supplier);
+    setShowDeleteSupplierModal(true);
+  };
+
+  const confirmDeleteSupplier = () => {
+    if (!editingSupplier) return;
+
+    const updatedSuppliers = suppliers.filter(
+      (s) => s.id !== editingSupplier.id
+    );
+    setSuppliers(updatedSuppliers);
+    toast.success("Đã xóa nhà cung cấp");
+    setShowDeleteSupplierModal(false);
+    setEditingSupplier(null);
   };
 
   return (
@@ -483,6 +597,7 @@ export function InventoryPage() {
                     <th className="text-left p-4">Tên công ty</th>
                     <th className="text-left p-4">Số điện thoại</th>
                     <th className="text-left p-4">Địa chỉ</th>
+                    <th className="text-left p-4">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -492,6 +607,24 @@ export function InventoryPage() {
                       <td className="p-4">{supplier.name}</td>
                       <td className="p-4">{supplier.phone}</td>
                       <td className="p-4 text-gray-600">{supplier.address}</td>
+                      <td className="p-4">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEditSupplier(supplier)}
+                            className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors"
+                            title="Chỉnh sửa"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSupplier(supplier)}
+                            className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
+                            title="Xóa"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -612,6 +745,9 @@ export function InventoryPage() {
                             )
                           }
                           className="flex-1"
+                          min="1"
+                          step="0.01"
+                          required
                         />
                         <Input
                           type="number"
@@ -625,6 +761,9 @@ export function InventoryPage() {
                             )
                           }
                           className="flex-1"
+                          min="0"
+                          step="1000"
+                          required
                         />
                         {importItems.length > 1 && (
                           <Button
@@ -648,6 +787,9 @@ export function InventoryPage() {
                             updateImportRow(index, "itemName", e.target.value)
                           }
                           className="flex-1"
+                          required
+                          minLength={2}
+                          maxLength={100}
                         />
                         <Input
                           type="number"
@@ -661,6 +803,9 @@ export function InventoryPage() {
                             )
                           }
                           className="w-24"
+                          min="1"
+                          step="0.01"
+                          required
                         />
                         <Input
                           placeholder="Đơn vị"
@@ -669,6 +814,8 @@ export function InventoryPage() {
                             updateImportRow(index, "unit", e.target.value)
                           }
                           className="w-24"
+                          required
+                          maxLength={20}
                         />
                         <Input
                           type="number"
@@ -682,6 +829,9 @@ export function InventoryPage() {
                             )
                           }
                           className="w-32"
+                          min="0"
+                          step="1000"
+                          required
                         />
                         {importItems.length > 1 && (
                           <Button
@@ -797,6 +947,9 @@ export function InventoryPage() {
               })
             }
             placeholder="Nhập số lượng"
+            min="1"
+            step="0.01"
+            required
           />
 
           <div>
@@ -806,6 +959,7 @@ export function InventoryPage() {
                 { value: "expired", label: "Hết hạn" },
                 { value: "damaged", label: "Hư hỏng" },
                 { value: "returned", label: "Trả hàng" },
+                { value: "edited", label: "Xóa để chỉnh sửa" },
               ].map((option) => (
                 <label
                   key={option.value}
@@ -859,14 +1013,22 @@ export function InventoryPage() {
               setSupplierForm({ ...supplierForm, name: e.target.value })
             }
             placeholder="Nhập tên công ty"
+            required
+            minLength={2}
+            maxLength={100}
           />
           <Input
             label="Số điện thoại"
+            type="tel"
             value={supplierForm.phone}
             onChange={(e) =>
               setSupplierForm({ ...supplierForm, phone: e.target.value })
             }
-            placeholder="Nhập số điện thoại"
+            placeholder="Nhập số điện thoại (VD: 0901234567)"
+            required
+            pattern="[0-9]{10,11}"
+            minLength={10}
+            maxLength={11}
           />
           <Input
             label="Địa chỉ"
@@ -875,6 +1037,8 @@ export function InventoryPage() {
               setSupplierForm({ ...supplierForm, address: e.target.value })
             }
             placeholder="Nhập địa chỉ"
+            minLength={5}
+            maxLength={200}
           />
           <div className="flex gap-4 pt-4">
             <Button
@@ -890,6 +1054,85 @@ export function InventoryPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Edit Supplier Modal */}
+      <Modal
+        isOpen={showEditSupplierModal}
+        onClose={() => {
+          setShowEditSupplierModal(false);
+          setEditingSupplier(null);
+          setSupplierForm({ name: "", phone: "", address: "" });
+        }}
+        title="Chỉnh sửa nhà cung cấp"
+      >
+        <div className="space-y-4">
+          <Input
+            label="Tên công ty"
+            value={supplierForm.name}
+            onChange={(e) =>
+              setSupplierForm({ ...supplierForm, name: e.target.value })
+            }
+            placeholder="Nhập tên công ty"
+            required
+            minLength={2}
+            maxLength={100}
+          />
+          <Input
+            label="Số điện thoại"
+            type="tel"
+            value={supplierForm.phone}
+            onChange={(e) =>
+              setSupplierForm({ ...supplierForm, phone: e.target.value })
+            }
+            placeholder="Nhập số điện thoại (VD: 0901234567)"
+            required
+            pattern="[0-9]{10,11}"
+            minLength={10}
+            maxLength={11}
+          />
+          <Input
+            label="Địa chỉ"
+            value={supplierForm.address}
+            onChange={(e) =>
+              setSupplierForm({ ...supplierForm, address: e.target.value })
+            }
+            placeholder="Nhập địa chỉ"
+            minLength={5}
+            maxLength={200}
+          />
+          <div className="flex gap-4 pt-4">
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={() => {
+                setShowEditSupplierModal(false);
+                setEditingSupplier(null);
+                setSupplierForm({ name: "", phone: "", address: "" });
+              }}
+            >
+              Hủy
+            </Button>
+            <Button fullWidth onClick={handleUpdateSupplier}>
+              Cập nhật
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Supplier Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteSupplierModal}
+        onClose={() => {
+          setShowDeleteSupplierModal(false);
+          setEditingSupplier(null);
+        }}
+        onConfirm={confirmDeleteSupplier}
+        title="Xác nhận xóa nhà cung cấp"
+        message={`Bạn có chắc chắn muốn xóa nhà cung cấp "${editingSupplier?.name}"?`}
+        confirmText="Xóa"
+        cancelText="Hủy"
+        variant="danger"
+      />
     </div>
   );
 }
