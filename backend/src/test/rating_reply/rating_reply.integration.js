@@ -2,7 +2,7 @@ const request = require('supertest');
 const app = require('../../../server');
 const connectDB = require('../../../config/database');
 const mongoose = require('mongoose');
-const { RatingReply, Rating, Staff } = require('../../models');
+const { RatingReply, Rating, Staff, Customer } = require('../../models');
 
 describe('Rating Reply Integration Tests', () => {
   let createdReplyId;
@@ -12,18 +12,46 @@ describe('Rating Reply Integration Tests', () => {
   beforeAll(async () => {
     await connectDB();
 
-    const rating = await Rating.findOne();
+    let customer = await Customer.findOne();
+    if (!customer) {
+      customer = await Customer.create({
+        full_name: 'Test Customer',
+        email: `testcustomer${Date.now()}@test.com`,
+        phone: '0900000001',
+        password_hash: 'hashedpassword',
+        membership_level: 'silver'
+      });
+    }
+
+    let rating = await Rating.findOne();
+    if (!rating) {
+      rating = await Rating.create({
+        customer_id: customer._id,
+        score: 5,
+        description: 'Test rating for reply tests'
+      });
+    }
     testRatingId = rating._id;
 
-    const staff = await Staff.findOne();
+    let staff = await Staff.findOne();
+    if (!staff) {
+      staff = await Staff.create({
+        full_name: 'Test Staff',
+        username: `teststaff${Date.now()}`,
+        email: `teststaff${Date.now()}@test.com`,
+        phone: '0900000002',
+        password_hash: 'hashedpassword',
+        role: 'waiter',
+        status: 'active'
+      });
+    }
     testStaffId = staff._id;
   });
 
   afterAll(async () => {
     if (createdReplyId) {
-      await RatingReply.findByIdAndDelete(createdReplyId);
+      await RatingReply.findByIdAndDelete(createdReplyId).catch(() => {});
     }
-    await mongoose.connection.close();
   });
 
   describe('POST /api/v1/rating-replies - Create Rating Reply', () => {

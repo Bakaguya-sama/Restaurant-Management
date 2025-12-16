@@ -45,7 +45,11 @@ class RatingRepository {
     const rating = new Rating(data);
     await rating.save();
 
-    return new RatingEntity(rating).toJSON();
+    const savedRating = await Rating.findById(rating._id)
+      .populate('customer_id', 'full_name email phone membership_level')
+      .lean();
+
+    return new RatingEntity(savedRating).toJSON();
   }
 
   async update(id, updateData) {
