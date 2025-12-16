@@ -81,6 +81,22 @@ export const mockTables: Table[] = [
     floor: "Floor 1",
     brokenReason: "Ghế bị gãy chân, cần thay thế",
   },
+  {
+    id: "9",
+    number: "T09",
+    area: "Outdoor",
+    seats: 4,
+    status: "occupied",
+    floor: "Floor 1",
+  },
+  {
+    id: "10",
+    number: "T010",
+    area: "Outdoor",
+    seats: 2,
+    status: "occupied",
+    floor: "Floor 1",
+  },
 ];
 
 // Mock Menu Items
