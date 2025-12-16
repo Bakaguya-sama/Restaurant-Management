@@ -13,6 +13,11 @@ const staffRouter = require('./src/presentation_layer/routes/staff.routes');
 const customerRouter = require('./src/presentation_layer/routes/customer.routes');
 const promotionRouter = require('./src/presentation_layer/routes/promotion.routes');
 const invoiceRouter = require('./src/presentation_layer/routes/invoice.routes');
+const invoicePromotionRouter = require('./src/presentation_layer/routes/invoice_promotion.routes');
+const complaintRouter = require('./src/presentation_layer/routes/complaint.routes');
+const ratingRouter = require('./src/presentation_layer/routes/rating.routes');
+const violationRouter = require('./src/presentation_layer/routes/violation.routes');
+const ratingReplyRouter = require('./src/presentation_layer/routes/rating_reply.routes');
 
 // Load environment variables
 dotenv.config();
@@ -62,6 +67,16 @@ app.use('/api/v1/customers', customerRouter);
 app.use('/api/v1/promotions', promotionRouter);
 
 app.use('/api/v1/invoices', invoiceRouter);
+
+app.use('/api/v1/invoice-promotions', invoicePromotionRouter);
+
+app.use('/api/v1/complaints', complaintRouter);
+
+app.use('/api/v1/ratings', ratingRouter);
+
+app.use('/api/v1/violations', violationRouter);
+
+app.use('/api/v1/rating-replies', ratingReplyRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -163,6 +178,60 @@ if (process.env.NODE_ENV !== 'test') {
 ║  SUPPLIERS:                                        ║
 ║  • GET    /api/v1/suppliers                          ║
 ║  • POST   /api/v1/suppliers                          ║
+║                                                    ║
+║  INVOICE PROMOTIONS:                               ║
+║  • GET    /api/v1/invoice-promotions/statistics      ║
+║  • GET    /api/v1/invoice-promotions                 ║
+║  • GET    /api/v1/invoice-promotions/:id             ║
+║  • GET    /api/v1/invoice-promotions/invoice/:invoiceId ║
+║  • GET    /api/v1/invoice-promotions/promotion/:promotionId ║
+║  • POST   /api/v1/invoice-promotions                 ║
+║  • DELETE /api/v1/invoice-promotions/:id             ║
+║                                                    ║
+║  COMPLAINTS:                                       ║
+║  • GET    /api/v1/complaints/statistics              ║
+║  • GET    /api/v1/complaints                         ║
+║  • GET    /api/v1/complaints/:id                     ║
+║  • POST   /api/v1/complaints                         ║
+║  • PUT    /api/v1/complaints/:id                     ║
+║  • DELETE /api/v1/complaints/:id                     ║
+║  • PATCH  /api/v1/complaints/:id/status              ║
+║  • PATCH  /api/v1/complaints/:id/assign              ║
+║  • PATCH  /api/v1/complaints/:id/resolve             ║
+║                                                    ║
+║  RATINGS:                                          ║
+║  • GET    /api/v1/ratings/statistics                 ║
+║  • GET    /api/v1/ratings                            ║
+║  • GET    /api/v1/ratings/:id                        ║
+║  • GET    /api/v1/ratings/:id/replies                ║
+║  • POST   /api/v1/ratings                            ║
+║  • POST   /api/v1/ratings/:id/reply                  ║
+║  • PUT    /api/v1/ratings/:id                        ║
+║  • PUT    /api/v1/ratings/replies/:replyId           ║
+║  • DELETE /api/v1/ratings/:id                        ║
+║  • DELETE /api/v1/ratings/replies/:replyId           ║
+║                                                    ║
+║  VIOLATIONS:                                       ║
+║  • GET    /api/v1/violations/statistics              ║
+║  • GET    /api/v1/violations/statistics/top-violators ║
+║  • GET    /api/v1/violations                         ║
+║  • GET    /api/v1/violations/:id                     ║
+║  • GET    /api/v1/violations/customer/:customerId    ║
+║  • POST   /api/v1/violations                         ║
+║  • PUT    /api/v1/violations/:id                     ║
+║  • DELETE /api/v1/violations/:id                     ║
+║                                                    ║
+║  RATING REPLIES:                                   ║
+║  • GET    /api/v1/rating-replies/statistics          ║
+║  • GET    /api/v1/rating-replies/statistics/top-staff ║
+║  • GET    /api/v1/rating-replies                     ║
+║  • GET    /api/v1/rating-replies/:id                 ║
+║  • GET    /api/v1/rating-replies/rating/:ratingId    ║
+║  • GET    /api/v1/rating-replies/staff/:staffId      ║
+║  • POST   /api/v1/rating-replies                     ║
+║  • PUT    /api/v1/rating-replies/:id                 ║
+║  • DELETE /api/v1/rating-replies/:id                 ║
+║  • DELETE /api/v1/rating-replies/rating/:ratingId    ║
 ╚═════════════════════════════════════════════════════╝
 `);
   });

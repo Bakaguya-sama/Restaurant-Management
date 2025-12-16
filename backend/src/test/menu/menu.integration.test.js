@@ -6,7 +6,7 @@ process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/
 const request = require('supertest');
 const mongoose = require('mongoose');
 const app = require('../../../server');
-const { Ingredient, StockImport, StockImportDetail, Dish, DishIngredient } = require('../../src/models');
+const { Ingredient, StockImport, StockImportDetail, Dish, DishIngredient } = require('../../models');
 
 describe('Menu Integration Tests', () => {
   beforeAll(async () => {
