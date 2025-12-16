@@ -1,0 +1,66 @@
+@baseUrl = http://localhost:5001/api/v1
+
+### Get All Ratings
+GET {{baseUrl}}/ratings
+
+### Get Ratings by Customer
+GET {{baseUrl}}/ratings?customer_id=PUT_CUSTOMER_ID_HERE
+
+### Get Ratings by Score
+GET {{baseUrl}}/ratings?score=5
+
+### Get Ratings by Score Range
+GET {{baseUrl}}/ratings?min_score=4&max_score=5
+
+### Get Rating by ID
+GET {{baseUrl}}/ratings/PUT_RATING_ID_HERE
+
+### Get Rating Replies
+GET {{baseUrl}}/ratings/PUT_RATING_ID_HERE/replies
+
+### Get Rating Statistics
+GET {{baseUrl}}/ratings/statistics
+
+### Create Rating
+POST {{baseUrl}}/ratings
+Content-Type: application/json
+
+{
+  "customer_id": "PUT_CUSTOMER_ID_HERE",
+  "score": 5,
+  "description": "Excellent service and delicious food! Will definitely come back."
+}
+
+### Create Rating - Low Score
+POST {{baseUrl}}/ratings
+Content-Type: application/json
+
+{
+  "customer_id": "PUT_CUSTOMER_ID_HERE",
+  "score": 2,
+  "description": "Food was cold and service was slow."
+}
+
+### Update Rating
+PUT {{baseUrl}}/ratings/PUT_RATING_ID_HERE
+Content-Type: application/json
+
+{
+  "score": 4,
+  "description": "Good service overall, but food could be better."
+}
+
+### Create Rating Reply
+POST {{baseUrl}}/ratings/PUT_RATING_ID_HERE/replies
+Content-Type: application/json
+
+{
+  "staff_id": "PUT_STAFF_ID_HERE",
+  "reply_text": "Thank you for your feedback! We're glad you enjoyed your visit. Looking forward to serving you again!"
+}
+
+### Delete Rating Reply
+DELETE {{baseUrl}}/ratings/replies/PUT_REPLY_ID_HERE
+
+### Delete Rating
+DELETE {{baseUrl}}/ratings/PUT_RATING_ID_HERE

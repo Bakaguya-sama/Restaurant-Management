@@ -1,0 +1,78 @@
+@baseUrl = http://localhost:5001/api/v1
+
+### Get All Rating Replies
+GET {{baseUrl}}/rating-replies
+
+### Get Rating Replies by Rating ID
+GET {{baseUrl}}/rating-replies?rating_id=PUT_RATING_ID_HERE
+
+### Get Rating Replies by Staff ID
+GET {{baseUrl}}/rating-replies?staff_id=PUT_STAFF_ID_HERE
+
+### Get Rating Replies by Date Range
+GET {{baseUrl}}/rating-replies?start_date=2024-01-01&end_date=2024-12-31
+
+### Get Rating Reply by ID
+GET {{baseUrl}}/rating-replies/PUT_REPLY_ID_HERE
+
+### Get Replies for Specific Rating
+GET {{baseUrl}}/rating-replies/rating/PUT_RATING_ID_HERE
+
+### Get Replies by Specific Staff
+GET {{baseUrl}}/rating-replies/staff/PUT_STAFF_ID_HERE
+
+### Get Rating Replies Statistics
+GET {{baseUrl}}/rating-replies/statistics
+
+### Get Rating Replies Statistics by Staff
+GET {{baseUrl}}/rating-replies/statistics?staff_id=PUT_STAFF_ID_HERE
+
+### Get Top Responding Staff
+GET {{baseUrl}}/rating-replies/statistics/top-staff
+
+### Get Top 5 Responding Staff
+GET {{baseUrl}}/rating-replies/statistics/top-staff?limit=5
+
+### Create Rating Reply
+POST {{baseUrl}}/rating-replies
+Content-Type: application/json
+
+{
+  "rating_id": "PUT_RATING_ID_HERE",
+  "staff_id": "PUT_STAFF_ID_HERE",
+  "reply_text": "Thank you for your feedback! We're glad you enjoyed your experience with us. Looking forward to serving you again soon!"
+}
+
+### Create Rating Reply - Short Response
+POST {{baseUrl}}/rating-replies
+Content-Type: application/json
+
+{
+  "rating_id": "PUT_RATING_ID_HERE",
+  "staff_id": "PUT_STAFF_ID_HERE",
+  "reply_text": "We appreciate your feedback and will work to improve."
+}
+
+### Create Rating Reply - Apologetic Response
+POST {{baseUrl}}/rating-replies
+Content-Type: application/json
+
+{
+  "rating_id": "PUT_RATING_ID_HERE",
+  "staff_id": "PUT_STAFF_ID_HERE",
+  "reply_text": "We sincerely apologize for your unsatisfactory experience. We have noted your concerns and will address them with our team to ensure this doesn't happen again. We hope you'll give us another chance to serve you better."
+}
+
+### Update Rating Reply
+PUT {{baseUrl}}/rating-replies/PUT_REPLY_ID_HERE
+Content-Type: application/json
+
+{
+  "reply_text": "Thank you for your valuable feedback! We've shared your comments with our team. We're continuously working to improve our service and hope to welcome you back soon!"
+}
+
+### Delete Rating Reply
+DELETE {{baseUrl}}/rating-replies/PUT_REPLY_ID_HERE
+
+### Delete All Replies for a Rating
+DELETE {{baseUrl}}/rating-replies/rating/PUT_RATING_ID_HERE
