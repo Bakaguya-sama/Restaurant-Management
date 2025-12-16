@@ -126,20 +126,20 @@ class TableController {
 
   async createTable(req, res) {
     try {
-      const { number, seats, area, floor } = req.body;
+      const { table_number, capacity, location_id } = req.body;
 
-      if (!number || seats === undefined || !area) {
+      if (!table_number || capacity === undefined || !location_id) {
         return res.status(400).json({
           success: false,
           data: null,
-          message: 'number, seats, and area are required'
+          message: 'table_number, capacity, and location_id are required'
         });
       }
 
       const table = await this.tableService.createTable({
-        number,
-        seats,
-        area
+        table_number,
+        capacity,
+        location_id
       });
 
       const formatted = await this.tableService.formatTableResponse(table, true);
@@ -162,20 +162,20 @@ class TableController {
 
   async updateTable(req, res) {
     try {
-      const { number, seats, area, status } = req.body;
+      const { table_number, capacity, location_id, status } = req.body;
 
-      if (!number || seats === undefined) {
+      if (!table_number || capacity === undefined) {
         return res.status(400).json({
           success: false,
           data: null,
-          message: 'number and seats are required'
+          message: 'table_number and capacity are required'
         });
       }
 
       const table = await this.tableService.updateTable(req.params.id, {
-        number,
-        seats,
-        area,
+        table_number,
+        capacity,
+        location_id,
         status
       });
 

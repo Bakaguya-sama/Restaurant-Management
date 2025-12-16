@@ -20,7 +20,7 @@ class TableRepository {
     }
 
     const tables = await Table.find(query)
-      .populate('location_id', 'name')
+      //.populate('location_id', 'name')
       .select('_id table_number location_id capacity status brokenReason created_at');
 
     return tables.map(table => new TableEntity(table.toObject()));
@@ -28,7 +28,7 @@ class TableRepository {
 
   async findById(id) {
     const table = await Table.findById(id)
-      .populate('location_id', 'name')
+      //.populate('location_id', 'name')
       .select('_id table_number location_id capacity status brokenReason created_at');
 
     if (!table) return null;
@@ -37,7 +37,7 @@ class TableRepository {
 
   async findByNumber(tableNumber) {
     const table = await Table.findOne({ table_number: tableNumber })
-      .populate('location_id', 'name');
+      //.populate('location_id', 'name');
 
     if (!table) return null;
     return new TableEntity(table.toObject());
@@ -45,7 +45,7 @@ class TableRepository {
 
   async findByLocation(locationId) {
     const tables = await Table.find({ location_id: locationId })
-      .populate('location_id', 'name')
+      //.populate('location_id', 'name')
       .select('_id table_number location_id capacity status brokenReason created_at');
 
     return tables.map(table => new TableEntity(table.toObject()));
@@ -53,7 +53,7 @@ class TableRepository {
 
   async findByStatus(status) {
     const tables = await Table.find({ status })
-      .populate('location_id', 'name')
+      //.populate('location_id', 'name')
       .select('_id table_number location_id capacity status brokenReason created_at');
 
     return tables.map(table => new TableEntity(table.toObject()));
@@ -76,14 +76,14 @@ class TableRepository {
   async create(tableData) {
     const table = new Table(tableData);
     const savedTable = await table.save();
-    await savedTable.populate('location_id', 'name');
+    //await savedTable.populate('location_id', 'name');
     return new TableEntity(savedTable.toObject());
   }
 
   async update(id, updateData) {
     updateData.updated_at = new Date();
     const table = await Table.findByIdAndUpdate(id, updateData, { new: true })
-      .populate('location_id', 'name')
+      //.populate('location_id', 'name')
       .select('_id table_number location_id capacity status brokenReason created_at');
 
     if (!table) return null;
@@ -97,7 +97,7 @@ class TableRepository {
     }
 
     const table = await Table.findByIdAndUpdate(id, updateData, { new: true })
-      .populate('location_id', 'name')
+      //.populate('location_id', 'name')
       .select('_id table_number location_id capacity status brokenReason created_at');
 
     if (!table) return null;
@@ -106,7 +106,7 @@ class TableRepository {
 
   async delete(id) {
     const table = await Table.findByIdAndDelete(id)
-      .populate('location_id', 'name');
+      //.populate('location_id', 'name');
 
     if (!table) return null;
     return new TableEntity(table.toObject());
@@ -123,7 +123,7 @@ class TableRepository {
   async getFloorInfo(table) {
     if (!table.location_id) return null;
 
-    const location = await Location.findById(table.location_id).populate('floor_id', 'floor_name');
+    const location = await Location.findById(table.location_id);//.populate('floor_id', 'floor_name');
     return location?.floor_id?.floor_name || null;
   }
 

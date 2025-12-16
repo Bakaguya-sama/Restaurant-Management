@@ -1,12 +1,9 @@
 module.exports = {
   testEnvironment: 'node',
+  testTimeout: 20000,
+  verbose: true,
   testMatch: [
-    '**/test/**/*.test.js',
-    '**/test/**/*.integration.js'
-  ],
-  coveragePathIgnorePatterns: [
-    '/node_modules/'
-  ],
-  testTimeout: 30000,
-  verbose: true
+    '**/src/test/**/*.test.js',
+    '**/src/test/**/*.integration.js'
+  ]
 };

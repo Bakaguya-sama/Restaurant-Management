@@ -206,23 +206,23 @@ const DishIngredientSchema = new Schema({
 
 // ==================== MENU ====================
 
-const MenuSchema = new Schema({
-  name: { type: String, required: true },
-  description: String,
-  menu_type: { type: String, enum: ['regular', 'seasonal', 'special', 'lunch', 'dinner'], default: 'regular' },
-  is_active: { type: Boolean, default: true },
-  valid_from: Date,
-  valid_to: Date,
-  created_at: { type: Date, default: Date.now }
-});
+// const MenuSchema = new Schema({
+//   name: { type: String, required: true },
+//   description: String,
+//   menu_type: { type: String, enum: ['regular', 'seasonal', 'special', 'lunch', 'dinner'], default: 'regular' },
+//   is_active: { type: Boolean, default: true },
+//   valid_from: Date,
+//   valid_to: Date,
+//   created_at: { type: Date, default: Date.now }
+// });
 
-// MenuEntry - Junction table
-const MenuEntrySchema = new Schema({
-  menu_id: { type: Schema.Types.ObjectId, ref: 'Menu', required: true },
-  dish_id: { type: Schema.Types.ObjectId, ref: 'Dish', required: true },
-  display_order: { type: Number, default: 0 },
-  is_featured: { type: Boolean, default: false }
-});
+// // MenuEntry - Junction table
+// const MenuEntrySchema = new Schema({
+//   menu_id: { type: Schema.Types.ObjectId, ref: 'Menu', required: true },
+//   dish_id: { type: Schema.Types.ObjectId, ref: 'Dish', required: true },
+//   display_order: { type: Number, default: 0 },
+//   is_featured: { type: Boolean, default: false }
+// });
 
 // ==================== ORDER ====================
 
@@ -330,7 +330,7 @@ const RatingSchema = new Schema({
   customer_id: { type: Schema.Types.ObjectId, ref: 'Customer', required: true },
   description: String,
   rating_date: { type: Date, default: Date.now },
-  score: { type: Number, required: true, min: 1, max: 5 },
+  //score: { type: Number, required: true, min: 1, max: 5 },
 });
 
 //Replies to ratings
@@ -356,8 +356,8 @@ const StockImport = mongoose.model('StockImport', StockImportSchema);
 const StockImportDetail = mongoose.model('StockImportDetail', StockImportDetailSchema);
 const Dish = mongoose.model('Dish', DishSchema);
 const DishIngredient = mongoose.model('DishIngredient', DishIngredientSchema);
-const Menu = mongoose.model('Menu', MenuSchema);
-const MenuEntry = mongoose.model('MenuEntry', MenuEntrySchema);
+// const Menu = mongoose.model('Menu', MenuSchema);
+// const MenuEntry = mongoose.model('MenuEntry', MenuEntrySchema);
 const Order = mongoose.model('Order', OrderSchema);
 const OrderDetail = mongoose.model('OrderDetail', OrderDetailSchema);
 const Promotion = mongoose.model('Promotion', PromotionSchema);
@@ -388,8 +388,8 @@ module.exports = {
   StockImportDetail,
   Dish,
   DishIngredient,
-  Menu,
-  MenuEntry,
+  // Menu,
+  // MenuEntry,
   Order,
   OrderDetail,
   Promotion,

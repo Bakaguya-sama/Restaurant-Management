@@ -1,0 +1,33 @@
+### ReservationDetail APIs
+
+# Get all reservation details
+GET http://localhost:5001/api/v1/reservation-details
+
+# Get reservation details filtered by reservation_id
+GET http://localhost:5001/api/v1/reservation-details?reservation_id={{reservationId}}
+
+# Get reservation details filtered by table_id
+GET http://localhost:5001/api/v1/reservation-details?table_id={{tableId}}
+
+# Get reservation detail by id
+GET http://localhost:5001/api/v1/reservation-details/{{detailId}}
+
+# Create reservation detail
+POST http://localhost:5001/api/v1/reservation-details
+Content-Type: application/json
+
+{
+  "reservation_id": "{{reservationId}}",
+  "table_id": "{{tableId}}"
+}
+
+# Update reservation detail
+PUT http://localhost:5001/api/v1/reservation-details/{{detailId}}
+Content-Type: application/json
+
+{
+  "table_id": "{{tableId}}"
+}
+
+# Delete reservation detail
+DELETE http://localhost:5001/api/v1/reservation-details/{{detailId}}

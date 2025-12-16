@@ -35,7 +35,7 @@ describe('Location Integration Tests', () => {
     it('should create a new location successfully', async () => {
       const newLocation = {
         name: `Section A ${Date.now()}`,
-        floor: floorId,
+        floor_id: floorId,
         description: 'VIP dining area'
       };
 
@@ -48,14 +48,14 @@ describe('Location Integration Tests', () => {
       expect(response.body.data).toHaveProperty('id');
       expect(response.body.data.name).toBe(newLocation.name);
       expect(response.body.data.floor_id).toBe(floorId);
-      expect(response.body.data.floor).toBeDefined();
+      expect(typeof response.body.data.floor_id).toBe('string');
 
       createdLocationId = response.body.data.id;
     });
 
     it('should fail when creating location without name', async () => {
       const invalidLocation = {
-        floor: floorId,
+        floor_id: floorId,
         description: 'Test location'
       };
 
@@ -65,10 +65,10 @@ describe('Location Integration Tests', () => {
         .expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('name and floor are required');
+      expect(response.body.message).toContain('name and floor_id are required');
     });
 
-    it('should fail when creating location without floor', async () => {
+    it('should fail when creating location without floor_id', async () => {
       const invalidLocation = {
         name: 'Test Location',
         description: 'Test location'
@@ -80,14 +80,14 @@ describe('Location Integration Tests', () => {
         .expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('name and floor are required');
+      expect(response.body.message).toContain('name and floor_id are required');
     });
 
     it('should fail when creating location with non-existent floor', async () => {
       const fakeFloorId = new mongoose.Types.ObjectId();
       const newLocation = {
         name: 'Test Location',
-        floor: fakeFloorId.toString(),
+        floor_id: fakeFloorId.toString(),
         description: 'Test location'
       };
 
@@ -104,7 +104,7 @@ describe('Location Integration Tests', () => {
       const locationName = `Location ${Date.now()}`;
       const firstLocation = {
         name: locationName,
-        floor: floorId,
+        floor_id: floorId,
         description: 'First location'
       };
 
@@ -140,7 +140,7 @@ describe('Location Integration Tests', () => {
       expect(Array.isArray(response.body.data)).toBe(true);
     });
 
-    it('should filter locations by floor', async () => {
+    it('should filter locations by floor_id', async () => {
       const response = await request(app)
         .get(`/api/v1/locations?floor_id=${floorId}`)
         .expect(200);
@@ -170,7 +170,6 @@ describe('Location Integration Tests', () => {
       expect(response.body.data.id).toBe(createdLocationId);
       expect(response.body.data).toHaveProperty('name');
       expect(response.body.data).toHaveProperty('floor_id');
-      expect(response.body.data).toHaveProperty('floor');
     });
 
     it('should return 404 for non-existent location', async () => {
@@ -220,7 +219,7 @@ describe('Location Integration Tests', () => {
     it('should update location successfully', async () => {
       const updateData = {
         name: `Updated Location ${Date.now()}`,
-        floor: floorId,
+        floor_id: floorId,
         description: 'Updated description'
       };
 
@@ -236,7 +235,7 @@ describe('Location Integration Tests', () => {
 
     it('should fail when updating location without name', async () => {
       const invalidUpdateData = {
-        floor: floorId
+        floor_id: floorId
       };
 
       const response = await request(app)
@@ -251,7 +250,7 @@ describe('Location Integration Tests', () => {
       const fakeFloorId = new mongoose.Types.ObjectId();
       const updateData = {
         name: 'Test Location',
-        floor: fakeFloorId.toString()
+        floor_id: fakeFloorId.toString()
       };
 
       const response = await request(app)
@@ -266,7 +265,7 @@ describe('Location Integration Tests', () => {
       const fakeId = new mongoose.Types.ObjectId();
       const updateData = {
         name: 'Test',
-        floor: floorId
+        floor_id: floorId
       };
 
       const response = await request(app)
