@@ -8,6 +8,7 @@ import { mockMenuItems } from "../../../lib/mockData";
 import { MenuItem } from "../../../types";
 import { toast } from "sonner";
 import { ConfirmationModal } from "../../ui/ConfirmationModal";
+import { mockTables } from "../../../lib/mockData";
 
 interface OrderItem {
   item: MenuItem;
@@ -55,17 +56,10 @@ export function OrderingPage() {
   const categories = ["all", "Khai vị", "Món chính", "Đồ uống"];
   const quickNotes = ["Ít đá", "Không cay", "Không hành", "Ít dầu", "Thêm rau"];
 
-  // Available tables for waiter
-  const availableTables = [
-    "T01",
-    "T02",
-    "T03",
-    "T04",
-    "T05",
-    "T06",
-    "T07",
-    "T08",
-  ];
+  // Available tables for waiter - only show occupied tables
+  const availableTables = mockTables.filter(
+    (table) => table.status === "occupied"
+  );
 
   const filteredItems = mockMenuItems.filter((item) => {
     if (!item.available) return false;
@@ -233,14 +227,14 @@ export function OrderingPage() {
             <h3 className="mb-4">Chọn bàn</h3>
             {/* Table Selection Grid - Prominent Display */}
             <div className="grid grid-cols-4 md:grid-cols-6 gap-3 mb-6 p-4 bg-white rounded-lg border-2 border-[#625EE8]">
-              {availableTables.map((tableNum) => {
-                const hasOrders = ordersByTable[tableNum]?.length > 0;
+              {availableTables.map((table) => {
+                const hasOrders = ordersByTable[table.number]?.length > 0;
                 return (
                   <button
-                    key={tableNum}
-                    onClick={() => setSelectedTable(tableNum)}
+                    key={table.id}
+                    onClick={() => setSelectedTable(table.number)}
                     className={`p-4 rounded-lg border-2 transition-all ${
-                      selectedTable === tableNum
+                      selectedTable === table.number
                         ? "bg-[#625EE8] text-white border-[#625EE8] shadow-lg scale-105"
                         : hasOrders
                         ? "bg-green-50 text-green-700 border-green-400 hover:border-green-500 hover:bg-green-100"
@@ -249,10 +243,10 @@ export function OrderingPage() {
                   >
                     <div className="text-center">
                       <Utensils className="w-6 h-6 mx-auto mb-1" />
-                      <span className="text-sm">{tableNum}</span>
+                      <span className="text-sm">{table.number}</span>
                       {hasOrders && (
                         <span className="block text-xs mt-1">
-                          ({ordersByTable[tableNum].length} món)
+                          ({ordersByTable[table.number].length} món)
                         </span>
                       )}
                     </div>
