@@ -13,21 +13,40 @@ describe('Rating Integration Tests', () => {
   beforeAll(async () => {
     await connectDB();
 
-    const customer = await Customer.findOne();
+    let customer = await Customer.findOne();
+    if (!customer) {
+      customer = await Customer.create({
+        full_name: 'Test Customer',
+        email: `testcustomer${Date.now()}@test.com`,
+        phone: '0900000001',
+        password_hash: 'hashedpassword',
+        membership_level: 'silver'
+      });
+    }
     testCustomerId = customer._id;
 
-    const staff = await Staff.findOne();
+    let staff = await Staff.findOne();
+    if (!staff) {
+      staff = await Staff.create({
+        full_name: 'Test Staff',
+        username: `teststaff${Date.now()}`,
+        email: `teststaff${Date.now()}@test.com`,
+        phone: '0900000002',
+        password_hash: 'hashedpassword',
+        role: 'waiter',
+        status: 'active'
+      });
+    }
     testStaffId = staff._id;
   });
 
   afterAll(async () => {
     if (createdReplyId) {
-      await RatingReply.findByIdAndDelete(createdReplyId);
+      await RatingReply.findByIdAndDelete(createdReplyId).catch(() => {});
     }
     if (createdRatingId) {
-      await Rating.findByIdAndDelete(createdRatingId);
+      await Rating.findByIdAndDelete(createdRatingId).catch(() => {});
     }
-    await mongoose.connection.close();
   });
 
   describe('POST /api/v1/ratings - Create Rating', () => {

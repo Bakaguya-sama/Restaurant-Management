@@ -13,13 +13,43 @@ describe('Invoice Integration Tests', () => {
   beforeAll(async () => {
     await connectDB();
 
-    const staff = await Staff.findOne({ role: 'cashier' });
+    let staff = await Staff.findOne({ role: 'cashier' });
+    if (!staff) {
+      staff = await Staff.create({
+        full_name: 'Test Cashier',
+        username: `testcashier${Date.now()}`,
+        email: `testcashier${Date.now()}@test.com`,
+        phone: '0900000003',
+        password_hash: 'hashedpassword',
+        role: 'cashier',
+        status: 'active'
+      });
+    }
     testStaffId = staff._id;
 
-    const customer = await Customer.findOne();
+    let customer = await Customer.findOne();
+    if (!customer) {
+      customer = await Customer.create({
+        full_name: 'Test Customer Invoice',
+        email: `testinvoicecust${Date.now()}@test.com`,
+        phone: '0900000004',
+        password_hash: 'hashedpassword',
+        membership_level: 'silver'
+      });
+    }
     testCustomerId = customer._id;
 
-    const order = await Order.findOne();
+    let order = await Order.findOne();
+    if (!order) {
+      order = await Order.create({
+        customer_id: testCustomerId,
+        order_number: `ORD${Date.now()}`,
+        order_date: new Date(),
+        order_time: '12:00',
+        total_amount: 100000,
+        status: 'completed'
+      });
+    }
     testOrderId = order._id;
 
     const existingInvoice = await Invoice.findOne({ order_id: testOrderId });
@@ -30,9 +60,8 @@ describe('Invoice Integration Tests', () => {
 
   afterAll(async () => {
     if (createdInvoiceId) {
-      await Invoice.findByIdAndDelete(createdInvoiceId);
+      await Invoice.findByIdAndDelete(createdInvoiceId).catch(() => {});
     }
-    await mongoose.connection.close();
   });
 
   describe('POST /api/v1/invoices - Create Invoice', () => {

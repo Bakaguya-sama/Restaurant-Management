@@ -2,7 +2,7 @@ const request = require('supertest');
 const app = require('../../../server');
 const connectDB = require('../../../config/database');
 const mongoose = require('mongoose');
-const { InvoicePromotion, Invoice, Promotion } = require('../../models');
+const { InvoicePromotion, Invoice, Promotion, Order, Customer, Staff } = require('../../models');
 
 describe('Invoice Promotion Integration Tests', () => {
   let createdInvoicePromotionId;
@@ -12,10 +12,71 @@ describe('Invoice Promotion Integration Tests', () => {
   beforeAll(async () => {
     await connectDB();
 
-    const invoice = await Invoice.findOne();
+    let staff = await Staff.findOne({ role: 'cashier' });
+    if (!staff) {
+      staff = await Staff.create({
+        full_name: 'Test Cashier',
+        username: `cashier${Date.now()}`,
+        email: `cashier${Date.now()}@test.com`,
+        phone: '0900000006',
+        password_hash: 'hashedpassword',
+        role: 'cashier',
+        status: 'active'
+      });
+    }
+
+    let customer = await Customer.findOne();
+    if (!customer) {
+      customer = await Customer.create({
+        full_name: 'Test Customer',
+        email: `testcustpromo${Date.now()}@test.com`,
+        phone: '0900000005',
+        password_hash: 'hashedpassword',
+        membership_level: 'silver'
+      });
+    }
+
+    let order = await Order.findOne();
+    if (!order) {
+      order = await Order.create({
+        customer_id: customer._id,
+        order_number: `ORD${Date.now()}`,
+        order_date: new Date(),
+        order_time: '12:00',
+        total_amount: 100000,
+        status: 'completed'
+      });
+    }
+
+    let invoice = await Invoice.findOne();
+    if (!invoice) {
+      invoice = await Invoice.create({
+        order_id: order._id,
+        staff_id: staff._id,
+        customer_id: customer._id,
+        invoice_number: `INV${Date.now()}`,
+        invoice_date: new Date(),
+        subtotal: 90000,
+        tax: 10000,
+        total_amount: 100000,
+        payment_method: 'cash',
+        payment_status: 'pending'
+      });
+    }
     testInvoiceId = invoice._id;
 
-    const promotion = await Promotion.findOne({ is_active: true });
+    let promotion = await Promotion.findOne({ is_active: true });
+    if (!promotion) {
+      promotion = await Promotion.create({
+        name: 'Test Promotion',
+        promo_code: `TESTPROMO${Date.now()}`,
+        discount_value: 10000,
+        promotion_type: 'percentage',
+        start_date: new Date(),
+        end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        is_active: true
+      });
+    }
     testPromotionId = promotion._id;
 
     const existing = await InvoicePromotion.findOne({ 
@@ -29,9 +90,8 @@ describe('Invoice Promotion Integration Tests', () => {
 
   afterAll(async () => {
     if (createdInvoicePromotionId) {
-      await InvoicePromotion.findByIdAndDelete(createdInvoicePromotionId);
+      await InvoicePromotion.findByIdAndDelete(createdInvoicePromotionId).catch(() => {});
     }
-    await mongoose.connection.close();
   });
 
   describe('POST /api/v1/invoice-promotions - Create Invoice Promotion', () => {

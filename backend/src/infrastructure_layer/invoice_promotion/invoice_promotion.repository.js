@@ -54,7 +54,12 @@ class InvoicePromotionRepository {
     const invoicePromotion = new InvoicePromotion(data);
     await invoicePromotion.save();
 
-    return new InvoicePromotionEntity(invoicePromotion).toJSON();
+    const saved = await InvoicePromotion.findById(invoicePromotion._id)
+      .populate('invoice_id', 'invoice_number total_amount payment_status')
+      .populate('promotion_id', 'name promo_code discount_value promotion_type')
+      .lean();
+
+    return new InvoicePromotionEntity(saved).toJSON();
   }
 
   async delete(id) {
