@@ -1,0 +1,63 @@
+@baseUrl = http://localhost:5001/api/v1
+
+### Get All Violations
+GET {{baseUrl}}/violations
+
+### Get Violations by Customer
+GET {{baseUrl}}/violations?customer_id=PUT_CUSTOMER_ID_HERE
+
+### Get Violations by Type
+GET {{baseUrl}}/violations?violation_type=no_show
+
+### Get Violations by Date Range
+GET {{baseUrl}}/violations?start_date=2025-01-01&end_date=2025-12-31
+
+### Get Violation by ID
+GET {{baseUrl}}/violations/PUT_VIOLATION_ID_HERE
+
+### Get Violations by Customer ID
+GET {{baseUrl}}/violations/customer/PUT_CUSTOMER_ID_HERE
+
+### Get Violation Statistics
+GET {{baseUrl}}/violations/statistics
+
+### Create Violation - No Show
+POST {{baseUrl}}/violations
+Content-Type: application/json
+
+{
+  "customer_id": "PUT_CUSTOMER_ID_HERE",
+  "violation_type": "no_show",
+  "description": "Customer did not show up for reservation on 2025-12-15 at 19:00"
+}
+
+### Create Violation - Late Cancel
+POST {{baseUrl}}/violations
+Content-Type: application/json
+
+{
+  "customer_id": "PUT_CUSTOMER_ID_HERE",
+  "violation_type": "late_cancel",
+  "description": "Customer cancelled reservation 30 minutes before scheduled time"
+}
+
+### Create Violation - Property Damage
+POST {{baseUrl}}/violations
+Content-Type: application/json
+
+{
+  "customer_id": "PUT_CUSTOMER_ID_HERE",
+  "violation_type": "property_damage",
+  "description": "Customer broke a wine glass and damaged table cloth"
+}
+
+### Update Violation
+PUT {{baseUrl}}/violations/PUT_VIOLATION_ID_HERE
+Content-Type: application/json
+
+{
+  "description": "Customer did not show up for reservation on 2025-12-15 at 19:00. No call or notification received."
+}
+
+### Delete Violation
+DELETE {{baseUrl}}/violations/PUT_VIOLATION_ID_HERE

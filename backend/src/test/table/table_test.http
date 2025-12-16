@@ -1,0 +1,258 @@
+@baseUrl = http://localhost:5001/api/v1
+
+# ======================
+# TABLE API TESTS
+# ======================
+
+### GET /tables - Lấy tất cả các bàn
+GET {{baseUrl}}/tables
+
+
+### GET /tables - Lọc theo status (free)
+GET {{baseUrl}}/tables?status=free
+
+
+### GET /tables - Lọc theo location
+GET {{baseUrl}}/tables?location_id=674da30bb19ecab3d0c9f0c2
+
+
+### GET /tables/status/summary - Lấy thống kê trạng thái bàn
+GET {{baseUrl}}/tables/status/summary
+
+
+### POST /tables - SUCCESS - Tạo bàn mới
+POST {{baseUrl}}/tables
+Content-Type: application/json
+
+{
+  "table_number": "101",
+  "capacity": 4,
+  "location_id": "674da30bb19ecab3d0c9f0c2"
+}
+
+
+### POST /tables - SUCCESS - Tạo bàn thứ 2
+POST {{baseUrl}}/tables
+Content-Type: application/json
+
+{
+  "table_number": "102",
+  "capacity": 6,
+  "location_id": "674da30bb19ecab3d0c9f0c2"
+}
+
+
+### POST /tables - SUCCESS - Tạo bàn thứ 3 (khác khu vực)
+POST {{baseUrl}}/tables
+Content-Type: application/json
+
+{
+  "table_number": "201",
+  "capacity": 2,
+  "location_id": "674da30bb19ecab3d0c9f0c3"
+}
+
+
+### POST /tables - FAIL - Missing table_number field
+POST {{baseUrl}}/tables
+Content-Type: application/json
+
+{
+  "capacity": 4,
+  "location_id": "674da30bb19ecab3d0c9f0c2"
+}
+
+
+### POST /tables - FAIL - Missing capacity field
+POST {{baseUrl}}/tables
+Content-Type: application/json
+
+{
+  "table_number": "103",
+  "location_id": "674da30bb19ecab3d0c9f0c2"
+}
+
+
+### POST /tables - FAIL - Missing location_id field
+POST {{baseUrl}}/tables
+Content-Type: application/json
+
+{
+  "table_number": "104",
+  "capacity": 4
+}
+
+
+### POST /tables - FAIL - Non-existent location
+POST {{baseUrl}}/tables
+Content-Type: application/json
+
+{
+  "table_number": "105",
+  "capacity": 4,
+  "location_id": "000000000000000000000000"
+}
+
+
+### POST /tables - FAIL - Duplicate table number
+POST {{baseUrl}}/tables
+Content-Type: application/json
+
+{
+  "table_number": "101",
+  "capacity": 8,
+  "location_id": "674da30bb19ecab3d0c9f0c2"
+}
+
+
+### GET /tables - Verify multiple tables created
+GET {{baseUrl}}/tables
+
+
+### GET /tables/{id} - Get table by ID (use existing table ID)
+GET {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3
+
+
+### GET /tables/{id} - FAIL - Non-existent table ID
+GET {{baseUrl}}/tables/000000000000000000000000
+
+
+### GET /tables/location/{locationId} - Get tables by location ID
+GET {{baseUrl}}/tables/location/674da30bb19ecab3d0c9f0c2
+
+
+### GET /tables/location/{locationId} - FAIL - Non-existent location
+GET {{baseUrl}}/tables/location/000000000000000000000000
+
+
+### GET /tables/status/{status} - Get tables by status (free)
+GET {{baseUrl}}/tables/status/free
+
+
+### GET /tables/status/{status} - Get tables by status (occupied)
+GET {{baseUrl}}/tables/status/occupied
+
+
+### GET /tables/status/{status} - FAIL - Invalid status
+GET {{baseUrl}}/tables/status/invalid_status
+
+
+### PUT /tables/{id} - SUCCESS - Update table details
+PUT {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3
+Content-Type: application/json
+
+{
+  "table_number": "101",
+  "capacity": 5,
+  "location_id": "674da30bb19ecab3d0c9f0c2"
+}
+
+
+### PUT /tables/{id} - FAIL - Update without table_number
+PUT {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3
+Content-Type: application/json
+
+{
+  "capacity": 4,
+  "location_id": "674da30bb19ecab3d0c9f0c2"
+}
+
+
+### PUT /tables/{id} - FAIL - Non-existent table ID
+PUT {{baseUrl}}/tables/000000000000000000000000
+Content-Type: application/json
+
+{
+  "table_number": "999",
+  "capacity": 10,
+  "location_id": "674da30bb19ecab3d0c9f0c2"
+}
+
+
+### PATCH /tables/{id}/status - Change status to occupied
+PATCH {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3/status
+Content-Type: application/json
+
+{
+  "status": "occupied"
+}
+
+
+### PATCH /tables/{id}/status - Change status to reserved
+PATCH {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3/status
+Content-Type: application/json
+
+{
+  "status": "reserved"
+}
+
+
+### PATCH /tables/{id}/status - Change status to dirty
+PATCH {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3/status
+Content-Type: application/json
+
+{
+  "status": "dirty"
+}
+
+
+### PATCH /tables/{id}/status - Change status to broken (with reason)
+PATCH {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3/status
+Content-Type: application/json
+
+{
+  "status": "broken",
+  "brokenReason": "Chair leg is broken, table wobbles"
+}
+
+
+### PATCH /tables/{id}/status - FAIL - broken without reason
+PATCH {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3/status
+Content-Type: application/json
+
+{
+  "status": "broken"
+}
+
+
+### PATCH /tables/{id}/status - Change status back to free (clears brokenReason)
+PATCH {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3/status
+Content-Type: application/json
+
+{
+  "status": "free"
+}
+
+
+### PATCH /tables/{id}/status - FAIL - Invalid status
+PATCH {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3/status
+Content-Type: application/json
+
+{
+  "status": "invalid_status"
+}
+
+
+### PATCH /tables/{id}/status - FAIL - Non-existent table
+PATCH {{baseUrl}}/tables/000000000000000000000000/status
+Content-Type: application/json
+
+{
+  "status": "occupied"
+}
+
+
+### GET /tables/status/summary - Verify updated status counts
+GET {{baseUrl}}/tables/status/summary
+
+
+### DELETE /tables/{id} - SUCCESS - Delete table
+DELETE {{baseUrl}}/tables/674da30bb19ecab3d0c9f0c3
+
+
+### DELETE /tables/{id} - FAIL - Non-existent table ID
+DELETE {{baseUrl}}/tables/000000000000000000000000
+
+
+### GET /tables - Verify remaining tables
+GET {{baseUrl}}/tables

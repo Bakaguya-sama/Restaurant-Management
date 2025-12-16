@@ -1,0 +1,71 @@
+### Reservation APIs
+
+# Get all reservations
+GET http://localhost:5001/api/v1/reservations
+
+# Get reservations filtered by customer_id
+GET http://localhost:5001/api/v1/reservations?customer_id={{customerId}}
+
+# Get reservations filtered by status
+GET http://localhost:5001/api/v1/reservations?status=pending
+
+# Get reservations filtered by reservation_date (YYYY-MM-DD)
+GET http://localhost:5001/api/v1/reservations?reservation_date=2025-12-17
+
+# Get reservations by customer (path)
+GET http://localhost:5001/api/v1/reservations/customer/{{customerId}}
+
+# Get reservations by table (path)
+GET http://localhost:5001/api/v1/reservations/table/{{tableId}}
+
+# Get reservation statistics
+GET http://localhost:5001/api/v1/reservations/statistics
+
+# Get reservation by id
+GET http://localhost:5001/api/v1/reservations/{{reservationId}}
+
+# Create reservation
+POST http://localhost:5001/api/v1/reservations
+Content-Type: application/json
+
+{
+  "customer_id": "{{customerId}}",
+  "reservation_date": "2025-12-17",
+  "reservation_time": "18:30",
+  "number_of_guests": 4,
+  "details": [
+    { "table_id": "{{tableId}}" }
+  ],
+  "status": "pending",
+  "special_requests": ""
+}
+
+# Add a table to reservation
+POST http://localhost:5001/api/v1/reservations/{{reservationId}}/add-table
+Content-Type: application/json
+
+{
+  "table_id": "{{tableId}}"
+}
+
+# Remove a table from reservation
+DELETE http://localhost:5001/api/v1/reservations/{{reservationId}}/remove-table/{{tableId}}
+
+# Update reservation
+PUT http://localhost:5001/api/v1/reservations/{{reservationId}}
+Content-Type: application/json
+
+{
+  "number_of_guests": 5
+}
+
+# Cancel reservation
+PUT http://localhost:5001/api/v1/reservations/{{reservationId}}
+Content-Type: application/json
+
+{
+  "status": "cancelled"
+}
+
+# Delete reservation
+DELETE http://localhost:5001/api/v1/reservations/{{reservationId}}

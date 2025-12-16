@@ -1,0 +1,92 @@
+@baseUrl = http://localhost:5001/api/v1
+
+### Get All Invoices
+GET {{baseUrl}}/invoices
+
+### Get Invoices by Payment Status
+GET {{baseUrl}}/invoices?payment_status=paid
+
+### Get Invoices by Payment Method
+GET {{baseUrl}}/invoices?payment_method=cash
+
+### Get Invoices by Customer
+GET {{baseUrl}}/invoices?customer_id=PUT_CUSTOMER_ID_HERE
+
+### Get Invoices by Date Range
+GET {{baseUrl}}/invoices?start_date=2024-01-01&end_date=2024-12-31
+
+### Search Invoice by Number
+GET {{baseUrl}}/invoices?search=INV-20241215
+
+### Get Invoice by ID
+GET {{baseUrl}}/invoices/PUT_INVOICE_ID_HERE
+
+### Get Invoice by Invoice Number
+GET {{baseUrl}}/invoices/number/INV-20241215-0001
+
+### Get Invoice by Order ID
+GET {{baseUrl}}/invoices/order/PUT_ORDER_ID_HERE
+
+### Get Invoice Statistics
+GET {{baseUrl}}/invoices/statistics
+
+### Get Revenue by Date Range
+GET {{baseUrl}}/invoices/revenue?start_date=2024-01-01&end_date=2024-12-31
+
+### Create Invoice - Without Promo Code
+POST {{baseUrl}}/invoices
+Content-Type: application/json
+
+{
+  "order_id": "PUT_ORDER_ID_HERE",
+  "staff_id": "PUT_STAFF_ID_HERE",
+  "customer_id": "PUT_CUSTOMER_ID_HERE",
+  "subtotal": 500000,
+  "tax_rate": 10,
+  "payment_method": "cash"
+}
+
+### Create Invoice - With Promo Code
+POST {{baseUrl}}/invoices
+Content-Type: application/json
+
+{
+  "order_id": "PUT_ORDER_ID_HERE",
+  "staff_id": "PUT_STAFF_ID_HERE",
+  "customer_id": "PUT_CUSTOMER_ID_HERE",
+  "subtotal": 500000,
+  "tax_rate": 10,
+  "payment_method": "card",
+  "promo_codes": ["SUMMER2024"]
+}
+
+### Create Invoice - With Multiple Promo Codes
+POST {{baseUrl}}/invoices
+Content-Type: application/json
+
+{
+  "order_id": "PUT_ORDER_ID_HERE",
+  "staff_id": "PUT_STAFF_ID_HERE",
+  "customer_id": "PUT_CUSTOMER_ID_HERE",
+  "subtotal": 800000,
+  "tax_rate": 10,
+  "payment_method": "e-wallet",
+  "promo_codes": ["SUMMER2024", "NEWYEAR2024"]
+}
+
+### Update Invoice
+PUT {{baseUrl}}/invoices/PUT_INVOICE_ID_HERE
+Content-Type: application/json
+
+{
+  "payment_method": "transfer"
+}
+
+### Mark Invoice as Paid
+PATCH {{baseUrl}}/invoices/PUT_INVOICE_ID_HERE/paid
+
+### Cancel Invoice
+PATCH {{baseUrl}}/invoices/PUT_INVOICE_ID_HERE/cancel
+
+### Delete Invoice
+DELETE {{baseUrl}}/invoices/PUT_INVOICE_ID_HERE

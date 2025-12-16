@@ -1,0 +1,73 @@
+@baseUrl = http://localhost:5001/api/v1
+
+### Get All Complaints
+GET {{baseUrl}}/complaints
+
+### Get Complaints by Status
+GET {{baseUrl}}/complaints?status=open
+
+### Get Complaints by Category
+GET {{baseUrl}}/complaints?category=food
+
+### Get Complaints by Priority
+GET {{baseUrl}}/complaints?priority=high
+
+### Get Complaints by Customer
+GET {{baseUrl}}/complaints?customer_id=PUT_CUSTOMER_ID_HERE
+
+### Get Complaints by Assigned Staff
+GET {{baseUrl}}/complaints?assigned_to_staff_id=PUT_STAFF_ID_HERE
+
+### Get Complaint by ID
+GET {{baseUrl}}/complaints/PUT_COMPLAINT_ID_HERE
+
+### Get Complaint Statistics
+GET {{baseUrl}}/complaints/statistics
+
+### Create Complaint
+POST {{baseUrl}}/complaints
+Content-Type: application/json
+
+{
+  "customer_id": "PUT_CUSTOMER_ID_HERE",
+  "subject": "Food Quality Issue",
+  "description": "The steak was overcooked and cold",
+  "category": "food",
+  "priority": "medium"
+}
+
+### Update Complaint
+PUT {{baseUrl}}/complaints/PUT_COMPLAINT_ID_HERE
+Content-Type: application/json
+
+{
+  "priority": "high",
+  "description": "The steak was overcooked, cold, and arrived 30 minutes late"
+}
+
+### Update Complaint Status
+PATCH {{baseUrl}}/complaints/PUT_COMPLAINT_ID_HERE/status
+Content-Type: application/json
+
+{
+  "status": "in_progress"
+}
+
+### Assign Complaint to Staff
+PATCH {{baseUrl}}/complaints/PUT_COMPLAINT_ID_HERE/assign
+Content-Type: application/json
+
+{
+  "staff_id": "PUT_STAFF_ID_HERE"
+}
+
+### Resolve Complaint
+PATCH {{baseUrl}}/complaints/PUT_COMPLAINT_ID_HERE/resolve
+Content-Type: application/json
+
+{
+  "resolution": "Issued full refund and provided complimentary dessert. Apologized for the inconvenience."
+}
+
+### Delete Complaint
+DELETE {{baseUrl}}/complaints/PUT_COMPLAINT_ID_HERE

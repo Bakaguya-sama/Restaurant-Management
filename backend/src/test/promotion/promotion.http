@@ -1,0 +1,100 @@
+@baseUrl = http://localhost:5001/api/v1
+
+### Get All Promotions
+GET {{baseUrl}}/promotions
+
+### Get All Active Promotions
+GET {{baseUrl}}/promotions?is_active=true
+
+### Get Valid Promotions Now
+GET {{baseUrl}}/promotions?valid_now=true
+
+### Get Promotions by Type
+GET {{baseUrl}}/promotions?promotion_type=percentage
+
+### Search Promotions
+GET {{baseUrl}}/promotions?search=summer
+
+### Get Promotion by ID
+GET {{baseUrl}}/promotions/PUT_PROMOTION_ID_HERE
+
+### Get Promotion by Promo Code
+GET {{baseUrl}}/promotions/code/SUMMER2024
+
+### Get Promotion Statistics
+GET {{baseUrl}}/promotions/statistics
+
+### Validate Promo Code
+POST {{baseUrl}}/promotions/validate
+Content-Type: application/json
+
+{
+  "promo_code": "SUMMER2024",
+  "order_amount": 500000
+}
+
+### Create Promotion - Percentage Discount
+POST {{baseUrl}}/promotions
+Content-Type: application/json
+
+{
+  "name": "Summer Sale 2024",
+  "promotion_type": "percentage",
+  "discount_value": 20,
+  "minimum_order_amount": 300000,
+  "promo_code": "SUMMER2024",
+  "start_date": "2024-06-01",
+  "end_date": "2024-08-31",
+  "is_active": true,
+  "max_uses": 100
+}
+
+### Create Promotion - Fixed Amount Discount
+POST {{baseUrl}}/promotions
+Content-Type: application/json
+
+{
+  "name": "New Year Special",
+  "promotion_type": "fixed_amount",
+  "discount_value": 50000,
+  "minimum_order_amount": 200000,
+  "promo_code": "NEWYEAR2024",
+  "start_date": "2024-01-01",
+  "end_date": "2024-01-31",
+  "is_active": true,
+  "max_uses": -1
+}
+
+### Create Promotion - No Promo Code
+POST {{baseUrl}}/promotions
+Content-Type: application/json
+
+{
+  "name": "Happy Hour Discount",
+  "promotion_type": "percentage",
+  "discount_value": 15,
+  "minimum_order_amount": 0,
+  "start_date": "2024-01-01",
+  "end_date": "2024-12-31",
+  "is_active": true,
+  "max_uses": -1
+}
+
+### Update Promotion
+PUT {{baseUrl}}/promotions/PUT_PROMOTION_ID_HERE
+Content-Type: application/json
+
+{
+  "name": "Summer Sale 2024 Updated",
+  "discount_value": 25,
+  "minimum_order_amount": 250000
+}
+
+### Activate Promotion
+PATCH {{baseUrl}}/promotions/PUT_PROMOTION_ID_HERE/activate
+
+### Deactivate Promotion
+PATCH {{baseUrl}}/promotions/PUT_PROMOTION_ID_HERE/deactivate
+
+### Delete Promotion
+DELETE {{baseUrl}}/promotions/PUT_PROMOTION_ID_HERE

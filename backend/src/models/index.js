@@ -112,6 +112,8 @@ const SupplierSchema = new Schema({
   address: String,
 });
 
+const Supplier = mongoose.model('Supplier', SupplierSchema);
+
 const IngredientSchema = new Schema({
   name: { type: String, required: true },
   unit: { type: String, required: true }, // kg, g, l, ml, pieces
@@ -131,7 +133,8 @@ const IngredientSchema = new Schema({
 
 const StockImportSchema = new Schema({
   import_number: { type: String, required: true, unique: true },
-  staff_id: { type: Schema.Types.ObjectId, ref: 'Staff', required: true }, // WarehouseStaff
+  staff_id: { type: Schema.Types.ObjectId, ref: 'Staff' }, // WarehouseStaff (optional)
+  supplier_id: { type: Schema.Types.ObjectId, ref: 'Supplier' },
   import_date: { type: Date, default: Date.now },
   total_cost: { type: Number, default: 0 },
   supplier_name: String,
@@ -149,6 +152,26 @@ const StockImportDetailSchema = new Schema({
   expiry_date: Date
 });
 
+// ==================== STOCK EXPORT ====================
+
+const StockExportSchema = new Schema({
+  export_number: { type: String, required: true, unique: true },
+  staff_id: { type: Schema.Types.ObjectId, ref: 'Staff' },
+  export_date: { type: Date, default: Date.now },
+  total_cost: { type: Number, default: 0 },
+  notes: String,
+  status: { type: String, enum: ['pending', 'completed', 'cancelled'], default: 'pending' },
+  created_at: { type: Date, default: Date.now }
+});
+
+const StockExportDetailSchema = new Schema({
+  export_id: { type: Schema.Types.ObjectId, ref: 'StockExport', required: true },
+  ingredient_id: { type: Schema.Types.ObjectId, ref: 'Ingredient', required: true },
+  quantity: { type: Number, required: true },
+  unit_price: { type: Number, required: true },
+  line_total: { type: Number, required: true }
+});
+
 // ==================== DISH ====================
 
 const DishSchema = new Schema({
@@ -161,8 +184,12 @@ const DishSchema = new Schema({
   },
   price: { type: Number, required: true },
   image_url: String,
-  //preparation_time: { type: Number, default: 15 }, // minutes
+
   is_available: { type: Boolean, default: true },
+
+  manual_unavailable_reason: { type: String }, // e.g. "Tạm ngưng phục vụ"
+  manual_unavailable_by: { type: Schema.Types.ObjectId, ref: 'Staff' },
+  manual_unavailable_at: { type: Date },
   //is_special: { type: Boolean, default: false },
   //calories: Number,
   created_at: { type: Date, default: Date.now },
@@ -179,23 +206,23 @@ const DishIngredientSchema = new Schema({
 
 // ==================== MENU ====================
 
-const MenuSchema = new Schema({
-  name: { type: String, required: true },
-  description: String,
-  menu_type: { type: String, enum: ['regular', 'seasonal', 'special', 'lunch', 'dinner'], default: 'regular' },
-  is_active: { type: Boolean, default: true },
-  valid_from: Date,
-  valid_to: Date,
-  created_at: { type: Date, default: Date.now }
-});
+// const MenuSchema = new Schema({
+//   name: { type: String, required: true },
+//   description: String,
+//   menu_type: { type: String, enum: ['regular', 'seasonal', 'special', 'lunch', 'dinner'], default: 'regular' },
+//   is_active: { type: Boolean, default: true },
+//   valid_from: Date,
+//   valid_to: Date,
+//   created_at: { type: Date, default: Date.now }
+// });
 
-// MenuEntry - Junction table
-const MenuEntrySchema = new Schema({
-  menu_id: { type: Schema.Types.ObjectId, ref: 'Menu', required: true },
-  dish_id: { type: Schema.Types.ObjectId, ref: 'Dish', required: true },
-  display_order: { type: Number, default: 0 },
-  is_featured: { type: Boolean, default: false }
-});
+// // MenuEntry - Junction table
+// const MenuEntrySchema = new Schema({
+//   menu_id: { type: Schema.Types.ObjectId, ref: 'Menu', required: true },
+//   dish_id: { type: Schema.Types.ObjectId, ref: 'Dish', required: true },
+//   display_order: { type: Number, default: 0 },
+//   is_featured: { type: Boolean, default: false }
+// });
 
 // ==================== ORDER ====================
 
@@ -303,7 +330,7 @@ const RatingSchema = new Schema({
   customer_id: { type: Schema.Types.ObjectId, ref: 'Customer', required: true },
   description: String,
   rating_date: { type: Date, default: Date.now },
-  score: { type: Number, required: true, min: 1, max: 5 },
+  //score: { type: Number, required: true, min: 1, max: 5 },
 });
 
 //Replies to ratings
@@ -329,8 +356,8 @@ const StockImport = mongoose.model('StockImport', StockImportSchema);
 const StockImportDetail = mongoose.model('StockImportDetail', StockImportDetailSchema);
 const Dish = mongoose.model('Dish', DishSchema);
 const DishIngredient = mongoose.model('DishIngredient', DishIngredientSchema);
-const Menu = mongoose.model('Menu', MenuSchema);
-const MenuEntry = mongoose.model('MenuEntry', MenuEntrySchema);
+// const Menu = mongoose.model('Menu', MenuSchema);
+// const MenuEntry = mongoose.model('MenuEntry', MenuEntrySchema);
 const Order = mongoose.model('Order', OrderSchema);
 const OrderDetail = mongoose.model('OrderDetail', OrderDetailSchema);
 const Promotion = mongoose.model('Promotion', PromotionSchema);
@@ -340,9 +367,16 @@ const Violation = mongoose.model('Violation', ViolationSchema);
 const Rating = mongoose.model('Rating', RatingSchema);
 const RatingReply = mongoose.model('RatingReply', RatingReplySchema);
 
+const StockExport = mongoose.model('StockExport', StockExportSchema);
+const StockExportDetail = mongoose.model('StockExportDetail', StockExportDetailSchema);
+
+// Supplier model
+// (exported below)
+
 module.exports = {
   Staff,
   Customer,
+  Supplier,
   Floor,
   Location,
   Table,
@@ -354,8 +388,8 @@ module.exports = {
   StockImportDetail,
   Dish,
   DishIngredient,
-  Menu,
-  MenuEntry,
+  // Menu,
+  // MenuEntry,
   Order,
   OrderDetail,
   Promotion,
@@ -364,4 +398,7 @@ module.exports = {
   Violation,
   Rating,
   RatingReply
+  ,StockExport,
+  StockExportDetail
 };
+
