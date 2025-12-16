@@ -3,6 +3,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/database');
 
+
 const inventoryRouter = require('./src/presentation_layer/routes/inventory.routes');
 const suppliersRouter = require('./src/presentation_layer/routes/supplier.routes');
 const dishRouter = require('./src/presentation_layer/routes/dish.routes');
@@ -14,6 +15,8 @@ const customerRouter = require('./src/presentation_layer/routes/customer.routes'
 const promotionRouter = require('./src/presentation_layer/routes/promotion.routes');
 const invoiceRouter = require('./src/presentation_layer/routes/invoice.routes');
 const orderRouter = require('./src/presentation_layer/routes/orders.routes');
+const reservationRouter = require('./src/presentation_layer/routes/reservation.routes');
+const reservationDetailRouter = require('./src/presentation_layer/routes/reservationdetail.routes');
 
 // Load environment variables
 dotenv.config();
@@ -65,7 +68,10 @@ app.use('/api/v1/promotions', promotionRouter);
 
 app.use('/api/v1/invoices', invoiceRouter);
 
+
 app.use('/api/v1/orders', orderRouter);
+app.use('/api/v1/reservations', reservationRouter);
+app.use('/api/v1/reservation-details', reservationDetailRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
