@@ -34,9 +34,9 @@ export interface Table {
 export interface Location {
   id: string;
   name: string;
-  floor: string;
+  floor_id: string;
   description?: string;
-  capacity?: number; // Total capacity for this location
+  //capacity?: number; // Total capacity for this location
   createdAt?: string;
 }
 

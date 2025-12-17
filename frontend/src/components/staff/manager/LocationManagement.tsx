@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { validateRequired } from "../../../lib/validation";
 import { ConfirmationModal } from "../../ui/ConfirmationModal";
 import { useFloors } from "../../../hooks/useFloors";
+import { useLocations } from "../../../hooks/useLocations";
 
 interface LocationManagementProps {
   locations: Location[];
@@ -29,7 +30,6 @@ interface LocationManagementProps {
 
 export function LocationManagement({
   locations,
-  floors: initialFloors,
   tables,
   onLocationsChange,
   onFloorsChange,
@@ -59,13 +59,38 @@ export function LocationManagement({
     fetchFloors,
   } = useFloors();
 
+  const {
+    locations: apiLocations,
+    loading: locationsLoading,
+    error: locationsError,
+    createLocation,
+    updateLocation,
+    deleteLocation,
+    fetchLocations,
+  } = useLocations();
+
+  // Sync locations from API
+  useEffect(() => {
+    if (apiLocations && apiLocations.length > 0) {
+      onLocationsChange(apiLocations);
+    }
+  }, [apiLocations]);
+
+  // Sync floors from API
+  useEffect(() => {
+    if (floors && floors.length > 0) {
+      onFloorsChange(floors);
+    }
+  }, [floors]);
+
   // Location states
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
   const [locationFormData, setLocationFormData] = useState({
     name: "",
-    floor: "",
+    floor_id: "",
     description: "",
+    createdAt: "",
   });
 
   // Floor states
@@ -75,22 +100,17 @@ export function LocationManagement({
     name: "",
     floor_number: 1,
     description: "",
+    createdAt: "",
   });
-
-  // Sync floors from API
-  useEffect(() => {
-    if (floors && floors.length > 0) {
-      onFloorsChange(floors);
-    }
-  }, [floors]);
 
   // Location Management Functions
   const handleAddLocation = () => {
     setEditingLocation(null);
     setLocationFormData({
       name: "",
-      floor: floors[0]?.floor_name || "",
+      floor_id: floors[0]?.id || "",
       description: "",
+      createdAt: "",
     });
     setShowLocationModal(true);
   };
@@ -99,14 +119,15 @@ export function LocationManagement({
     setEditingLocation(location);
     setLocationFormData({
       name: location.name,
-      floor: location.floor,
+      floor_id: location.floor_id,
       description: location.description || "",
+      createdAt: location.createdAt || "",
     });
     setShowLocationModal(true);
   };
 
   const handleDeleteLocation = (locationId: string) => {
-    const location = locations.find((l) => l.id === locationId);
+    const location = apiLocations.find((l) => l.id === locationId);
     if (!location) return;
 
     // Check if location has tables
@@ -125,15 +146,23 @@ export function LocationManagement({
     setConfirmText("Xóa");
     setConfirmCancelText("Hủy");
     setConfirmVariant(`warning`);
-    setPendingAction(() => () => {
-      const updatedLocations = locations.filter((l) => l.id !== locationId);
-      onLocationsChange(updatedLocations);
-      toast.success("Đã xóa vị trí");
+    setPendingAction(() => async () => {
+      try {
+        setIsSubmitting(true);
+        await deleteLocation(locationId);
+        toast.success("Đã xóa vị trí thành công");
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Lỗi khi xóa vị trí"
+        );
+      } finally {
+        setIsSubmitting(false);
+      }
     });
     setShowConfirmModal(true);
   };
 
-  const handleSubmitLocation = () => {
+  const handleSubmitLocation = async () => {
     // Validate
     const nameValidation = validateRequired(
       locationFormData.name,
@@ -144,14 +173,14 @@ export function LocationManagement({
       return;
     }
 
-    const floorValidation = validateRequired(locationFormData.floor, "Tầng");
+    const floorValidation = validateRequired(locationFormData.floor_id, "Tầng");
     if (!floorValidation.isValid) {
       toast.error(floorValidation.error);
       return;
     }
 
     // Check duplicate name (except when editing)
-    const duplicateName = locations.find(
+    const duplicateName = apiLocations.find(
       (l) => l.name === locationFormData.name && l.id !== editingLocation?.id
     );
     if (duplicateName) {
@@ -159,35 +188,46 @@ export function LocationManagement({
       return;
     }
 
-    if (editingLocation) {
-      // Update location
-      const updatedLocations = locations.map((l) =>
-        l.id === editingLocation.id
-          ? {
-              ...l,
-              name: locationFormData.name,
-              floor: locationFormData.floor,
-              description: locationFormData.description,
-            }
-          : l
-      );
-      onLocationsChange(updatedLocations);
-      toast.success("Đã cập nhật vị trí");
-    } else {
-      // Add new location
-      const newLocation: Location = {
-        id: `L${Date.now()}`,
-        name: locationFormData.name,
-        floor: locationFormData.floor,
-        description: locationFormData.description,
-        createdAt: new Date().toISOString(),
-      };
-      onLocationsChange([...locations, newLocation]);
-      toast.success("Đã thêm vị trí mới");
-    }
+    setIsSubmitting(true);
 
-    setShowLocationModal(false);
-    setEditingLocation(null);
+    try {
+      if (editingLocation) {
+        // Update location via API
+        await updateLocation(editingLocation.id, {
+          name: locationFormData.name,
+          floor_id: locationFormData.floor_id,
+          description: locationFormData.description,
+        });
+        toast.success("Đã cập nhật vị trí thành công");
+      } else {
+        // Create new location via API
+        await createLocation({
+          name: locationFormData.name,
+          floor_id: locationFormData.floor_id,
+          description: locationFormData.description,
+        });
+        toast.success("Đã thêm vị trí mới thành công");
+      }
+
+      setShowLocationModal(false);
+      setEditingLocation(null);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Lỗi khi lưu vị trí"
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const getLocationCountOnFloor = (floor_id: string) => {
+    return apiLocations.filter((l) => l.floor_id === floor_id).length;
+  };
+
+  // Helper to get floor name by floor_id
+  const getFloorName = (floor_id: string) => {
+    const floor = floors.find((f) => f.id === floor_id);
+    return floor ? floor.floor_name : "Không xác định";
   };
 
   // Floor Management Functions
@@ -198,6 +238,7 @@ export function LocationManagement({
       name: `Tầng ${nextNumber}`,
       floor_number: nextNumber,
       description: "",
+      createdAt: "",
     });
     setShowFloorModal(true);
   };
@@ -208,6 +249,7 @@ export function LocationManagement({
       name: floor.floor_name,
       floor_number: floor.floor_number,
       description: floor.description || "",
+      createdAt: floor.createdAt || "",
     });
     setShowFloorModal(true);
   };
@@ -217,7 +259,7 @@ export function LocationManagement({
     if (!floor) return;
 
     // Check if floor has locations
-    const locationsOnFloor = locations.filter((l) => l.floor === floor.floor_name);
+    const locationsOnFloor = locations.filter((l) => l.floor_id === floor.id);
 
     if (locationsOnFloor.length > 0) {
       toast.error(
@@ -320,11 +362,6 @@ export function LocationManagement({
     return tables.filter((t) => t.area === locationName).length;
   };
 
-  // Helper to count locations on floor
-  const getLocationCountOnFloor = (floorName: string) => {
-    return locations.filter((l) => l.floor === floorName).length;
-  };
-
   return (
     <div>
       {/* Confirmation Modal */}
@@ -346,7 +383,6 @@ export function LocationManagement({
         confirmText={confirmText}
         cancelText={confirmCancelText}
         variant={confirmVariant}
-        isLoading={isSubmitting}
       />
 
       {/* Tab Switcher */}
@@ -385,81 +421,111 @@ export function LocationManagement({
                 Quản lý các vị trí/khu vực trong nhà hàng
               </p>
             </div>
-            <Button onClick={handleAddLocation}>
+            <Button onClick={handleAddLocation} disabled={locationsLoading}>
               <Plus className="w-4 h-4 mr-2" />
               Thêm vị trí
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {locations.map((location) => {
-              const tableCount = getTableCountInLocation(location.name);
-              const occupiedSeats = tables
-                .filter((t) => t.area === location.name)
-                .reduce((sum, t) => sum + t.seats, 0);
-
-              return (
-                <Card key={location.id} className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h4 className="font-semibold mb-1">{location.name}</h4>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Building2 className="w-3 h-3" />
-                        <span>{location.floor}</span>
-                      </div>
-                    </div>
-                    <Badge className="bg-blue-100 text-blue-700">
-                      {tableCount} bàn
-                    </Badge>
-                  </div>
-
-                  {location.description && (
-                    <p className="text-sm text-gray-600 mb-3">
-                      {location.description}
-                    </p>
-                  )}
-
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleEditLocation(location)}
-                      className="flex-1"
-                    >
-                      <Edit className="w-4 h-4 mr-1" />
-                      Sửa
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleDeleteLocation(location.id)}
-                      className="text-red-600 hover:bg-red-50"
-                      disabled={tableCount > 0}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-
-                  {tableCount > 0 && (
-                    <div className="mt-2 flex items-start gap-2 text-xs text-amber-700 bg-amber-50 p-2 rounded">
-                      <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                      <span>Có {tableCount} bàn đang sử dụng vị trí này</span>
-                    </div>
-                  )}
-                </Card>
-              );
-            })}
-          </div>
-
-          {locations.length === 0 && (
-            <Card className="p-8 text-center">
-              <MapPin className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-              <p className="text-gray-600 mb-4">Chưa có vị trí nào</p>
-              <Button onClick={handleAddLocation}>
-                <Plus className="w-4 h-4 mr-2" />
-                Thêm vị trí đầu tiên
-              </Button>
+          {/* Error Alert */}
+          {locationsError && (
+            <Card className="p-4 mb-4 bg-red-50 border-red-200">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="font-semibold text-red-900 mb-1">
+                    Lỗi tải dữ liệu
+                  </h4>
+                  <p className="text-sm text-red-700 mb-3">{locationsError}</p>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-red-600 hover:bg-red-100"
+                    onClick={fetchLocations}
+                  >
+                    Thử lại
+                  </Button>
+                </div>
+              </div>
             </Card>
+          )}
+
+          {/* Loading State */}
+          {locationsLoading ? (
+            <Card className="p-8 text-center">
+              <Loader className="w-8 h-8 mx-auto mb-4 text-blue-600 animate-spin" />
+              <p className="text-gray-600">Đang tải dữ liệu vị trí...</p>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {apiLocations && apiLocations.length > 0 ? (
+                apiLocations.map((location) => {
+                  const tableCount = getTableCountInLocation(location.name);
+                  const floorName = getFloorName(location.floor_id);
+
+                  return (
+                    <Card key={location.id} className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h4 className="font-semibold mb-1">{location.name}</h4>
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Building2 className="w-3 h-3" />
+                            <span>{floorName}</span>
+                          </div>
+                        </div>
+                        <Badge className="bg-blue-100 text-blue-700">
+                          {tableCount} bàn
+                        </Badge>
+                      </div>
+
+                      {location.description && (
+                        <p className="text-sm text-gray-600 mb-3">
+                          {location.description}
+                        </p>
+                      )}
+
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleEditLocation(location)}
+                          className="flex-1"
+                          disabled={locationsLoading}
+                        >
+                          <Edit className="w-4 h-4 mr-1" />
+                          Sửa
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDeleteLocation(location.id)}
+                          className="text-red-600 hover:bg-red-50"
+                          disabled={tableCount > 0 || locationsLoading}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+
+                      {tableCount > 0 && (
+                        <div className="mt-2 flex items-start gap-2 text-xs text-amber-700 bg-amber-50 p-2 rounded">
+                          <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                          <span>Có {tableCount} bàn đang sử dụng vị trí này</span>
+                        </div>
+                      )}
+                    </Card>
+                  );
+                })
+              ) : (
+                <Card className="p-8 text-center col-span-full">
+                  <MapPin className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <p className="text-gray-600 mb-4">Chưa có vị trí nào</p>
+                  <Button onClick={handleAddLocation}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Thêm vị trí đầu tiên
+                  </Button>
+                </Card>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -471,7 +537,7 @@ export function LocationManagement({
             <div>
               <h3 className="text-lg font-semibold">Danh sách tầng</h3>
               <p className="text-gray-600 text-sm mt-1">
-                Quản lý các tầng trong nhà hàng (API)
+                Quản lý các tầng trong nhà hàng
               </p>
             </div>
             <Button onClick={handleAddFloor} disabled={floorsLoading}>
@@ -516,7 +582,7 @@ export function LocationManagement({
                   .sort((a, b) => a.floor_number - b.floor_number)
                   .map((floor) => {
                     const locationCount = getLocationCountOnFloor(
-                      floor.floor_name
+                      floor.id
                     );
 
                     return (
@@ -614,11 +680,11 @@ export function LocationManagement({
 
           <Select
             label="Tầng"
-            value={locationFormData.floor}
+            value={locationFormData.floor_id}
             onChange={(e) =>
               setLocationFormData({
                 ...locationFormData,
-                floor: e.target.value,
+                floor_id: e.target.value,
               })
             }
             options={[
@@ -655,8 +721,16 @@ export function LocationManagement({
             >
               Hủy
             </Button>
-            <Button fullWidth onClick={handleSubmitLocation}>
-              {editingLocation ? "Cập nhật" : "Thêm vị trí"}
+            <Button
+              fullWidth
+              onClick={handleSubmitLocation}
+              disabled={isSubmitting}
+            >
+              {isSubmitting
+                ? "Đang lưu..."
+                : editingLocation
+                  ? "Cập nhật"
+                  : "Thêm vị trí"}
             </Button>
           </div>
         </div>

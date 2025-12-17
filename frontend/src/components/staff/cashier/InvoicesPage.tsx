@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   CreditCard,
   Wallet,
@@ -17,7 +17,6 @@ import { Card } from "../../ui/Card";
 import { Modal } from "../../ui/Modal";
 import { Input } from "../../ui/Input";
 import {
-  mockInvoices,
   mockTables,
   mockPromotions,
 } from "../../../lib/mockData";

@@ -157,8 +157,8 @@ function App() {
                 }
               />
 
-              {/* Common Staff Route - All staff can access */}
-              <Route path="profile" element={<ProfilePage role="staff" />} />
+              {/* Common Staff Route */}
+              <Route path="profile" element={<ProfilePage role="manager" />} />
             </Route>
 
             {/* Default Route - Smart redirect to customer home */}

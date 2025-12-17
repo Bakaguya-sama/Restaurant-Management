@@ -2,9 +2,11 @@ import { apiClient } from './apiClient';
 import { Floor } from '../types';
 
 export interface FloorData {
-  floor_name: string;
-  floor_number: number;
-  description?: string;
+    id?: string;
+    floor_name: string;
+    floor_number: number;
+    description?: string;
+    createdAt?: string;
 }
 
 export const floorApi = {
