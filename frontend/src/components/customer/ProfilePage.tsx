@@ -157,11 +157,11 @@ export function CustomerProfilePage() {
       <div className="mb-6">
         <h2>Hồ sơ cá nhân</h2>
         <p className="text-gray-600 mt-1">
-          Quản lý thông tin tài khoản và membership của bạn
+          Quản lý thông tin tài khoản của bạn
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {/* Profile Card */}
         <div className="space-y-6">
           <Card className="p-6">
@@ -202,7 +202,7 @@ export function CustomerProfilePage() {
               </p>
             </div>
 
-            <div className="mt-6 pt-6 border-t space-y-3">
+            {/* <div className="mt-6 pt-6 border-t space-y-3">
               <div className="flex items-center gap-3 text-sm">
                 <Mail className="w-4 h-4 text-gray-400" />
                 <span className="text-gray-600">{profileData.email}</span>
@@ -217,12 +217,12 @@ export function CustomerProfilePage() {
                   {profileData.address}
                 </span>
               </div>
-            </div>
+            </div> */}
           </Card>
         </div>
 
         {/* Information Form */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className=" space-y-6">
           <Card className="p-6">
             <div className="flex items-center justify-between mb-6">
               <h3>Thông tin cá nhân</h3>

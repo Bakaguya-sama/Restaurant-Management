@@ -4,7 +4,7 @@ import { Card } from "../ui/Card";
 import { Modal } from "../ui/Modal";
 import { mockMenuItems, mockPromotions } from "../../lib/mockData";
 import { MenuItem } from "../../types";
-import { PromotionCard } from "./PromotionCard";
+// import { PromotionCard } from "./PromotionCard";
 import { useNavigate } from "react-router-dom";
 
 export function HomePage() {
@@ -132,7 +132,7 @@ export function HomePage() {
       </div>
 
       {/* Promotions */}
-      <div>
+      {/* <div>
         <h2 className="mb-6">Khuyến mãi đang diễn ra</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {mockPromotions
@@ -144,7 +144,7 @@ export function HomePage() {
               <PromotionCard key={promotion.id} promotion={promotion} />
             ))}
         </div>
-      </div>
+      </div> */}
 
       {/* Dish Detail Modal */}
       <Modal
@@ -199,7 +199,7 @@ export function HomePage() {
 
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
                 <p className="text-gray-700 italic text-base">
-                  Hãy đến hoặc đặt bàn trước để thưởng thức nhé! 👋
+                  Hãy đến hoặc đặt bàn trước để trải nghiệm!
                 </p>
               </div>
             </div>
