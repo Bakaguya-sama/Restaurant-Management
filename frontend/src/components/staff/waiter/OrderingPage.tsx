@@ -9,6 +9,7 @@ import { MenuItem } from "../../../types";
 import { toast } from "sonner";
 import { ConfirmationModal } from "../../ui/ConfirmationModal";
 import { mockTables } from "../../../lib/mockData";
+import { RiTakeawayLine } from "react-icons/ri";
 
 interface OrderItem {
   item: MenuItem;
@@ -18,6 +19,7 @@ interface OrderItem {
 }
 
 export function OrderingPage() {
+  const [orderType, setOrderType] = useState<"table" | "takeaway">("table");
   const [selectedTable, setSelectedTable] = useState("T02");
   const [ordersByTable, setOrdersByTable] = useState<
     Record<string, OrderItem[]>
@@ -37,6 +39,23 @@ export function OrderingPage() {
       },
     ],
   });
+
+  // Takeaway orders management
+  const [takeawayOrders, setTakeawayOrders] = useState<
+    Record<string, OrderItem[]>
+  >({
+    "TO-001": [
+      {
+        item: mockMenuItems[2],
+        quantity: 1,
+        notes: "",
+        status: "pending",
+      },
+    ],
+  });
+  const [selectedTakeawayOrder, setSelectedTakeawayOrder] = useState("TO-001");
+  const [takeawayOrderCounter, setTakeawayOrderCounter] = useState(2);
+
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [showCustomizeModal, setShowCustomizeModal] = useState(false);
   const [customizingItem, setCustomizingItem] = useState<OrderItem | null>(
@@ -68,29 +87,40 @@ export function OrderingPage() {
     return item.category === selectedCategory;
   });
 
-  // Get current table orders
-  const tableOrders = ordersByTable[selectedTable] || [];
+  // Get current orders based on order type
+  const currentOrders =
+    orderType === "table"
+      ? ordersByTable[selectedTable] || []
+      : takeawayOrders[selectedTakeawayOrder] || [];
+
+  const currentOrderId =
+    orderType === "table" ? selectedTable : selectedTakeawayOrder;
 
   const handleAddToOrder = (item: MenuItem) => {
-    const currentOrders = ordersByTable[selectedTable] || [];
-    const existing = currentOrders.find(
+    const orders = orderType === "table" ? ordersByTable : takeawayOrders;
+    const setOrders =
+      orderType === "table" ? setOrdersByTable : setTakeawayOrders;
+    const orderId = currentOrderId;
+
+    const currentOrderList = orders[orderId] || [];
+    const existing = currentOrderList.find(
       (o) => o.item.id === item.id && !o.notes
     );
 
     if (existing) {
-      setOrdersByTable({
-        ...ordersByTable,
-        [selectedTable]: currentOrders.map((o) =>
+      setOrders({
+        ...orders,
+        [orderId]: currentOrderList.map((o) =>
           o.item.id === item.id && !o.notes
             ? { ...o, quantity: o.quantity + 1 }
             : o
         ),
       });
     } else {
-      setOrdersByTable({
-        ...ordersByTable,
-        [selectedTable]: [
-          ...currentOrders,
+      setOrders({
+        ...orders,
+        [orderId]: [
+          ...currentOrderList,
           { item, quantity: 1, notes: "", status: "pending" },
         ],
       });
@@ -99,15 +129,20 @@ export function OrderingPage() {
   };
 
   const handleUpdateQuantity = (index: number, delta: number) => {
-    const currentOrders = [...(ordersByTable[selectedTable] || [])];
-    currentOrders[index].quantity += delta;
-    if (currentOrders[index].quantity <= 0) {
-      currentOrders.splice(index, 1);
+    const orders = orderType === "table" ? ordersByTable : takeawayOrders;
+    const setOrders =
+      orderType === "table" ? setOrdersByTable : setTakeawayOrders;
+    const orderId = currentOrderId;
+
+    const currentOrderList = [...(orders[orderId] || [])];
+    currentOrderList[index].quantity += delta;
+    if (currentOrderList[index].quantity <= 0) {
+      currentOrderList.splice(index, 1);
       toast.success("Đã xóa món");
     }
-    setOrdersByTable({
-      ...ordersByTable,
-      [selectedTable]: currentOrders,
+    setOrders({
+      ...orders,
+      [orderId]: currentOrderList,
     });
   };
 
@@ -119,19 +154,24 @@ export function OrderingPage() {
   const handleSaveCustomization = () => {
     if (!customizingItem) return;
 
-    const currentOrders = ordersByTable[selectedTable] || [];
-    const index = currentOrders.findIndex(
+    const orders = orderType === "table" ? ordersByTable : takeawayOrders;
+    const setOrders =
+      orderType === "table" ? setOrdersByTable : setTakeawayOrders;
+    const orderId = currentOrderId;
+
+    const currentOrderList = orders[orderId] || [];
+    const index = currentOrderList.findIndex(
       (o) =>
         o.item.id === customizingItem.item.id &&
         o.notes === (customizingItem.notes || "")
     );
 
     if (index >= 0) {
-      const newOrder = [...currentOrders];
+      const newOrder = [...currentOrderList];
       newOrder[index] = customizingItem;
-      setOrdersByTable({
-        ...ordersByTable,
-        [selectedTable]: newOrder,
+      setOrders({
+        ...orders,
+        [orderId]: newOrder,
       });
     }
 
@@ -144,11 +184,16 @@ export function OrderingPage() {
     index: number,
     newStatus: "pending" | "cooking" | "served"
   ) => {
-    const currentOrders = [...(ordersByTable[selectedTable] || [])];
-    currentOrders[index].status = newStatus;
-    setOrdersByTable({
-      ...ordersByTable,
-      [selectedTable]: currentOrders,
+    const orders = orderType === "table" ? ordersByTable : takeawayOrders;
+    const setOrders =
+      orderType === "table" ? setOrdersByTable : setTakeawayOrders;
+    const orderId = currentOrderId;
+
+    const currentOrderList = [...(orders[orderId] || [])];
+    currentOrderList[index].status = newStatus;
+    setOrders({
+      ...orders,
+      [orderId]: currentOrderList,
     });
     toast.success(`Đã cập nhật trạng thái: ${getStatusText(newStatus)}`);
   };
@@ -157,6 +202,11 @@ export function OrderingPage() {
     setIsProcessingInvoice(true);
 
     try {
+      const orders = orderType === "table" ? ordersByTable : takeawayOrders;
+      const setOrders =
+        orderType === "table" ? setOrdersByTable : setTakeawayOrders;
+      const orderId = currentOrderId;
+
       // TODO: Replace with actual API call
       // const response = await fetch('/api/invoices', {
       //   method: 'POST',
@@ -165,14 +215,16 @@ export function OrderingPage() {
       //     'Authorization': `Bearer ${authToken}`,
       //   },
       //   body: JSON.stringify({
-      //     tableNumber: selectedTable,
-      //     items: tableOrders.map(o => ({
+      //     orderType: orderType,
+      //     orderId: orderId,
+      //     tableNumber: orderType === "table" ? selectedTable : null,
+      //     items: currentOrders.map(o => ({
       //       dishId: o.item.id,
       //       quantity: o.quantity,
       //       notes: o.notes,
       //       price: o.item.price
       //     })),
-      //     totalAmount: tableOrders.reduce((sum, o) => sum + o.item.price * o.quantity, 0),
+      //     totalAmount: currentOrders.reduce((sum, o) => sum + o.item.price * o.quantity, 0),
       //     timestamp: new Date().toISOString()
       //   })
       // });
@@ -187,9 +239,9 @@ export function OrderingPage() {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Only clear order if API call succeeds
-      setOrdersByTable({
-        ...ordersByTable,
-        [selectedTable]: [],
+      setOrders({
+        ...orders,
+        [orderId]: [],
       });
 
       // TODO: Update table status to 'available' or keep as 'occupied' depending on business logic
@@ -197,8 +249,9 @@ export function OrderingPage() {
 
       // TODO: Log order history for tracking
       // await logOrderHistory({
-      //   tableNumber: selectedTable,
-      //   orders: tableOrders,
+      //   orderType: orderType,
+      //   orderId: orderId,
+      //   orders: currentOrders,
       //   completedAt: new Date().toISOString(),
       //   invoiceId: invoiceData.id
       // });
@@ -213,9 +266,13 @@ export function OrderingPage() {
   };
 
   const handleConfirmInvoice = () => {
+    const orderLabel =
+      orderType === "table"
+        ? `bàn ${selectedTable}`
+        : `đơn ${selectedTakeawayOrder}`;
     setConfirmTitle("Xác nhận tạo hóa đơn");
     setConfirmMessage(
-      `Bạn có chắc muốn tạo hóa đơn cho bàn ${selectedTable}?\nTổng: ${tableOrders
+      `Bạn có chắc muốn tạo hóa đơn cho ${orderLabel}?\nTổng: ${currentOrders
         .reduce((sum, o) => sum + o.item.price * o.quantity, 0)
         .toLocaleString()}đ`
     );
@@ -226,9 +283,24 @@ export function OrderingPage() {
     setShowConfirmModal(true);
   };
 
+  const handleAddTakeawayOrder = () => {
+    const newOrderId = `TO-${String(takeawayOrderCounter).padStart(3, "0")}`;
+    setTakeawayOrders({
+      ...takeawayOrders,
+      [newOrderId]: [],
+    });
+    setSelectedTakeawayOrder(newOrderId);
+    setTakeawayOrderCounter(takeawayOrderCounter + 1);
+    toast.success(`Đã tạo đơn mang về ${newOrderId}`);
+  };
+
   const handleRemoveItem = (index: number) => {
-    const currentOrders = ordersByTable[selectedTable] || [];
-    const item = currentOrders[index];
+    const orders = orderType === "table" ? ordersByTable : takeawayOrders;
+    const setOrders =
+      orderType === "table" ? setOrdersByTable : setTakeawayOrders;
+    const orderId = currentOrderId;
+    const currentOrderList = orders[orderId] || [];
+    const item = currentOrderList[index];
 
     setConfirmTitle(`Xác nhận hủy món`);
     setConfirmMessage(`Bạn có chắc hủy món này?`);
@@ -236,11 +308,11 @@ export function OrderingPage() {
     setConfirmCancelText("Hủy");
     setConfirmVariant(`warning`);
     setPendingAction(() => () => {
-      const newOrders = [...currentOrders];
+      const newOrders = [...currentOrderList];
       newOrders.splice(index, 1);
-      setOrdersByTable({
-        ...ordersByTable,
-        [selectedTable]: newOrders,
+      setOrders({
+        ...orders,
+        [orderId]: newOrders,
       });
       toast.success("Đã hủy món");
     });
@@ -298,43 +370,120 @@ export function OrderingPage() {
       <div className="lg:col-span-2">
         <div className="mb-6">
           <div className="mb-4">
-            <h3 className="mb-4">Chọn bàn</h3>
-            {/* Table Selection Grid - Prominent Display */}
-            <div className="grid grid-cols-4 md:grid-cols-6 gap-3 mb-6 p-4 bg-white rounded-lg border-2 border-[#625EE8]">
-              {availableTables.map((table) => {
-                const hasOrders = ordersByTable[table.number]?.length > 0;
-                return (
-                  <button
-                    key={table.id}
-                    onClick={() => setSelectedTable(table.number)}
-                    className={`p-4 rounded-lg border-2 transition-all ${
-                      selectedTable === table.number
-                        ? "bg-[#625EE8] text-white border-[#625EE8] shadow-lg scale-105"
-                        : hasOrders
-                        ? "bg-green-50 text-green-700 border-green-400 hover:border-green-500 hover:bg-green-100"
-                        : "bg-white text-gray-700 border-gray-300 hover:border-[#625EE8] hover:bg-blue-50"
-                    }`}
-                  >
-                    <div className="text-center">
-                      <Utensils className="w-6 h-6 mx-auto mb-1" />
-                      <span className="text-sm">{table.number}</span>
-                      {hasOrders && (
-                        <span className="block text-xs mt-1">
-                          ({ordersByTable[table.number].length} món)
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
+            {/* Order Type Tabs */}
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => setOrderType("table")}
+                className={`flex-1 px-6 py-3 rounded-lg font-medium transition-all ${
+                  orderType === "table"
+                    ? "bg-[#625EE8] text-white shadow-lg"
+                    : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
+                }`}
+              >
+                <Utensils className="w-5 h-5 inline-block mr-2" />
+                Gọi món bàn
+              </button>
+              <button
+                onClick={() => setOrderType("takeaway")}
+                className={`flex-1 px-6 py-3 rounded-lg font-medium transition-all ${
+                  orderType === "takeaway"
+                    ? "bg-[#625EE8] text-white shadow-lg"
+                    : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
+                }`}
+              >
+                <RiTakeawayLine className="w-5 h-5 inline-block mr-2" />
+                Đơn mang về
+              </button>
             </div>
 
-            <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-sm text-[#625EE8]">
-                <span>Đang gọi món cho: </span>
-                <span className="text-lg">Bàn {selectedTable}</span>
-              </p>
-            </div>
+            {orderType === "table" ? (
+              <>
+                <h3 className="mb-4">Chọn bàn</h3>
+                {/* Table Selection Grid - Prominent Display */}
+                <div className="grid grid-cols-4 md:grid-cols-6 gap-3 mb-6 p-4 bg-white rounded-lg border-2 border-[#625EE8]">
+                  {availableTables.map((table) => {
+                    const hasOrders = ordersByTable[table.number]?.length > 0;
+                    return (
+                      <button
+                        key={table.id}
+                        onClick={() => setSelectedTable(table.number)}
+                        className={`p-4 rounded-lg border-2 transition-all ${
+                          selectedTable === table.number
+                            ? "bg-[#625EE8] text-white border-[#625EE8] shadow-lg scale-105"
+                            : hasOrders
+                            ? "bg-green-50 text-green-700 border-green-400 hover:border-green-500 hover:bg-green-100"
+                            : "bg-white text-gray-700 border-gray-300 hover:border-[#625EE8] hover:bg-blue-50"
+                        }`}
+                      >
+                        <div className="text-center">
+                          <Utensils className="w-6 h-6 mx-auto mb-1" />
+                          <span className="text-sm">{table.number}</span>
+                          {hasOrders && (
+                            <span className="block text-xs mt-1">
+                              ({ordersByTable[table.number].length} món)
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm text-[#625EE8]">
+                    <span>Đang gọi món cho: </span>
+                    <span className="text-lg">Bàn {selectedTable}</span>
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h3>Chọn đơn mang về</h3>
+                  <Button onClick={handleAddTakeawayOrder} size="sm">
+                    <Plus className="w-4 h-4 mr-1" />
+                    Thêm đơn
+                  </Button>
+                </div>
+
+                {/* Takeaway Orders Grid */}
+                <div className="grid grid-cols-4 md:grid-cols-6 gap-3 mb-6 p-4 bg-white rounded-lg border-2 border-[#625EE8]">
+                  {Object.keys(takeawayOrders).map((orderId) => {
+                    const hasOrders = takeawayOrders[orderId]?.length > 0;
+                    return (
+                      <button
+                        key={orderId}
+                        onClick={() => setSelectedTakeawayOrder(orderId)}
+                        className={`p-4 rounded-lg border-2 transition-all ${
+                          selectedTakeawayOrder === orderId
+                            ? "bg-[#625EE8] text-white border-[#625EE8] shadow-lg scale-105"
+                            : hasOrders
+                            ? "bg-green-50 text-green-700 border-green-400 hover:border-green-500 hover:bg-green-100"
+                            : "bg-white text-gray-700 border-gray-300 hover:border-[#625EE8] hover:bg-blue-50"
+                        }`}
+                      >
+                        <div className="text-center">
+                          <RiTakeawayLine className="w-6 h-6 mx-auto mb-1" />
+                          <span className="text-xs">{orderId}</span>
+                          {hasOrders && (
+                            <span className="block text-xs mt-1">
+                              ({takeawayOrders[orderId].length} món)
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm text-[#625EE8]">
+                    <span>Đang gọi món cho: </span>
+                    <span className="text-lg">Đơn {selectedTakeawayOrder}</span>
+                  </p>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Category Filter */}
@@ -384,8 +533,13 @@ export function OrderingPage() {
       {/* Right: Order Summary */}
       <div>
         <Card className="p-4">
-          <h3 className="mb-4">Đơn hàng - Bàn {selectedTable}</h3>
-          {tableOrders.length === 0 ? (
+          <h3 className="mb-4">
+            Đơn hàng -{" "}
+            {orderType === "table"
+              ? `Bàn ${selectedTable}`
+              : `${selectedTakeawayOrder}`}
+          </h3>
+          {currentOrders.length === 0 ? (
             <div className="text-center py-8">
               <Utensils className="w-12 h-12 text-gray-300 mx-auto mb-3" />
               <p className="text-gray-500 text-sm">Chưa có món nào</p>
@@ -393,7 +547,7 @@ export function OrderingPage() {
           ) : (
             <>
               <div className="space-y-3 mb-4 max-h-[500px] overflow-y-auto">
-                {tableOrders.map((orderItem, index) => (
+                {currentOrders.map((orderItem, index) => (
                   <div
                     key={index}
                     className="p-3 border rounded-lg hover:shadow-md transition-shadow"
@@ -476,7 +630,7 @@ export function OrderingPage() {
                 <div className="flex justify-between items-center">
                   <span className="font-medium">Tổng cộng:</span>
                   <span className="text-xl text-[#625EE8] font-bold">
-                    {tableOrders
+                    {currentOrders
                       .reduce((sum, o) => sum + o.item.price * o.quantity, 0)
                       .toLocaleString()}
                     đ
@@ -484,7 +638,7 @@ export function OrderingPage() {
                 </div>
                 <div className="mt-2 text-sm text-gray-600">
                   Tổng món:{" "}
-                  {tableOrders.reduce((sum, o) => sum + o.quantity, 0)}
+                  {currentOrders.reduce((sum, o) => sum + o.quantity, 0)}
                 </div>
 
                 {/* Confirm Invoice Button */}
@@ -492,16 +646,16 @@ export function OrderingPage() {
                   fullWidth
                   className="mt-4"
                   disabled={
-                    tableOrders.length === 0 ||
-                    !tableOrders.every((o) => o.status === "served") ||
+                    currentOrders.length === 0 ||
+                    !currentOrders.every((o) => o.status === "served") ||
                     isProcessingInvoice
                   }
                   onClick={handleConfirmInvoice}
                 >
                   {isProcessingInvoice ? "Đang xử lý..." : "Xác nhận hóa đơn"}
                 </Button>
-                {tableOrders.length > 0 &&
-                  !tableOrders.every((o) => o.status === "served") && (
+                {currentOrders.length > 0 &&
+                  !currentOrders.every((o) => o.status === "served") && (
                     <p className="text-xs text-amber-600 mt-2 text-center">
                       Tất cả món phải ở trạng thái "Đã phục vụ" để xác nhận hóa
                       đơn
