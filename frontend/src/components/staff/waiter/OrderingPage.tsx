@@ -52,6 +52,7 @@ export function OrderingPage() {
     "info" | "warning" | "danger"
   >("info");
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+  const [isProcessingInvoice, setIsProcessingInvoice] = useState(false);
 
   const categories = ["all", "Khai vị", "Món chính", "Đồ uống"];
   const quickNotes = ["Ít đá", "Không cay", "Không hành", "Ít dầu", "Thêm rau"];
@@ -150,6 +151,79 @@ export function OrderingPage() {
       [selectedTable]: currentOrders,
     });
     toast.success(`Đã cập nhật trạng thái: ${getStatusText(newStatus)}`);
+  };
+
+  const handleOrderComplete = async () => {
+    setIsProcessingInvoice(true);
+
+    try {
+      // TODO: Replace with actual API call
+      // const response = await fetch('/api/invoices', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //     'Authorization': `Bearer ${authToken}`,
+      //   },
+      //   body: JSON.stringify({
+      //     tableNumber: selectedTable,
+      //     items: tableOrders.map(o => ({
+      //       dishId: o.item.id,
+      //       quantity: o.quantity,
+      //       notes: o.notes,
+      //       price: o.item.price
+      //     })),
+      //     totalAmount: tableOrders.reduce((sum, o) => sum + o.item.price * o.quantity, 0),
+      //     timestamp: new Date().toISOString()
+      //   })
+      // });
+
+      // if (!response.ok) {
+      //   throw new Error('Failed to create invoice');
+      // }
+
+      // const invoiceData = await response.json();
+
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Only clear order if API call succeeds
+      setOrdersByTable({
+        ...ordersByTable,
+        [selectedTable]: [],
+      });
+
+      // TODO: Update table status to 'available' or keep as 'occupied' depending on business logic
+      // await updateTableStatus(selectedTable, 'available');
+
+      // TODO: Log order history for tracking
+      // await logOrderHistory({
+      //   tableNumber: selectedTable,
+      //   orders: tableOrders,
+      //   completedAt: new Date().toISOString(),
+      //   invoiceId: invoiceData.id
+      // });
+
+      toast.success("Đã tạo hóa đơn và gửi cho thu ngân!");
+    } catch (error) {
+      console.error("Error creating invoice:", error);
+      toast.error("Không thể tạo hóa đơn. Vui lòng thử lại!");
+    } finally {
+      setIsProcessingInvoice(false);
+    }
+  };
+
+  const handleConfirmInvoice = () => {
+    setConfirmTitle("Xác nhận tạo hóa đơn");
+    setConfirmMessage(
+      `Bạn có chắc muốn tạo hóa đơn cho bàn ${selectedTable}?\nTổng: ${tableOrders
+        .reduce((sum, o) => sum + o.item.price * o.quantity, 0)
+        .toLocaleString()}đ`
+    );
+    setConfirmText("Xác nhận");
+    setConfirmCancelText("Hủy");
+    setConfirmVariant("info");
+    setPendingAction(() => handleOrderComplete);
+    setShowConfirmModal(true);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -412,6 +486,27 @@ export function OrderingPage() {
                   Tổng món:{" "}
                   {tableOrders.reduce((sum, o) => sum + o.quantity, 0)}
                 </div>
+
+                {/* Confirm Invoice Button */}
+                <Button
+                  fullWidth
+                  className="mt-4"
+                  disabled={
+                    tableOrders.length === 0 ||
+                    !tableOrders.every((o) => o.status === "served") ||
+                    isProcessingInvoice
+                  }
+                  onClick={handleConfirmInvoice}
+                >
+                  {isProcessingInvoice ? "Đang xử lý..." : "Xác nhận hóa đơn"}
+                </Button>
+                {tableOrders.length > 0 &&
+                  !tableOrders.every((o) => o.status === "served") && (
+                    <p className="text-xs text-amber-600 mt-2 text-center">
+                      Tất cả món phải ở trạng thái "Đã phục vụ" để xác nhận hóa
+                      đơn
+                    </p>
+                  )}
               </div>
             </>
           )}
