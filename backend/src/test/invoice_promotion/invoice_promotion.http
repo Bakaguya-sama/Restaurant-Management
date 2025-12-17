@@ -1,0 +1,35 @@
+@baseUrl = http://localhost:5001/api/v1
+
+### Get All Invoice Promotions
+GET {{baseUrl}}/invoice-promotions
+
+### Get Invoice Promotions by Invoice ID
+GET {{baseUrl}}/invoice-promotions?invoice_id=PUT_INVOICE_ID_HERE
+
+### Get Invoice Promotions by Promotion ID
+GET {{baseUrl}}/invoice-promotions?promotion_id=PUT_PROMOTION_ID_HERE
+
+### Get Invoice Promotion by ID
+GET {{baseUrl}}/invoice-promotions/PUT_INVOICE_PROMOTION_ID_HERE
+
+### Get Promotions Applied to Invoice
+GET {{baseUrl}}/invoice-promotions/invoice/PUT_INVOICE_ID_HERE
+
+### Get Invoices Using Promotion
+GET {{baseUrl}}/invoice-promotions/promotion/PUT_PROMOTION_ID_HERE
+
+### Get Invoice Promotion Statistics
+GET {{baseUrl}}/invoice-promotions/statistics
+
+### Create Invoice Promotion
+POST {{baseUrl}}/invoice-promotions
+Content-Type: application/json
+
+{
+  "invoice_id": "PUT_INVOICE_ID_HERE",
+  "promotion_id": "PUT_PROMOTION_ID_HERE",
+  "discount_applied": 50000
+}
+
+### Delete Invoice Promotion
+DELETE {{baseUrl}}/invoice-promotions/PUT_INVOICE_PROMOTION_ID_HERE

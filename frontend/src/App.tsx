@@ -6,6 +6,10 @@ import {
 } from "react-router-dom";
 import { LoginPage } from "./components/auth/LoginPage";
 import { RegisterPage } from "./components/auth/RegisterPage";
+import { ForgetPasswordPage } from "./components/auth/ForgetPasswordPage";
+import { RoleBasedRoute } from "./components/auth/RoleBasedRoute";
+import { UnauthorizedPage } from "./components/auth/UnauthorizedPage";
+import { NotFoundPage } from "./components/auth/NotFoundPage";
 import { CustomerLayout } from "./components/customer/CustomerLayout";
 import { HomePage } from "./components/customer/HomePage";
 import { BookingPage } from "./components/customer/BookingPage";
@@ -35,12 +39,24 @@ function App() {
       <CartProvider>
         <Router>
           <Routes>
-            {/* Auth Routes */}
+            {/* Public Auth Routes */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forget-password" element={<ForgetPasswordPage />} />
 
-            {/* Customer Routes */}
-            <Route path="/customer" element={<CustomerLayout />}>
+            {/* Error Pages */}
+            <Route path="/unauthorized" element={<UnauthorizedPage />} />
+            <Route path="/404" element={<NotFoundPage />} />
+
+            {/* Customer Routes - Protected and role-based */}
+            <Route
+              path="/customer"
+              element={
+                <RoleBasedRoute allowedRoles={["customer"]}>
+                  <CustomerLayout />
+                </RoleBasedRoute>
+              }
+            >
               <Route index element={<Navigate to="home" replace />} />
               <Route path="home" element={<HomePage />} />
               <Route path="booking" element={<BookingPage />} />
@@ -54,30 +70,105 @@ function App() {
               <Route path="profile" element={<CustomerProfilePage />} />
             </Route>
 
-            {/* Staff Routes */}
-            <Route path="/staff" element={<StaffLayout />}>
-              {/* Manager Routes */}
-              <Route path="manager/dashboard" element={<ManagerDashboard />} />
-              <Route path="manager/tables" element={<TablesPage />} />
-              <Route path="manager/staff" element={<HRPage />} />
-              <Route path="manager/inventory" element={<InventoryPage />} />
-              <Route path="manager/menu" element={<MenuPromotionPage />} />
-              <Route path="manager/customers" element={<CustomersPage />} />
+            {/* Staff Routes - Protected and role-based */}
+            <Route
+              path="/staff"
+              element={
+                <RoleBasedRoute allowedRoles={["manager", "waiter", "cashier"]}>
+                  <StaffLayout />
+                </RoleBasedRoute>
+              }
+            >
+              {/* Manager Routes - Only managers can access */}
+              <Route
+                path="manager/dashboard"
+                element={
+                  <RoleBasedRoute allowedRoles={["manager"]}>
+                    <ManagerDashboard />
+                  </RoleBasedRoute>
+                }
+              />
+              <Route
+                path="manager/tables"
+                element={
+                  <RoleBasedRoute allowedRoles={["manager"]}>
+                    <TablesPage />
+                  </RoleBasedRoute>
+                }
+              />
+              <Route
+                path="manager/staff"
+                element={
+                  <RoleBasedRoute allowedRoles={["manager"]}>
+                    <HRPage />
+                  </RoleBasedRoute>
+                }
+              />
+              <Route
+                path="manager/inventory"
+                element={
+                  <RoleBasedRoute allowedRoles={["manager"]}>
+                    <InventoryPage />
+                  </RoleBasedRoute>
+                }
+              />
+              <Route
+                path="manager/menu"
+                element={
+                  <RoleBasedRoute allowedRoles={["manager"]}>
+                    <MenuPromotionPage />
+                  </RoleBasedRoute>
+                }
+              />
+              <Route
+                path="manager/customers"
+                element={
+                  <RoleBasedRoute allowedRoles={["manager"]}>
+                    <CustomersPage />
+                  </RoleBasedRoute>
+                }
+              />
 
-              {/* Cashier Routes */}
-              <Route path="cashier/invoices" element={<InvoicesPage />} />
+              {/* Cashier Routes - Cashiers and managers can access */}
+              <Route
+                path="cashier/invoices"
+                element={
+                  <RoleBasedRoute allowedRoles={["cashier", "manager"]}>
+                    <InvoicesPage />
+                  </RoleBasedRoute>
+                }
+              />
 
-              {/* Waiter Routes */}
-              <Route path="waiter/tables" element={<TablesMapPage />} />
-              <Route path="waiter/orders" element={<OrderingPage />} />
+              {/* Waiter Routes - Waiters and managers can access */}
+              <Route
+                path="waiter/tables"
+                element={
+                  <RoleBasedRoute allowedRoles={["waiter", "manager"]}>
+                    <TablesMapPage />
+                  </RoleBasedRoute>
+                }
+              />
+              <Route
+                path="waiter/orders"
+                element={
+                  <RoleBasedRoute allowedRoles={["waiter", "manager"]}>
+                    <OrderingPage />
+                  </RoleBasedRoute>
+                }
+              />
 
-              {/* Common Staff Route */}
+              {/* Common Staff Route - All staff can access */}
               <Route path="profile" element={<ProfilePage role="staff" />} />
             </Route>
 
-            {/* Default Route */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="*" element={<Navigate to="/login" replace />} />
+            {/* Default Route - Smart redirect to customer home */}
+            <Route
+              path="/"
+              element={<Navigate to="/customer/home" replace />}
+            />
+
+            {/* 404 - Catch all invalid routes */}
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
           <Toaster position="top-right" />
         </Router>

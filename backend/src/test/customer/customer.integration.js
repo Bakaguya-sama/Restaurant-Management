@@ -46,11 +46,25 @@ describe('Customer Integration Tests', () => {
     });
 
     it('should fail when creating customer with duplicate email', async () => {
-      const duplicateCustomer = {
-        full_name: 'Duplicate Customer',
-        email: 'customer1@example.com',
+      // First, create the customer to ensure the email exists
+      const firstCustomer = {
+        full_name: 'First Customer',
+        email: 'duplicate.test@example.com',
         phone: '0987654321',
         password: 'password123'
+      };
+
+      await request(app)
+        .post('/api/v1/customers')
+        .send(firstCustomer)
+        .expect(201);
+
+      // Then try to create another customer with the same email
+      const duplicateCustomer = {
+        full_name: 'Duplicate Customer',
+        email: 'duplicate.test@example.com',
+        phone: '0987654322',
+        password: 'password456'
       };
 
       const response = await request(app)
