@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Plus, Edit, Trash2, Shield, Search } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Card } from "../../ui/Card";
@@ -20,6 +20,7 @@ import {
   validatePassword,
 } from "../../../lib/validation";
 import { ConfirmationModal } from "../../ui/ConfirmationModal";
+import { staffApi } from "../../../lib/api";
 
 interface Employee {
   id: string;
@@ -82,7 +83,8 @@ export function HRPage() {
   >("info");
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
-  const [employees, setEmployees] = useState<Employee[]>(mockEmployees);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -101,6 +103,31 @@ export function HRPage() {
   });
   const [selectedRole, setSelectedRole] = useState<Employee["role"]>("waiter");
 
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
+  const fetchEmployees = async () => {
+    try {
+      setLoading(true);
+      const data = await staffApi.getAll();
+      const transformedData = data.map((staff: any) => ({
+        id: staff.id,
+        name: staff.full_name,
+        username: staff.username,
+        role: staff.role,
+        phone: staff.phone || '',
+        email: staff.email || '',
+        status: staff.status === 'active' ? 'active' : 'inactive',
+      }));
+      setEmployees(transformedData);
+    } catch (error: any) {
+      toast.error(error.message || 'Không thể tải danh sách nhân viên');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredEmployees = employees.filter((emp) => {
     const matchesSearch =
       emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -110,8 +137,7 @@ export function HRPage() {
     return matchesSearch && matchesRole && matchesStatus;
   });
 
-  const handleAddEmployee = () => {
-    // Validate required fields
+  const handleAddEmployee = async () => {
     const nameValidation = validateRequired(formData.name, "Họ và tên");
     const usernameValidation = validateRequired(
       formData.username,
@@ -134,7 +160,6 @@ export function HRPage() {
       return;
     }
 
-    // Validate phone if provided
     if (formData.phone) {
       const phoneValidation = validateVietnamesePhone(formData.phone);
       if (!phoneValidation.isValid) {
@@ -143,7 +168,6 @@ export function HRPage() {
       }
     }
 
-    // Validate email if provided
     if (formData.email) {
       const emailValidation = validateEmail(formData.email);
       if (!emailValidation.isValid) {
@@ -152,27 +176,30 @@ export function HRPage() {
       }
     }
 
-    const newEmployee: Employee = {
-      id: `E${String(employees.length + 1).padStart(3, "0")}`,
-      name: formData.name,
-      username: formData.username,
-      role: formData.role,
-      phone: formData.phone,
-      email: formData.email,
-      status: "active",
-    };
-
-    setEmployees([...employees, newEmployee]);
-    toast.success("Thêm nhân viên thành công!");
-    setShowAddModal(false);
-    setFormData({
-      name: "",
-      username: "",
-      password: "",
-      role: "waiter",
-      phone: "",
-      email: "",
-    });
+    try {
+      await staffApi.create({
+        full_name: formData.name,
+        username: formData.username,
+        password: formData.password,
+        role: formData.role,
+        phone: formData.phone,
+        email: formData.email,
+      });
+      
+      await fetchEmployees();
+      toast.success("Thêm nhân viên thành công!");
+      setShowAddModal(false);
+      setFormData({
+        name: "",
+        username: "",
+        password: "",
+        role: "waiter",
+        phone: "",
+        email: "",
+      });
+    } catch (error: any) {
+      toast.error(error.message || 'Không thể thêm nhân viên');
+    }
   };
 
   const handleDeleteEmployee = (id: string) => {
@@ -181,10 +208,14 @@ export function HRPage() {
     setConfirmText("Xóa");
     setConfirmCancelText("Hủy");
     setConfirmVariant(`warning`);
-    setPendingAction(() => () => {
-      //TODO: Api xóa nhân viên
-      setEmployees(employees.filter((emp) => emp.id !== id));
-      toast.success("Đã xóa nhân viên");
+    setPendingAction(() => async () => {
+      try {
+        await staffApi.delete(id);
+        await fetchEmployees();
+        toast.success("Đã xóa nhân viên");
+      } catch (error: any) {
+        toast.error(error.message || 'Không thể xóa nhân viên');
+      }
     });
     setShowConfirmModal(true);
   };
@@ -195,17 +226,18 @@ export function HRPage() {
     setShowRoleModal(true);
   };
 
-  const handleUpdateRole = () => {
+  const handleUpdateRole = async () => {
     if (!selectedEmployee) return;
 
-    setEmployees(
-      employees.map((emp) =>
-        emp.id === selectedEmployee.id ? { ...emp, role: selectedRole } : emp
-      )
-    );
-    toast.success("Cập nhật vai trò thành công!");
-    setShowRoleModal(false);
-    setSelectedEmployee(null);
+    try {
+      await staffApi.update(selectedEmployee.id, { role: selectedRole });
+      await fetchEmployees();
+      toast.success("Cập nhật vai trò thành công!");
+      setShowRoleModal(false);
+      setSelectedEmployee(null);
+    } catch (error: any) {
+      toast.error(error.message || 'Không thể cập nhật vai trò');
+    }
   };
 
   const getRoleColor = (role: string) => {
@@ -336,21 +368,25 @@ export function HRPage() {
 
       {/* Employee Table */}
       <Card>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b">
-                {/* <th className="text-left p-4">Mã NV</th> */}
-                <th className="text-left p-4">Họ tên</th>
-                <th className="text-left p-4">Username</th>
-                <th className="text-left p-4">Vai trò</th>
-                <th className="text-left p-4">Liên hệ</th>
-                <th className="text-left p-4">Trạng thái</th>
-                <th className="text-left p-4">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredEmployees.map((employee) => (
+        {loading ? (
+          <div className="p-8 text-center">
+            <p className="text-gray-500">Đang tải dữ liệu...</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left p-4">Họ tên</th>
+                  <th className="text-left p-4">Username</th>
+                  <th className="text-left p-4">Vai trò</th>
+                  <th className="text-left p-4">Liên hệ</th>
+                  <th className="text-left p-4">Trạng thái</th>
+                  <th className="text-left p-4">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredEmployees.map((employee) => (
                 <tr key={employee.id} className="border-b hover:bg-gray-50">
                   {/* <td className="p-4">{employee.id}</td> */}
                   <td className="p-4">{employee.name}</td>
@@ -403,6 +439,7 @@ export function HRPage() {
             </tbody>
           </table>
         </div>
+        )}
       </Card>
 
       {/* Add Employee Modal */}
