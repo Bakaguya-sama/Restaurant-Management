@@ -63,16 +63,42 @@ async function getBatches({ low = false, expiring = false }) {
 
 async function createStockImport(items) {
   const importNumber = `IMP-${Date.now()}`;
-  const stockImport = new StockImport({ import_number: importNumber, supplier_id: items[0].supplierId, supplier_name: undefined, status: 'completed' });
+  
+  // Validate supplier exists
+  const Supplier = mongoose.model('Supplier');
+  const supplier = await Supplier.findById(items[0].supplierId);
+  if (!supplier) throw { status: 404, message: `Supplier not found: ${items[0].supplierId}` };
+  
+  const stockImport = new StockImport({ import_number: importNumber, supplier_id: items[0].supplierId, supplier_name: supplier.name, status: 'completed' });
   await stockImport.save();
 
   const details = [];
 
   for (const it of items) {
-    const ing = await Ingredient.findById(it.itemId);
+    let ing;
+    
+    // If itemId exists, find existing ingredient
+    if (it.itemId && mongoose.Types.ObjectId.isValid(it.itemId)) {
+      ing = await Ingredient.findById(it.itemId);
+    }
+    
+    // If ingredient not found and item has name (new ingredient), create it
+    if (!ing && it.name) {
+      ing = new Ingredient({
+        name: it.name,
+        unit: it.unit || 'kg',
+        quantity_in_stock: 0,
+        minimum_quantity: 0,
+        unit_price: it.unitPrice || 0,
+        stock_status: 'available'
+      });
+      await ing.save();
+    }
+    
+    // If still no ingredient found, throw error
     if (!ing) throw { status: 404, message: `Ingredient not found: ${it.itemId}` };
 
-    const unitPrice = ing.unit_price || 0;
+    const unitPrice = it.unitPrice || ing.unit_price || 0;
     const lineTotal = unitPrice * it.quantity;
 
     const detail = new StockImportDetail({ import_id: stockImport._id, ingredient_id: ing._id, quantity: it.quantity, unit_price: unitPrice, line_total: lineTotal, expiry_date: new Date(it.expiryDate) });
@@ -107,6 +133,23 @@ async function createStockExport(items, staffId = null) {
     const detail = new StockExportDetail({ export_id: stockExport._id, ingredient_id: ing._id, quantity: it.quantity, unit_price: unitPrice, line_total: lineTotal });
     await detail.save();
 
+    // Deduct quantity from batches using FIFO (oldest first)
+    let remainingQty = it.quantity;
+    const batches = await StockImportDetail.find({ 
+      ingredient_id: ing._id, 
+      quantity: { $gt: 0 } 
+    }).sort({ expiry_date: 1, _id: 1 }); // Sort by expiry date then by ID (FIFO)
+
+    for (const batch of batches) {
+      if (remainingQty <= 0) break;
+      
+      const deductQty = Math.min(batch.quantity, remainingQty);
+      batch.quantity -= deductQty;
+      remainingQty -= deductQty;
+      await batch.save();
+    }
+
+    // Update ingredient total stock
     ing.quantity_in_stock = ing.quantity_in_stock - it.quantity;
     if (ing.quantity_in_stock < 0) ing.quantity_in_stock = 0;
     ing.updated_at = new Date();

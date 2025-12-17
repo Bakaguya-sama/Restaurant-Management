@@ -3,8 +3,8 @@ import { Search } from "lucide-react";
 import { Card } from "../ui/Card";
 import { Modal } from "../ui/Modal";
 import { Input } from "../ui/Input";
-import { mockMenuItems } from "../../lib/mockData";
 import { MenuItem } from "../../types";
+import { useMenuDishes } from "../../hooks/useMenuDishes";
 
 export function MenuPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -13,7 +13,11 @@ export function MenuPage() {
 
   const categories = ["all", "Khai vị", "Món chính", "Đồ uống"];
 
-  const filteredItems = mockMenuItems.filter((item) => {
+  // Fetch dishes from API
+  const { items, loading, error } = useMenuDishes(searchQuery, selectedCategory);
+
+  // Client-side filter (for additional refinement if needed)
+  const filteredItems = items.filter((item) => {
     const matchesSearch = item.name
       .toLowerCase()
       .includes(searchQuery.toLowerCase());

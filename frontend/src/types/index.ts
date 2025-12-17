@@ -116,6 +116,7 @@ export interface Invoice {
 // Inventory Types
 export interface InventoryItem {
   id: string;
+  ingredientId: string; // The actual ingredient ID for backend operations
   name: string;
   quantity: number;
   unit: string;

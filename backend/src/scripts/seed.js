@@ -40,6 +40,7 @@ async function seedDatabase() {
       Staff.deleteMany({}), Customer.deleteMany({}), 
       Floor.deleteMany({}), Location.deleteMany({}), Table.deleteMany({}), 
       Reservation.deleteMany({}), ReservationDetail.deleteMany({}), Complaint.deleteMany({}),
+      Supplier.deleteMany({}),
       Ingredient.deleteMany({}), StockImport.deleteMany({}), StockImportDetail.deleteMany({}), StockExport.deleteMany({}), StockExportDetail.deleteMany({}),
       Dish.deleteMany({}), DishIngredient.deleteMany({}),
       Order.deleteMany({}), OrderDetail.deleteMany({}),
@@ -352,7 +353,7 @@ async function seedDatabase() {
       { 
         name: 'Thịt bò Úc', 
         unit: 'kg', 
-        quantity_in_stock: 50, 
+        quantity_in_stock: 0, 
         minimum_quantity: 20, 
         unit_price: 350000, 
         supplier_name: suppliers[0].name, 
@@ -364,7 +365,7 @@ async function seedDatabase() {
       { 
         name: 'Cá hồi Na Uy', 
         unit: 'kg', 
-        quantity_in_stock: 30, 
+        quantity_in_stock: 0, 
         minimum_quantity: 10, 
         unit_price: 450000, 
         supplier_name: suppliers[1].name, 
@@ -376,7 +377,7 @@ async function seedDatabase() {
       { 
         name: 'Tôm sú', 
         unit: 'kg', 
-        quantity_in_stock: 15, 
+        quantity_in_stock: 0, 
         minimum_quantity: 15, 
         unit_price: 280000, 
         supplier_name: suppliers[1].name, 
@@ -388,7 +389,7 @@ async function seedDatabase() {
       { 
         name: 'Rau xà lách', 
         unit: 'kg', 
-        quantity_in_stock: 15, 
+        quantity_in_stock: 0, 
         minimum_quantity: 10, 
         unit_price: 25000, 
         supplier_name: suppliers[2].name, 
@@ -400,7 +401,7 @@ async function seedDatabase() {
       { 
         name: 'Cà chua', 
         unit: 'kg', 
-        quantity_in_stock: 20, 
+        quantity_in_stock: 0,
         minimum_quantity: 10, 
         unit_price: 30000, 
         supplier_name: suppliers[2].name, 
@@ -412,7 +413,7 @@ async function seedDatabase() {
       { 
         name: 'Hành tây', 
         unit: 'kg', 
-        quantity_in_stock: 8, 
+        quantity_in_stock: 0,
         minimum_quantity: 8, 
         unit_price: 20000, 
         supplier_name: suppliers[2].name, 
@@ -424,7 +425,7 @@ async function seedDatabase() {
       { 
         name: 'Bơ', 
         unit: 'kg', 
-        quantity_in_stock: 10, 
+        quantity_in_stock: 0, 
         minimum_quantity: 5, 
         unit_price: 120000, 
         supplier_name: suppliers[3].name, 
@@ -436,7 +437,7 @@ async function seedDatabase() {
       { 
         name: 'Nước mắm', 
         unit: 'l', 
-        quantity_in_stock: 20, 
+        quantity_in_stock: 0, 
         minimum_quantity: 10, 
         unit_price: 45000, 
         supplier_name: suppliers[4].name, 
@@ -448,7 +449,7 @@ async function seedDatabase() {
       { 
         name: 'Gạo Japonica', 
         unit: 'kg', 
-        quantity_in_stock: 100, 
+        quantity_in_stock: 0, 
         minimum_quantity: 50, 
         unit_price: 35000, 
         supplier_name: suppliers[5].name, 
@@ -460,7 +461,7 @@ async function seedDatabase() {
       { 
         name: 'Dầu ô liu', 
         unit: 'l', 
-        quantity_in_stock: 3, 
+        quantity_in_stock: 0, 
         minimum_quantity: 5, 
         unit_price: 180000, 
         supplier_name: suppliers[3].name, 
@@ -516,6 +517,16 @@ async function seedDatabase() {
       { import_id: stockImports[2]._id, ingredient_id: ingredients[5]._id, quantity: 18, unit_price: 20000, line_total: 360000, expiry_date: new Date('2025-12-16') }
     ]);
     console.log(`   OK ${stockImportDetails.length} import details\n`);
+
+    // Update ingredient quantities from batches
+    console.log('12.1/24 Đồng bộ số lượng ingredient từ batches...');
+    for (const ingredient of ingredients) {
+      const batches = stockImportDetails.filter(d => d.ingredient_id.toString() === ingredient._id.toString());
+      const totalQty = batches.reduce((sum, b) => sum + b.quantity, 0);
+      ingredient.quantity_in_stock = totalQty;
+      await ingredient.save();
+    }
+    console.log(`   OK Đã đồng bộ ${ingredients.length} ingredients\n`);
 
     // ==================== 13. STOCK EXPORTS ====================
     console.log('13/24 Tạo Stock Exports...');
