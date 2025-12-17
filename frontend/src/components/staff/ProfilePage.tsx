@@ -156,7 +156,7 @@ export function ProfilePage({ role }: ProfilePageProps) {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-6xl mx-auto px-6 py-8">
       <div className="mb-6">
         <h2>Quản lý hồ sơ cá nhân</h2>
         <p className="text-gray-600 mt-1">
@@ -164,47 +164,48 @@ export function ProfilePage({ role }: ProfilePageProps) {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {/* Profile Picture Card */}
-        <Card className="p-6">
-          <div className="text-center">
-            <div className="relative inline-block mb-4">
-              <div className="w-32 h-32 bg-[#625EE8] rounded-full flex items-center justify-center mx-auto overflow-hidden">
-                {avatarUrl ? (
-                  <img
-                    src={avatarUrl}
-                    alt="Avatar"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-white text-4xl">
-                    {profileData.fullName.charAt(0)}
-                  </span>
-                )}
+        <div className="space-y-6">
+          <Card className="p-6">
+            <div className="text-center">
+              <div className="relative inline-block mb-4">
+                <div className="w-32 h-32 bg-[#625EE8] rounded-full flex items-center justify-center mx-auto overflow-hidden">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt="Avatar"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-white text-4xl">
+                      {profileData.fullName.charAt(0)}
+                    </span>
+                  )}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                />
+                <button
+                  onClick={handleAvatarClick}
+                  className="absolute bottom-0 right-0 w-10 h-10 bg-white rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-50"
+                  title="Chọn ảnh đại diện"
+                >
+                  <Camera className="w-5 h-5 text-gray-600" />
+                </button>
               </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
-                onChange={handleAvatarChange}
-                className="hidden"
-              />
-              <button
-                onClick={handleAvatarClick}
-                className="absolute bottom-0 right-0 w-10 h-10 bg-white rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-50"
-                title="Chọn ảnh đại diện"
-              >
-                <Camera className="w-5 h-5 text-gray-600" />
-              </button>
+              <h3 className="mb-2">{profileData.fullName}</h3>
+              <p className="text-gray-600 mb-1">{profileData.position}</p>
+              <p className="text-sm text-gray-500">
+                ID: {profileData.employeeId}
+              </p>
             </div>
-            <h3 className="mb-2">{profileData.fullName}</h3>
-            <p className="text-gray-600 mb-1">{profileData.position}</p>
-            <p className="text-sm text-gray-500">
-              ID: {profileData.employeeId}
-            </p>
-          </div>
 
-          <div className="mt-6 pt-6 border-t space-y-3">
+            {/* <div className="mt-6 pt-6 border-t space-y-3">
             <div className="flex items-center gap-3 text-sm">
               <Mail className="w-4 h-4 text-gray-400" />
               <span className="text-gray-600">{profileData.email}</span>
@@ -219,11 +220,12 @@ export function ProfilePage({ role }: ProfilePageProps) {
                 {profileData.address}
               </span>
             </div>
-          </div>
-        </Card>
+          </div> */}
+          </Card>
+        </div>
 
         {/* Information Form */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className=" space-y-6">
           <Card className="p-6">
             <div className="flex items-center justify-between mb-6">
               <h3>Thông tin cá nhân</h3>
