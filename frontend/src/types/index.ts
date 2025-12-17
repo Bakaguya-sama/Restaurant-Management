@@ -42,9 +42,11 @@ export interface Location {
 
 export interface Floor {
   id: string;
-  name: string;
-  level: number;
+  floor_name: string;
+  floor_number: number;
   description?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // Menu Types
