@@ -28,6 +28,7 @@ import { ProfilePage } from "./components/staff/ProfilePage";
 import { Toaster } from "./components/ui/sonner";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
+import { ForgetPasswordPage } from "./components/auth/ForgetPasswordPage";
 
 function App() {
   return (
@@ -38,6 +39,7 @@ function App() {
             {/* Auth Routes */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forget-password" element={<ForgetPasswordPage />} />
 
             {/* Customer Routes */}
             <Route path="/customer" element={<CustomerLayout />}>

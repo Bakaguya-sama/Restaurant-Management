@@ -47,13 +47,29 @@ describe('Staff Integration Tests', () => {
     });
 
     it('should fail when creating staff with duplicate email', async () => {
-      const duplicateStaff = {
-        full_name: 'Duplicate Staff',
-        email: 'manager1@restaurant.com',
+      // First, create the staff to ensure the email exists
+      const firstStaff = {
+        full_name: 'First Staff',
+        email: 'duplicate.staff@restaurant.com',
         phone: '0987654321',
         role: 'cashier',
-        username: `duplicate${Date.now()}`,
+        username: `first${Date.now()}`,
         password: 'password123'
+      };
+
+      await request(app)
+        .post('/api/v1/staff')
+        .send(firstStaff)
+        .expect(201);
+
+      // Then try to create another staff with the same email
+      const duplicateStaff = {
+        full_name: 'Duplicate Staff',
+        email: 'duplicate.staff@restaurant.com',
+        phone: '0987654322',
+        role: 'waiter',
+        username: `duplicate${Date.now()}`,
+        password: 'password456'
       };
 
       const response = await request(app)

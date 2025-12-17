@@ -49,13 +49,13 @@ export function LoginPage() {
       {/* Left Side - Image */}
       <div className="hidden lg:block lg:w-1/2 relative overflow-hidden">
         <img
-          src="https://images.unsplash.com/photo-1756397481872-ed981ef72a51?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyZXN0YXVyYW50JTIwaW50ZXJpb3IlMjBlbGVnYW50fGVufDF8fHx8MTc2NTMwNzczM3ww&ixlib=rb-4.1.0&q=80&w=1080"
+          src="/res-img.avif"
           alt="Restaurant"
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#625EE8]/80 to-transparent flex items-center justify-center">
           <div className="text-white px-12">
-            <h1 className="text-white mb-6">Restaurant Management System</h1>
+            {/* <h1 className="text-white mb-6">Restaurant Management System</h1> */}
           </div>
         </div>
       </div>
@@ -126,7 +126,10 @@ export function LoginPage() {
                   <input type="checkbox" className="rounded border-gray-300" />
                   <span className="text-gray-600">Ghi nhớ đăng nhập</span>
                 </label>
-                <a href="#" className="text-[#625EE8] hover:underline">
+                <a
+                  href="/forget-password"
+                  className="text-[#625EE8] hover:underline"
+                >
                   Quên mật khẩu?
                 </a>
               </div>

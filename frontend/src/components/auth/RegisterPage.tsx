@@ -94,7 +94,7 @@ export function RegisterPage() {
       {/* Left Side - Image */}
       <div className="hidden lg:block lg:w-1/2 relative overflow-hidden">
         <img
-          src="https://images.unsplash.com/photo-1676300183339-09e3824b215d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmb29kJTIwZGlzaGVzJTIwZ291cm1ldHxlbnwxfHx8fDE3NjUzODM4NTh8MA&ixlib=rb-4.1.0&q=80&w=1080"
+          src="/res2-img.avif"
           alt="Food"
           className="w-full h-full object-cover"
         />
