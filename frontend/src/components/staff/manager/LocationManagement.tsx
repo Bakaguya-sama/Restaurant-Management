@@ -460,7 +460,7 @@ export function LocationManagement({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {apiLocations && apiLocations.length > 0 ? (
                 apiLocations.map((location) => {
-                  const tableCount = getTableCountInLocation(location.name);
+                  const tableCount = getTableCountInLocation(location.id);
                   const floorName = getFloorName(location.floor_id);
 
                   return (
