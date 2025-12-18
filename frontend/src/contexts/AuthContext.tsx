@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState } from "react";
 import { UserRole } from "../types";
 
 interface UserProfile {
+  id?: string; // Added staff/customer ID
   name: string;
   email: string;
   phone: string;
@@ -20,11 +21,22 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  // Load from localStorage on initial mount
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    const saved = localStorage.getItem("isAuthenticated");
+    console.log("AuthContext init - isAuthenticated from localStorage:", saved);
+    return saved === "true";
+  });
+  
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
+    const saved = localStorage.getItem("userProfile");
+    console.log("AuthContext init - userProfile from localStorage:", saved);
+    return saved ? JSON.parse(saved) : null;
+  });
 
   const login = (role: UserRole) => {
     setIsAuthenticated(true);
+    localStorage.setItem("isAuthenticated", "true");
 
     // Mock user profile based on role
     // TEST BLACKLIST: Switch between customers to test different scenarios
@@ -43,24 +55,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     //   phone: "0987654321",
     // };
 
-    setUserProfile({
+    const profile = {
+      id: role === "customer" ? "CUSTOMER_ID_MOCK" : "6759e8f123456789abcdef12", // Mock staff ID (24 chars for MongoDB ObjectId)
       name: role === "customer" ? customerProfile.name : "Nhân viên",
       email:
         role === "customer" ? customerProfile.email : "staff@restaurant.com",
       phone: role === "customer" ? customerProfile.phone : "0123456789",
       role,
       address: role === "customer" ? undefined : "123 Đường ABC, Hà Nội",
-    });
+    };
+    
+    setUserProfile(profile);
+    localStorage.setItem("userProfile", JSON.stringify(profile));
   };
 
   const logout = () => {
     setIsAuthenticated(false);
     setUserProfile(null);
+    localStorage.removeItem("isAuthenticated");
+    localStorage.removeItem("userProfile");
   };
 
   const updateProfile = (profile: Partial<UserProfile>) => {
     if (userProfile) {
-      setUserProfile({ ...userProfile, ...profile });
+      const updated = { ...userProfile, ...profile };
+      setUserProfile(updated);
+      localStorage.setItem("userProfile", JSON.stringify(updated));
     }
   };
 

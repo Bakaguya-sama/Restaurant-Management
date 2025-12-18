@@ -33,6 +33,12 @@ export function StaffLayout() {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   const role = userProfile?.role || "manager";
+  
+  // Debug: Log user profile and role
+  React.useEffect(() => {
+    console.log("StaffLayout - userProfile:", userProfile);
+    console.log("StaffLayout - role:", role);
+  }, [userProfile, role]);
 
   const handleLogout = () => {
     logout();
