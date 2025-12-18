@@ -131,7 +131,7 @@ export function LocationManagement({
     if (!location) return;
 
     // Check if location has tables
-    const tablesInLocation = tables.filter((t) => t.area === location.name);
+    const tablesInLocation = tables.filter((t) => t.location_id === location.id);
 
     if (tablesInLocation.length > 0) {
       toast.error(
@@ -358,8 +358,8 @@ export function LocationManagement({
   };
 
   // Helper to count tables in location
-  const getTableCountInLocation = (locationName: string) => {
-    return tables.filter((t) => t.area === locationName).length;
+  const getTableCountInLocation = (locationId: string) => {
+    return tables.filter((t) => t.location_id === locationId).length;
   };
 
   return (

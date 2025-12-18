@@ -22,12 +22,13 @@ export type TableStatus = "free" | "occupied" | "reserved" | "dirty" | "broken";
 
 export interface Table {
   id: string;
-  number: string;
-  area: string;
-  seats: number;
+  table_number: string;
+  location_id: string;
+  capacity: number;
   status: TableStatus;
   floor?: string;
   brokenReason?: string;
+  createdAt?: string;
 }
 
 // Location/Area Management Types
