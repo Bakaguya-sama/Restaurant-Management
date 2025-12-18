@@ -1,0 +1,192 @@
+@baseUrl = http://localhost:5001/api/v1
+
+# ======================
+# INGREDIENT API TESTS
+# ======================
+
+### GET /ingredients - Lấy tất cả các nguyên liệu
+GET {{baseUrl}}/ingredients
+
+
+### POST /ingredients - SUCCESS - Tạo nguyên liệu mới (Bơ)
+POST {{baseUrl}}/ingredients
+Content-Type: application/json
+
+{
+  "name": "Bơ",
+  "unit": "kg",
+  "quantity_in_stock": 10,
+  "minimum_quantity": 2,
+  "unit_price": 85000,
+  "supplier_name": "ABC Supplier",
+  "supplier_contact": "0123456789",
+  "stock_status": "available"
+}
+
+
+### POST /ingredients - SUCCESS - Tạo nguyên liệu mới (Cà chua)
+POST {{baseUrl}}/ingredients
+Content-Type: application/json
+
+{
+  "name": "Cà chua",
+  "unit": "kg",
+  "quantity_in_stock": 15,
+  "minimum_quantity": 3,
+  "unit_price": 25000,
+  "supplier_name": "XYZ Supplier",
+  "supplier_contact": "0987654321",
+  "stock_status": "available"
+}
+
+
+### POST /ingredients - SUCCESS - Tạo nguyên liệu mới (Dầu ô liu)
+POST {{baseUrl}}/ingredients
+Content-Type: application/json
+
+{
+  "name": "Dầu ô liu",
+  "unit": "lít",
+  "quantity_in_stock": 5,
+  "minimum_quantity": 1,
+  "unit_price": 180000,
+  "supplier_name": "Premium Foods",
+  "stock_status": "available"
+}
+
+
+### POST /ingredients - SUCCESS - Tạo nguyên liệu mới (Muối)
+POST {{baseUrl}}/ingredients
+Content-Type: application/json
+
+{
+  "name": "Muối",
+  "unit": "kg",
+  "quantity_in_stock": 8,
+  "minimum_quantity": 2,
+  "unit_price": 15000,
+  "supplier_name": "Salt Corp",
+  "stock_status": "available"
+}
+
+
+### POST /ingredients - SUCCESS - Tạo nguyên liệu mới (Hạt tiêu)
+POST {{baseUrl}}/ingredients
+Content-Type: application/json
+
+{
+  "name": "Hạt tiêu",
+  "unit": "g",
+  "quantity_in_stock": 500,
+  "minimum_quantity": 100,
+  "unit_price": 120000,
+  "supplier_name": "Spice House",
+  "stock_status": "available"
+}
+
+
+### POST /ingredients - FAIL - Missing name
+POST {{baseUrl}}/ingredients
+Content-Type: application/json
+
+{
+  "unit": "kg",
+  "quantity": 10
+}
+
+
+### POST /ingredients - FAIL - Missing unit_price
+POST {{baseUrl}}/ingredients
+Content-Type: application/json
+
+{
+  "name": "Thịt gà",
+  "unit": "kg",
+  "quantity_in_stock": 20
+}
+
+
+### POST /ingredients - FAIL - Duplicate name
+POST {{baseUrl}}/ingredients
+Content-Type: application/json
+
+{
+  "name": "Bơ",
+  "unit": "kg",
+  "quantity": 5
+}
+
+
+### GET /ingredients - Verify multiple ingredients created
+GET {{baseUrl}}/ingredients
+
+
+### GET /ingredients/{id} - Get ingredient by ID
+GET {{baseUrl}}/ingredients/674da30bb19ecab3d0c9f0d1
+
+
+### GET /ingredients/{id} - FAIL - Non-existent ingredient
+GET {{baseUrl}}/ingredients/000000000000000000000000
+
+
+### PUT /ingredients/{id} - SUCCESS - Update ingredient
+PUT {{baseUrl}}/ingredients/674da30bb19ecab3d0c9f0d1
+Content-Type: application/json
+
+{
+  "name": "Bơ Premium",
+  "unit": "kg",
+  "quantity_in_stock": 12,
+  "minimum_quantity": 3,
+  "unit_price": 95000,
+  "supplier_name": "Premium Supplier"
+}
+
+
+### PUT /ingredients/{id} - FAIL - Non-existent ingredient
+PUT {{baseUrl}}/ingredients/000000000000000000000000
+Content-Type: application/json
+
+{
+  "name": "Non-existent Ingredient",
+  "unit": "kg",
+  "unit_price": 50000
+}
+
+
+### PATCH /ingredients/{id}/quantity - SUCCESS - Update only quantity
+PATCH {{baseUrl}}/ingredients/674da30bb19ecab3d0c9f0d1/quantity
+Content-Type: application/json
+
+{
+  "quantity_in_stock": 8
+}
+
+
+### PATCH /ingredients/{id}/quantity - FAIL - Missing quantity_in_stock
+PATCH {{baseUrl}}/ingredients/674da30bb19ecab3d0c9f0d1/quantity
+Content-Type: application/json
+
+{
+}
+
+
+### PATCH /ingredients/{id}/quantity - FAIL - Invalid quantity (negative)
+PATCH {{baseUrl}}/ingredients/674da30bb19ecab3d0c9f0d1/quantity
+Content-Type: application/json
+
+{
+  "quantity_in_stock": -5
+}
+
+
+### DELETE /ingredients/{id} - SUCCESS - Delete ingredient
+DELETE {{baseUrl}}/ingredients/674da30bb19ecab3d0c9f0d1
+
+
+### DELETE /ingredients/{id} - FAIL - Non-existent ingredient
+DELETE {{baseUrl}}/ingredients/000000000000000000000000
+
+
+### GET /ingredients - Verify ingredient deleted
+GET {{baseUrl}}/ingredients
