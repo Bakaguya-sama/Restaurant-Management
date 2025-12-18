@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Search,
   Ban,
@@ -24,6 +24,8 @@ import { mockCustomers } from "../../../lib/mockData";
 import { Customer, Violation } from "../../../types";
 import { toast } from "sonner";
 import { ConfirmationModal } from "../../ui/ConfirmationModal";
+import { customerApi, violationApi, ratingApi } from "../../../lib/api";
+
 export function CustomersPage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmTitle, setConfirmTitle] = useState("");
@@ -34,7 +36,8 @@ export function CustomersPage() {
     "info" | "warning" | "danger"
   >("info");
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
-  const [customers, setCustomers] = useState<Customer[]>(mockCustomers);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [tierFilter, setTierFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -45,31 +48,65 @@ export function CustomersPage() {
   const [showViolationModal, setShowViolationModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [violationForm, setViolationForm] = useState({
-    type: "no-show" as Violation["type"],
+    type: "no_show" as Violation["type"],
     description: "",
   });
   const [feedbackResponse, setFeedbackResponse] = useState("");
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
+  const [selectedRating, setSelectedRating] = useState<any>(null);
+
+  useEffect(() => {
+    fetchCustomers();
+    fetchFeedbacks();
+  }, []);
+
+  const fetchCustomers = async () => {
+    try {
+      setLoading(true);
+      const data = await customerApi.getAll();
+      const transformedData = data.map((customer: any) => ({
+        id: customer.id,
+        name: customer.full_name,
+        email: customer.email,
+        phone: customer.phone,
+        membershipTier: customer.membership_level || 'bronze',
+        points: customer.points || 0,
+        totalSpent: customer.total_spent || 0,
+        isBlacklisted: customer.isBanned || customer.is_banned || false,
+        violations: customer.violations || [],
+      }));
+      setCustomers(transformedData);
+    } catch (error: any) {
+      toast.error(error.message || 'Không thể tải danh sách khách hàng');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchFeedbacks = async () => {
+    try {
+      const data = await ratingApi.getAll();
+      const transformedData = await Promise.all(data.map(async (rating: any) => {
+        const replies = await ratingApi.getReplies(rating.id).catch(() => []);
+        const customer = customers.find(c => c.id === rating.customer_id);
+        return {
+          id: rating.id,
+          customerId: rating.customer_id,
+          customerName: customer?.name || rating.customer_name || 'Khách hàng',
+          comment: rating.comment,
+          rating: rating.score,
+          date: rating.created_at || rating.date,
+          response: replies.length > 0 ? replies[0].reply_text : '',
+          replyId: replies.length > 0 ? replies[0].id : null,
+        };
+      }));
+      setFeedbacks(transformedData);
+    } catch (error: any) {
+      toast.error(error.message || 'Không thể tải danh sách phản hồi');
+    }
+  };
 
   // Mock feedback data
-  const feedbacks = [
-    {
-      id: "F001",
-      customerId: "C001",
-      customerName: "Nguyễn Văn An",
-      comment: "Món ăn rất ngon, phục vụ tận tình",
-      date: "2025-12-09",
-      response: "",
-    },
-    {
-      id: "F002",
-      customerId: "C002",
-      customerName: "Trần Thị Bình",
-      comment: "Thời gian chờ hơi lâu",
-      date: "2025-12-08",
-      response: "Xin lỗi quý khách, chúng tôi sẽ cải thiện",
-    },
-  ];
-
   const filteredCustomers = customers.filter((customer) => {
     const matchesSearch =
       customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -88,34 +125,30 @@ export function CustomersPage() {
     setShowDetailModal(true);
   };
 
-  const handleAddViolation = () => {
+  const handleAddViolation = async () => {
     if (!selectedCustomer || !violationForm.description) {
       toast.error("Vui lòng điền đầy đủ thông tin");
       return;
     }
 
-    const newViolation: Violation = {
-      id: `V${String(Date.now()).slice(-6)}`,
-      customerId: selectedCustomer.id,
-      type: violationForm.type,
-      description: violationForm.description,
-      date: new Date().toISOString().split("T")[0],
-    };
+    try {
+      await violationApi.create({
+        customer_id: selectedCustomer.id,
+        violation_type: violationForm.type,
+        description: violationForm.description,
+        violation_date: new Date().toISOString().split("T")[0],
+      });
 
-    setCustomers(
-      customers.map((c) =>
-        c.id === selectedCustomer.id
-          ? { ...c, violations: [...c.violations, newViolation] }
-          : c
-      )
-    );
-
-    toast.success("Đã ghi nhận vi phạm");
-    setShowViolationModal(false);
-    setViolationForm({ type: "no-show", description: "" });
+      await fetchCustomers();
+      toast.success("Đã ghi nhận vi phạm");
+      setShowViolationModal(false);
+      setViolationForm({ type: "no_show", description: "" });
+    } catch (error: any) {
+      toast.error(error.message || 'Không thể ghi nhận vi phạm');
+    }
   };
 
-  const handleBlacklist = (customerId: string) => {
+  const handleBlacklist = async (customerId: string) => {
     const customer = customers.find((c) => c.id === customerId);
     if (!customer) return;
 
@@ -129,13 +162,18 @@ export function CustomersPage() {
     setConfirmText(actionCapitalized);
     setConfirmCancelText("Hủy");
     setConfirmVariant(`${customer.isBlacklisted ? "info" : "warning"}`);
-    setPendingAction(() => () => {
-      setCustomers(
-        customers.map((c) =>
-          c.id === customerId ? { ...c, isBlacklisted: !c.isBlacklisted } : c
-        )
-      );
-      toast.success(`Đã ${action} khách hàng`);
+    setPendingAction(() => async () => {
+      try {
+        if (customer.isBlacklisted) {
+          await customerApi.unban(customerId);
+        } else {
+          await customerApi.ban(customerId);
+        }
+        await fetchCustomers();
+        toast.success(`Đã ${action} khách hàng`);
+      } catch (error: any) {
+        toast.error(error.message || `Không thể ${action} khách hàng`);
+      }
     });
     setShowConfirmModal(true);
   };
@@ -266,20 +304,25 @@ export function CustomersPage() {
 
           {/* Customer Table */}
           <Card>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-4">Khách hàng</th>
-                    <th className="text-left p-4">Liên hệ</th>
-                    <th className="text-left p-4">Hạng</th>
-                    <th className="text-left p-4">Điểm</th>
-                    <th className="text-left p-4">Trạng thái</th>
-                    <th className="text-left p-4">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredCustomers.map((customer) => (
+            {loading ? (
+              <div className="p-8 text-center">
+                <p className="text-gray-500">Đang tải dữ liệu...</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-4">Khách hàng</th>
+                      <th className="text-left p-4">Liên hệ</th>
+                      <th className="text-left p-4">Hạng</th>
+                      <th className="text-left p-4">Điểm</th>
+                      <th className="text-left p-4">Trạng thái</th>
+                      <th className="text-left p-4">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredCustomers.map((customer) => (
                     <tr key={customer.id} className="border-b hover:bg-gray-50">
                       <td className="p-4">
                         <button
@@ -341,10 +384,11 @@ export function CustomersPage() {
                         </div>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </Card>
         </TabsContent>
 
@@ -393,10 +437,7 @@ export function CustomersPage() {
                       size="sm"
                       variant="secondary"
                       onClick={() => {
-                        setSelectedCustomer(
-                          customers.find((c) => c.id === feedback.customerId) ||
-                            null
-                        );
+                        setSelectedRating(feedback);
                         setShowFeedbackModal(true);
                       }}
                     >
@@ -507,9 +548,10 @@ export function CustomersPage() {
               }
               className="w-full px-4 py-2 border border-gray-300 rounded-lg"
             >
-              <option value="no-show">Không đến (No-show)</option>
-              <option value="late-cancel">Hủy muộn</option>
-              <option value="damage">Làm hỏng tài sản</option>
+              <option value="no_show">Không đến (No-show)</option>
+              <option value="late_cancel">Hủy muộn</option>
+              <option value="property_damage">Làm hỏng tài sản</option>
+              <option value="other">Khác</option>
             </select>
           </div>
 
@@ -566,10 +608,23 @@ export function CustomersPage() {
             </Button>
             <Button
               fullWidth
-              onClick={() => {
-                toast.success("Đã gửi phản hồi");
-                setShowFeedbackModal(false);
-                setFeedbackResponse("");
+              onClick={async () => {
+                if (!selectedRating || !feedbackResponse) {
+                  toast.error('Vui lòng nhập nội dung phản hồi');
+                  return;
+                }
+
+                try {
+                  const staffId = localStorage.getItem('staffId') || '1';
+                  await ratingApi.createReply(selectedRating.id, staffId, feedbackResponse);
+                  await fetchFeedbacks();
+                  toast.success("Đã gửi phản hồi");
+                  setShowFeedbackModal(false);
+                  setFeedbackResponse("");
+                  setSelectedRating(null);
+                } catch (error: any) {
+                  toast.error(error.message || 'Không thể gửi phản hồi');
+                }
               }}
             >
               Gửi phản hồi

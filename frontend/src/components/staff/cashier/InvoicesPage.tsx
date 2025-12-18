@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   CreditCard,
   Wallet,
@@ -19,11 +19,11 @@ import { Input } from "../../ui/Input";
 import {
   mockInvoices,
   mockTables,
-  mockPromotions,
 } from "../../../lib/mockData";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
 import { Badge } from "../../ui/badge";
 import { toast } from "sonner";
+import { invoiceApi, promotionApi } from "../../../lib/api";
 
 export function InvoicesPage() {
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
@@ -34,127 +34,71 @@ export function InvoicesPage() {
   const [cashReceived, setCashReceived] = useState("");
   const [cashierSelectedPromotion, setCashierSelectedPromotion] =
     useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [promotions, setPromotions] = useState<any[]>([]);
+  const [loadingPromotions, setLoadingPromotions] = useState(false);
 
-  // Mock data - in real app, this would come from API
-  const [invoices, setInvoices] = useState([
-    {
-      id: "INV001",
-      tableId: "2",
-      tableNumber: "T02",
-      customerId: "C003",
-      customerName: "Nguyễn Thị C",
-      items: [
-        { id: "1", name: "Phở Bò Đặc Biệt", quantity: 2, price: 85000 },
-        { id: "2", name: "Gỏi Cuốn Tôm Thịt", quantity: 1, price: 45000 },
-        { id: "3", name: "Trà Đá Chanh", quantity: 2, price: 20000 },
-      ],
-      subtotal: 255000,
-      tax: 25500,
-      discount: 0,
-      total: 280500,
-      status: "pending",
-      paymentRequested: false,
-      paymentMethod: undefined,
-      paidAt: undefined,
-      createdAt: "2025-12-11T14:30:00",
-      customerSelectedVoucher: false,
-      customerSelectedPoints: 0,
-    },
-    {
-      id: "INV002",
-      tableId: "7",
-      tableNumber: "T07",
-      customerId: "C007",
-      customerName: "Phạm Văn G",
-      items: [
-        { id: "8", name: "Bún Bò Huế", quantity: 2, price: 80000 },
-        { id: "9", name: "Nem Rán", quantity: 1, price: 55000 },
-        { id: "10", name: "Cà Phê Sữa Đá", quantity: 2, price: 25000 },
-      ],
-      subtotal: 265000,
-      tax: 26500,
-      discount: 0,
-      total: 291500,
-      status: "payment-requested",
-      paymentRequested: true,
-      paymentMethod: undefined,
-      paidAt: undefined,
-      createdAt: "2025-12-11T15:30:00",
-      customerSelectedVoucher: false,
-      customerSelectedPoints: 0,
-    },
-    {
-      id: "INV003",
-      tableId: "9",
-      tableNumber: "T09",
-      customerId: "C009",
-      customerName: "Hoàng Thị H",
-      items: [
-        { id: "11", name: "Cơm Gà Xối Mỡ", quantity: 1, price: 70000 },
-        { id: "12", name: "Canh Chua", quantity: 1, price: 40000 },
-        { id: "13", name: "Trà Đá", quantity: 1, price: 10000 },
-      ],
-      subtotal: 120000,
-      tax: 12000,
-      discount: 0,
-      total: 132000,
-      status: "payment-requested",
-      paymentRequested: true,
-      paymentMethod: undefined,
-      paidAt: undefined,
-      createdAt: "2025-12-11T15:45:00",
-      customerSelectedVoucher: false,
-      customerSelectedPoints: 0,
-    },
-    {
-      id: "INV005",
-      tableId: "4",
-      tableNumber: "T04",
-      customerId: "C004",
-      customerName: "Trần Văn D",
-      items: [
-        { id: "4", name: "Bún Chả Hà Nội", quantity: 2, price: 75000 },
-        { id: "5", name: "Sinh Tố Bơ", quantity: 2, price: 35000 },
-      ],
-      subtotal: 220000,
-      tax: 22000,
-      discount: 50000,
-      total: 192000,
-      voucherCode: "SAVE50K",
-      voucherAmount: 50000,
-      status: "payment-requested",
-      paymentRequested: true,
-      paymentMethod: undefined,
-      paidAt: undefined,
-      createdAt: "2025-12-11T15:00:00",
-      customerSelectedVoucher: true,
-      customerSelectedPoints: 0,
-    },
-    {
-      id: "INV006",
-      tableId: "5",
-      tableNumber: "T05",
-      customerId: "C005",
-      customerName: "Lê Thị E",
-      items: [
-        { id: "6", name: "Phở Bò Đặc Biệt", quantity: 1, price: 85000 },
-        { id: "7", name: "Trà Đá Chanh", quantity: 1, price: 20000 },
-      ],
-      subtotal: 105000,
-      tax: 10500,
-      discount: 1000,
-      total: 114500,
-      pointsUsed: 1000,
-      pointsDiscount: 1000,
-      status: "payment-requested",
-      paymentRequested: true,
-      paymentMethod: undefined,
-      paidAt: undefined,
-      createdAt: "2025-12-11T15:15:00",
-      customerSelectedVoucher: false,
-      customerSelectedPoints: 1000,
-    },
-  ]);
+  useEffect(() => {
+    fetchInvoices();
+    fetchPromotions();
+  }, []);
+
+  const fetchInvoices = async () => {
+    try {
+      setLoading(true);
+      const data = await invoiceApi.getAll();
+      const transformedData = data.map((invoice: any) => {
+        const items = invoice.order_id?.items?.map((item: any) => ({
+          id: item.id || item._id,
+          name: item.dish_id?.name || 'Món ăn',
+          quantity: item.quantity,
+          price: item.unit_price || item.dish_id?.price || 0,
+        })) || [];
+        
+        return {
+          id: invoice.id,
+          tableId: invoice.order_id?.table_id || '',
+          tableNumber: invoice.order_id?.table?.table_number || 'N/A',
+          customerId: invoice.customer_id,
+          customerName: invoice.customer?.full_name || 'Khách hàng',
+          items,
+          subtotal: invoice.subtotal || 0,
+          tax: invoice.tax || 0,
+          discount: invoice.discount_amount || 0,
+          total: invoice.total_amount || 0,
+          status: invoice.payment_status === 'paid' ? 'paid' : invoice.payment_status === 'pending' ? 'payment-requested' : 'pending',
+          paymentRequested: invoice.payment_status === 'pending',
+          paymentMethod: invoice.payment_method,
+          paidAt: invoice.paid_at,
+          createdAt: invoice.invoice_date || invoice.created_at,
+          customerSelectedVoucher: false,
+          customerSelectedPoints: 0,
+          invoiceNumber: invoice.invoice_number,
+          orderId: invoice.order_id,
+          staffId: invoice.staff_id,
+        };
+      });
+      setInvoices(transformedData);
+    } catch (error: any) {
+      toast.error(error.message || 'Không thể tải danh sách hóa đơn');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchPromotions = async () => {
+    try {
+      setLoadingPromotions(true);
+      const data = await promotionApi.getAll({ is_active: true, valid_now: true });
+      setPromotions(data);
+    } catch (error) {
+      console.error('Lỗi khi tải khuyến mãi:', error);
+      toast.error('Không thể tải danh sách khuyến mãi');
+    } finally {
+      setLoadingPromotions(false);
+    }
+  };
 
   const pendingInvoices = invoices.filter(
     (inv) => inv.status === "payment-requested"
@@ -165,23 +109,22 @@ export function InvoicesPage() {
   const getAvailablePromotions = () => {
     if (!selectedInvoice) return [];
 
-    return mockPromotions
+    return promotions
       .filter((promo) => {
-        // Must be active
-        if (!promo.active) return false;
-
         // Check if promotion has available quantity
         if (
-          promo.promotionQuantity !== undefined &&
-          promo.promotionQuantity <= 0
+          promo.max_uses !== undefined &&
+          promo.max_uses !== -1 &&
+          promo.current_uses !== undefined &&
+          promo.current_uses >= promo.max_uses
         ) {
           return false;
         }
 
         // Check minimum order amount
         if (
-          promo.minOrderAmount &&
-          selectedInvoice.subtotal < promo.minOrderAmount
+          promo.minimum_order_amount &&
+          selectedInvoice.subtotal < promo.minimum_order_amount
         ) {
           return false;
         }
@@ -191,12 +134,12 @@ export function InvoicesPage() {
       .sort((a, b) => {
         // Calculate discount value for sorting
         const getDiscountValue = (promo: any) => {
-          if (promo.discountType === "fixed") {
-            return promo.discountValue;
-          } else if (promo.discountType === "percentage") {
+          if (promo.promotion_type === "fixed_amount") {
+            return promo.discount_value;
+          } else if (promo.promotion_type === "percentage") {
             const discount =
-              selectedInvoice.subtotal * (promo.discountValue / 100);
-            return Math.min(discount, promo.maxDiscountAmount || Infinity);
+              selectedInvoice.subtotal * (promo.discount_value / 100);
+            return discount;
           }
           return 0;
         };
@@ -217,14 +160,11 @@ export function InvoicesPage() {
       !selectedInvoice.customerSelectedVoucher &&
       selectedInvoice.customerSelectedPoints === 0
     ) {
-      if (cashierSelectedPromotion.discountType === "fixed") {
-        discount = cashierSelectedPromotion.discountValue;
-      } else if (cashierSelectedPromotion.discountType === "percentage") {
-        discount = Math.min(
-          selectedInvoice.subtotal *
-            (cashierSelectedPromotion.discountValue / 100),
-          cashierSelectedPromotion.maxDiscountAmount || Infinity
-        );
+      if (cashierSelectedPromotion.promotion_type === "fixed_amount") {
+        discount = cashierSelectedPromotion.discount_value;
+      } else if (cashierSelectedPromotion.promotion_type === "percentage") {
+        discount = selectedInvoice.subtotal *
+            (cashierSelectedPromotion.discount_value / 100);
       }
     }
 
@@ -239,7 +179,7 @@ export function InvoicesPage() {
       ? selectedInvoice.subtotal + selectedInvoice.tax - finalTotal
       : selectedInvoice?.discount || 0;
 
-  const handlePayment = () => {
+  const handlePayment = async () => {
     if (!selectedInvoice) return;
 
     const totalAmount = finalTotal;
@@ -252,64 +192,43 @@ export function InvoicesPage() {
       return;
     }
 
-    // Calculate loyalty points earned (10 points per 10,000đ spent)
     const pointsEarned = Math.floor(totalAmount / 10000) * 10;
 
-    // Update invoice status
-    const updatedInvoice = {
-      ...selectedInvoice,
-      status: "paid",
-      paymentMethod,
-      paidAt: new Date().toISOString(),
-      finalTotal: totalAmount,
-      finalDiscount: currentDiscount,
-      appliedPromotion: cashierSelectedPromotion
-        ? {
-            code: cashierSelectedPromotion.code,
-            name: cashierSelectedPromotion.name,
-            discountAmount: currentDiscount,
-          }
-        : null,
-      pointsEarned,
-    };
+    try {
+      await invoiceApi.markAsPaid(selectedInvoice.id);
+      await fetchInvoices();
 
-    setInvoices(
-      invoices.map((inv) =>
-        inv.id === selectedInvoice.id ? updatedInvoice : inv
-      )
-    );
+      const change =
+        paymentMethod === "cash" && cashReceived
+          ? parseFloat(cashReceived) - totalAmount
+          : 0;
 
-    // Show success message with details
-    const change =
-      paymentMethod === "cash" && cashReceived
-        ? parseFloat(cashReceived) - totalAmount
-        : 0;
+      toast.success(
+        <div>
+          <p>Thanh toán thành công!</p>
+          <p className="text-sm mt-1">Hóa đơn: {selectedInvoice.invoiceNumber || selectedInvoice.id}</p>
+          {change > 0 && (
+            <p className="text-sm">Tiền thừa: {change.toLocaleString()}đ</p>
+          )}
+          {pointsEarned > 0 && (
+            <p className="text-sm text-green-600">
+              +{pointsEarned} điểm tích lũy
+            </p>
+          )}
+        </div>
+      );
 
-    toast.success(
-      <div>
-        <p>Thanh toán thành công!</p>
-        <p className="text-sm mt-1">Hóa đơn: {selectedInvoice.id}</p>
-        {change > 0 && (
-          <p className="text-sm">Tiền thừa: {change.toLocaleString()}đ</p>
-        )}
-        {pointsEarned > 0 && (
-          <p className="text-sm text-green-600">
-            +{pointsEarned} điểm tích lũy
-          </p>
-        )}
-      </div>
-    );
+      setSelectedInvoice(null);
+      setCashReceived("");
+      setCashierSelectedPromotion(null);
+      setPaymentMethod("cash");
 
-    // Reset states
-    setSelectedInvoice(null);
-    setCashReceived("");
-    setCashierSelectedPromotion(null);
-    setPaymentMethod("cash");
-
-    // Auto print invoice
-    setTimeout(() => {
-      toast.info("Đang in hóa đơn cho khách hàng...");
-    }, 1000);
+      setTimeout(() => {
+        toast.info("Đang in hóa đơn cho khách hàng...");
+      }, 1000);
+    } catch (error: any) {
+      toast.error(error.message || 'Không thể thanh toán hóa đơn');
+    }
   };
 
   const handlePrint = () => {
@@ -339,6 +258,11 @@ export function InvoicesPage() {
 
         {/* Pending Payments Tab */}
         <TabsContent value="pending">
+          {loading ? (
+            <Card className="p-8 text-center">
+              <p className="text-gray-500">Đang tải dữ liệu...</p>
+            </Card>
+          ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Tables List */}
             <div className="lg:col-span-1">
@@ -523,13 +447,10 @@ export function InvoicesPage() {
                           </button>
                           {availablePromotions.map((promo) => {
                             const discountAmount =
-                              promo.discountType === "fixed"
-                                ? promo.discountValue
-                                : Math.min(
-                                    selectedInvoice.subtotal *
-                                      (promo.discountValue / 100),
-                                    promo.maxDiscountAmount || Infinity
-                                  );
+                              promo.promotion_type === "fixed_amount"
+                                ? promo.discount_value
+                                : selectedInvoice.subtotal *
+                                      (promo.discount_value / 100);
 
                             return (
                               <button
@@ -551,19 +472,19 @@ export function InvoicesPage() {
                                     </p>
                                     <div className="flex items-center gap-2">
                                       <Badge className="bg-purple-100 text-purple-700 text-xs">
-                                        {promo.code}
+                                        {promo.promo_code}
                                       </Badge>
-                                      {promo.minOrderAmount && (
+                                      {promo.minimum_order_amount && (
                                         <span className="text-xs text-gray-500">
                                           Đơn tối thiểu:{" "}
-                                          {promo.minOrderAmount.toLocaleString()}
+                                          {promo.minimum_order_amount.toLocaleString()}
                                           đ
                                         </span>
                                       )}
-                                      {promo.promotionQuantity !==
-                                        undefined && (
+                                      {promo.max_uses !== undefined &&
+                                        promo.max_uses !== -1 && (
                                         <span className="text-xs text-gray-500">
-                                          • Còn {promo.promotionQuantity} lượt
+                                          • Còn {promo.max_uses - (promo.current_uses || 0)} lượt
                                         </span>
                                       )}
                                     </div>
@@ -572,9 +493,9 @@ export function InvoicesPage() {
                                     <p className="text-green-600">
                                       -{discountAmount.toLocaleString()}đ
                                     </p>
-                                    {promo.discountType === "percentage" && (
+                                    {promo.promotion_type === "percentage" && (
                                       <p className="text-xs text-gray-500">
-                                        ({promo.discountValue}%)
+                                        ({promo.discount_value}%)
                                       </p>
                                     )}
                                   </div>
@@ -718,10 +639,16 @@ export function InvoicesPage() {
               )}
             </div>
           </div>
+          )}
         </TabsContent>
 
         {/* Paid Invoices Tab */}
         <TabsContent value="paid">
+          {loading ? (
+            <Card className="p-8 text-center">
+              <p className="text-gray-500">Đang tải dữ liệu...</p>
+            </Card>
+          ) : (
           <Card className="p-6">
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -737,16 +664,13 @@ export function InvoicesPage() {
                 </thead>
                 <tbody>
                   {paidInvoices.map((invoice) => {
-                    const table = mockTables.find(
-                      (t) => t.id === invoice.tableId
-                    );
                     return (
                       <tr
                         key={invoice.id}
                         className="border-b hover:bg-gray-50"
                       >
                         <td className="py-3 px-4">{invoice.id}</td>
-                        <td className="py-3 px-4">{table?.number}</td>
+                        <td className="py-3 px-4">{invoice.tableNumber}</td>
                         <td className="py-3 px-4">
                           {new Date(
                             invoice.paidAt || invoice.createdAt
@@ -799,6 +723,7 @@ export function InvoicesPage() {
               </table>
             </div>
           </Card>
+          )}
         </TabsContent>
       </Tabs>
 
@@ -834,13 +759,13 @@ export function InvoicesPage() {
                     className="flex justify-between p-3 bg-gray-50 rounded-lg"
                   >
                     <div>
-                      <p>{item.menuItem.name}</p>
+                      <p>{item.name}</p>
                       <p className="text-sm text-gray-600">
                         SL: {item.quantity}
                       </p>
                     </div>
                     <span>
-                      {(item.menuItem.price * item.quantity).toLocaleString()}đ
+                      {(item.price * item.quantity).toLocaleString()}đ
                     </span>
                   </div>
                 ))}
