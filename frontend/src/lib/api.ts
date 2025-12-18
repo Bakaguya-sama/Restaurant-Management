@@ -287,3 +287,163 @@ export const ratingApi = {
     return handleResponse<any>(response);
   },
 };
+
+export const invoiceApi = {
+  getAll: async (params?: { payment_status?: string; payment_method?: string; customer_id?: string; staff_id?: string; start_date?: string; end_date?: string; search?: string }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.payment_status) queryParams.append('payment_status', params.payment_status);
+    if (params?.payment_method) queryParams.append('payment_method', params.payment_method);
+    if (params?.customer_id) queryParams.append('customer_id', params.customer_id);
+    if (params?.staff_id) queryParams.append('staff_id', params.staff_id);
+    if (params?.start_date) queryParams.append('start_date', params.start_date);
+    if (params?.end_date) queryParams.append('end_date', params.end_date);
+    if (params?.search) queryParams.append('search', params.search);
+    
+    const response = await fetch(`${API_BASE_URL}/invoices?${queryParams}`);
+    return handleResponse<any[]>(response);
+  },
+
+  getById: async (id: string) => {
+    const response = await fetch(`${API_BASE_URL}/invoices/${id}`);
+    return handleResponse<any>(response);
+  },
+
+  getByInvoiceNumber: async (invoiceNumber: string) => {
+    const response = await fetch(`${API_BASE_URL}/invoices/number/${invoiceNumber}`);
+    return handleResponse<any>(response);
+  },
+
+  getByOrderId: async (orderId: string) => {
+    const response = await fetch(`${API_BASE_URL}/invoices/order/${orderId}`);
+    return handleResponse<any>(response);
+  },
+
+  create: async (data: any) => {
+    const response = await fetch(`${API_BASE_URL}/invoices`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse<any>(response);
+  },
+
+  update: async (id: string, data: any) => {
+    const response = await fetch(`${API_BASE_URL}/invoices/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse<any>(response);
+  },
+
+  delete: async (id: string) => {
+    const response = await fetch(`${API_BASE_URL}/invoices/${id}`, {
+      method: 'DELETE',
+    });
+    return handleResponse<any>(response);
+  },
+
+  markAsPaid: async (id: string) => {
+    const response = await fetch(`${API_BASE_URL}/invoices/${id}/paid`, {
+      method: 'PATCH',
+    });
+    return handleResponse<any>(response);
+  },
+
+  cancel: async (id: string) => {
+    const response = await fetch(`${API_BASE_URL}/invoices/${id}/cancel`, {
+      method: 'PATCH',
+    });
+    return handleResponse<any>(response);
+  },
+
+  getStatistics: async () => {
+    const response = await fetch(`${API_BASE_URL}/invoices/statistics`);
+    return handleResponse<any>(response);
+  },
+
+  getRevenue: async (start_date: string, end_date: string) => {
+    const queryParams = new URLSearchParams();
+    queryParams.append('start_date', start_date);
+    queryParams.append('end_date', end_date);
+    
+    const response = await fetch(`${API_BASE_URL}/invoices/revenue?${queryParams}`);
+    return handleResponse<any>(response);
+  },
+};
+
+export const promotionApi = {
+  getAll: async (params?: { is_active?: boolean; promotion_type?: string; search?: string; valid_now?: boolean }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.is_active !== undefined) queryParams.append('is_active', params.is_active.toString());
+    if (params?.promotion_type) queryParams.append('promotion_type', params.promotion_type);
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.valid_now !== undefined) queryParams.append('valid_now', params.valid_now.toString());
+    
+    const response = await fetch(`${API_BASE_URL}/promotions?${queryParams}`);
+    return handleResponse<any[]>(response);
+  },
+
+  getById: async (id: string) => {
+    const response = await fetch(`${API_BASE_URL}/promotions/${id}`);
+    return handleResponse<any>(response);
+  },
+
+  getByCode: async (code: string) => {
+    const response = await fetch(`${API_BASE_URL}/promotions/code/${code}`);
+    return handleResponse<any>(response);
+  },
+
+  validate: async (promo_code: string, order_amount: number) => {
+    const response = await fetch(`${API_BASE_URL}/promotions/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ promo_code, order_amount }),
+    });
+    return handleResponse<any>(response);
+  },
+
+  create: async (data: any) => {
+    const response = await fetch(`${API_BASE_URL}/promotions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse<any>(response);
+  },
+
+  update: async (id: string, data: any) => {
+    const response = await fetch(`${API_BASE_URL}/promotions/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse<any>(response);
+  },
+
+  delete: async (id: string) => {
+    const response = await fetch(`${API_BASE_URL}/promotions/${id}`, {
+      method: 'DELETE',
+    });
+    return handleResponse<any>(response);
+  },
+
+  activate: async (id: string) => {
+    const response = await fetch(`${API_BASE_URL}/promotions/${id}/activate`, {
+      method: 'PATCH',
+    });
+    return handleResponse<any>(response);
+  },
+
+  deactivate: async (id: string) => {
+    const response = await fetch(`${API_BASE_URL}/promotions/${id}/deactivate`, {
+      method: 'PATCH',
+    });
+    return handleResponse<any>(response);
+  },
+
+  getStatistics: async () => {
+    const response = await fetch(`${API_BASE_URL}/promotions/statistics`);
+    return handleResponse<any>(response);
+  },
+};

@@ -248,7 +248,10 @@ async function seedDatabase() {
       { table_number: 'T07', capacity: 2, location_id: locations[2]._id, status: 'free' },
       { table_number: 'T08', capacity: 6, location_id: locations[4]._id, status: 'free' },
       { table_number: 'T09', capacity: 4, location_id: locations[0]._id, status: 'dirty' },
-      { table_number: 'T10', capacity: 10, location_id: locations[3]._id, status: 'free' }
+      { table_number: 'T10', capacity: 10, location_id: locations[3]._id, status: 'free' },
+      { table_number: 'T11', capacity: 4, location_id: locations[0]._id, status: 'occupied' },
+      { table_number: 'T12', capacity: 2, location_id: locations[1]._id, status: 'occupied' },
+      { table_number: 'T13', capacity: 6, location_id: locations[0]._id, status: 'occupied' }
     ]);
     console.log(`   OK ${tables.length} tables\n`);
 
@@ -625,6 +628,46 @@ async function seedDatabase() {
         total_amount: 698500,
         customer_id: customers[0]._id,
         notes: 'Đóng gói chắc chắn'
+      },
+      { 
+        order_number: 'ORD-005', 
+        order_type: 'dine-in-waiter',
+        order_date: new Date('2025-12-18'),
+        order_time: '18:45', 
+        status: 'served', 
+        subtotal: 520000, 
+        tax: 52000, 
+        total_amount: 572000,
+        table_id: tables[10]._id,
+        customer_id: customers[1]._id,
+        staff_id: staffs[0]._id,
+        notes: 'Yêu cầu thêm tương ớt'
+      },
+      { 
+        order_number: 'ORD-006', 
+        order_type: 'dine-in-customer',
+        order_date: new Date('2025-12-18'),
+        order_time: '19:15', 
+        status: 'served', 
+        subtotal: 245000, 
+        tax: 24500, 
+        total_amount: 269500,
+        table_id: tables[11]._id,
+        customer_id: customers[2]._id
+      },
+      { 
+        order_number: 'ORD-007', 
+        order_type: 'dine-in-waiter',
+        order_date: new Date('2025-12-18'),
+        order_time: '20:00', 
+        status: 'served', 
+        subtotal: 890000, 
+        tax: 89000, 
+        total_amount: 979000,
+        table_id: tables[12]._id,
+        customer_id: customers[4]._id,
+        staff_id: staffs[1]._id,
+        notes: 'Khách yêu cầu thanh toán'
       }
     ]);
     console.log(`   OK ${orders.length} orders\n`);
@@ -641,7 +684,16 @@ async function seedDatabase() {
       { order_id: orders[2]._id, dish_id: dishes[7]._id, quantity: 1, unit_price: 35000, line_total: 35000, status: 'served' },
       { order_id: orders[3]._id, dish_id: dishes[0]._id, quantity: 1, unit_price: 350000, line_total: 350000, status: 'ready' },
       { order_id: orders[3]._id, dish_id: dishes[2]._id, quantity: 1, unit_price: 280000, line_total: 280000, status: 'ready' },
-      { order_id: orders[3]._id, dish_id: dishes[6]._id, quantity: 1, unit_price: 25000, line_total: 25000, status: 'ready' }
+      { order_id: orders[3]._id, dish_id: dishes[6]._id, quantity: 1, unit_price: 25000, line_total: 25000, status: 'ready' },
+      { order_id: orders[4]._id, dish_id: dishes[1]._id, quantity: 1, unit_price: 420000, line_total: 420000, status: 'served' },
+      { order_id: orders[4]._id, dish_id: dishes[4]._id, quantity: 1, unit_price: 95000, line_total: 95000, status: 'served' },
+      { order_id: orders[4]._id, dish_id: dishes[6]._id, quantity: 1, unit_price: 25000, line_total: 25000, status: 'served' },
+      { order_id: orders[5]._id, dish_id: dishes[3]._id, quantity: 2, unit_price: 85000, line_total: 170000, status: 'served' },
+      { order_id: orders[5]._id, dish_id: dishes[7]._id, quantity: 2, unit_price: 35000, line_total: 70000, status: 'served' },
+      { order_id: orders[5]._id, dish_id: dishes[6]._id, quantity: 1, unit_price: 25000, line_total: 25000, status: 'served' },
+      { order_id: orders[6]._id, dish_id: dishes[0]._id, quantity: 2, unit_price: 350000, line_total: 700000, status: 'served' },
+      { order_id: orders[6]._id, dish_id: dishes[2]._id, quantity: 1, unit_price: 280000, line_total: 280000, status: 'served' },
+      { order_id: orders[6]._id, dish_id: dishes[5]._id, quantity: 1, unit_price: 110000, line_total: 110000, status: 'served' }
     ]);
     console.log(`   OK ${orderDetails.length} order details\n`);
 
@@ -687,6 +739,45 @@ async function seedDatabase() {
         payment_method: 'e-wallet', 
         payment_status: 'paid',
         paid_at: new Date('2025-12-11')
+      },
+      { 
+        invoice_number: 'INV-004', 
+        order_id: orders[4]._id, 
+        staff_id: staffs[2]._id, 
+        customer_id: customers[1]._id, 
+        invoice_date: new Date('2025-12-18'),
+        subtotal: 520000, 
+        tax: 52000, 
+        discount_amount: 0, 
+        total_amount: 572000, 
+        payment_method: 'cash', 
+        payment_status: 'pending'
+      },
+      { 
+        invoice_number: 'INV-005', 
+        order_id: orders[5]._id, 
+        staff_id: staffs[2]._id, 
+        customer_id: customers[2]._id, 
+        invoice_date: new Date('2025-12-18'),
+        subtotal: 245000, 
+        tax: 24500, 
+        discount_amount: 0, 
+        total_amount: 269500, 
+        payment_method: 'cash', 
+        payment_status: 'pending'
+      },
+      { 
+        invoice_number: 'INV-006', 
+        order_id: orders[6]._id, 
+        staff_id: staffs[3]._id, 
+        customer_id: customers[4]._id, 
+        invoice_date: new Date('2025-12-18'),
+        subtotal: 890000, 
+        tax: 89000, 
+        discount_amount: 0, 
+        total_amount: 979000, 
+        payment_method: 'card', 
+        payment_status: 'pending'
       }
     ]);
     console.log(`   OK ${invoices.length} invoices\n`);
@@ -723,25 +814,25 @@ async function seedDatabase() {
         customer_id: customers[0]._id, 
         description: 'Thức ăn tuyệt vời, phục vụ rất tốt, sẽ quay lại!', 
         rating_date: new Date('2025-12-11'),
-        //score: 5
+        score: 5
       },
       { 
         customer_id: customers[1]._id, 
         description: 'Thức ăn ngon nhưng chờ đợi lâu, cải thiện tốc độ', 
         rating_date: new Date('2025-12-10'),
-        //score: 3
+        score: 3
       },
       { 
         customer_id: customers[2]._id, 
         description: 'Bình thường, không có gì đặc biệt, giá hơi cao', 
         rating_date: new Date('2025-12-09'),
-        //score: 3
+        score: 3
       },
       { 
         customer_id: customers[3]._id, 
         description: 'Rất tốt, được xử lý khiếu nại một cách chuyên nghiệp!', 
         rating_date: new Date('2025-12-08'),
-        //score: 4
+        score: 4
       }
     ]);
     console.log(`   OK ${ratings.length} ratings\n`);
