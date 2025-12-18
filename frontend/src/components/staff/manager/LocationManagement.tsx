@@ -690,7 +690,7 @@ export function LocationManagement({
             options={[
               { value: "", label: "Chọn tầng" },
               ...(floors || []).map((f) => ({
-                value: f.floor_name,
+                value: f.id,
                 label: f.floor_name,
               })),
             ]}
