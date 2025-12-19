@@ -454,8 +454,13 @@ export function MenuPromotionPage() {
     const matchesSearch = item.name
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
+    
+    const selectedCategoryInEnglish = selectedCategory === "all" 
+      ? "all" 
+      : categoryMapping[selectedCategory] || selectedCategory;
+    
     const matchesCategory =
-      selectedCategory === "all" || item.category === selectedCategory;
+      selectedCategoryInEnglish === "all" || item.category === selectedCategoryInEnglish;
     return matchesSearch && matchesCategory;
   });
 
