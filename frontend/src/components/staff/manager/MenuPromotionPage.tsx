@@ -109,14 +109,14 @@ export function MenuPromotionPage() {
   };
 
   const handleAddMenuItem = () => {
-    // Validate name
+    
     const nameValidation = validateRequired(menuForm.name, "Tên món ăn");
     if (!nameValidation.isValid) {
       toast.error(nameValidation.error);
       return;
     }
 
-    // Validate price
+    
     const priceValidation = validatePositiveNumber(
       menuForm.price,
       "Giá món ăn"
@@ -138,11 +138,11 @@ export function MenuPromotionPage() {
 
     createDish(newItem)
       .then(async (response: any) => {
-        // Get the dish ID from response
+        
         const dishId = response?.id || response?.data?.id;
         
         if (dishId && ingredientRows.length > 0) {
-          // Save ingredients for the new dish
+          
           const validIngredients = ingredientRows.filter(
             (row) => row.ingredientId !== ""
           );
@@ -164,7 +164,7 @@ export function MenuPromotionPage() {
               }
             } catch (err) {
               console.warn("Lỗi khi thêm nguyên liệu:", err);
-              // Don't fail the whole operation if ingredients fail
+              
             }
           }
         }
@@ -197,7 +197,7 @@ export function MenuPromotionPage() {
   const handleEditMenuItem = () => {
     if (!editingDish) return;
 
-    // Validate
+    
     const nameValidation = validateRequired(menuForm.name, "Tên món ăn");
     if (!nameValidation.isValid) {
       toast.error(nameValidation.error);
@@ -213,7 +213,7 @@ export function MenuPromotionPage() {
       return;
     }
 
-    // Update menu item
+    
     const updateData = {
       name: menuForm.name,
       category: categoryMapping[menuForm.category] || menuForm.category,
@@ -224,7 +224,7 @@ export function MenuPromotionPage() {
 
     updateDish(editingDish.id, updateData)
       .then(async () => {
-        // Bulk replace ingredients: delete old and add new in one operation
+        
         if (ingredientRows.length > 0) {
           const validIngredients = ingredientRows.filter(
             (row) => row.ingredientId !== ""
@@ -247,7 +247,7 @@ export function MenuPromotionPage() {
             console.warn("Lỗi khi thay thế nguyên liệu:", err);
           }
         } else {
-          // If no ingredients, delete all existing ones
+          
           try {
             await deleteDishIngredientsByDish(editingDish.id);
           } catch (err) {
@@ -282,7 +282,7 @@ export function MenuPromotionPage() {
       image: dish.image_url || "",
     });
 
-    // Fetch and load existing ingredients for this dish
+    
     const loadDishIngredients = async () => {
       try {
         await fetchIngredientsByDish(dish.id);
@@ -303,16 +303,13 @@ export function MenuPromotionPage() {
       }
     };
 
-    // Ensure ingredients are loaded for dropdown
+    
     const loadIngredientsData = async () => {
-      // Force fetch ingredients to ensure they're fresh
       return fetchIngredients();
     };
 
-    // Load both in parallel, then open modal
     Promise.all([loadIngredientsData(), loadDishIngredients()])
       .then(() => {
-        // Add a small delay to ensure state updates are processed
         setTimeout(() => {
           setShowEditMenuModal(true);
         }, 100);
@@ -341,21 +338,20 @@ export function MenuPromotionPage() {
   };
 
   const handleAddPromotion = () => {
-    // Validate name
     const nameValidation = validateRequired(promoForm.name, "Tên chương trình");
     if (!nameValidation.isValid) {
       toast.error(nameValidation.error);
       return;
     }
 
-    // Validate code
+    
     const codeValidation = validateRequired(promoForm.code, "Mã khuyến mãi");
     if (!codeValidation.isValid) {
       toast.error(codeValidation.error);
       return;
     }
 
-    // Validate discount value
+    
     const discountValidation = validatePositiveNumber(
       promoForm.discountValue,
       "Giá trị giảm giá"
@@ -365,7 +361,7 @@ export function MenuPromotionPage() {
       return;
     }
 
-    // If percentage, check range 0-100
+    
     if (promoForm.discountType === "percentage") {
       const rangeValidation = validateNumberRange(
         promoForm.discountValue,
@@ -415,7 +411,7 @@ export function MenuPromotionPage() {
 
   const categories = ["all", "Khai vị", "Món chính", "Đồ uống", "Tráng miệng"];
   
-  // Mapping from Vietnamese to English category names for API
+  
   const categoryMapping: Record<string, string> = {
     "Khai vị": "appetizer",
     "Món chính": "main_course",
@@ -431,14 +427,12 @@ export function MenuPromotionPage() {
   };
 
   useEffect(() => {
-    // Fetch the main ingredients list on mount
     fetchIngredients().catch((err) => {
       console.error("Failed to fetch ingredients:", err);
     });
   }, []);
 
   useEffect(() => {
-    // Fetch dish ingredients for each dish
     if (apiDishes && apiDishes.length > 0) {
       Promise.all(
         apiDishes.map((dish) =>
@@ -515,7 +509,6 @@ export function MenuPromotionPage() {
         <TabsContent value="menu" className="space-y-6">
           <Button 
             onClick={() => {
-              // Ensure ingredients are loaded
               if (ingredients.length === 0) {
                 fetchIngredients();
               }
@@ -618,7 +611,6 @@ export function MenuPromotionPage() {
                       <p className="text-xs font-semibold text-gray-700 mb-2">Nguyên liệu:</p>
                       <div className="space-y-1">
                         {getIngredientsByDish(item.id).map((ingredient) => {
-                          // Ensure ingredient_id is a string (might be an object from API)
                           let ingredientId = ingredient.ingredient_id;
                           if (typeof ingredientId === 'object' && ingredientId !== null) {
                             ingredientId = (ingredientId as any)?.id || String(ingredientId);

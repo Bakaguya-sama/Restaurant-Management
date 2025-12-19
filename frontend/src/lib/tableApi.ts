@@ -30,8 +30,8 @@ export const tableApi = {
   update: (id: string, data: Partial<TableData>) =>
     apiClient.put<Table>(`/tables/${id}`, data),
 
-  updateStatus: (id: string, status: TableStatus) =>
-    apiClient.patch<Table>(`/tables/${id}/status`, { status }),
+  updateStatus: (id: string, status: TableStatus, brokenReason?: string) =>
+    apiClient.patch<Table>(`/tables/${id}/status`, { status, ...(brokenReason && { brokenReason }) }),
 
   delete: (id: string) => apiClient.delete<void>(`/tables/${id}`),
 };

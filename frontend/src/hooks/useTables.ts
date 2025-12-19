@@ -21,7 +21,7 @@ export function useTables() {
     }
   }, []);
 
-  // Auto-fetch on mount
+  
   useEffect(() => {
     fetchTables();
   }, [fetchTables]);
@@ -54,10 +54,10 @@ export function useTables() {
     }
   };
 
-  const updateTableStatus = async (id: string, status: TableStatus) => {
+  const updateTableStatus = async (id: string, status: TableStatus, brokenReason?: string) => {
     try {
       setError(null);
-      const response = await tableApi.updateStatus(id, status);
+      const response = await tableApi.updateStatus(id, status, brokenReason);
       const updated = response.data;
       setTables(tables.map(t => t.id === id ? updated : t));
       return updated;
@@ -82,6 +82,7 @@ export function useTables() {
 
   return {
     tables,
+    setTables,
     loading,
     error,
     fetchTables,
