@@ -5,14 +5,14 @@ import { Card } from "../../ui/Card";
 import { Modal } from "../../ui/Modal";
 import { Badge } from "../../ui/badge";
 import { mockMenuItems } from "../../../lib/mockData";
-import { MenuItem } from "../../../types";
+import { Dish } from "../../../types";
 import { toast } from "sonner";
 import { ConfirmationModal } from "../../ui/ConfirmationModal";
 import { mockTables } from "../../../lib/mockData";
 import { RiTakeawayLine } from "react-icons/ri";
 
 interface OrderItem {
-  item: MenuItem;
+  item: Dish;
   quantity: number;
   notes: string;
   status: "pending" | "cooking" | "served";
@@ -82,7 +82,7 @@ export function OrderingPage() {
   );
 
   const filteredItems = mockMenuItems.filter((item) => {
-    if (!item.available) return false;
+    if (!item.is_available) return false;
     if (selectedCategory === "all") return true;
     return item.category === selectedCategory;
   });
@@ -96,7 +96,7 @@ export function OrderingPage() {
   const currentOrderId =
     orderType === "table" ? selectedTable : selectedTakeawayOrder;
 
-  const handleAddToOrder = (item: MenuItem) => {
+  const handleAddToOrder = (item: Dish) => {
     const orders = orderType === "table" ? ordersByTable : takeawayOrders;
     const setOrders =
       orderType === "table" ? setOrdersByTable : setTakeawayOrders;

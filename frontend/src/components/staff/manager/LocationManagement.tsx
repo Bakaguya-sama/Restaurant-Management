@@ -26,6 +26,8 @@ interface LocationManagementProps {
   tables: Table[];
   onLocationsChange: (locations: Location[]) => void;
   onFloorsChange: (floors: Floor[]) => void;
+  onRefreshLocations?: () => Promise<void>;
+  onRefreshFloors?: () => Promise<void>;
 }
 
 export function LocationManagement({
@@ -33,6 +35,8 @@ export function LocationManagement({
   tables,
   onLocationsChange,
   onFloorsChange,
+  onRefreshLocations,
+  onRefreshFloors,
 }: LocationManagementProps) {
   const [activeTab, setActiveTab] = useState<"locations" | "floors">(
     "locations"
@@ -48,7 +52,7 @@ export function LocationManagement({
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // API hooks
+  
   const {
     floors,
     loading: floorsLoading,
@@ -69,21 +73,21 @@ export function LocationManagement({
     fetchLocations,
   } = useLocations();
 
-  // Sync locations from API
+  
   useEffect(() => {
     if (apiLocations && apiLocations.length > 0) {
       onLocationsChange(apiLocations);
     }
   }, [apiLocations]);
 
-  // Sync floors from API
+  
   useEffect(() => {
     if (floors && floors.length > 0) {
       onFloorsChange(floors);
     }
   }, [floors]);
 
-  // Location states
+  
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
   const [locationFormData, setLocationFormData] = useState({
@@ -93,7 +97,7 @@ export function LocationManagement({
     createdAt: "",
   });
 
-  // Floor states
+  
   const [showFloorModal, setShowFloorModal] = useState(false);
   const [editingFloor, setEditingFloor] = useState<Floor | null>(null);
   const [floorFormData, setFloorFormData] = useState({
@@ -103,7 +107,7 @@ export function LocationManagement({
     createdAt: "",
   });
 
-  // Location Management Functions
+  
   const handleAddLocation = () => {
     setEditingLocation(null);
     setLocationFormData({
@@ -130,7 +134,7 @@ export function LocationManagement({
     const location = apiLocations.find((l) => l.id === locationId);
     if (!location) return;
 
-    // Check if location has tables
+    
     const tablesInLocation = tables.filter((t) => t.location_id === location.id);
 
     if (tablesInLocation.length > 0) {
@@ -151,6 +155,10 @@ export function LocationManagement({
         setIsSubmitting(true);
         await deleteLocation(locationId);
         toast.success("Đã xóa vị trí thành công");
+        await fetchLocations();
+        if (onRefreshLocations) {
+          await onRefreshLocations();
+        }
       } catch (error) {
         toast.error(
           error instanceof Error ? error.message : "Lỗi khi xóa vị trí"
@@ -163,7 +171,7 @@ export function LocationManagement({
   };
 
   const handleSubmitLocation = async () => {
-    // Validate
+    
     const nameValidation = validateRequired(
       locationFormData.name,
       "Tên vị trí"
@@ -179,7 +187,7 @@ export function LocationManagement({
       return;
     }
 
-    // Check duplicate name (except when editing)
+    
     const duplicateName = apiLocations.find(
       (l) => l.name === locationFormData.name && l.id !== editingLocation?.id
     );
@@ -192,21 +200,28 @@ export function LocationManagement({
 
     try {
       if (editingLocation) {
-        // Update location via API
+        
         await updateLocation(editingLocation.id, {
           name: locationFormData.name,
           floor_id: locationFormData.floor_id,
           description: locationFormData.description,
         });
         toast.success("Đã cập nhật vị trí thành công");
+        await fetchLocations();
+        if (onRefreshLocations) {
+          await onRefreshLocations();
+        }
       } else {
-        // Create new location via API
         await createLocation({
           name: locationFormData.name,
           floor_id: locationFormData.floor_id,
           description: locationFormData.description,
         });
         toast.success("Đã thêm vị trí mới thành công");
+        await fetchLocations();
+        if (onRefreshLocations) {
+          await onRefreshLocations();
+        }
       }
 
       setShowLocationModal(false);
@@ -224,13 +239,13 @@ export function LocationManagement({
     return apiLocations.filter((l) => l.floor_id === floor_id).length;
   };
 
-  // Helper to get floor name by floor_id
+  
   const getFloorName = (floor_id: string) => {
     const floor = floors.find((f) => f.id === floor_id);
     return floor ? floor.floor_name : "Không xác định";
   };
 
-  // Floor Management Functions
+  
   const handleAddFloor = () => {
     setEditingFloor(null);
     const nextNumber = Math.max(...floors.map((f) => f.floor_number), 0) + 1;
@@ -258,7 +273,7 @@ export function LocationManagement({
     const floor = floors.find((f) => f.id === floorId);
     if (!floor) return;
 
-    // Check if floor has locations
+    
     const locationsOnFloor = locations.filter((l) => l.floor_id === floor.id);
 
     if (locationsOnFloor.length > 0) {
@@ -284,6 +299,10 @@ export function LocationManagement({
         setIsSubmitting(true);
         await deleteFloor(floorId);
         toast.success("Đã xóa tầng thành công");
+        await fetchFloors();
+        if (onRefreshFloors) {
+          await onRefreshFloors();
+        }
       } catch (error) {
         toast.error(
           error instanceof Error ? error.message : "Lỗi khi xóa tầng"
@@ -296,7 +315,7 @@ export function LocationManagement({
   };
 
   const handleSubmitFloor = async () => {
-    // Validate
+    
     const nameValidation = validateRequired(floorFormData.name, "Tên tầng");
     if (!nameValidation.isValid) {
       toast.error(nameValidation.error);
@@ -308,7 +327,7 @@ export function LocationManagement({
       return;
     }
 
-    // Check duplicate name or number (except when editing)
+    
     const duplicateName = floors.find(
       (f) => f.floor_name === floorFormData.name && f.id !== editingFloor?.id
     );
@@ -329,21 +348,27 @@ export function LocationManagement({
 
     try {
       if (editingFloor) {
-        // Update floor via API
         await updateFloor(editingFloor.id, {
           floor_name: floorFormData.name,
           floor_number: floorFormData.floor_number,
           description: floorFormData.description,
         });
         toast.success("Đã cập nhật tầng thành công");
+        await fetchFloors();
+        if (onRefreshFloors) {
+          await onRefreshFloors();
+        }
       } else {
-        // Create new floor via API
         await createFloor({
           floor_name: floorFormData.name,
           floor_number: floorFormData.floor_number,
           description: floorFormData.description,
         });
         toast.success("Đã thêm tầng mới thành công");
+        await fetchFloors();
+        if (onRefreshFloors) {
+          await onRefreshFloors();
+        }
       }
 
       setShowFloorModal(false);
@@ -357,7 +382,6 @@ export function LocationManagement({
     }
   };
 
-  // Helper to count tables in location
   const getTableCountInLocation = (locationId: string) => {
     return tables.filter((t) => t.location_id === locationId).length;
   };

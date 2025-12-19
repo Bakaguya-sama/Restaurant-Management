@@ -2,7 +2,7 @@ const { DishIngredient, Ingredient } = require('../../models');
 
 class DishIngredientRepository {
   async findByDishId(dishId) {
-    return await DishIngredient.find({ dish_id: dishId }).populate('ingredient_id', 'name unit quantity_in_stock');
+    return await DishIngredient.find({ dish_id: dishId });
   }
 
   async findByDishAndIngredient(dishId, ingredientId) {

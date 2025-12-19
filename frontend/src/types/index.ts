@@ -51,20 +51,48 @@ export interface Floor {
 }
 
 // Menu Types
-export interface MenuItem {
+export interface Dish {
   id: string;
   name: string;
   category: string;
   price: number;
   description?: string;
-  image?: string;
-  available: boolean;
-  ingredients?: string[];
+  image_url?: string;
+  is_available: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  manual_unavailable_reason?: string;
+  manual_unavailable_at?: string;
+  manual_unavailable_by?: string;
+}
+
+export interface Ingredient {
+  id: string;
+  name: string;
+  unit: string;
+  quantity_in_stock: number;
+  minimum_quantity: number;
+  unit_price: number;
+  supplier_name: string;
+  supplier_contact: string;
+  expiry_date?: string;
+  stock_status: string;
+  expiry_status: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface DishIngredient {
+  id: string;
+  dish_id: string;
+  ingredient_id: string;
+  quantity_required: string;
+  unit: string;
 }
 
 export interface OrderItem {
   id: string;
-  menuItem: MenuItem;
+  dish_id: string;
   quantity: number;
   notes?: string;
   status: "pending" | "cooking" | "served";
@@ -117,16 +145,6 @@ export interface Invoice {
 }
 
 // Inventory Types
-export interface InventoryItem {
-  id: string;
-  name: string;
-  quantity: number;
-  unit: string;
-  expiryDate?: string;
-  supplierId?: string;
-  lastUpdated: string;
-}
-
 export interface Supplier {
   id: string;
   name: string;

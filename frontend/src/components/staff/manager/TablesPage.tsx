@@ -56,10 +56,12 @@ export function TablesPage() {
 
   const {
     locations: apiLocations,
+    fetchLocations,
   } = useLocations();
 
   const {
     floors: apiFloors,
+    fetchFloors,
   } = useFloors();
 
   
@@ -414,6 +416,12 @@ export function TablesPage() {
           }}
           onFloorsChange={() => {
             
+          }}
+          onRefreshLocations={async () => {
+            await fetchLocations();
+          }}
+          onRefreshFloors={async () => {
+            await fetchFloors();
           }}
         />
       )}
