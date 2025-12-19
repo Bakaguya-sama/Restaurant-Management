@@ -142,14 +142,6 @@ class DishController {
         });
       }
 
-      if (!is_available && !reason) {
-        return res.status(400).json({
-          success: false,
-          data: null,
-          message: 'reason is required when marking dish as unavailable'
-        });
-      }
-
       const dish = await this.dishService.updateDishAvailability(
         req.params.id,
         is_available,
