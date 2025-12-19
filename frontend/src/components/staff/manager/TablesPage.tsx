@@ -416,6 +416,14 @@ export function TablesPage() {
             required
           />
           <Select
+            disabled={true}
+            aria-disabled={true}
+            className="
+                opacity-50
+                cursor-not-allowed
+                bg-gray-100
+                text-gray-400
+              "
             label="Tầng"
             value={formData.floor}
             onChange={(e) =>
