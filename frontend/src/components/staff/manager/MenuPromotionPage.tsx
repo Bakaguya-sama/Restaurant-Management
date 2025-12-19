@@ -36,6 +36,8 @@ export function MenuPromotionPage() {
   const [showAddMenuModal, setShowAddMenuModal] = useState(false);
   const [showEditMenuModal, setShowEditMenuModal] = useState(false);
   const [showAddPromoModal, setShowAddPromoModal] = useState(false);
+  const [showEditPromoModal, setShowEditPromoModal] = useState(false);
+  const [editingPromo, setEditingPromo] = useState<Promotion | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [promoSearchQuery, setPromoSearchQuery] = useState("");
   const [selectedPromoStatus, setSelectedPromoStatus] = useState("all");
@@ -315,6 +317,108 @@ export function MenuPromotionPage() {
     );
   };
 
+  const openEditPromoModal = (promo: Promotion) => {
+    setEditingPromo(promo);
+    setPromoForm({
+      name: promo.name,
+      code: promo.code,
+      discountType: promo.discountType,
+      discountValue: promo.discountValue,
+      promotionQuantity: promo.promotionQuantity || 0,
+      startDate: promo.startDate,
+      endDate: promo.endDate,
+    });
+    setShowEditPromoModal(true);
+  };
+
+  const handleEditPromotion = () => {
+    if (!editingPromo) return;
+
+    // Validate name
+    const nameValidation = validateRequired(promoForm.name, "Tên chương trình");
+    if (!nameValidation.isValid) {
+      toast.error(nameValidation.error);
+      return;
+    }
+
+    // Validate code
+    const codeValidation = validateRequired(promoForm.code, "Mã khuyến mãi");
+    if (!codeValidation.isValid) {
+      toast.error(codeValidation.error);
+      return;
+    }
+
+    // Validate discount value
+    const discountValidation = validatePositiveNumber(
+      promoForm.discountValue,
+      "Giá trị giảm giá"
+    );
+    if (!discountValidation.isValid) {
+      toast.error(discountValidation.error);
+      return;
+    }
+
+    // If percentage, check range 0-100
+    if (promoForm.discountType === "percentage") {
+      const rangeValidation = validateNumberRange(
+        promoForm.discountValue,
+        0.01,
+        100,
+        "Phần trăm giảm giá"
+      );
+      if (!rangeValidation.isValid) {
+        toast.error(rangeValidation.error);
+        return;
+      }
+    }
+
+    // Update promotion
+    setPromotions(
+      promotions.map((promo) =>
+        promo.id === editingPromo.id
+          ? {
+              ...promo,
+              name: promoForm.name,
+              code: promoForm.code,
+              discountType: promoForm.discountType,
+              discountValue: promoForm.discountValue,
+              promotionQuantity: promoForm.promotionQuantity || undefined,
+              startDate: promoForm.startDate,
+              endDate: promoForm.endDate,
+            }
+          : promo
+      )
+    );
+
+    toast.success("Cập nhật khuyến mãi thành công!");
+    setShowEditPromoModal(false);
+    setEditingPromo(null);
+    setPromoForm({
+      name: "",
+      code: "",
+      discountType: "percentage",
+      discountValue: 0,
+      promotionQuantity: 0,
+      startDate: "",
+      endDate: "",
+    });
+  };
+
+  const handleDeletePromotion = (id: string) => {
+    const promo = promotions.find((p) => p.id === id);
+    setConfirmTitle(`Xóa khuyến mãi`);
+    setConfirmMessage(`Bạn có chắc muốn xóa khuyến mãi "${promo?.name}"?`);
+    setConfirmText("Xóa");
+    setConfirmCancelText("Hủy");
+    setConfirmVariant(`warning`);
+    setPendingAction(() => () => {
+      //TODO: Api xóa khuyến mãi
+      setPromotions(promotions.filter((promo) => promo.id !== id));
+      toast.success("Đã xóa khuyến mãi");
+    });
+    setShowConfirmModal(true);
+  };
+
   const categories = ["all", "Khai vị", "Món chính", "Đồ uống", "Tráng miệng"];
 
   const filteredMenuItems = menuItems.filter((item) => {
@@ -581,12 +685,24 @@ export function MenuPromotionPage() {
                         </Badge>
                       </td>
                       <td className="p-4">
-                        <Switch
-                          checked={promo.active}
-                          onCheckedChange={() =>
-                            handleTogglePromotion(promo.id)
-                          }
-                        />
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => openEditPromoModal(promo)}
+                            className="text-blue-600 hover:bg-blue-50"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDeletePromotion(promo.id)}
+                            className="text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -889,7 +1005,7 @@ export function MenuPromotionPage() {
                 })
               }
               placeholder="Nhập giá trị"
-              min="0.01"
+              min="0"
               max={promoForm.discountType === "percentage" ? "100" : undefined}
               step={promoForm.discountType === "percentage" ? "0.1" : "1000"}
             />
@@ -936,6 +1052,153 @@ export function MenuPromotionPage() {
             </Button>
             <Button fullWidth onClick={handleAddPromotion}>
               Thêm khuyến mãi
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Promotion Modal */}
+      <Modal
+        isOpen={showEditPromoModal}
+        onClose={() => {
+          setShowEditPromoModal(false);
+          setEditingPromo(null);
+          setPromoForm({
+            name: "",
+            code: "",
+            discountType: "percentage",
+            discountValue: 0,
+            promotionQuantity: 0,
+            startDate: "",
+            endDate: "",
+          });
+        }}
+        title="Chỉnh sửa khuyến mãi"
+      >
+        <div className="space-y-4">
+          <Input
+            label="Tên chương trình"
+            value={promoForm.name}
+            onChange={(e) =>
+              setPromoForm({ ...promoForm, name: e.target.value })
+            }
+            placeholder="VD: Giảm giá mùa đông"
+          />
+          <Input
+            label="Mã khuyến mãi"
+            value={promoForm.code}
+            onChange={(e) =>
+              setPromoForm({ ...promoForm, code: e.target.value.toUpperCase() })
+            }
+            placeholder="VD: WINTER2025"
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block mb-2">Loại giảm giá</label>
+              <select
+                value={promoForm.discountType}
+                onChange={(e) =>
+                  setPromoForm({
+                    ...promoForm,
+                    discountType: e.target.value as "percentage" | "fixed",
+                  })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+              >
+                <option value="percentage">Phần trăm (%)</option>
+                <option value="fixed">Số tiền cố định (VNĐ)</option>
+              </select>
+            </div>
+            <Input
+              label={
+                promoForm.discountType === "percentage"
+                  ? "Giá trị (%)"
+                  : "Giá trị (VNĐ)"
+              }
+              type="number"
+              value={promoForm.discountValue || ""}
+              onChange={(e) =>
+                setPromoForm({
+                  ...promoForm,
+                  discountValue: parseFloat(e.target.value) || 0,
+                })
+              }
+              placeholder="Nhập giá trị"
+              min="0"
+              max={promoForm.discountType === "percentage" ? "100" : undefined}
+              step={promoForm.discountType === "percentage" ? "0.1" : "1000"}
+            />
+          </div>
+          <Input
+            label="Số lượng lượt dùng"
+            type="number"
+            value={promoForm.promotionQuantity || ""}
+            onChange={(e) =>
+              setPromoForm({
+                ...promoForm,
+                promotionQuantity: parseInt(e.target.value) || 0,
+              })
+            }
+            placeholder="Nhập số lượng (để trống = không giới hạn)"
+            min="0"
+            step="1"
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Ngày bắt đầu"
+              type="date"
+              value={promoForm.startDate}
+              onChange={(e) =>
+                setPromoForm({ ...promoForm, startDate: e.target.value })
+              }
+            />
+            <Input
+              label="Ngày kết thúc"
+              type="date"
+              value={promoForm.endDate}
+              onChange={(e) =>
+                setPromoForm({ ...promoForm, endDate: e.target.value })
+              }
+            />
+          </div>
+
+          {/* Status Toggle */}
+          {editingPromo && (
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div>
+                <label className="block font-medium mb-1">
+                  Trạng thái khuyến mãi
+                </label>
+                <p className="text-sm text-gray-600">
+                  {editingPromo.active ? "Đang hoạt động" : "Tạm dừng"}
+                </p>
+              </div>
+              <Switch
+                checked={editingPromo.active}
+                onCheckedChange={() => {
+                  setEditingPromo({
+                    ...editingPromo,
+                    active: !editingPromo.active,
+                  });
+                  handleTogglePromotion(editingPromo.id);
+                }}
+              />
+            </div>
+          )}
+
+          <div className="flex gap-4 pt-4">
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={() => {
+                setShowEditPromoModal(false);
+                setEditingPromo(null);
+              }}
+            >
+              Hủy
+            </Button>
+            <Button fullWidth onClick={handleEditPromotion}>
+              Lưu thay đổi
             </Button>
           </div>
         </div>
