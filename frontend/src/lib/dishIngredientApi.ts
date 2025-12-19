@@ -35,4 +35,13 @@ export const dishIngredientApi = {
 
   deleteByDish: (dishId: string) => 
     apiClient.delete(`/dishes/${dishId}/ingredients`),
+
+  bulkReplace: (dishId: string, ingredients: Omit<DishIngredientData, 'dishId'>[]) =>
+    apiClient.post<DishIngredient[]>(`/dishes/${dishId}/ingredients/bulk/replace`, {
+      ingredients: ingredients.map(ing => ({
+        ingredient_id: ing.ingredientId,
+        quantity_required: ing.quantity_required,
+        unit: ing.unit,
+      }))
+    }),
 };

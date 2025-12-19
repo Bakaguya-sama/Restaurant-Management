@@ -209,6 +209,9 @@ class DishController {
   async removeIngredientFromDish(req, res) {
     return this.dishIngredientController.removeIngredientFromDish(req, res);
   }
-}
 
+  async bulkReplaceDishIngredients(req, res) {
+    return this.dishIngredientController.bulkReplaceDishIngredients(req, res);
+  }
+}
 module.exports = DishController;

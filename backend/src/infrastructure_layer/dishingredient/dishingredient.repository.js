@@ -44,6 +44,25 @@ class DishIngredientRepository {
   async findById(id) {
     return await DishIngredient.findById(id);
   }
+
+  async bulkReplace(dishId, ingredientDataList) {
+    
+    await DishIngredient.deleteMany({ dish_id: dishId });
+
+    
+    if (ingredientDataList && ingredientDataList.length > 0) {
+      const dishIngredients = ingredientDataList.map(item => ({
+        dish_id: dishId,
+        ingredient_id: item.ingredient_id,
+        quantity_required: item.quantity_required,
+        unit: item.unit
+      }));
+      
+      return await DishIngredient.insertMany(dishIngredients);
+    }
+
+    return [];
+  }
 }
 
 module.exports = DishIngredientRepository;

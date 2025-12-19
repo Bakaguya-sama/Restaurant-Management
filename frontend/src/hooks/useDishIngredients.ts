@@ -91,6 +91,26 @@ export function useDishIngredients() {
     }
   };
 
+  const bulkReplaceDishIngredients = async (dishId: string, ingredients: Omit<DishIngredientData, 'dishId'>[]) => {
+    try {
+      setError(null);
+      const response = await dishIngredientApi.bulkReplace(dishId, ingredients);
+      const newIngredients = response.data;
+      
+      // Replace all ingredients for this dish
+      setDishIngredients(prev => {
+        const filtered = prev.filter(di => di.dish_id !== dishId);
+        return [...filtered, ...newIngredients];
+      });
+      
+      return newIngredients;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to bulk replace dish ingredients';
+      setError(message);
+      throw err;
+    }
+  };
+
   return {
     dishIngredients,
     loading,
@@ -101,5 +121,6 @@ export function useDishIngredients() {
     updateDishIngredient,
     deleteDishIngredient,
     deleteDishIngredientsByDish,
+    bulkReplaceDishIngredients,
   };
 }

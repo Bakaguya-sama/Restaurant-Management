@@ -49,6 +49,7 @@ export function MenuPromotionPage() {
     fetchIngredientsByDish,
     createDishIngredient,
     deleteDishIngredientsByDish,
+    bulkReplaceDishIngredients,
   } = useDishIngredients();
 
   const { ingredients, loading: ingredientsLoading, error: ingredientsError, fetchIngredients, getIngredientById } = useIngredients();
@@ -223,35 +224,34 @@ export function MenuPromotionPage() {
 
     updateDish(editingDish.id, updateData)
       .then(async () => {
-        // Delete old ingredients
-        try {
-          await deleteDishIngredientsByDish(editingDish.id);
-        } catch (err) {
-          console.warn("Lỗi khi xóa nguyên liệu cũ:", err);
-        }
-
-        // Add new ingredients
+        // Bulk replace ingredients: delete old and add new in one operation
         if (ingredientRows.length > 0) {
           const validIngredients = ingredientRows.filter(
             (row) => row.ingredientId !== ""
           );
 
           try {
-            for (const row of validIngredients) {
+            const ingredientData = validIngredients.map(row => {
               const ingredient = ingredients.find(
                 (inv) => inv.id === row.ingredientId
               );
-              if (ingredient) {
-                await createDishIngredient({
-                  dishId: editingDish.id,
-                  ingredientId: String(row.ingredientId),
-                  quantity_required: row.quantity.toString(),
-                  unit: ingredient.unit,
-                });
-              }
-            }
+              return {
+                ingredientId: String(row.ingredientId),
+                quantity_required: row.quantity.toString(),
+                unit: ingredient?.unit || "pcs",
+              };
+            });
+
+            await bulkReplaceDishIngredients(editingDish.id, ingredientData);
           } catch (err) {
-            console.warn("Lỗi khi thêm nguyên liệu:", err);
+            console.warn("Lỗi khi thay thế nguyên liệu:", err);
+          }
+        } else {
+          // If no ingredients, delete all existing ones
+          try {
+            await deleteDishIngredientsByDish(editingDish.id);
+          } catch (err) {
+            console.warn("Lỗi khi xóa nguyên liệu:", err);
           }
         }
 

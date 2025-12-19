@@ -114,7 +114,52 @@ class DishIngredientController {
       });
     }
   }
-}
+
+  async bulkReplaceDishIngredients(req, res) {
+    try {
+      const { ingredients } = req.body;
+
+      if (!Array.isArray(ingredients)) {
+        return res.status(400).json({
+          success: false,
+          data: null,
+          message: 'ingredients must be an array'
+        });
+      }
+
+      // Validate each ingredient has required fields
+      for (const item of ingredients) {
+        if (!item.ingredient_id || !item.quantity_required || !item.unit) {
+          return res.status(400).json({
+            success: false,
+            data: null,
+            message: 'Each ingredient must have ingredient_id, quantity_required, and unit'
+          });
+        }
+      }
+
+      const result = await this.dishIngredientService.bulkReplaceDishIngredients(
+        req.params.id,
+        ingredients
+      );
+
+      res.json({
+        success: true,
+        data: result,
+        message: 'Dish ingredients replaced successfully'
+      });
+    } catch (error) {
+      let statusCode = 400;
+      if (error.message === 'Dish not found' || error.message.includes('not found')) {
+        statusCode = 404;
+      }
+
+      res.status(statusCode).json({
+        success: false,
+        data: null,
+        message: error.message
+      });
+    }
+  }}
 
 module.exports = DishIngredientController;
-
