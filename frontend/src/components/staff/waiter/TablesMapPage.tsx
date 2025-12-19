@@ -26,6 +26,7 @@ export function TablesMapPage() {
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [bookingCode, setBookingCode] = useState("");
   const [brokenReason, setBrokenReason] = useState("");
+  const [tableQuery, setTableQuery] = useState("");
 
   // Customer info states
   const [customerType, setCustomerType] = useState<"member" | "walk-in">(
@@ -272,8 +273,18 @@ export function TablesMapPage() {
     setBrokenReason("");
   };
 
-  // Group tables by area
-  const tablesByArea = tables.reduce((acc, table) => {
+  const filteredTables = tables.filter((t) => {
+    const q = tableQuery.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      t.number.toLowerCase().includes(q) ||
+      t.area.toLowerCase().includes(q) ||
+      String(t.seats).includes(q)
+    );
+  });
+
+  // Group filtered tables by area
+  const tablesByArea = filteredTables.reduce((acc, table) => {
     if (!acc[table.area]) {
       acc[table.area] = [];
     }
@@ -343,6 +354,16 @@ export function TablesMapPage() {
             </p>
           </Card>
         </div>
+      </div>
+      {/* Search tables */}
+      <div className="mb-6">
+        <Input
+          placeholder="Tìm bàn theo số hoặc khu vực"
+          icon={<Search className="w-4 h-4" />}
+          value={tableQuery}
+          onChange={(e) => setTableQuery(e.target.value)}
+          className="h-10 max-w-md"
+        />
       </div>
 
       {/* Tables by Area */}

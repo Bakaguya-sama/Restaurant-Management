@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { Plus, Minus, Utensils, X } from "lucide-react";
+import { Plus, Minus, Utensils, X, Search } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Card } from "../../ui/Card";
 import { Modal } from "../../ui/Modal";
 import { Badge } from "../../ui/badge";
+import { Input } from "../../ui/Input";
 import { mockMenuItems } from "../../../lib/mockData";
 import { MenuItem } from "../../../types";
 import { toast } from "sonner";
@@ -57,6 +58,7 @@ export function OrderingPage() {
   const [takeawayOrderCounter, setTakeawayOrderCounter] = useState(2);
 
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [menuQuery, setMenuQuery] = useState("");
   const [showCustomizeModal, setShowCustomizeModal] = useState(false);
   const [customizingItem, setCustomizingItem] = useState<OrderItem | null>(
     null
@@ -83,8 +85,15 @@ export function OrderingPage() {
 
   const filteredItems = mockMenuItems.filter((item) => {
     if (!item.available) return false;
-    if (selectedCategory === "all") return true;
-    return item.category === selectedCategory;
+    if (selectedCategory !== "all" && item.category !== selectedCategory)
+      return false;
+    const q = menuQuery.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      item.name.toLowerCase().includes(q) ||
+      (item.description && item.description.toLowerCase().includes(q)) ||
+      item.category.toLowerCase().includes(q)
+    );
   });
 
   // Get current orders based on order type
@@ -486,7 +495,17 @@ export function OrderingPage() {
             )}
           </div>
 
-          {/* Category Filter */}
+          {/* Search + Category Filter */}
+          <div className="mb-3">
+            <Input
+              placeholder="Tìm món..."
+              icon={<Search className="w-4 h-4" />}
+              value={menuQuery}
+              onChange={(e) => setMenuQuery(e.target.value)}
+              className="h-10 w-full max-w-md"
+            />
+          </div>
+
           <div className="flex gap-2 overflow-x-auto pb-2">
             {categories.map((cat) => (
               <button
