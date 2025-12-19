@@ -5,12 +5,13 @@ import { Card } from "../../ui/Card";
 import { Modal } from "../../ui/Modal";
 import { Badge } from "../../ui/badge";
 import { useOrderingDishes } from "../../../hooks/useOrderingDishes";
+import { useTables } from "../../../hooks/useTables";
 import { MenuItem } from "../../../types";
 import { toast } from "sonner";
 import { ConfirmationModal } from "../../ui/ConfirmationModal";
 import { RiTakeawayLine } from "react-icons/ri";
 import { createOrder, generateOrderNumber } from "../../../lib/orderApi";
-import { MOCK_STAFF_ID, MOCK_TABLE_IDS, AVAILABLE_TABLES } from "../../../lib/orderingConstants";
+import { MOCK_STAFF_ID } from "../../../lib/orderingConstants";
 
 interface OrderItem {
   item: MenuItem;
@@ -38,6 +39,7 @@ export function OrderingPage() {
   const [customizingItem, setCustomizingItem] = useState<OrderItem | null>(
     null
   );
+  const [customizingIndex, setCustomizingIndex] = useState<number>(-1);
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmTitle, setConfirmTitle] = useState("");
@@ -52,12 +54,12 @@ export function OrderingPage() {
 
   // Fetch dishes from API
   const { items: filteredItems } = useOrderingDishes(selectedCategory);
+  
+  // Fetch tables from API - only show occupied tables
+  const { tables, isLoading: isLoadingTables, error: tablesError } = useTables("occupied");
 
   const categories = ["all", "Khai vị", "Món chính", "Đồ uống"];
   const quickNotes = ["Ít đá", "Không cay", "Không hành", "Ít dầu", "Thêm rau"];
-
-  // Available tables - using hardcoded constants (independent of TableMap)
-  const availableTables = AVAILABLE_TABLES;
 
   // Get current orders based on order type
   const currentOrders =
@@ -88,30 +90,7 @@ export function OrderingPage() {
 
     setAddingItem(item.id);
     try {
-      // Call API to create order and deduct inventory
-      const orderNumber = generateOrderNumber(orderType === "table" ? "dine-in-waiter" : "takeaway-staff");
-      
-      // Get table_id from hardcoded constants (independent of TableMap)
-      const tableId = MOCK_TABLE_IDS[selectedTable];
-      
-      const orderParams = {
-        order_number: orderNumber,
-        order_type: (orderType === "table" ? "dine-in-waiter" : "takeaway-staff") as "dine-in-waiter" | "takeaway-staff",
-        order_time: new Date().toTimeString().split(" ")[0],
-        table_id: orderType === "table" ? tableId : undefined,
-        staff_id: MOCK_STAFF_ID, // Hardcoded staff ID (independent of Login)
-        notes: "",
-        orderItems: [
-          {
-            dish_id: item.id,
-            quantity: 1,
-          },
-        ],
-      };
-
-      await createOrder(orderParams);
-
-      // Update local state only after successful API call
+      // Just add to local state - no inventory deduction yet
       if (existing) {
         setOrders({
           ...orders,
@@ -131,19 +110,10 @@ export function OrderingPage() {
         });
       }
       
-      toast.success(`Đã thêm ${item.name} và trừ nguyên liệu trong kho`);
+      toast.success(`Đã thêm ${item.name} (chưa trừ kho)`);
     } catch (error: any) {
       console.error("Error adding item to order:", error);
-      
-      // Handle INSUFFICIENT_INVENTORY error
-      if (error.message === "INSUFFICIENT_INVENTORY" && error.insufficientItems) {
-        const itemsList = error.insufficientItems
-          .map((i: any) => `${i.ingredientName}: cần ${i.required}${i.unit}, còn ${i.available}${i.unit}`)
-          .join("\n");
-        toast.error(`Không đủ nguyên liệu:\n${itemsList}`);
-      } else {
-        toast.error(`Không thể thêm món: ${error.message || "Lỗi không xác định"}`);
-      }
+      toast.error(`Không thể thêm món: ${error.message || "Lỗi không xác định"}`);
     } finally {
       setAddingItem(null);
     }
@@ -169,64 +139,28 @@ export function OrderingPage() {
       return;
     }
 
-    // Call API to add/remove items (delta can be positive or negative)
+    // Just update quantity locally (no inventory deduction until cooking/served)
+    currentOrderList[index].quantity = newQuantity;
+    setOrders({
+      ...orders,
+      [orderId]: currentOrderList,
+    });
+    
     if (delta > 0) {
-      try {
-        const orderNumber = generateOrderNumber(orderType === "table" ? "dine-in-waiter" : "takeaway-staff");
-        const tableId = MOCK_TABLE_IDS[selectedTable];
-        
-        const orderParams = {
-          order_number: orderNumber,
-          order_type: (orderType === "table" ? "dine-in-waiter" : "takeaway-staff") as "dine-in-waiter" | "takeaway-staff",
-          order_time: new Date().toTimeString().split(" ")[0],
-          table_id: orderType === "table" ? tableId : undefined,
-          staff_id: MOCK_STAFF_ID,
-          notes: "",
-          orderItems: [
-            {
-              dish_id: orderItem.item.id,
-              quantity: delta, // Add only the delta amount
-            },
-          ],
-        };
-
-        await createOrder(orderParams);
-        
-        currentOrderList[index].quantity = newQuantity;
-        setOrders({
-          ...orders,
-          [orderId]: currentOrderList,
-        });
-        toast.success(`Đã thêm ${delta} ${orderItem.item.name}`);
-      } catch (error: any) {
-        console.error("Error updating quantity:", error);
-        if (error.message === "INSUFFICIENT_INVENTORY" && error.insufficientItems) {
-          const itemsList = error.insufficientItems
-            .map((i: any) => `${i.ingredientName}: cần ${i.required}${i.unit}, còn ${i.available}${i.unit}`)
-            .join("\n");
-          toast.error(`Không đủ nguyên liệu:\n${itemsList}`);
-        } else {
-          toast.error(`Không thể thêm món: ${error.message}`);
-        }
-      }
+      toast.success(`Đã tăng số lượng ${orderItem.item.name}`);
     } else {
-      // Just decrease locally (no API call to "return" ingredients)
-      currentOrderList[index].quantity = newQuantity;
-      setOrders({
-        ...orders,
-        [orderId]: currentOrderList,
-      });
       toast.info(`Đã giảm số lượng ${orderItem.item.name}`);
     }
   };
 
   const handleCustomize = (orderItem: OrderItem, index: number) => {
     setCustomizingItem({ ...orderItem, notes: orderItem.notes || "" });
+    setCustomizingIndex(index);
     setShowCustomizeModal(true);
   };
 
   const handleSaveCustomization = () => {
-    if (!customizingItem) return;
+    if (!customizingItem || customizingIndex < 0) return;
 
     const orders = orderType === "table" ? ordersByTable : takeawayOrders;
     const setOrders =
@@ -234,27 +168,21 @@ export function OrderingPage() {
     const orderId = currentOrderId;
 
     const currentOrderList = orders[orderId] || [];
-    const index = currentOrderList.findIndex(
-      (o) =>
-        o.item.id === customizingItem.item.id &&
-        o.notes === (customizingItem.notes || "")
-    );
-
-    if (index >= 0) {
-      const newOrder = [...currentOrderList];
-      newOrder[index] = customizingItem;
-      setOrders({
-        ...orders,
-        [orderId]: newOrder,
-      });
-    }
+    const newOrder = [...currentOrderList];
+    newOrder[customizingIndex] = customizingItem;
+    
+    setOrders({
+      ...orders,
+      [orderId]: newOrder,
+    });
 
     setShowCustomizeModal(false);
     setCustomizingItem(null);
+    setCustomizingIndex(-1);
     toast.success("Đã lưu tùy chỉnh");
   };
 
-  const handleUpdateStatus = (
+  const handleUpdateStatus = async (
     index: number,
     newStatus: "pending" | "cooking" | "served"
   ) => {
@@ -264,12 +192,81 @@ export function OrderingPage() {
     const orderId = currentOrderId;
 
     const currentOrderList = [...(orders[orderId] || [])];
-    currentOrderList[index].status = newStatus;
-    setOrders({
-      ...orders,
-      [orderId]: currentOrderList,
-    });
-    toast.success(`Đã cập nhật trạng thái: ${getStatusText(newStatus)}`);
+    const orderItem = currentOrderList[index];
+    const oldStatus = orderItem.status;
+
+    // If changing to cooking or served from pending, deduct inventory
+    if (
+      oldStatus === "pending" &&
+      (newStatus === "cooking" || newStatus === "served")
+    ) {
+      try {
+        const tableData = tables.find(t => t.table_number === selectedTable);
+        const tableId = tableData?.id;
+        
+        const orderNumber = generateOrderNumber(
+          orderType === "table" ? "dine-in-waiter" : "takeaway-staff"
+        );
+
+        const orderParams = {
+          order_number: orderNumber,
+          order_type: (orderType === "table"
+            ? "dine-in-waiter"
+            : "takeaway-staff") as "dine-in-waiter" | "takeaway-staff",
+          order_time: new Date().toTimeString().split(" ")[0],
+          table_id: orderType === "table" ? tableId : undefined,
+          staff_id: MOCK_STAFF_ID,
+          notes: orderItem.notes || "", // Save individual item notes
+          orderItems: [
+            {
+              dish_id: orderItem.item.id,
+              quantity: orderItem.quantity,
+            },
+          ],
+        };
+
+        await createOrder(orderParams);
+
+        // Update status after successful inventory deduction
+        currentOrderList[index].status = newStatus;
+        setOrders({
+          ...orders,
+          [orderId]: currentOrderList,
+        });
+        toast.success(
+          `Đã cập nhật: ${getStatusText(newStatus)} và trừ nguyên liệu`
+        );
+      } catch (error: any) {
+        console.error("Error deducting inventory:", error);
+
+        if (
+          error.message === "INSUFFICIENT_INVENTORY" &&
+          error.insufficientItems
+        ) {
+          const itemsList = error.insufficientItems
+            .map(
+              (i: any) =>
+                `${i.ingredientName}: cần ${i.required}${i.unit}, còn ${i.available}${i.unit}`
+            )
+            .join("\n");
+          toast.error(`Không đủ nguyên liệu:\n${itemsList}`);
+        } else {
+          toast.error(
+            `Không thể trừ kho: ${error.message || "Lỗi không xác định"}`
+          );
+        }
+        // Don't update status if inventory deduction failed
+        return;
+      }
+    } else {
+      // Just update status without inventory deduction
+      currentOrderList[index].status = newStatus;
+      setOrders({
+        ...orders,
+        [orderId]: currentOrderList,
+      });
+      toast.success(`Đã cập nhật trạng thái: ${getStatusText(newStatus)}`);
+    }
   };
 
   const handleOrderComplete = async () => {
@@ -281,59 +278,108 @@ export function OrderingPage() {
         orderType === "table" ? setOrdersByTable : setTakeawayOrders;
       const orderId = currentOrderId;
 
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/invoices', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //     'Authorization': `Bearer ${authToken}`,
-      //   },
-      //   body: JSON.stringify({
-      //     orderType: orderType,
-      //     orderId: orderId,
-      //     tableNumber: orderType === "table" ? selectedTable : null,
-      //     items: currentOrders.map(o => ({
-      //       dishId: o.item.id,
-      //       quantity: o.quantity,
-      //       notes: o.notes,
-      //       price: o.item.price
-      //     })),
-      //     totalAmount: currentOrders.reduce((sum, o) => sum + o.item.price * o.quantity, 0),
-      //     timestamp: new Date().toISOString()
-      //   })
-      // });
+      // Calculate total amount
+      const totalAmount = currentOrders.reduce(
+        (sum, o) => sum + o.item.price * o.quantity,
+        0
+      );
 
-      // if (!response.ok) {
-      //   throw new Error('Failed to create invoice');
-      // }
+      // Get table info
+      const tableData = tables.find(t => t.table_number === selectedTable);
+      const tableId = tableData?.id;
 
-      // const invoiceData = await response.json();
+      // Step 1: Create order in database first
+      const orderNumber = generateOrderNumber(
+        orderType === "table" ? "dine-in-waiter" : "takeaway-staff"
+      );
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Combine all item notes into order notes
+      const itemNotes = currentOrders
+        .filter(o => o.notes && o.notes.trim())
+        .map(o => `${o.item.name} (x${o.quantity}): ${o.notes}`)
+        .join("\n");
+      
+      const baseNotes = orderType === "takeaway" ? `Đơn mang về ${selectedTakeawayOrder}` : "";
+      const combinedNotes = itemNotes ? (baseNotes ? `${baseNotes}\n\n${itemNotes}` : itemNotes) : baseNotes;
 
-      // Only clear order if API call succeeds
+      const orderData = {
+        order_number: orderNumber,
+        order_type: orderType === "table" ? "dine-in-waiter" : "takeaway-staff",
+        order_time: new Date().toTimeString().split(" ")[0],
+        table_id: orderType === "table" ? tableId : undefined,
+        staff_id: MOCK_STAFF_ID,
+        status: "completed",
+        notes: combinedNotes,
+      };
+
+      const orderResponse = await fetch(
+        `${(import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:5000/api/v1"}/orders`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(orderData),
+        }
+      );
+
+      if (!orderResponse.ok) {
+        const error = await orderResponse.json();
+        throw new Error(error.message || "Failed to create order");
+      }
+
+      const orderResult = await orderResponse.json();
+      const createdOrder = orderResult.data;
+
+      // Step 2: Create invoice with order_id
+      // Note: payment_method is temporary default - cashier will update it during payment
+      const invoiceData = {
+        invoice_number: `INV-${Date.now()}`,
+        order_id: createdOrder._id || createdOrder.id,
+        subtotal: totalAmount,
+        discount_amount: 0,
+        tax_amount: 0,
+        total_amount: totalAmount,
+        payment_method: "cash", // Temporary default - will be updated by cashier
+        payment_status: "pending",
+        table_id: orderType === "table" ? tableId : undefined,
+        staff_id: MOCK_STAFF_ID,
+        invoice_time: new Date().toISOString(),
+        notes: orderType === "takeaway" ? `Đơn mang về ${selectedTakeawayOrder}` : `Bàn ${selectedTable}`,
+      };
+
+      const response = await fetch(
+        `${(import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:5000/api/v1"}/invoices`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(invoiceData),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to create invoice");
+      }
+
+      const result = await response.json();
+
+      // Clear orders immediately after successful invoice creation
       setOrders({
         ...orders,
         [orderId]: [],
       });
 
-      // TODO: Update table status to 'available' or keep as 'occupied' depending on business logic
-      // await updateTableStatus(selectedTable, 'available');
-
-      // TODO: Log order history for tracking
-      // await logOrderHistory({
-      //   orderType: orderType,
-      //   orderId: orderId,
-      //   orders: currentOrders,
-      //   completedAt: new Date().toISOString(),
-      //   invoiceId: invoiceData.id
-      // });
-
-      toast.success("Đã tạo hóa đơn và gửi cho thu ngân!");
-    } catch (error) {
+      toast.success(
+        `Đã tạo hóa đơn ${result.data?.invoice_number || ""} và gửi cho thu ngân!`
+      );
+    } catch (error: any) {
       console.error("Error creating invoice:", error);
-      toast.error("Không thể tạo hóa đơn. Vui lòng thử lại!");
+      toast.error(
+        `Không thể tạo hóa đơn: ${error.message || "Vui lòng thử lại!"}`
+      );
     } finally {
       setIsProcessingInvoice(false);
     }
@@ -474,34 +520,44 @@ export function OrderingPage() {
               <>
                 <h3 className="mb-4">Chọn bàn</h3>
                 {/* Table Selection Grid - Prominent Display */}
-                <div className="grid grid-cols-4 md:grid-cols-6 gap-3 mb-6 p-4 bg-white rounded-lg border-2 border-[#625EE8]">
-                  {availableTables.map((table) => {
-                    const hasOrders = ordersByTable[table.number]?.length > 0;
-                    return (
-                      <button
-                        key={table.number}
-                        onClick={() => setSelectedTable(table.number)}
-                        className={`p-4 rounded-lg border-2 transition-all ${
-                          selectedTable === table.number
-                            ? "bg-[#625EE8] text-white border-[#625EE8] shadow-lg scale-105"
-                            : hasOrders
-                            ? "bg-green-50 text-green-700 border-green-400 hover:border-green-500 hover:bg-green-100"
-                            : "bg-white text-gray-700 border-gray-300 hover:border-[#625EE8] hover:bg-blue-50"
-                        }`}
-                      >
-                        <div className="text-center">
-                          <Utensils className="w-6 h-6 mx-auto mb-1" />
-                          <span className="text-sm">{table.number}</span>
-                          {hasOrders && (
-                            <span className="block text-xs mt-1">
-                              ({ordersByTable[table.number].length} món)
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                {isLoadingTables ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">Đang tải danh sách bàn...</p>
+                  </div>
+                ) : tablesError ? (
+                  <div className="text-center py-8">
+                    <p className="text-red-500">Lỗi: {tablesError}</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-4 md:grid-cols-6 gap-3 mb-6 p-4 bg-white rounded-lg border-2 border-[#625EE8]">
+                    {tables.map((table) => {
+                      const hasOrders = ordersByTable[table.table_number]?.length > 0;
+                      return (
+                        <button
+                          key={table.id}
+                          onClick={() => setSelectedTable(table.table_number)}
+                          className={`p-4 rounded-lg border-2 transition-all ${
+                            selectedTable === table.table_number
+                              ? "bg-[#625EE8] text-white border-[#625EE8] shadow-lg scale-105"
+                              : hasOrders
+                              ? "bg-green-50 text-green-700 border-green-400 hover:border-green-500 hover:bg-green-100"
+                              : "bg-white text-gray-700 border-gray-300 hover:border-[#625EE8] hover:bg-blue-50"
+                          }`}
+                        >
+                          <div className="text-center">
+                            <Utensils className="w-6 h-6 mx-auto mb-1" />
+                            <span className="text-sm">{table.table_number}</span>
+                            {hasOrders && (
+                              <span className="block text-xs mt-1">
+                                ({ordersByTable[table.table_number].length} món)
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
                 <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                   <p className="text-sm text-[#625EE8]">

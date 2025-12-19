@@ -254,7 +254,27 @@ class OrderService {
         // Step 2: Create order
         const order = await this.orderRepository.create(orderData);
 
-        // Step 3: Deduct inventory (without transaction)
+        // Step 3: Create OrderDetails for each item
+        const orderDetailService = new OrderDetailService();
+        for (const item of orderData.orderItems) {
+          // Get dish price
+          const Dish = require('../../models').Dish;
+          const dish = await Dish.findById(item.dish_id);
+          if (!dish) {
+            throw new Error(`Dish not found: ${item.dish_id}`);
+          }
+
+          const itemData = {
+            dish_id: item.dish_id,
+            quantity: item.quantity,
+            unit_price: dish.price,
+            special_instructions: item.special_instructions || null
+          };
+
+          await orderDetailService.addItemToOrder(order._id, itemData);
+        }
+
+        // Step 4: Deduct inventory (without transaction)
         await this.executeInventoryDeduction(validation.deductionPlan, order._id, null);
 
         return order;

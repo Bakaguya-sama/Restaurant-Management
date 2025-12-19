@@ -304,7 +304,7 @@ const InvoiceSchema = new Schema({
   tax: { type: Number, default: 0 },
   discount_amount: { type: Number, default: 0 },
   total_amount: { type: Number, required: true },
-  payment_method: { type: String, enum: ['cash', 'card', 'transfer', 'e-wallet'], required: true },
+  payment_method: { type: String, enum: ['cash', 'card', 'transfer', 'e-wallet'] }, // Optional - set by cashier at payment time
   payment_status: { type: String, enum: ['pending', 'paid', 'cancelled'], default: 'pending' },
   paid_at: Date,
   created_at: { type: Date, default: Date.now }

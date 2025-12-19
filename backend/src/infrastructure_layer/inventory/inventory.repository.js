@@ -69,10 +69,12 @@ async function createStockImport(items) {
   const supplier = await Supplier.findById(items[0].supplierId);
   if (!supplier) throw { status: 404, message: `Supplier not found: ${items[0].supplierId}` };
   
+  // We'll build notes after processing items
   const stockImport = new StockImport({ import_number: importNumber, supplier_id: items[0].supplierId, supplier_name: supplier.name, status: 'completed' });
   await stockImport.save();
 
   const details = [];
+  const noteParts = []; // Collect notes for each item
 
   for (const it of items) {
     let ing;
@@ -109,7 +111,14 @@ async function createStockImport(items) {
     await ing.save();
 
     details.push({ id: detail._id, ingredientId: ing._id, quantity: it.quantity });
+    
+    // Add to notes: "Thịt bò: 100kg, Cá hồi: 50kg"
+    noteParts.push(`${ing.name}: ${it.quantity}${ing.unit}`);
   }
+
+  // Update notes in the stock import
+  stockImport.notes = noteParts.join(', ');
+  await stockImport.save();
 
   return { import: stockImport, details };
 }

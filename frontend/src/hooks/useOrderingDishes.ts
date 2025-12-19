@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { MenuItem } from "../types";
-import { fetchOrderingDishes, mapUiCategoryToApi } from "../lib/orderingPageApi";
+import { fetchDishes, mapUiCategoryToApi } from "../lib/menuPageApi";
 
 // ==================== CUSTOM HOOK ====================
 
@@ -39,7 +39,7 @@ export function useOrderingDishes(selectedCategory: string) {
           }
         }
 
-        const dishes = await fetchOrderingDishes(params);
+        const dishes = await fetchDishes(params);
 
         if (!cancelled) {
           setItems(dishes);
