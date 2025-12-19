@@ -35,6 +35,8 @@ export function InvoicesPage() {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [promotions, setPromotions] = useState<any[]>([]);
   const [loadingPromotions, setLoadingPromotions] = useState(false);
+  const [pendingQuery, setPendingQuery] = useState("");
+  const [paidQuery, setPaidQuery] = useState("");
 
   useEffect(() => {
     fetchInvoices();
@@ -110,6 +112,30 @@ export function InvoicesPage() {
     (inv) => inv.status === "payment-requested"
   );
   const paidInvoices = invoices.filter((inv) => inv.status === "paid");
+
+  const filteredPending = pendingInvoices.filter((inv) => {
+    const q = pendingQuery.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      String(inv.tableNumber).toLowerCase().includes(q) ||
+      String(inv.customerName).toLowerCase().includes(q) ||
+      String(inv.invoiceNumber || inv.id)
+        .toLowerCase()
+        .includes(q)
+    );
+  });
+
+  const filteredPaid = paidInvoices.filter((inv) => {
+    const q = paidQuery.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      String(inv.tableNumber).toLowerCase().includes(q) ||
+      String(inv.customerName).toLowerCase().includes(q) ||
+      String(inv.invoiceNumber || inv.id)
+        .toLowerCase()
+        .includes(q)
+    );
+  });
 
   // Get available promotions for selected invoice
   const getAvailablePromotions = () => {
@@ -276,62 +302,58 @@ export function InvoicesPage() {
               {/* Tables List */}
               <div className="lg:col-span-1">
                 <h3 className="mb-4">Bàn cần xử lý</h3>
+                <div className="mb-4">
+                  <Input
+                    placeholder="Tìm theo bàn, khách hoặc mã hóa đơn..."
+                    value={pendingQuery}
+                    onChange={(e) => setPendingQuery(e.target.value)}
+                    className="h-10"
+                  />
+                </div>
                 <div className="space-y-3">
-                  {pendingInvoices.map((invoice) =>
-                    invoice.status === "payment-requested" ? (
-                      <Card
-                        key={invoice.id}
-                        hover
-                        onClick={() => setSelectedInvoice(invoice)}
-                        className={`p-4 cursor-pointer ${
-                          selectedInvoice?.id === invoice.id
-                            ? "ring-2 ring-[#625EE8]"
-                            : ""
-                        } ${
-                          invoice.paymentRequested
-                            ? "border-l-4 border-l-red-500"
-                            : ""
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <h4>{invoice.tableNumber}</h4>
-                          <Badge
-                            className={
-                              invoice.paymentRequested
-                                ? "bg-red-100 text-red-700"
-                                : "bg-yellow-100 text-yellow-700"
-                            }
-                          >
-                            {/* {invoice.paymentRequested ? (
-                            <>
-                              <AlertCircle className="w-3 h-3 mr-1" />
-                              Yêu cầu thanh toán
-                            </>
-                          ) : (
-                            "Đang dùng"
-                          )} */}
-                            <AlertCircle className="w-3 h-3 mr-1" />
-                            Yêu cầu thanh toán
-                          </Badge>
+                  {filteredPending.map((invoice) => (
+                    <Card
+                      key={invoice.id}
+                      hover
+                      onClick={() => setSelectedInvoice(invoice)}
+                      className={`p-4 cursor-pointer ${
+                        selectedInvoice?.id === invoice.id
+                          ? "ring-2 ring-[#625EE8]"
+                          : ""
+                      } ${
+                        invoice.paymentRequested
+                          ? "border-l-4 border-l-red-500"
+                          : ""
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <h4>{invoice.tableNumber}</h4>
+                        <Badge
+                          className={
+                            invoice.paymentRequested
+                              ? "bg-red-100 text-red-700"
+                              : "bg-yellow-100 text-yellow-700"
+                          }
+                        >
+                          <AlertCircle className="w-3 h-3 mr-1" />
+                          Yêu cầu thanh toán
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-1">
+                        {invoice.customerName}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {invoice.items.length} món •{" "}
+                        {invoice.total.toLocaleString()}đ
+                      </p>
+                      {(invoice.customerSelectedVoucher ||
+                        invoice.customerSelectedPoints > 0) && (
+                        <div className="mt-2 pt-2 border-t text-xs text-blue-600">
+                          Đã chọn ưu đãi
                         </div>
-                        <p className="text-sm text-gray-600 mb-1">
-                          {invoice.customerName}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          {invoice.items.length} món •{" "}
-                          {invoice.total.toLocaleString()}đ
-                        </p>
-                        {(invoice.customerSelectedVoucher ||
-                          invoice.customerSelectedPoints > 0) && (
-                          <div className="mt-2 pt-2 border-t text-xs text-blue-600">
-                            Đã chọn ưu đãi
-                          </div>
-                        )}
-                      </Card>
-                    ) : (
-                      ""
-                    )
-                  )}
+                      )}
+                    </Card>
+                  ))}
                 </div>
               </div>
 
@@ -675,80 +697,90 @@ export function InvoicesPage() {
               <p className="text-gray-500">Đang tải dữ liệu...</p>
             </Card>
           ) : (
-            <Card className="p-6">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-3 px-4">Mã HĐ</th>
-                      <th className="text-left py-3 px-4">Bàn</th>
-                      <th className="text-left py-3 px-4">Thời gian</th>
-                      <th className="text-left py-3 px-4">Phương thức</th>
-                      <th className="text-right py-3 px-4">Tổng tiền</th>
-                      <th className="text-center py-3 px-4">Thao tác</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paidInvoices.map((invoice) => {
-                      return (
-                        <tr
-                          key={invoice.id}
-                          className="border-b hover:bg-gray-50"
-                        >
-                          <td className="py-3 px-4">{invoice.id}</td>
-                          <td className="py-3 px-4">{invoice.tableNumber}</td>
-                          <td className="py-3 px-4">
-                            {new Date(
-                              invoice.paidAt || invoice.createdAt
-                            ).toLocaleString("vi-VN")}
-                          </td>
-                          <td className="py-3 px-4">
-                            <span
-                              className={`px-2 py-1 rounded-full text-xs ${
-                                invoice.paymentMethod === "online"
-                                  ? "bg-blue-100 text-blue-700"
-                                  : invoice.paymentMethod === "card"
-                                  ? "bg-purple-100 text-purple-700"
-                                  : "bg-green-100 text-green-700"
-                              }`}
-                            >
-                              {invoice.paymentMethod === "online"
-                                ? "Online"
-                                : invoice.paymentMethod === "card"
-                                ? "Thẻ"
-                                : "Tiền mặt"}
-                            </span>
-                          </td>
-                          <td className="text-right py-3 px-4 text-[#625EE8]">
-                            {invoice.total.toLocaleString()}đ
-                          </td>
-                          <td className="text-center py-3 px-4">
-                            <div className="flex gap-2 justify-center">
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                onClick={() => setViewInvoice(invoice)}
-                              >
-                                <Eye className="w-4 h-4 mr-1" />
-                                Xem
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                onClick={handlePrint}
-                              >
-                                <Printer className="w-4 h-4 mr-1" />
-                                In lại
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+            <>
+              <div className="mb-4 max-w-[500px]">
+                <Input
+                  placeholder="Tìm hóa đơn (bàn, khách, mã)..."
+                  value={paidQuery}
+                  onChange={(e) => setPaidQuery(e.target.value)}
+                  className="h-10"
+                />
               </div>
-            </Card>
+              <Card className="p-6">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-4">Mã HĐ</th>
+                        <th className="text-left py-3 px-4">Bàn</th>
+                        <th className="text-left py-3 px-4">Thời gian</th>
+                        <th className="text-left py-3 px-4">Phương thức</th>
+                        <th className="text-right py-3 px-4">Tổng tiền</th>
+                        <th className="text-center py-3 px-4">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredPaid.map((invoice) => {
+                        return (
+                          <tr
+                            key={invoice.id}
+                            className="border-b hover:bg-gray-50"
+                          >
+                            <td className="py-3 px-4">{invoice.id}</td>
+                            <td className="py-3 px-4">{invoice.tableNumber}</td>
+                            <td className="py-3 px-4">
+                              {new Date(
+                                invoice.paidAt || invoice.createdAt
+                              ).toLocaleString("vi-VN")}
+                            </td>
+                            <td className="py-3 px-4">
+                              <span
+                                className={`px-2 py-1 rounded-full text-xs ${
+                                  invoice.paymentMethod === "online"
+                                    ? "bg-blue-100 text-blue-700"
+                                    : invoice.paymentMethod === "card"
+                                    ? "bg-purple-100 text-purple-700"
+                                    : "bg-green-100 text-green-700"
+                                }`}
+                              >
+                                {invoice.paymentMethod === "online"
+                                  ? "Online"
+                                  : invoice.paymentMethod === "card"
+                                  ? "Thẻ"
+                                  : "Tiền mặt"}
+                              </span>
+                            </td>
+                            <td className="text-right py-3 px-4 text-[#625EE8]">
+                              {invoice.total.toLocaleString()}đ
+                            </td>
+                            <td className="text-center py-3 px-4">
+                              <div className="flex gap-2 justify-center">
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => setViewInvoice(invoice)}
+                                >
+                                  <Eye className="w-4 h-4 mr-1" />
+                                  Xem
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={handlePrint}
+                                >
+                                  <Printer className="w-4 h-4 mr-1" />
+                                  In lại
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            </>
           )}
         </TabsContent>
       </Tabs>
