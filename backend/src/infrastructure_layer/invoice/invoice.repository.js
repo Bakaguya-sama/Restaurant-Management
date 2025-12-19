@@ -32,13 +32,34 @@ class InvoiceRepository {
       query.invoice_number = { $regex: filters.search, $options: 'i' };
     }
 
+    const { OrderDetail, Table } = require('../../models');
     const invoices = await Invoice.find(query)
-      .populate('order_id', 'order_number order_type status')
+      .populate({
+        path: 'order_id',
+        select: 'order_number order_type status table_id'
+      })
       .populate('staff_id', 'full_name email role')
       .populate('customer_id', 'full_name email phone')
       .sort({ created_at: -1 });
 
-    return invoices.map(invoice => new InvoiceEntity(invoice.toObject()));
+    const enrichedInvoices = await Promise.all(invoices.map(async (invoice) => {
+      const invoiceObj = invoice.toObject();
+      if (invoiceObj.order_id) {
+        const orderDetails = await OrderDetail.find({ order_id: invoiceObj.order_id._id })
+          .populate('dish_id', 'name price');
+        invoiceObj.order_id.items = orderDetails;
+        
+        if (invoiceObj.order_id.table_id) {
+          const table = await Table.findById(invoiceObj.order_id.table_id);
+          if (table) {
+            invoiceObj.order_id.table = table;
+          }
+        }
+      }
+      return new InvoiceEntity(invoiceObj);
+    }));
+
+    return enrichedInvoices;
   }
 
   async findById(id) {

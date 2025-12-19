@@ -105,7 +105,7 @@ app.use((req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5000;
 let timestamp = new Date().toLocaleString();
 
 // Only listen if not in test environment
