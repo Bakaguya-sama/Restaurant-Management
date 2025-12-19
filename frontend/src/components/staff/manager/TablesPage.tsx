@@ -32,6 +32,7 @@ export function TablesPage() {
     seats: 4,
     floor: "Floor 1",
   });
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmTitle, setConfirmTitle] = useState("");
@@ -183,7 +184,12 @@ export function TablesPage() {
   const filteredTables = tables.filter((table) => {
     const matchArea = filterArea === "all" || table.area === filterArea;
     const matchStatus = filterStatus === "all" || table.status === filterStatus;
-    return matchArea && matchStatus;
+    const q = searchQuery.trim().toLowerCase();
+    const matchSearch =
+      q === "" ||
+      table.number.toLowerCase().includes(q) ||
+      table.area.toLowerCase().includes(q);
+    return matchArea && matchStatus && matchSearch;
   });
 
   const statusColors = {
@@ -271,6 +277,12 @@ export function TablesPage() {
           <Card className="p-4 mb-6">
             <div className="flex items-center gap-4">
               <Filter className="w-5 h-5 text-gray-600" />
+              <Input
+                placeholder="Tìm theo số bàn hoặc khu vực"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="max-w-sm"
+              />
               <Select
                 value={filterArea}
                 onChange={(e) => setFilterArea(e.target.value)}

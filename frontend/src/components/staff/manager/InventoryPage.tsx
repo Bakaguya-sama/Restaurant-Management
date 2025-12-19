@@ -29,8 +29,10 @@ import { ConfirmationModal } from "../../ui/ConfirmationModal";
 export function InventoryPage() {
   const [inventory, setInventory] = useState<InventoryItem[]>(mockInventory);
   const [suppliers, setSuppliers] = useState<Supplier[]>(mockSuppliers);
+  const [supplierQuery, setSupplierQuery] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [supplierFilter, setSupplierFilter] = useState<string>("all");
   const [showImportModal, setShowImportModal] = useState(false);
   const [showDisposeModal, setShowDisposeModal] = useState(false);
   const [showAddSupplierModal, setShowAddSupplierModal] = useState(false);
@@ -91,6 +93,11 @@ export function InventoryPage() {
     const matchesSearch = item.name
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
+
+    // Supplier filter
+    if (supplierFilter !== "all") {
+      if (!item.supplierId || item.supplierId !== supplierFilter) return false;
+    }
 
     if (statusFilter === "all") {
       return matchesSearch;
@@ -444,6 +451,21 @@ export function InventoryPage() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="w-56">
+              <Select value={supplierFilter} onValueChange={setSupplierFilter}>
+                <SelectTrigger className="h-10">
+                  <SelectValue placeholder="Nhà cung cấp" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả nhà cung cấp</SelectItem>
+                  {suppliers.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Alerts */}
@@ -482,6 +504,7 @@ export function InventoryPage() {
                     <th className="text-left p-4">Tên nguyên liệu</th>
                     <th className="text-left p-4">Số lượng</th>
                     <th className="text-left p-4">Đơn vị</th>
+                    <th className="text-left p-4">Nhà cung cấp</th>
                     <th className="text-left p-4">Hạn sử dụng</th>
                     <th className="text-left p-4">Trạng thái</th>
                     <th className="text-left p-4">Cập nhật</th>
@@ -515,6 +538,10 @@ export function InventoryPage() {
                           </span>
                         </td>
                         <td className="p-4 text-gray-600">{item.unit}</td>
+                        <td className="p-4 text-gray-600">
+                          {suppliers.find((s) => s.id === item.supplierId)
+                            ?.name || "-"}
+                        </td>
                         <td className="p-4">
                           {item.expiryDate ? (
                             <div>
@@ -588,6 +615,15 @@ export function InventoryPage() {
             Thêm nhà cung cấp
           </Button>
 
+          <div className="mb-4">
+            <Input
+              placeholder="Tìm nhà cung cấp..."
+              icon={<Search className="w-4 h-4" />}
+              value={supplierQuery}
+              onChange={(e) => setSupplierQuery(e.target.value)}
+              className="h-10 max-w-sm"
+            />
+          </div>
           <Card>
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -601,32 +637,51 @@ export function InventoryPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {suppliers.map((supplier) => (
-                    <tr key={supplier.id} className="border-b hover:bg-gray-50">
-                      {/* <td className="p-4 text-gray-600">{supplier.id}</td> */}
-                      <td className="p-4">{supplier.name}</td>
-                      <td className="p-4">{supplier.phone}</td>
-                      <td className="p-4 text-gray-600">{supplier.address}</td>
-                      <td className="p-4">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEditSupplier(supplier)}
-                            className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors"
-                            title="Chỉnh sửa"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteSupplier(supplier)}
-                            className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
-                            title="Xóa"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {suppliers
+                    .filter(
+                      (s) =>
+                        supplierQuery.trim() === "" ||
+                        s.name
+                          .toLowerCase()
+                          .includes(supplierQuery.toLowerCase()) ||
+                        s.phone
+                          .toLowerCase()
+                          .includes(supplierQuery.toLowerCase()) ||
+                        s.address
+                          .toLowerCase()
+                          .includes(supplierQuery.toLowerCase())
+                    )
+                    .map((supplier) => (
+                      <tr
+                        key={supplier.id}
+                        className="border-b hover:bg-gray-50"
+                      >
+                        {/* <td className="p-4 text-gray-600">{supplier.id}</td> */}
+                        <td className="p-4">{supplier.name}</td>
+                        <td className="p-4">{supplier.phone}</td>
+                        <td className="p-4 text-gray-600">
+                          {supplier.address}
+                        </td>
+                        <td className="p-4">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleEditSupplier(supplier)}
+                              className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors"
+                              title="Chỉnh sửa"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteSupplier(supplier)}
+                              className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
+                              title="Xóa"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>

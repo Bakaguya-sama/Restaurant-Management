@@ -62,6 +62,8 @@ export function LocationManagement({
     level: 1,
     description: "",
   });
+  const [locationQuery, setLocationQuery] = useState("");
+  const [floorQuery, setFloorQuery] = useState("");
 
   // Location Management Functions
   const handleAddLocation = () => {
@@ -296,6 +298,26 @@ export function LocationManagement({
     return locations.filter((l) => l.floor === floorName).length;
   };
 
+  const filteredLocations = locations.filter((l) => {
+    const q = locationQuery.trim().toLowerCase();
+    return (
+      q === "" ||
+      l.name.toLowerCase().includes(q) ||
+      l.floor.toLowerCase().includes(q)
+    );
+  });
+
+  const filteredFloors = floors
+    .sort((a, b) => a.level - b.level)
+    .filter((f) => {
+      const q = floorQuery.trim().toLowerCase();
+      return (
+        q === "" ||
+        f.name.toLowerCase().includes(q) ||
+        String(f.level).includes(q)
+      );
+    });
+
   return (
     <div>
       {/* Confirmation Modal */}
@@ -360,8 +382,17 @@ export function LocationManagement({
             </Button>
           </div>
 
+          <div className="mb-4">
+            <Input
+              placeholder="Tìm vị trí hoặc tầng"
+              value={locationQuery}
+              onChange={(e) => setLocationQuery(e.target.value)}
+              className="max-w-sm"
+            />
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {locations.map((location) => {
+            {filteredLocations.map((location) => {
               const tableCount = getTableCountInLocation(location.name);
               const occupiedSeats = tables
                 .filter((t) => t.area === location.name)
@@ -449,62 +480,69 @@ export function LocationManagement({
             </Button>
           </div>
 
+          <div className="mb-4">
+            <Input
+              placeholder="Tìm theo tên tầng hoặc cấp độ"
+              value={floorQuery}
+              onChange={(e) => setFloorQuery(e.target.value)}
+              className="max-w-sm"
+            />
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {floors
-              .sort((a, b) => a.level - b.level)
-              .map((floor) => {
-                const locationCount = getLocationCountOnFloor(floor.name);
+            {filteredFloors.map((floor) => {
+              const locationCount = getLocationCountOnFloor(floor.name);
 
-                return (
-                  <Card key={floor.id} className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <h4 className="font-semibold mb-1">{floor.name}</h4>
-                        <div className="text-sm text-gray-600">
-                          Cấp độ: {floor.level}
-                        </div>
+              return (
+                <Card key={floor.id} className="p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <h4 className="font-semibold mb-1">{floor.name}</h4>
+                      <div className="text-sm text-gray-600">
+                        Cấp độ: {floor.level}
                       </div>
-                      <Badge className="bg-green-100 text-green-700">
-                        {locationCount} vị trí
-                      </Badge>
                     </div>
+                    <Badge className="bg-green-100 text-green-700">
+                      {locationCount} vị trí
+                    </Badge>
+                  </div>
 
-                    {floor.description && (
-                      <p className="text-sm text-gray-600 mb-4">
-                        {floor.description}
-                      </p>
-                    )}
+                  {floor.description && (
+                    <p className="text-sm text-gray-600 mb-4">
+                      {floor.description}
+                    </p>
+                  )}
 
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleEditFloor(floor)}
-                        className="flex-1"
-                      >
-                        <Edit className="w-4 h-4 mr-1" />
-                        Sửa
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDeleteFloor(floor.id)}
-                        className="text-red-600 hover:bg-red-50"
-                        disabled={locationCount > 0 || floors.length <= 1}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleEditFloor(floor)}
+                      className="flex-1"
+                    >
+                      <Edit className="w-4 h-4 mr-1" />
+                      Sửa
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleDeleteFloor(floor.id)}
+                      className="text-red-600 hover:bg-red-50"
+                      disabled={locationCount > 0 || floors.length <= 1}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  {locationCount > 0 && (
+                    <div className="mt-2 flex items-start gap-2 text-xs text-amber-700 bg-amber-50 p-2 rounded">
+                      <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                      <span>Có {locationCount} vị trí thuộc tầng này</span>
                     </div>
-
-                    {locationCount > 0 && (
-                      <div className="mt-2 flex items-start gap-2 text-xs text-amber-700 bg-amber-50 p-2 rounded">
-                        <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                        <span>Có {locationCount} vị trí thuộc tầng này</span>
-                      </div>
-                    )}
-                  </Card>
-                );
-              })}
+                  )}
+                </Card>
+              );
+            })}
           </div>
         </div>
       )}
