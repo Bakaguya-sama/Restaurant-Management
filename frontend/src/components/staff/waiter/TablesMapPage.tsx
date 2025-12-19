@@ -13,12 +13,15 @@ import { Card } from "../../ui/Card";
 import { Modal } from "../../ui/Modal";
 import { Input, Textarea } from "../../ui/Input";
 import { Badge } from "../../ui/badge";
-import { mockTables, mockBookings } from "../../../lib/mockData";
+import { mockBookings } from "../../../lib/mockData";
 import { Table, TableStatus, Customer } from "../../../types";
 import { toast } from "sonner";
+import { useTables } from "../../../hooks/useTables";
+import { useLocations } from "../../../hooks/useLocations";
 
 export function TablesMapPage() {
-  const [tables, setTables] = useState<Table[]>(mockTables);
+  const { tables, loading, error, setTables, updateTableStatus } = useTables();
+  const { locations } = useLocations();
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [showActionModal, setShowActionModal] = useState(false);
   const [showCheckInModal, setShowCheckInModal] = useState(false);
@@ -35,6 +38,11 @@ export function TablesMapPage() {
   const [customerName, setCustomerName] = useState("");
   const [foundCustomer, setFoundCustomer] = useState<Customer | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+
+  const getLocationName = (locationId: string) => {
+    const location = locations.find(l => l.id === locationId);
+    return location?.name || locationId;
+  };
 
   const getTableColor = (status: TableStatus) => {
     switch (status) {
@@ -130,7 +138,7 @@ export function TablesMapPage() {
     setShowCustomerModal(true);
   };
 
-  const handleConfirmCustomerAndCreateOrder = () => {
+  const handleConfirmCustomerAndCreateOrder = async () => {
     if (!selectedTable) return;
 
     // Validate customer info
@@ -146,25 +154,24 @@ export function TablesMapPage() {
       }
     }
 
-    // Update table status to occupied
-    setTables(
-      tables.map((t) =>
-        t.id === selectedTable.id
-          ? { ...t, status: "occupied" as TableStatus }
-          : t
-      )
-    );
+    // Update table status to occupied via API
+    try {
+      await updateTableStatus(selectedTable.id, "occupied");
 
-    const customerInfo =
-      customerType === "member"
-        ? `${
-            foundCustomer?.name
-          } (Thành viên ${foundCustomer?.membershipTier?.toUpperCase()})`
-        : customerName;
+      const customerInfo =
+        customerType === "member"
+          ? `${
+              foundCustomer?.name
+            } (Thành viên ${foundCustomer?.membershipTier?.toUpperCase()})`
+          : customerName;
 
-    toast.success(
-      `Đã tạo order cho bàn ${selectedTable.number} - Khách: ${customerInfo}`
-    );
+      toast.success(
+        `Đã tạo order cho bàn ${selectedTable.table_number} - Khách: ${customerInfo}`
+      );
+    } catch (err) {
+      toast.error("Lỗi khi cập nhật trạng thái bàn");
+      return;
+    }
 
     // Reset states
     setShowCustomerModal(false);
@@ -177,7 +184,7 @@ export function TablesMapPage() {
     // TODO: Navigate to OrderingPage with customer info and table
   };
 
-  const handleCheckIn = () => {
+  const handleCheckIn = async () => {
     if (!selectedTable || !bookingCode) {
       toast.error("Vui lòng nhập mã đặt bàn");
       return;
@@ -190,16 +197,15 @@ export function TablesMapPage() {
       return;
     }
 
-    // Update table status
-    setTables(
-      tables.map((t) =>
-        t.id === selectedTable.id
-          ? { ...t, status: "occupied" as TableStatus }
-          : t
-      )
-    );
+    // Update table status via API
+    try {
+      await updateTableStatus(selectedTable.id, "occupied");
+      toast.success(`Đã check-in khách cho bàn ${selectedTable.table_number}`);
+    } catch (err) {
+      toast.error("Lỗi khi cập nhật trạng thái bàn");
+      return;
+    }
 
-    toast.success(`Đã check-in khách cho bàn ${selectedTable.number}`);
     setShowCheckInModal(false);
     setShowActionModal(false);
     setSelectedTable(null);
@@ -208,7 +214,7 @@ export function TablesMapPage() {
     //TODO: Call api cập nhật phiếu đặt bàn của khách
   };
 
-  const handleCleanTable = () => {
+  const handleCleanTable = async () => {
     if (!selectedTable) return;
 
     if (selectedTable.status !== "dirty") {
@@ -216,19 +222,20 @@ export function TablesMapPage() {
       return;
     }
 
-    // Update table status to free
-    setTables(
-      tables.map((t) =>
-        t.id === selectedTable.id ? { ...t, status: "free" as TableStatus } : t
-      )
-    );
+    // Update table status via API
+    try {
+      await updateTableStatus(selectedTable.id, "free");
+      toast.success(`Đã dọn xong bàn ${selectedTable.table_number}`);
+    } catch (err) {
+      toast.error("Lỗi khi cập nhật trạng thái bàn");
+      return;
+    }
 
-    toast.success(`Đã dọn xong bàn ${selectedTable.number}`);
     setShowActionModal(false);
     setSelectedTable(null);
   };
 
-  const handleTableCheckout = () => {
+  const handleTableCheckout = async () => {
     if (!selectedTable) return;
 
     if (selectedTable.status !== "occupied") {
@@ -236,36 +243,36 @@ export function TablesMapPage() {
       return;
     }
 
-    // Update table status to dirty
-    setTables(
-      tables.map((t) =>
-        t.id === selectedTable.id ? { ...t, status: "dirty" as TableStatus } : t
-      )
-    );
+    // Update table status via API
+    try {
+      await updateTableStatus(selectedTable.id, "dirty");
+      toast.success(`Đã giải phóng bàn ${selectedTable.table_number}`);
+    } catch (err) {
+      toast.error("Lỗi khi cập nhật trạng thái bàn");
+      return;
+    }
 
-    toast.success(`Đã giải phóng bàn ${selectedTable.number}`);
     setShowActionModal(false);
     setSelectedTable(null);
 
     //TODO: Call api để cập nhật trạng thái bàn, hóa đơn của khách
   };
 
-  const handleMarkBroken = () => {
+  const handleMarkBroken = async () => {
     if (!selectedTable || !brokenReason) {
       toast.error("Vui lòng nhập lý do");
       return;
     }
 
-    // Update table status to broken
-    setTables(
-      tables.map((t) =>
-        t.id === selectedTable.id
-          ? { ...t, status: "broken" as TableStatus }
-          : t
-      )
-    );
+    // Update table status via API
+    try {
+      await updateTableStatus(selectedTable.id, "broken", brokenReason);
+      toast.success(`Đã báo hỏng bàn ${selectedTable.table_number}`);
+    } catch (err) {
+      toast.error("Lỗi khi cập nhật trạng thái bàn");
+      return;
+    }
 
-    toast.success(`Đã báo hỏng bàn ${selectedTable.number}`);
     setShowBrokenModal(false);
     setShowActionModal(false);
     setSelectedTable(null);
@@ -274,15 +281,35 @@ export function TablesMapPage() {
 
   // Group tables by area
   const tablesByArea = tables.reduce((acc, table) => {
-    if (!acc[table.area]) {
-      acc[table.area] = [];
+    if (!acc[table.location_id]) {
+      acc[table.location_id] = [];
     }
-    acc[table.area].push(table);
+    acc[table.location_id].push(table);
     return acc;
   }, {} as Record<string, Table[]>);
 
   return (
     <div>
+      {loading && (
+        <div className="text-center py-8">
+          <p className="text-gray-600">Đang tải dữ liệu...</p>
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <p className="text-red-800">Lỗi: {error}</p>
+        </div>
+      )}
+
+      {!loading && tables.length === 0 && (
+        <div className="text-center py-8">
+          <p className="text-gray-600">Không có bàn nào</p>
+        </div>
+      )}
+
+      {!loading && tables.length > 0 && (
+      <div>
       <div className="mb-6">
         <h2 className="mb-4">Sơ đồ bàn</h2>
 
@@ -346,9 +373,9 @@ export function TablesMapPage() {
       </div>
 
       {/* Tables by Area */}
-      {Object.entries(tablesByArea).map(([area, areaTables]) => (
-        <div key={area} className="mb-8">
-          <h3 className="mb-4">{area}</h3>
+      {Object.entries(tablesByArea).map(([locationId, areaTables]) => (
+        <div key={locationId} className="mb-8">
+          <h3 className="mb-4">{getLocationName(locationId)}</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {areaTables.map((table) => (
               <button
@@ -360,8 +387,8 @@ export function TablesMapPage() {
                 disabled={table.status === "broken"}
               >
                 <div className="text-center">
-                  <div className="text-2xl mb-2">{table.number}</div>
-                  <div className="text-xs opacity-90">{table.seats} chỗ</div>
+                  <div className="text-2xl mb-2">{table.table_number}</div>
+                  <div className="text-xs opacity-90">{table.capacity} chỗ</div>
                   <div className="text-xs opacity-75 mt-1">
                     {getStatusText(table.status)}
                   </div>
@@ -384,7 +411,7 @@ export function TablesMapPage() {
           setShowActionModal(false);
           setSelectedTable(null);
         }}
-        title={`Bàn ${selectedTable?.number}`}
+        title={`Bàn ${selectedTable?.table_number}`}
       >
         {selectedTable && (
           <div className="space-y-4">
@@ -392,11 +419,11 @@ export function TablesMapPage() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-gray-600">Khu vực:</p>
-                  <p>{selectedTable.area}</p>
+                  <p>{getLocationName(selectedTable.location_id)}</p>
                 </div>
                 <div>
                   <p className="text-gray-600">Số chỗ:</p>
-                  <p>{selectedTable.seats}</p>
+                  <p>{selectedTable.capacity}</p>
                 </div>
                 <div>
                   <p className="text-gray-600">Trạng thái:</p>
@@ -526,7 +553,7 @@ export function TablesMapPage() {
         title="Báo hỏng bàn"
       >
         <div className="space-y-4">
-          <p className="text-gray-600">Bàn: {selectedTable?.number}</p>
+          <p className="text-gray-600">Bàn: {selectedTable?.table_number}</p>
 
           <Textarea
             label="Lý do hỏng"
@@ -569,8 +596,8 @@ export function TablesMapPage() {
         <div className="space-y-4">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-blue-800">
-              Bàn: <strong>{selectedTable?.number}</strong> -{" "}
-              {selectedTable?.area}
+              Bàn: <strong>{selectedTable?.table_number}</strong> -{" "}
+              {getLocationName(selectedTable?.location_id || "")}
             </p>
           </div>
 
@@ -681,6 +708,8 @@ export function TablesMapPage() {
           </div>
         </div>
       </Modal>
+      </div>
+      )}
     </div>
   );
 }

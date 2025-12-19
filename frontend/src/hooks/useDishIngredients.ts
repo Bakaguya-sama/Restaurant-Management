@@ -7,18 +7,18 @@ export function useDishIngredients() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch ingredients for a specific dish
+  
   const fetchIngredientsByDish = useCallback(async (dishId: string) => {
     try {
       setLoading(true);
       setError(null);
       const response = await dishIngredientApi.getByDish(dishId);
       
-      // Accumulate ingredients from multiple dishes, don't replace
+      
       setDishIngredients(prev => {
-        // Remove any existing ingredients for this dish to avoid duplicates
+        
         const filtered = prev.filter(di => di.dish_id !== dishId);
-        // Add the new ingredients for this dish
+        
         return [...filtered, ...response.data];
       });
     } catch (err) {
@@ -30,7 +30,7 @@ export function useDishIngredients() {
     }
   }, []);
 
-  // Get ingredients for a specific dish (from local state)
+  
   const getIngredientsByDish = useCallback((dishId: string) => {
     return dishIngredients.filter(di => di.dish_id === dishId);
   }, [dishIngredients]);
@@ -97,7 +97,7 @@ export function useDishIngredients() {
       const response = await dishIngredientApi.bulkReplace(dishId, ingredients);
       const newIngredients = response.data;
       
-      // Replace all ingredients for this dish
+      
       setDishIngredients(prev => {
         const filtered = prev.filter(di => di.dish_id !== dishId);
         return [...filtered, ...newIngredients];

@@ -43,7 +43,6 @@ export function TablesPage() {
   >("info");
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
-  // API hooks
   const {
     tables: apiTables,
     loading: tablesLoading,
@@ -103,7 +102,7 @@ export function TablesPage() {
       location_id: table.location_id,
       capacity: table.capacity,
       floor: getFloorNameFromLocation(table.location_id),
-      createdAt: table.createdAt || "",
+      createdAt: table.created_at || "",
     });
     setShowModal(true);
   };
@@ -112,7 +111,6 @@ export function TablesPage() {
     const table = apiTables.find((t) => t.id === tableId);
     if (!table) return;
 
-    // Prevent deletion if table is occupied or reserved
     if (table.status === "occupied" || table.status === "reserved") {
       toast.error(
         `Không thể xóa bàn ${table.table_number} vì bàn đang ${
@@ -139,7 +137,6 @@ export function TablesPage() {
   };
 
   const handleSubmit = async () => {
-    // Validate required fields
     const numberValidation = validateRequired(formData.table_number, "Số bàn");
     const locationValidation = validateRequired(formData.location_id, "Khu vực");
 
@@ -153,7 +150,7 @@ export function TablesPage() {
       return;
     }
 
-    // Validate capacity count
+    
     const capacityValidation = validateInteger(formData.capacity, "Số chỗ");
     if (!capacityValidation.isValid) {
       toast.error(capacityValidation.error);
@@ -171,7 +168,7 @@ export function TablesPage() {
       return;
     }
 
-    // Check duplicate table number (except when editing)
+    
     const duplicateTable = apiTables.find(
       (t) => t.table_number === formData.table_number && t.id !== editingTable?.id
     );
@@ -181,7 +178,7 @@ export function TablesPage() {
     }
 
     try {
-      // Auto-set floor from selected location
+      
       const selectedFloor = getFloorNameFromLocation(formData.location_id);
       const dataToSubmit = {
         ...formData,
@@ -189,11 +186,9 @@ export function TablesPage() {
       };
 
       if (editingTable) {
-        // Update table via API
         await updateTable(editingTable.id, dataToSubmit);
         toast.success("Đã cập nhật bàn");
       } else {
-        // Create new table via API
         await createTable({
           ...dataToSubmit,
           status: "free" as TableStatus,

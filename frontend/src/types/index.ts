@@ -28,7 +28,7 @@ export interface Table {
   status: TableStatus;
   floor?: string;
   brokenReason?: string;
-  createdAt?: string;
+  created_at?: string;
 }
 
 // Location/Area Management Types
