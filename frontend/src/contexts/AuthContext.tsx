@@ -1,8 +1,7 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import { UserRole } from "../types";
 
 interface UserProfile {
-  id?: string; // Added staff/customer ID
   name: string;
   email: string;
   phone: string;
@@ -20,23 +19,37 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// LocalStorage keys
+const AUTH_STORAGE_KEY = "restaurant_auth";
+const USER_PROFILE_STORAGE_KEY = "restaurant_user_profile";
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // Load from localStorage on initial mount
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    const saved = localStorage.getItem("isAuthenticated");
-    console.log("AuthContext init - isAuthenticated from localStorage:", saved);
-    return saved === "true";
-  });
-  
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
-    const saved = localStorage.getItem("userProfile");
-    console.log("AuthContext init - userProfile from localStorage:", saved);
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Restore authentication state from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedAuth = localStorage.getItem(AUTH_STORAGE_KEY);
+      const savedProfile = localStorage.getItem(USER_PROFILE_STORAGE_KEY);
+
+      if (savedAuth === "true" && savedProfile) {
+        setIsAuthenticated(true);
+        setUserProfile(JSON.parse(savedProfile));
+      }
+    } catch (error) {
+      console.error("Error restoring auth state:", error);
+      // Clear invalid data
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      localStorage.removeItem(USER_PROFILE_STORAGE_KEY);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   const login = (role: UserRole) => {
     setIsAuthenticated(true);
-    localStorage.setItem("isAuthenticated", "true");
 
     // Mock user profile based on role
     // TEST BLACKLIST: Switch between customers to test different scenarios
@@ -55,8 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     //   phone: "0987654321",
     // };
 
-    const profile = {
-      id: role === "customer" ? "CUSTOMER_ID_MOCK" : "6759e8f123456789abcdef12", // Mock staff ID (24 chars for MongoDB ObjectId)
+    const profile: UserProfile = {
       name: role === "customer" ? customerProfile.name : "Nhân viên",
       email:
         role === "customer" ? customerProfile.email : "staff@restaurant.com",
@@ -64,25 +76,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       role,
       address: role === "customer" ? undefined : "123 Đường ABC, Hà Nội",
     };
-    
+
     setUserProfile(profile);
-    localStorage.setItem("userProfile", JSON.stringify(profile));
+
+    // Persist to localStorage
+    localStorage.setItem(AUTH_STORAGE_KEY, "true");
+    localStorage.setItem(USER_PROFILE_STORAGE_KEY, JSON.stringify(profile));
   };
 
   const logout = () => {
     setIsAuthenticated(false);
     setUserProfile(null);
-    localStorage.removeItem("isAuthenticated");
-    localStorage.removeItem("userProfile");
+
+    // Clear localStorage
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+    localStorage.removeItem(USER_PROFILE_STORAGE_KEY);
   };
 
   const updateProfile = (profile: Partial<UserProfile>) => {
     if (userProfile) {
-      const updated = { ...userProfile, ...profile };
-      setUserProfile(updated);
-      localStorage.setItem("userProfile", JSON.stringify(updated));
+      const updatedProfile = { ...userProfile, ...profile };
+      setUserProfile(updatedProfile);
+
+      // Update localStorage
+      localStorage.setItem(
+        USER_PROFILE_STORAGE_KEY,
+        JSON.stringify(updatedProfile)
+      );
     }
   };
+
+  // Show loading state while restoring auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-[#625EE8] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang tải...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider
