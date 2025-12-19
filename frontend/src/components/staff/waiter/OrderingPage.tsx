@@ -5,14 +5,14 @@ import { Card } from "../../ui/Card";
 import { Modal } from "../../ui/Modal";
 import { Badge } from "../../ui/badge";
 import { mockMenuItems } from "../../../lib/mockData";
-import { MenuItem } from "../../../types";
+import { Dish } from "../../../types";
 import { toast } from "sonner";
 import { ConfirmationModal } from "../../ui/ConfirmationModal";
 import { mockTables } from "../../../lib/mockData";
 import { RiTakeawayLine } from "react-icons/ri";
 
 interface OrderItem {
-  item: MenuItem;
+  item: Dish;
   quantity: number;
   notes: string;
   status: "pending" | "cooking" | "served";
@@ -82,7 +82,7 @@ export function OrderingPage() {
   );
 
   const filteredItems = mockMenuItems.filter((item) => {
-    if (!item.available) return false;
+    if (!item.is_available) return false;
     if (selectedCategory === "all") return true;
     return item.category === selectedCategory;
   });
@@ -96,7 +96,7 @@ export function OrderingPage() {
   const currentOrderId =
     orderType === "table" ? selectedTable : selectedTakeawayOrder;
 
-  const handleAddToOrder = (item: MenuItem) => {
+  const handleAddToOrder = (item: Dish) => {
     const orders = orderType === "table" ? ordersByTable : takeawayOrders;
     const setOrders =
       orderType === "table" ? setOrdersByTable : setTakeawayOrders;
@@ -402,13 +402,13 @@ export function OrderingPage() {
                 {/* Table Selection Grid - Prominent Display */}
                 <div className="grid grid-cols-4 md:grid-cols-6 gap-3 mb-6 p-4 bg-white rounded-lg border-2 border-[#625EE8]">
                   {availableTables.map((table) => {
-                    const hasOrders = ordersByTable[table.number]?.length > 0;
+                    const hasOrders = ordersByTable[table.table_number]?.length > 0;
                     return (
                       <button
                         key={table.id}
-                        onClick={() => setSelectedTable(table.number)}
+                        onClick={() => setSelectedTable(table.table_number)}
                         className={`p-4 rounded-lg border-2 transition-all ${
-                          selectedTable === table.number
+                          selectedTable === table.table_number
                             ? "bg-[#625EE8] text-white border-[#625EE8] shadow-lg scale-105"
                             : hasOrders
                             ? "bg-green-50 text-green-700 border-green-400 hover:border-green-500 hover:bg-green-100"
@@ -417,10 +417,10 @@ export function OrderingPage() {
                       >
                         <div className="text-center">
                           <Utensils className="w-6 h-6 mx-auto mb-1" />
-                          <span className="text-sm">{table.number}</span>
+                          <span className="text-sm">{table.table_number}</span>
                           {hasOrders && (
                             <span className="block text-xs mt-1">
-                              ({ordersByTable[table.number].length} món)
+                              ({ordersByTable[table.table_number].length} món)
                             </span>
                           )}
                         </div>

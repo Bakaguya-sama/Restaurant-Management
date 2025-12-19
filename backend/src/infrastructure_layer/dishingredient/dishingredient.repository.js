@@ -2,7 +2,7 @@ const { DishIngredient, Ingredient } = require('../../models');
 
 class DishIngredientRepository {
   async findByDishId(dishId) {
-    return await DishIngredient.find({ dish_id: dishId }).populate('ingredient_id', 'name unit quantity_in_stock');
+    return await DishIngredient.find({ dish_id: dishId });
   }
 
   async findByDishAndIngredient(dishId, ingredientId) {
@@ -43,6 +43,25 @@ class DishIngredientRepository {
 
   async findById(id) {
     return await DishIngredient.findById(id);
+  }
+
+  async bulkReplace(dishId, ingredientDataList) {
+    
+    await DishIngredient.deleteMany({ dish_id: dishId });
+
+    
+    if (ingredientDataList && ingredientDataList.length > 0) {
+      const dishIngredients = ingredientDataList.map(item => ({
+        dish_id: dishId,
+        ingredient_id: item.ingredient_id,
+        quantity_required: item.quantity_required,
+        unit: item.unit
+      }));
+      
+      return await DishIngredient.insertMany(dishIngredients);
+    }
+
+    return [];
   }
 }
 

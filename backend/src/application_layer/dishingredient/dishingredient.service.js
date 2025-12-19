@@ -66,6 +66,26 @@ class DishIngredientService {
     return await this.dishIngredientRepository.deleteByDishId(dishId);
   }
 
+  async bulkReplaceDishIngredients(dishId, ingredientDataList) {
+    const dish = await Dish.findById(dishId);
+    if (!dish) {
+      throw new Error('Dish not found');
+    }
+
+    // Validate all ingredients exist
+    if (ingredientDataList && ingredientDataList.length > 0) {
+      for (const item of ingredientDataList) {
+        const ingredient = await Ingredient.findById(item.ingredient_id);
+        if (!ingredient) {
+          throw new Error(`Ingredient with id ${item.ingredient_id} not found`);
+        }
+      }
+    }
+
+    const created = await this.dishIngredientRepository.bulkReplace(dishId, ingredientDataList);
+    return created.map(item => this.formatDishIngredientResponse(item));
+  }
+
   formatDishIngredientResponse(dishIngredient) {
     const entity = new DishIngredientEntity(dishIngredient);
     return entity.formatResponse();

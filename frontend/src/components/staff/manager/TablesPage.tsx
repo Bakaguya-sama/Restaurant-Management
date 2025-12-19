@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { Plus, Edit, Trash2, Filter, LayoutGrid, MapPin } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Card } from "../../ui/Card";
 import { Modal } from "../../ui/Modal";
 import { Input, Select } from "../../ui/Input";
-import { mockTables, mockLocations, mockFloors } from "../../../lib/mockData";
-import { Table, TableStatus, Location, Floor } from "../../../types";
+import { Table, TableStatus } from "../../../types";
 import { toast } from "sonner";
 import {
   validateRequired,
@@ -14,6 +13,9 @@ import {
 } from "../../../lib/validation";
 import { LocationManagement } from "./LocationManagement";
 import { ConfirmationModal } from "../../ui/ConfirmationModal";
+import { useTables } from "../../../hooks/useTables";
+import { useLocations } from "../../../hooks/useLocations";
+import { useFloors } from "../../../hooks/useFloors";
 
 export function TablesPage() {
   const [activeTab, setActiveTab] = useState<"tables" | "locations">("tables");
@@ -21,16 +23,14 @@ export function TablesPage() {
   const [editingTable, setEditingTable] = useState<Table | null>(null);
   const [filterArea, setFilterArea] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [tables, setTables] = useState(mockTables);
-  const [locations, setLocations] = useState<Location[]>(mockLocations);
-  const [floors, setFloors] = useState<Floor[]>(mockFloors);
   const [showRepairModal, setShowRepairModal] = useState(false);
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [formData, setFormData] = useState({
-    number: "",
-    area: "",
-    seats: 4,
+    table_number: "",
+    location_id: "",
+    capacity: 4,
     floor: "Floor 1",
+    createdAt: "",
   });
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -43,8 +43,39 @@ export function TablesPage() {
   >("info");
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
-  // Update available areas when locations change
-  const availableAreas = locations.map((loc) => loc.name);
+  // API hooks
+  const {
+    tables: apiTables,
+    loading: tablesLoading,
+    error: tablesError,
+    createTable,
+    updateTable,
+    updateTableStatus,
+    deleteTable,
+  } = useTables();
+
+  const {
+    locations: apiLocations,
+    fetchLocations,
+  } = useLocations();
+
+  const {
+    floors: apiFloors,
+    fetchFloors,
+  } = useFloors();
+
+  
+  const getLocationName = (locationId: string) => {
+    return apiLocations.find((loc) => loc.id === locationId)?.name || "";
+  };
+
+ 
+  const getFloorNameFromLocation = (locationId: string) => {
+    const location = apiLocations.find((loc) => loc.id === locationId);
+    if (!location) return "";
+    const floor = apiFloors.find((f) => f.id === location.floor_id);
+    return floor?.floor_name || "";
+  };
 
   const handleRepair = (table: Table) => {
     setSelectedTable(table);
@@ -53,42 +84,38 @@ export function TablesPage() {
 
   const confirmRepair = () => {
     if (selectedTable) {
-      setTables((prevTables) =>
-        prevTables.map((table) =>
-          table.id === selectedTable.id
-            ? {
-                ...table,
-                status: "free" as TableStatus,
-                brokenReason: undefined,
-              }
-            : table
-        )
-      );
-      toast.success("Đã chuyển bàn về trạng thái trống");
-      setShowRepairModal(false);
-      setSelectedTable(null);
+      updateTableStatus(selectedTable.id, "free")
+        .then(() => {
+          toast.success("Đã chuyển bàn về trạng thái trống");
+          setShowRepairModal(false);
+          setSelectedTable(null);
+        })
+        .catch((err) => {
+          toast.error(err instanceof Error ? err.message : "Lỗi khi cập nhật bàn");
+        });
     }
   };
 
   const handleEdit = (table: Table) => {
     setEditingTable(table);
     setFormData({
-      number: table.number,
-      area: table.area,
-      seats: table.seats,
-      floor: table.floor || "Floor 1",
+      table_number: table.table_number,
+      location_id: table.location_id,
+      capacity: table.capacity,
+      floor: getFloorNameFromLocation(table.location_id),
+      createdAt: table.createdAt || "",
     });
     setShowModal(true);
   };
 
   const handleDelete = (tableId: string) => {
-    const table = tables.find((t) => t.id === tableId);
+    const table = apiTables.find((t) => t.id === tableId);
     if (!table) return;
 
     // Prevent deletion if table is occupied or reserved
     if (table.status === "occupied" || table.status === "reserved") {
       toast.error(
-        `Không thể xóa bàn ${table.number} vì bàn đang ${
+        `Không thể xóa bàn ${table.table_number} vì bàn đang ${
           table.status === "occupied" ? "có khách" : "được đặt trước"
         }`
       );
@@ -100,88 +127,91 @@ export function TablesPage() {
     setConfirmText("Xóa");
     setConfirmCancelText("Hủy");
     setConfirmVariant(`warning`);
-    setPendingAction(() => () => {
-      //TODO: Api xóa bàn
-      setTables(tables.filter((t) => t.id !== tableId));
-      toast.success(`Đã xóa bàn ${table.number}`);
+    setPendingAction(() => async () => {
+      try {
+        await deleteTable(tableId);
+        toast.success(`Đã xóa bàn ${table.table_number}`);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Lỗi khi xóa bàn");
+      }
     });
     setShowConfirmModal(true);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Validate required fields
-    const numberValidation = validateRequired(formData.number, "Số bàn");
-    const areaValidation = validateRequired(formData.area, "Khu vực");
+    const numberValidation = validateRequired(formData.table_number, "Số bàn");
+    const locationValidation = validateRequired(formData.location_id, "Khu vực");
 
     if (!numberValidation.isValid) {
       toast.error(numberValidation.error);
       return;
     }
 
-    if (!areaValidation.isValid) {
-      toast.error(areaValidation.error);
+    if (!locationValidation.isValid) {
+      toast.error(locationValidation.error);
       return;
     }
 
-    // Check if area exists in locations
-    if (!availableAreas.includes(formData.area)) {
-      toast.error("Vui lòng chọn vị trí hợp lệ");
+    // Validate capacity count
+    const capacityValidation = validateInteger(formData.capacity, "Số chỗ");
+    if (!capacityValidation.isValid) {
+      toast.error(capacityValidation.error);
       return;
     }
 
-    // Validate seats count
-    const seatsValidation = validateInteger(formData.seats, "Số ghế");
-    if (!seatsValidation.isValid) {
-      toast.error(seatsValidation.error);
-      return;
-    }
-
-    const seatsRangeValidation = validateNumberRange(
-      formData.seats,
+    const capacityRangeValidation = validateNumberRange(
+      formData.capacity,
       1,
       8,
-      "Số ghế"
+      "Số chỗ"
     );
-    if (!seatsRangeValidation.isValid) {
-      toast.error(seatsRangeValidation.error);
+    if (!capacityRangeValidation.isValid) {
+      toast.error(capacityRangeValidation.error);
       return;
     }
 
     // Check duplicate table number (except when editing)
-    const duplicateTable = tables.find(
-      (t) => t.number === formData.number && t.id !== editingTable?.id
+    const duplicateTable = apiTables.find(
+      (t) => t.table_number === formData.table_number && t.id !== editingTable?.id
     );
     if (duplicateTable) {
       toast.error("Số bàn đã tồn tại");
       return;
     }
 
-    if (editingTable) {
-      // Update table
-      setTables(
-        tables.map((t) =>
-          t.id === editingTable.id ? { ...t, ...formData } : t
-        )
-      );
-      toast.success("Đã cập nhật bàn");
-    } else {
-      // Add new table
-      const newTable: Table = {
-        id: `T${Date.now()}`,
+    try {
+      // Auto-set floor from selected location
+      const selectedFloor = getFloorNameFromLocation(formData.location_id);
+      const dataToSubmit = {
         ...formData,
-        status: "free" as TableStatus,
+        floor: selectedFloor,
       };
-      setTables([...tables, newTable]);
-      toast.success("Đã thêm bàn mới");
-    }
 
-    setShowModal(false);
-    setEditingTable(null);
-    setFormData({ number: "", area: "", seats: 4, floor: "Floor 1" });
+      if (editingTable) {
+        // Update table via API
+        await updateTable(editingTable.id, dataToSubmit);
+        toast.success("Đã cập nhật bàn");
+      } else {
+        // Create new table via API
+        await createTable({
+          ...dataToSubmit,
+          status: "free" as TableStatus,
+        });
+        toast.success("Đã thêm bàn mới");
+      }
+
+      setShowModal(false);
+      setEditingTable(null);
+      setFormData({ table_number: "", location_id: "", capacity: 4, floor: "Floor 1", createdAt: "" });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Lỗi khi lưu bàn");
+    }
   };
 
-  const filteredTables = tables.filter((table) => {
-    const matchArea = filterArea === "all" || table.area === filterArea;
+  const filteredTables = apiTables.filter((table) => {
+    const locationName = getLocationName(table.location_id);
+    const matchArea = filterArea === "all" || locationName === filterArea;
     const matchStatus = filterStatus === "all" || table.status === filterStatus;
     return matchArea && matchStatus;
   });
@@ -276,9 +306,9 @@ export function TablesPage() {
                 onChange={(e) => setFilterArea(e.target.value)}
                 options={[
                   { value: "all", label: "Tất cả khu vực" },
-                  ...availableAreas.map((area) => ({
-                    value: area,
-                    label: area,
+                  ...apiLocations.map((loc) => ({
+                    value: loc.name,
+                    label: loc.name,
                   })),
                 ]}
               />
@@ -298,13 +328,28 @@ export function TablesPage() {
           </Card>
 
           {/* Tables Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredTables.map((table) => (
-              <Card key={table.id} className="p-4">
+          {tablesError && (
+            <Card className="p-4 mb-6 border-red-200 bg-red-50">
+              <p className="text-red-700">Lỗi tải bàn: {tablesError}</p>
+            </Card>
+          )}
+
+          {tablesLoading ? (
+            <Card className="p-8 text-center">
+              <p className="text-gray-600">Đang tải danh sách bàn...</p>
+            </Card>
+          ) : apiTables.length === 0 ? (
+            <Card className="p-8 text-center">
+              <p className="text-gray-600">Chưa có bàn nào. Hãy thêm bàn mới.</p>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {filteredTables.map((table) => (
+                <Card key={table.id} className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <h4 className="mb-1">{table.number}</h4>
-                    <p className="text-sm text-gray-600">{table.area}</p>
+                    <h4 className="mb-1">{table.table_number}</h4>
+                    <p className="text-sm text-gray-600">{getLocationName(table.location_id)}</p>
                   </div>
                   <span
                     className={`px-2 py-1 rounded-full text-xs ${
@@ -315,7 +360,7 @@ export function TablesPage() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between mb-3 text-sm text-gray-600">
-                  <span>{table.seats} chỗ</span>
+                  <span>{table.capacity} chỗ</span>
                   <span>{table.floor}</span>
                 </div>
                 <div className="flex gap-2">
@@ -349,19 +394,19 @@ export function TablesPage() {
                 </div>
               </Card>
             ))}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
       {/* Locations Tab */}
       {activeTab === "locations" && (
         <LocationManagement
-          locations={locations}
-          floors={floors}
-          tables={tables}
+          locations={apiLocations}
+          floors={apiFloors}
+          tables={apiTables}
           onLocationsChange={(newLocations) => {
-            setLocations(newLocations);
-            // Reset filter if deleted location was selected
+            
             if (
               filterArea !== "all" &&
               !newLocations.find((l) => l.name === filterArea)
@@ -369,7 +414,15 @@ export function TablesPage() {
               setFilterArea("all");
             }
           }}
-          onFloorsChange={setFloors}
+          onFloorsChange={() => {
+            
+          }}
+          onRefreshLocations={async () => {
+            await fetchLocations();
+          }}
+          onRefreshFloors={async () => {
+            await fetchFloors();
+          }}
         />
       )}
 
@@ -379,58 +432,56 @@ export function TablesPage() {
         onClose={() => {
           setShowModal(false);
           setEditingTable(null);
-          setFormData({ number: "", area: "", seats: 4, floor: "Floor 1" });
+          setFormData({ table_number: "", location_id: "", capacity: 4, floor: "Floor 1", createdAt: "" });
         }}
         title={editingTable ? "Chỉnh sửa bàn" : "Thêm bàn mới"}
       >
         <div className="space-y-4">
           <Input
             label="Số bàn"
-            value={formData.number}
+            value={formData.table_number}
             onChange={(e) =>
-              setFormData({ ...formData, number: e.target.value })
+              setFormData({ ...formData, table_number: e.target.value })
             }
             placeholder="VD: T01"
             required
           />
           <Select
             label="Khu vực"
-            value={formData.area}
-            onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+            value={formData.location_id}
+            onChange={(e) => {
+              const newLocationId = e.target.value;
+              const newFloor = getFloorNameFromLocation(newLocationId);
+              setFormData({ 
+                ...formData, 
+                location_id: newLocationId,
+                floor: newFloor,
+              });
+            }}
             options={[
               { value: "", label: "Chọn khu vực" },
-              ...availableAreas.map((area) => ({ value: area, label: area })),
+              ...apiLocations.map((loc) => ({ value: loc.id, label: loc.name })),
             ]}
             required
           />
           <Input
-            label="Số ghế"
+            label="Số chỗ"
             type="number"
-            value={formData.seats}
+            value={formData.capacity}
             onChange={(e) =>
-              setFormData({ ...formData, seats: parseInt(e.target.value) || 0 })
+              setFormData({ ...formData, capacity: parseInt(e.target.value) || 0 })
             }
             min="1"
             max="8"
             step="1"
             required
           />
-          <Select
-            disabled={true}
-            aria-disabled={true}
-            className="
-                opacity-50
-                cursor-not-allowed
-                bg-gray-100
-                text-gray-400
-              "
-            label="Tầng"
-            value={formData.floor}
-            onChange={(e) =>
-              setFormData({ ...formData, floor: e.target.value })
-            }
-            options={floors.map((f) => ({ value: f.name, label: f.name }))}
-          />
+          <div className="p-3 bg-gray-100 rounded-md border border-gray-300">
+            <p className="text-sm text-gray-600 mb-1">Tầng</p>
+            <p className="font-medium text-gray-800">
+              {formData.floor || "(Được chọn tự động từ khu vực)"}
+            </p>
+          </div>
 
           <div className="flex gap-4 pt-4">
             <Button
@@ -462,7 +513,7 @@ export function TablesPage() {
         <div className="space-y-4">
           <div className="p-4 bg-gray-50 rounded-lg">
             <p className="text-sm text-gray-600 mb-2">Bàn số:</p>
-            <p className="font-medium text-lg">{selectedTable?.number}</p>
+            <p className="font-medium text-lg">{selectedTable?.table_number}</p>
           </div>
           <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-sm font-medium text-red-700 mb-2">Lý do hỏng:</p>

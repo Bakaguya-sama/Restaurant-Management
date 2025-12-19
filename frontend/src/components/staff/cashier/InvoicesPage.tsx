@@ -17,7 +17,6 @@ import { Card } from "../../ui/Card";
 import { Modal } from "../../ui/Modal";
 import { Input } from "../../ui/Input";
 import {
-  mockInvoices,
   mockTables,
 } from "../../../lib/mockData";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";

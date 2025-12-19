@@ -22,12 +22,12 @@ import {
   SelectValue,
 } from "../../ui/select";
 import { mockInventory, mockSuppliers } from "../../../lib/mockData";
-import { InventoryItem, Supplier } from "../../../types";
+import { Ingredient, Supplier } from "../../../types";
 import { toast } from "sonner";
 import { ConfirmationModal } from "../../ui/ConfirmationModal";
 
 export function InventoryPage() {
-  const [inventory, setInventory] = useState<InventoryItem[]>(mockInventory);
+  const [inventory, setInventory] = useState<Ingredient[]>(mockInventory);
   const [suppliers, setSuppliers] = useState<Supplier[]>(mockSuppliers);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -189,14 +189,18 @@ export function InventoryPage() {
         }
 
         // Thêm nguyên liệu mới
-        const newItem: InventoryItem = {
+        const newItem: Ingredient = {
           id: `INV${String(updatedInventory.length + 1).padStart(3, "0")}`,
           name: importItem.itemName,
-          quantity: importItem.quantity,
+          quantity_in_stock: importItem.quantity,
           unit: importItem.unit,
-          expiryDate: importItem.expiryDate || undefined,
-          supplierId: selectedSupplier,
-          lastUpdated: new Date().toISOString().split("T")[0],
+          minimum_quantity: 0,
+          unit_price: 0,
+          supplier_name: selectedSupplier,
+          supplier_contact: "",
+          stock_status: "available",
+          expiry_status: "valid",
+          expiry_date: importItem.expiryDate || undefined,
         };
         updatedInventory.push(newItem);
         addedCount++;

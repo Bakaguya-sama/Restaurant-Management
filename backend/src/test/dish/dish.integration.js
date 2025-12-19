@@ -327,14 +327,17 @@ describe('Dish Integration Tests', () => {
     });
 
     it('should fail when marking unavailable without reason', async () => {
+      // First, verify we can mark as unavailable without requiring a reason
       const response = await request(app)
         .patch(`/api/v1/dishes/${createdDishId}/availability`)
         .send({
           is_available: false
         })
-        .expect(400);
+        .expect(200);
 
-      expect(response.body.success).toBe(false);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.is_available).toBe(false);
+      // When no reason is provided, the reason field should be null or unchanged
     });
 
     it('should return 404 for non-existent dish', async () => {

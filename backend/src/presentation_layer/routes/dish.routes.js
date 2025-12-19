@@ -15,5 +15,6 @@ router.get('/:id/ingredients', (req, res) => dishController.getDishIngredients(r
 router.post('/:id/ingredients', (req, res) => dishController.addIngredientToDish(req, res));
 router.put('/:id/ingredients/:ingredientId', (req, res) => dishController.updateDishIngredient(req, res));
 router.delete('/:id/ingredients/:ingredientId', (req, res) => dishController.removeIngredientFromDish(req, res));
+router.post('/:id/ingredients/bulk/replace', (req, res) => dishController.bulkReplaceDishIngredients(req, res));
 
 module.exports = router;
