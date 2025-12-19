@@ -18,7 +18,6 @@ import { Textarea } from "../ui/textarea";
 import { Input } from "../ui/Input";
 import { mockPromotions } from "../../lib/mockData";
 import { toast } from "sonner";
-import { Calendar } from "lucide-react";
 
 export function BillsPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -42,7 +41,6 @@ export function BillsPage() {
   const [allBills, setAllBills] = useState([
     {
       id: "BILL004",
-      tableNumber: "T08",
       date: new Date().toISOString().split("T")[0],
       time: new Date().toLocaleTimeString("vi-VN", {
         hour: "2-digit",
@@ -103,7 +101,6 @@ export function BillsPage() {
     },
     {
       id: "BILL001",
-      tableNumber: "T05",
       date: new Date().toISOString().split("T")[0],
       time: new Date().toLocaleTimeString("vi-VN", {
         hour: "2-digit",
@@ -184,7 +181,6 @@ export function BillsPage() {
       pointsDiscount: 0,
       total: 382500,
       status: "paid",
-      tableNumber: "T05",
       paymentMethod: "online",
       feedback: "Món ăn rất ngon, phục vụ tận tình!",
       feedbackDate: "2025-12-09",
@@ -228,7 +224,6 @@ export function BillsPage() {
       voucherDiscount: 0,
       total: 319000,
       status: "paid",
-      tableNumber: "T03",
       paymentMethod: "cash",
       bookingId: "BK003",
       booking: {
@@ -453,7 +448,6 @@ export function BillsPage() {
                       <Clock className="w-4 h-4" />
                       {bill.date} {bill.time}
                     </span>
-                    <span>Bàn {bill.tableNumber}</span>
                   </div>
                 </div>
               </div>
@@ -542,11 +536,7 @@ export function BillsPage() {
           <div className="space-y-6">
             {/* Bill Info */}
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div>
-                <p className="text-sm text-gray-600">Bàn số</p>
-                <p className="text-lg">{selectedBill.tableNumber}</p>
-              </div>
-              <div className="text-center">
+              <div className="text-left">
                 <p className="text-sm text-gray-600">Ngày giờ</p>
                 <p className="text-lg">
                   {selectedBill.date} {selectedBill.time}
@@ -566,7 +556,7 @@ export function BillsPage() {
             </div>
 
             {/* Booking Details */}
-            {selectedBill.booking && (
+            {/* {selectedBill.booking && (
               <div className="border rounded-lg p-4 bg-blue-50">
                 <h4 className="mb-3 flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-[#625EE8]" />
@@ -623,7 +613,7 @@ export function BillsPage() {
                   </div>
                 </div>
               </div>
-            )}
+            )} */}
 
             {/* Items List */}
             <div>
