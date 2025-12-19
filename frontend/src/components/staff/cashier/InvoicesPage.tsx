@@ -16,10 +16,7 @@ import { Button } from "../../ui/Button";
 import { Card } from "../../ui/Card";
 import { Modal } from "../../ui/Modal";
 import { Input } from "../../ui/Input";
-import {
-  mockInvoices,
-  mockTables,
-} from "../../../lib/mockData";
+import { mockInvoices, mockTables } from "../../../lib/mockData";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
 import { Badge } from "../../ui/badge";
 import { toast } from "sonner";
@@ -49,26 +46,32 @@ export function InvoicesPage() {
       setLoading(true);
       const data = await invoiceApi.getAll();
       const transformedData = data.map((invoice: any) => {
-        const items = invoice.order_id?.items?.map((item: any) => ({
-          id: item.id || item._id,
-          name: item.dish_id?.name || 'Món ăn',
-          quantity: item.quantity,
-          price: item.unit_price || item.dish_id?.price || 0,
-        })) || [];
-        
+        const items =
+          invoice.order_id?.items?.map((item: any) => ({
+            id: item.id || item._id,
+            name: item.dish_id?.name || "Món ăn",
+            quantity: item.quantity,
+            price: item.unit_price || item.dish_id?.price || 0,
+          })) || [];
+
         return {
           id: invoice.id,
-          tableId: invoice.order_id?.table_id || '',
-          tableNumber: invoice.order_id?.table?.table_number || 'N/A',
+          tableId: invoice.order_id?.table_id || "",
+          tableNumber: invoice.order_id?.table?.table_number || "N/A",
           customerId: invoice.customer_id,
-          customerName: invoice.customer?.full_name || 'Khách hàng',
+          customerName: invoice.customer?.full_name || "Khách hàng",
           items,
           subtotal: invoice.subtotal || 0,
           tax: invoice.tax || 0,
           discount: invoice.discount_amount || 0,
           total: invoice.total_amount || 0,
-          status: invoice.payment_status === 'paid' ? 'paid' : invoice.payment_status === 'pending' ? 'payment-requested' : 'pending',
-          paymentRequested: invoice.payment_status === 'pending',
+          status:
+            invoice.payment_status === "paid"
+              ? "paid"
+              : invoice.payment_status === "pending"
+              ? "payment-requested"
+              : "pending",
+          paymentRequested: invoice.payment_status === "pending",
           paymentMethod: invoice.payment_method,
           paidAt: invoice.paid_at,
           createdAt: invoice.invoice_date || invoice.created_at,
@@ -81,7 +84,7 @@ export function InvoicesPage() {
       });
       setInvoices(transformedData);
     } catch (error: any) {
-      toast.error(error.message || 'Không thể tải danh sách hóa đơn');
+      toast.error(error.message || "Không thể tải danh sách hóa đơn");
     } finally {
       setLoading(false);
     }
@@ -90,11 +93,14 @@ export function InvoicesPage() {
   const fetchPromotions = async () => {
     try {
       setLoadingPromotions(true);
-      const data = await promotionApi.getAll({ is_active: true, valid_now: true });
+      const data = await promotionApi.getAll({
+        is_active: true,
+        valid_now: true,
+      });
       setPromotions(data);
     } catch (error) {
-      console.error('Lỗi khi tải khuyến mãi:', error);
-      toast.error('Không thể tải danh sách khuyến mãi');
+      console.error("Lỗi khi tải khuyến mãi:", error);
+      toast.error("Không thể tải danh sách khuyến mãi");
     } finally {
       setLoadingPromotions(false);
     }
@@ -163,8 +169,9 @@ export function InvoicesPage() {
       if (cashierSelectedPromotion.promotion_type === "fixed_amount") {
         discount = cashierSelectedPromotion.discount_value;
       } else if (cashierSelectedPromotion.promotion_type === "percentage") {
-        discount = selectedInvoice.subtotal *
-            (cashierSelectedPromotion.discount_value / 100);
+        discount =
+          selectedInvoice.subtotal *
+          (cashierSelectedPromotion.discount_value / 100);
       }
     }
 
@@ -206,7 +213,9 @@ export function InvoicesPage() {
       toast.success(
         <div>
           <p>Thanh toán thành công!</p>
-          <p className="text-sm mt-1">Hóa đơn: {selectedInvoice.invoiceNumber || selectedInvoice.id}</p>
+          <p className="text-sm mt-1">
+            Hóa đơn: {selectedInvoice.invoiceNumber || selectedInvoice.id}
+          </p>
           {change > 0 && (
             <p className="text-sm">Tiền thừa: {change.toLocaleString()}đ</p>
           )}
@@ -227,7 +236,7 @@ export function InvoicesPage() {
         toast.info("Đang in hóa đơn cho khách hàng...");
       }, 1000);
     } catch (error: any) {
-      toast.error(error.message || 'Không thể thanh toán hóa đơn');
+      toast.error(error.message || "Không thể thanh toán hóa đơn");
     }
   };
 
@@ -263,37 +272,37 @@ export function InvoicesPage() {
               <p className="text-gray-500">Đang tải dữ liệu...</p>
             </Card>
           ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Tables List */}
-            <div className="lg:col-span-1">
-              <h3 className="mb-4">Bàn cần xử lý</h3>
-              <div className="space-y-3">
-                {pendingInvoices.map((invoice) =>
-                  invoice.status === "payment-requested" ? (
-                    <Card
-                      key={invoice.id}
-                      hover
-                      onClick={() => setSelectedInvoice(invoice)}
-                      className={`p-4 cursor-pointer ${
-                        selectedInvoice?.id === invoice.id
-                          ? "ring-2 ring-[#625EE8]"
-                          : ""
-                      } ${
-                        invoice.paymentRequested
-                          ? "border-l-4 border-l-red-500"
-                          : ""
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <h4>{invoice.tableNumber}</h4>
-                        <Badge
-                          className={
-                            invoice.paymentRequested
-                              ? "bg-red-100 text-red-700"
-                              : "bg-yellow-100 text-yellow-700"
-                          }
-                        >
-                          {/* {invoice.paymentRequested ? (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Tables List */}
+              <div className="lg:col-span-1">
+                <h3 className="mb-4">Bàn cần xử lý</h3>
+                <div className="space-y-3">
+                  {pendingInvoices.map((invoice) =>
+                    invoice.status === "payment-requested" ? (
+                      <Card
+                        key={invoice.id}
+                        hover
+                        onClick={() => setSelectedInvoice(invoice)}
+                        className={`p-4 cursor-pointer ${
+                          selectedInvoice?.id === invoice.id
+                            ? "ring-2 ring-[#625EE8]"
+                            : ""
+                        } ${
+                          invoice.paymentRequested
+                            ? "border-l-4 border-l-red-500"
+                            : ""
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <h4>{invoice.tableNumber}</h4>
+                          <Badge
+                            className={
+                              invoice.paymentRequested
+                                ? "bg-red-100 text-red-700"
+                                : "bg-yellow-100 text-yellow-700"
+                            }
+                          >
+                            {/* {invoice.paymentRequested ? (
                             <>
                               <AlertCircle className="w-3 h-3 mr-1" />
                               Yêu cầu thanh toán
@@ -301,344 +310,361 @@ export function InvoicesPage() {
                           ) : (
                             "Đang dùng"
                           )} */}
-                          <AlertCircle className="w-3 h-3 mr-1" />
-                          Yêu cầu thanh toán
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-1">
-                        {invoice.customerName}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {invoice.items.length} món •{" "}
-                        {invoice.total.toLocaleString()}đ
-                      </p>
-                      {(invoice.customerSelectedVoucher ||
-                        invoice.customerSelectedPoints > 0) && (
-                        <div className="mt-2 pt-2 border-t text-xs text-blue-600">
-                          Đã chọn ưu đãi
+                            <AlertCircle className="w-3 h-3 mr-1" />
+                            Yêu cầu thanh toán
+                          </Badge>
                         </div>
-                      )}
-                    </Card>
-                  ) : (
-                    ""
-                  )
-                )}
-              </div>
-            </div>
-
-            {/* Invoice Detail */}
-            <div className="lg:col-span-2">
-              {selectedInvoice ? (
-                <Card className="p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <div>
-                      <h3>Chi tiết hóa đơn</h3>
-                      <p className="text-sm text-gray-600">
-                        {selectedInvoice.tableNumber} •{" "}
-                        {selectedInvoice.customerName}
-                      </p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      onClick={() => setSelectedInvoice(null)}
-                    >
-                      <X className="w-5 h-5" />
-                    </Button>
-                  </div>
-
-                  {selectedInvoice.paymentRequested && (
-                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-                      <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm text-red-800">
-                          Khách hàng đã yêu cầu thanh toán. Vui lòng xử lý ngay!
+                        <p className="text-sm text-gray-600 mb-1">
+                          {invoice.customerName}
                         </p>
-                        <p className="text-xs text-red-600 mt-1">
-                          {new Date(
-                            selectedInvoice.createdAt
-                          ).toLocaleTimeString("vi-VN")}
+                        <p className="text-sm text-gray-600">
+                          {invoice.items.length} món •{" "}
+                          {invoice.total.toLocaleString()}đ
+                        </p>
+                        {(invoice.customerSelectedVoucher ||
+                          invoice.customerSelectedPoints > 0) && (
+                          <div className="mt-2 pt-2 border-t text-xs text-blue-600">
+                            Đã chọn ưu đãi
+                          </div>
+                        )}
+                      </Card>
+                    ) : (
+                      ""
+                    )
+                  )}
+                </div>
+              </div>
+
+              {/* Invoice Detail */}
+              <div className="lg:col-span-2">
+                {selectedInvoice ? (
+                  <Card className="p-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h3>Chi tiết hóa đơn</h3>
+                        <p className="text-sm text-gray-600">
+                          {selectedInvoice.tableNumber} •{" "}
+                          {selectedInvoice.customerName}
                         </p>
                       </div>
+                      <Button
+                        variant="ghost"
+                        onClick={() => setSelectedInvoice(null)}
+                      >
+                        <X className="w-5 h-5" />
+                      </Button>
                     </div>
-                  )}
 
-                  {/* Customer Applied Discounts */}
-                  {(selectedInvoice.customerSelectedVoucher ||
-                    selectedInvoice.customerSelectedPoints > 0) && (
-                    <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <h4 className="text-sm mb-3 flex items-center gap-2">
-                        <Tag className="w-4 h-4 text-blue-600" />
-                        Ưu đãi khách hàng đã chọn
-                      </h4>
-                      {selectedInvoice.customerSelectedVoucher &&
-                        selectedInvoice.voucherCode && (
-                          <div className="flex items-center justify-between mb-2 text-sm">
-                            <span className="text-gray-700">
-                              Voucher:{" "}
-                              <span className="font-mono bg-white px-2 py-0.5 rounded">
-                                {selectedInvoice.voucherCode}
+                    {selectedInvoice.paymentRequested && (
+                      <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm text-red-800">
+                            Khách hàng đã yêu cầu thanh toán. Vui lòng xử lý
+                            ngay!
+                          </p>
+                          <p className="text-xs text-red-600 mt-1">
+                            {new Date(
+                              selectedInvoice.createdAt
+                            ).toLocaleTimeString("vi-VN")}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Customer Applied Discounts */}
+                    {(selectedInvoice.customerSelectedVoucher ||
+                      selectedInvoice.customerSelectedPoints > 0) && (
+                      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <h4 className="text-sm mb-3 flex items-center gap-2">
+                          <Tag className="w-4 h-4 text-blue-600" />
+                          Ưu đãi khách hàng đã chọn
+                        </h4>
+                        {selectedInvoice.customerSelectedVoucher &&
+                          selectedInvoice.voucherCode && (
+                            <div className="flex items-center justify-between mb-2 text-sm">
+                              <span className="text-gray-700">
+                                Voucher:{" "}
+                                <span className="font-mono bg-white px-2 py-0.5 rounded">
+                                  {selectedInvoice.voucherCode}
+                                </span>
                               </span>
+                              <span className="text-green-600">
+                                -
+                                {selectedInvoice.voucherAmount?.toLocaleString()}
+                                đ
+                              </span>
+                            </div>
+                          )}
+                        {selectedInvoice.customerSelectedPoints > 0 && (
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-700 flex items-center gap-1">
+                              <Gift className="w-4 h-4" />
+                              Điểm: {
+                                selectedInvoice.customerSelectedPoints
+                              }{" "}
+                              điểm
                             </span>
                             <span className="text-green-600">
-                              -{selectedInvoice.voucherAmount?.toLocaleString()}
+                              -
+                              {selectedInvoice.pointsDiscount?.toLocaleString()}
                               đ
                             </span>
                           </div>
                         )}
-                      {selectedInvoice.customerSelectedPoints > 0 && (
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-700 flex items-center gap-1">
-                            <Gift className="w-4 h-4" />
-                            Điểm: {selectedInvoice.customerSelectedPoints} điểm
-                          </span>
-                          <span className="text-green-600">
-                            -{selectedInvoice.pointsDiscount?.toLocaleString()}đ
-                          </span>
-                        </div>
-                      )}
-                      <p className="text-xs text-blue-600 mt-2">
-                        ⚠️ Không thể thay đổi ưu đãi này
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Items */}
-                  <div className="mb-6">
-                    <h4 className="mb-3">Danh sách món</h4>
-                    <div className="space-y-2">
-                      {selectedInvoice.items.map((item: any, index: number) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                        >
-                          <div className="flex-1">
-                            <p>{item.name}</p>
-                            <p className="text-sm text-gray-600">
-                              SL: {item.quantity}
-                            </p>
-                          </div>
-                          <span>
-                            {(item.price * item.quantity).toLocaleString()}đ
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Cashier can select promotion if customer hasn't selected */}
-                  {!selectedInvoice.customerSelectedVoucher &&
-                    selectedInvoice.customerSelectedPoints === 0 &&
-                    availablePromotions.length > 0 && (
-                      <div className="mb-6">
-                        <h4 className="mb-3 flex items-center gap-2">
-                          <Percent className="w-5 h-5 text-purple-600" />
-                          Chọn khuyến mãi cho khách hàng
-                        </h4>
-                        <div className="space-y-2 max-h-80 overflow-y-auto">
-                          <button
-                            onClick={() => setCashierSelectedPromotion(null)}
-                            className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
-                              !cashierSelectedPromotion
-                                ? "border-[#625EE8] bg-blue-50"
-                                : "border-gray-200 hover:border-gray-300"
-                            }`}
-                          >
-                            <p className="text-sm">Không áp dụng khuyến mãi</p>
-                          </button>
-                          {availablePromotions.map((promo) => {
-                            const discountAmount =
-                              promo.promotion_type === "fixed_amount"
-                                ? promo.discount_value
-                                : selectedInvoice.subtotal *
-                                      (promo.discount_value / 100);
-
-                            return (
-                              <button
-                                key={promo.id}
-                                onClick={() =>
-                                  setCashierSelectedPromotion(promo)
-                                }
-                                className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
-                                  cashierSelectedPromotion?.id === promo.id
-                                    ? "border-[#625EE8] bg-blue-50"
-                                    : "border-gray-200 hover:border-gray-300"
-                                }`}
-                              >
-                                <div className="flex items-start justify-between gap-3">
-                                  <div className="flex-1">
-                                    <p className="mb-1">{promo.name}</p>
-                                    <p className="text-sm text-gray-600 mb-1">
-                                      {promo.description}
-                                    </p>
-                                    <div className="flex items-center gap-2">
-                                      <Badge className="bg-purple-100 text-purple-700 text-xs">
-                                        {promo.promo_code}
-                                      </Badge>
-                                      {promo.minimum_order_amount && (
-                                        <span className="text-xs text-gray-500">
-                                          Đơn tối thiểu:{" "}
-                                          {promo.minimum_order_amount.toLocaleString()}
-                                          đ
-                                        </span>
-                                      )}
-                                      {promo.max_uses !== undefined &&
-                                        promo.max_uses !== -1 && (
-                                        <span className="text-xs text-gray-500">
-                                          • Còn {promo.max_uses - (promo.current_uses || 0)} lượt
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <div className="text-right flex-shrink-0">
-                                    <p className="text-green-600">
-                                      -{discountAmount.toLocaleString()}đ
-                                    </p>
-                                    {promo.promotion_type === "percentage" && (
-                                      <p className="text-xs text-gray-500">
-                                        ({promo.discount_value}%)
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                        <p className="text-xs text-gray-500 mt-2">
-                          💡 Khuyến mãi tốt nhất được hiển thị ở trên cùng
+                        <p className="text-xs text-blue-600 mt-2">
+                          ⚠️ Không thể thay đổi ưu đãi này
                         </p>
                       </div>
                     )}
 
-                  {/* Payment Method - Only if customer hasn't selected voucher/points */}
-                  {!selectedInvoice.customerSelectedVoucher &&
-                    selectedInvoice.customerSelectedPoints === 0 && (
-                      <div className="mb-6">
-                        <h4 className="mb-3">Phương thức thanh toán</h4>
-                        <div className="grid grid-cols-3 gap-3">
-                          <button
-                            onClick={() => setPaymentMethod("cash")}
-                            className={`p-4 rounded-lg border-2 transition-all ${
-                              paymentMethod === "cash"
-                                ? "border-[#625EE8] bg-blue-50"
-                                : "border-gray-200 hover:border-gray-300"
-                            }`}
-                          >
-                            <div className="text-2xl mb-2">💵</div>
-                            <p className="text-sm">Tiền mặt</p>
-                          </button>
-                          <button
-                            onClick={() => setPaymentMethod("card")}
-                            className={`p-4 rounded-lg border-2 transition-all ${
-                              paymentMethod === "card"
-                                ? "border-[#625EE8] bg-blue-50"
-                                : "border-gray-200 hover:border-gray-300"
-                            }`}
-                          >
-                            <CreditCard className="w-8 h-8 mx-auto mb-2" />
-                            <p className="text-sm">Thẻ</p>
-                          </button>
-                          <button
-                            onClick={() => setPaymentMethod("wallet")}
-                            className={`p-4 rounded-lg border-2 transition-all ${
-                              paymentMethod === "wallet"
-                                ? "border-[#625EE8] bg-blue-50"
-                                : "border-gray-200 hover:border-gray-300"
-                            }`}
-                          >
-                            <Wallet className="w-8 h-8 mx-auto mb-2" />
-                            <p className="text-sm">Ví điện tử</p>
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                  {paymentMethod === "cash" &&
-                    !selectedInvoice.customerSelectedVoucher &&
-                    selectedInvoice.customerSelectedPoints === 0 && (
-                      <div className="mb-6">
-                        <Input
-                          label="Tiền khách đưa"
-                          type="number"
-                          value={cashReceived}
-                          onChange={(e) => setCashReceived(e.target.value)}
-                          placeholder="Nhập số tiền"
-                        />
-                        {cashReceived &&
-                          parseFloat(cashReceived) >= finalTotal && (
-                            <div className="mt-2 p-3 bg-green-50 rounded-lg">
-                              <p className="text-sm text-green-700">
-                                Tiền thừa:{" "}
-                                {(
-                                  parseFloat(cashReceived) - finalTotal
-                                ).toLocaleString()}
-                                đ
-                              </p>
+                    {/* Items */}
+                    <div className="mb-6">
+                      <h4 className="mb-3">Danh sách món</h4>
+                      <div className="space-y-2">
+                        {selectedInvoice.items.map(
+                          (item: any, index: number) => (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                            >
+                              <div className="flex-1">
+                                <p>{item.name}</p>
+                                <p className="text-sm text-gray-600">
+                                  SL: {item.quantity}
+                                </p>
+                              </div>
+                              <span>
+                                {(item.price * item.quantity).toLocaleString()}đ
+                              </span>
                             </div>
-                          )}
-                      </div>
-                    )}
-
-                  {/* Total */}
-                  <div className="border-t pt-4 mb-6">
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Tạm tính:</span>
-                        <span>
-                          {selectedInvoice.subtotal.toLocaleString()}đ
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">VAT (10%):</span>
-                        <span>{selectedInvoice.tax.toLocaleString()}đ</span>
-                      </div>
-                      {selectedInvoice.discount > 0 && (
-                        <div className="flex justify-between text-sm text-green-600">
-                          <span>Giảm giá:</span>
-                          <span>
-                            -{selectedInvoice.discount.toLocaleString()}đ
-                          </span>
-                        </div>
-                      )}
-                      {currentDiscount > 0 && (
-                        <div className="flex justify-between text-sm text-green-600">
-                          <span>Giảm giá nhân viên:</span>
-                          <span>-{currentDiscount.toLocaleString()}đ</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between pt-2 border-t">
-                        <span>Tổng cộng:</span>
-                        <span className="text-2xl text-[#625EE8]">
-                          {finalTotal.toLocaleString()}đ
-                        </span>
+                          )
+                        )}
                       </div>
                     </div>
-                  </div>
 
-                  {/* Actions */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <Button variant="secondary" onClick={handlePrint}>
-                      <Printer className="w-4 h-4 mr-2" />
-                      In hóa đơn
-                    </Button>
-                    <Button onClick={handlePayment}>Xác nhận thanh toán</Button>
-                  </div>
-                </Card>
-              ) : (
-                <Card className="p-12 text-center">
-                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <CreditCard className="w-10 h-10 text-gray-400" />
-                  </div>
-                  <h3 className="mb-2 text-gray-600">
-                    Chọn bàn để xem hóa đơn
-                  </h3>
-                  <p className="text-gray-500">
-                    Chọn một bàn từ danh sách bên trái
-                  </p>
-                </Card>
-              )}
+                    {/* Cashier can select promotion if customer hasn't selected */}
+                    {!selectedInvoice.customerSelectedVoucher &&
+                      selectedInvoice.customerSelectedPoints === 0 &&
+                      availablePromotions.length > 0 && (
+                        <div className="mb-6">
+                          <h4 className="mb-3 flex items-center gap-2">
+                            <Percent className="w-5 h-5 text-purple-600" />
+                            Chọn khuyến mãi cho khách hàng
+                          </h4>
+                          <div className="space-y-2 max-h-80 overflow-y-auto">
+                            <button
+                              onClick={() => setCashierSelectedPromotion(null)}
+                              className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
+                                !cashierSelectedPromotion
+                                  ? "border-[#625EE8] bg-blue-50"
+                                  : "border-gray-200 hover:border-gray-300"
+                              }`}
+                            >
+                              <p className="text-sm">
+                                Không áp dụng khuyến mãi
+                              </p>
+                            </button>
+                            {availablePromotions.map((promo) => {
+                              const discountAmount =
+                                promo.promotion_type === "fixed_amount"
+                                  ? promo.discount_value
+                                  : selectedInvoice.subtotal *
+                                    (promo.discount_value / 100);
+
+                              return (
+                                <button
+                                  key={promo.id}
+                                  onClick={() =>
+                                    setCashierSelectedPromotion(promo)
+                                  }
+                                  className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
+                                    cashierSelectedPromotion?.id === promo.id
+                                      ? "border-[#625EE8] bg-blue-50"
+                                      : "border-gray-200 hover:border-gray-300"
+                                  }`}
+                                >
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex-1">
+                                      <p className="mb-1">{promo.name}</p>
+                                      <p className="text-sm text-gray-600 mb-1">
+                                        {promo.description}
+                                      </p>
+                                      <div className="flex items-center gap-2">
+                                        <Badge className="bg-purple-100 text-purple-700 text-xs">
+                                          {promo.promo_code}
+                                        </Badge>
+                                        {promo.minimum_order_amount && (
+                                          <span className="text-xs text-gray-500">
+                                            Đơn tối thiểu:{" "}
+                                            {promo.minimum_order_amount.toLocaleString()}
+                                            đ
+                                          </span>
+                                        )}
+                                        {promo.max_uses !== undefined &&
+                                          promo.max_uses !== -1 && (
+                                            <span className="text-xs text-gray-500">
+                                              • Còn{" "}
+                                              {promo.max_uses -
+                                                (promo.current_uses || 0)}{" "}
+                                              lượt
+                                            </span>
+                                          )}
+                                      </div>
+                                    </div>
+                                    <div className="text-right flex-shrink-0">
+                                      <p className="text-green-600">
+                                        -{discountAmount.toLocaleString()}đ
+                                      </p>
+                                      {promo.promotion_type ===
+                                        "percentage" && (
+                                        <p className="text-xs text-gray-500">
+                                          ({promo.discount_value}%)
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-2">
+                            💡 Khuyến mãi tốt nhất được hiển thị ở trên cùng
+                          </p>
+                        </div>
+                      )}
+
+                    {/* Payment Method - Only if customer hasn't selected voucher/points */}
+                    {!selectedInvoice.customerSelectedVoucher &&
+                      selectedInvoice.customerSelectedPoints === 0 && (
+                        <div className="mb-6">
+                          <h4 className="mb-3">Phương thức thanh toán</h4>
+                          <div className="grid grid-cols-3 gap-3">
+                            <button
+                              onClick={() => setPaymentMethod("cash")}
+                              className={`p-4 rounded-lg border-2 transition-all ${
+                                paymentMethod === "cash"
+                                  ? "border-[#625EE8] bg-blue-50"
+                                  : "border-gray-200 hover:border-gray-300"
+                              }`}
+                            >
+                              <div className="text-2xl mb-2">💵</div>
+                              <p className="text-sm">Tiền mặt</p>
+                            </button>
+                            <button
+                              onClick={() => setPaymentMethod("card")}
+                              className={`p-4 rounded-lg border-2 transition-all ${
+                                paymentMethod === "card"
+                                  ? "border-[#625EE8] bg-blue-50"
+                                  : "border-gray-200 hover:border-gray-300"
+                              }`}
+                            >
+                              <CreditCard className="w-8 h-8 mx-auto mb-2" />
+                              <p className="text-sm">Thẻ</p>
+                            </button>
+                            <button
+                              onClick={() => setPaymentMethod("wallet")}
+                              className={`p-4 rounded-lg border-2 transition-all ${
+                                paymentMethod === "wallet"
+                                  ? "border-[#625EE8] bg-blue-50"
+                                  : "border-gray-200 hover:border-gray-300"
+                              }`}
+                            >
+                              <Wallet className="w-8 h-8 mx-auto mb-2" />
+                              <p className="text-sm">Ví điện tử</p>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                    {paymentMethod === "cash" &&
+                      !selectedInvoice.customerSelectedVoucher &&
+                      selectedInvoice.customerSelectedPoints === 0 && (
+                        <div className="mb-6">
+                          <Input
+                            label="Tiền khách đưa"
+                            type="number"
+                            value={cashReceived}
+                            onChange={(e) => setCashReceived(e.target.value)}
+                            placeholder="Nhập số tiền"
+                          />
+                          {cashReceived &&
+                            parseFloat(cashReceived) >= finalTotal && (
+                              <div className="mt-2 p-3 bg-green-50 rounded-lg">
+                                <p className="text-sm text-green-700">
+                                  Tiền thừa:{" "}
+                                  {(
+                                    parseFloat(cashReceived) - finalTotal
+                                  ).toLocaleString()}
+                                  đ
+                                </p>
+                              </div>
+                            )}
+                        </div>
+                      )}
+
+                    {/* Total */}
+                    <div className="border-t pt-4 mb-6">
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Tạm tính:</span>
+                          <span>
+                            {selectedInvoice.subtotal.toLocaleString()}đ
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">VAT (10%):</span>
+                          <span>{selectedInvoice.tax.toLocaleString()}đ</span>
+                        </div>
+                        {selectedInvoice.discount > 0 && (
+                          <div className="flex justify-between text-sm text-green-600">
+                            <span>Giảm giá:</span>
+                            <span>
+                              -{selectedInvoice.discount.toLocaleString()}đ
+                            </span>
+                          </div>
+                        )}
+                        {currentDiscount > 0 && (
+                          <div className="flex justify-between text-sm text-green-600">
+                            <span>Giảm giá nhân viên:</span>
+                            <span>-{currentDiscount.toLocaleString()}đ</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between pt-2 border-t">
+                          <span>Tổng cộng:</span>
+                          <span className="text-2xl text-[#625EE8]">
+                            {finalTotal.toLocaleString()}đ
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <Button variant="secondary" onClick={handlePrint}>
+                        <Printer className="w-4 h-4 mr-2" />
+                        In hóa đơn
+                      </Button>
+                      <Button onClick={handlePayment}>
+                        Xác nhận thanh toán
+                      </Button>
+                    </div>
+                  </Card>
+                ) : (
+                  <Card className="p-12 text-center">
+                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <CreditCard className="w-10 h-10 text-gray-400" />
+                    </div>
+                    <h3 className="mb-2 text-gray-600">
+                      Chọn bàn để xem hóa đơn
+                    </h3>
+                    <p className="text-gray-500">
+                      Chọn một bàn từ danh sách bên trái
+                    </p>
+                  </Card>
+                )}
+              </div>
             </div>
-          </div>
           )}
         </TabsContent>
 
@@ -649,80 +675,80 @@ export function InvoicesPage() {
               <p className="text-gray-500">Đang tải dữ liệu...</p>
             </Card>
           ) : (
-          <Card className="p-6">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-4">Mã HĐ</th>
-                    <th className="text-left py-3 px-4">Bàn</th>
-                    <th className="text-left py-3 px-4">Thời gian</th>
-                    <th className="text-left py-3 px-4">Phương thức</th>
-                    <th className="text-right py-3 px-4">Tổng tiền</th>
-                    <th className="text-center py-3 px-4">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paidInvoices.map((invoice) => {
-                    return (
-                      <tr
-                        key={invoice.id}
-                        className="border-b hover:bg-gray-50"
-                      >
-                        <td className="py-3 px-4">{invoice.id}</td>
-                        <td className="py-3 px-4">{invoice.tableNumber}</td>
-                        <td className="py-3 px-4">
-                          {new Date(
-                            invoice.paidAt || invoice.createdAt
-                          ).toLocaleString("vi-VN")}
-                        </td>
-                        <td className="py-3 px-4">
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs ${
-                              invoice.paymentMethod === "online"
-                                ? "bg-blue-100 text-blue-700"
+            <Card className="p-6">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-3 px-4">Mã HĐ</th>
+                      <th className="text-left py-3 px-4">Bàn</th>
+                      <th className="text-left py-3 px-4">Thời gian</th>
+                      <th className="text-left py-3 px-4">Phương thức</th>
+                      <th className="text-right py-3 px-4">Tổng tiền</th>
+                      <th className="text-center py-3 px-4">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paidInvoices.map((invoice) => {
+                      return (
+                        <tr
+                          key={invoice.id}
+                          className="border-b hover:bg-gray-50"
+                        >
+                          <td className="py-3 px-4">{invoice.id}</td>
+                          <td className="py-3 px-4">{invoice.tableNumber}</td>
+                          <td className="py-3 px-4">
+                            {new Date(
+                              invoice.paidAt || invoice.createdAt
+                            ).toLocaleString("vi-VN")}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs ${
+                                invoice.paymentMethod === "online"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : invoice.paymentMethod === "card"
+                                  ? "bg-purple-100 text-purple-700"
+                                  : "bg-green-100 text-green-700"
+                              }`}
+                            >
+                              {invoice.paymentMethod === "online"
+                                ? "Online"
                                 : invoice.paymentMethod === "card"
-                                ? "bg-purple-100 text-purple-700"
-                                : "bg-green-100 text-green-700"
-                            }`}
-                          >
-                            {invoice.paymentMethod === "online"
-                              ? "Online"
-                              : invoice.paymentMethod === "card"
-                              ? "Thẻ"
-                              : "Tiền mặt"}
-                          </span>
-                        </td>
-                        <td className="text-right py-3 px-4 text-[#625EE8]">
-                          {invoice.total.toLocaleString()}đ
-                        </td>
-                        <td className="text-center py-3 px-4">
-                          <div className="flex gap-2 justify-center">
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => setViewInvoice(invoice)}
-                            >
-                              <Eye className="w-4 h-4 mr-1" />
-                              Xem
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onClick={handlePrint}
-                            >
-                              <Printer className="w-4 h-4 mr-1" />
-                              In lại
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </Card>
+                                ? "Thẻ"
+                                : "Tiền mặt"}
+                            </span>
+                          </td>
+                          <td className="text-right py-3 px-4 text-[#625EE8]">
+                            {invoice.total.toLocaleString()}đ
+                          </td>
+                          <td className="text-center py-3 px-4">
+                            <div className="flex gap-2 justify-center">
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => setViewInvoice(invoice)}
+                              >
+                                <Eye className="w-4 h-4 mr-1" />
+                                Xem
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={handlePrint}
+                              >
+                                <Printer className="w-4 h-4 mr-1" />
+                                In lại
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
           )}
         </TabsContent>
       </Tabs>

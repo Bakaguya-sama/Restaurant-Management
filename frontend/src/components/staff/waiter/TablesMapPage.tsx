@@ -459,17 +459,19 @@ export function TablesMapPage() {
                 </Button>
               )}
 
-              <Button
-                fullWidth
-                variant="secondary"
-                onClick={() => {
-                  setShowActionModal(false);
-                  setShowBrokenModal(true);
-                }}
-              >
-                <WrenchIcon className="w-4 h-4 mr-2" />
-                Báo hỏng
-              </Button>
+              {selectedTable.status !== "occupied" && (
+                <Button
+                  fullWidth
+                  variant="secondary"
+                  onClick={() => {
+                    setShowActionModal(false);
+                    setShowBrokenModal(true);
+                  }}
+                >
+                  <WrenchIcon className="w-4 h-4 mr-2" />
+                  Báo hỏng
+                </Button>
+              )}
             </div>
           </div>
         )}
