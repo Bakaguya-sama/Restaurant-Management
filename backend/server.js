@@ -5,6 +5,7 @@ const connectDB = require('./config/database');
 
 
 const inventoryRouter = require('./src/presentation_layer/routes/inventory.routes');
+const ingredientsRouter = require('./src/presentation_layer/routes/ingredients.routes');
 const suppliersRouter = require('./src/presentation_layer/routes/supplier.routes');
 const dishRouter = require('./src/presentation_layer/routes/dish.routes');
 const floorsRouter = require('./src/presentation_layer/routes/floors.routes');
@@ -56,6 +57,7 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use('/api/v1/inventory', inventoryRouter);
+app.use('/api/v1/ingredients', ingredientsRouter);
 app.use('/api/v1/suppliers', suppliersRouter);
 
 

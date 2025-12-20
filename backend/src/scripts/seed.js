@@ -551,14 +551,14 @@ async function seedDatabase() {
     // ==================== 15. DISHES ====================
     console.log('15/24 Tạo Dishes...');
     const dishes = await Dish.insertMany([
-      { name: 'Bò bít tết Úc', description: 'Bò Úc nướng chín vừa, kèm khoai tây chiên vàng, salad rau tươi và sốt tiêu đen', category: 'main_course', price: 350000, is_available: true, image_url: '/images/dishes/beef-steak.jpg' },
-      { name: 'Cá hồi nướng chanh bơ', description: 'Cá hồi Na Uy nướng lửa, kèm bơ tươi, chanh và rau thơm', category: 'main_course', price: 420000, is_available: true, image_url: '/images/dishes/salmon.jpg' },
-      { name: 'Tôm sú nướng bơ tỏi', description: 'Tôm sú to tươi, nướng bơ tỏi thơm phức, kèm bánh mì nướng', category: 'main_course', price: 280000, is_available: true, image_url: '/images/dishes/garlic-shrimp.jpg' },
-      { name: 'Salad rau xà lách tươi', description: 'Rau xà lách, cà chua, bơ tươi, sốt dầu giấm balsamic', category: 'appetizer', price: 85000, is_available: true, image_url: '/images/dishes/salad.jpg' },
-      { name: 'Gỏi tôm', description: 'Tôm sú, nước mắm chua cay vừa vặn, kèm rau sống', category: 'appetizer', price: 120000, is_available: true, image_url: '/images/dishes/shrimp-salad.jpg' },
-      { name: 'Tiramisu', description: 'Bánh Tiramisu truyền thống Ý, kem mịn mềm', category: 'dessert', price: 95000, is_available: true, image_url: '/images/dishes/tiramisu.jpg' },
-      { name: 'Coca Cola', description: 'Nước ngọt Coca Cola lạnh mát', category: 'beverage', price: 25000, is_available: true, image_url: '/images/dishes/cola.jpg' },
-      { name: 'Nước cam vắt tươi', description: 'Nước cam tươi vắt 100%, không đường', category: 'beverage', price: 35000, is_available: true, image_url: '/images/dishes/orange-juice.jpg' }
+      { name: 'Bò bít tết Úc', description: 'Bò Úc nướng chín vừa, kèm khoai tây chiên vàng, salad rau tươi và sốt tiêu đen', category: 'main_course', price: 350000, is_available: true, image_url: 'https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400' },
+      { name: 'Cá hồi nướng chanh bơ', description: 'Cá hồi Na Uy nướng lửa, kèm bơ tươi, chanh và rau thơm', category: 'main_course', price: 420000, is_available: true, image_url: 'https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400' },
+      { name: 'Tôm sú nướng bơ tỏi', description: 'Tôm sú to tươi, nướng bơ tỏi thơm phức, kèm bánh mì nướng', category: 'main_course', price: 280000, is_available: true, image_url: 'https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400' },
+      { name: 'Salad rau xà lách tươi', description: 'Rau xà lách, cà chua, bơ tươi, sốt dầu giấm balsamic', category: 'appetizer', price: 85000, is_available: true, image_url: 'https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400' },
+      { name: 'Gỏi tôm', description: 'Tôm sú, nước mắm chua cay vừa vặn, kèm rau sống', category: 'appetizer', price: 120000, is_available: true, image_url: 'https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400' },
+      { name: 'Tiramisu', description: 'Bánh Tiramisu truyền thống Ý, kem mịn mềm', category: 'dessert', price: 95000, is_available: true, image_url: 'https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400' },
+      { name: 'Coca Cola', description: 'Nước ngọt Coca Cola lạnh mát', category: 'beverage', price: 25000, is_available: true, image_url: 'https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400' },
+      { name: 'Nước cam vắt tươi', description: 'Nước cam tươi vắt 100%, không đường', category: 'beverage', price: 35000, is_available: true, image_url: 'https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400' }
     ]);
     console.log(`   OK ${dishes.length} dishes\n`);
 

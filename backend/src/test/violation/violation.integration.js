@@ -11,7 +11,18 @@ describe('Violation Integration Tests', () => {
   beforeAll(async () => {
     await connectDB();
 
-    const customer = await Customer.findOne();
+    // Create test customer if doesn't exist
+    let customer = await Customer.findOne();
+    if (!customer) {
+      customer = await Customer.create({
+        full_name: `Test Customer ${Date.now()}`,
+        email: `customer${Date.now()}@test.com`,
+        phone: `0${Math.floor(Math.random() * 900000000) + 100000000}`,
+        password_hash: 'hashed_password',
+        membership_level: 'silver',
+        points: 0
+      });
+    }
     testCustomerId = customer._id;
   });
 

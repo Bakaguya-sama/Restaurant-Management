@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Plus, Minus, Utensils, X } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Card } from "../../ui/Card";
@@ -6,7 +6,7 @@ import { Modal } from "../../ui/Modal";
 import { Badge } from "../../ui/badge";
 import { useOrderingDishes } from "../../../hooks/useOrderingDishes";
 import { useTables } from "../../../hooks/useTables";
-import { MenuItem } from "../../../types";
+import { Dish } from "../../../types";
 import { toast } from "sonner";
 import { ConfirmationModal } from "../../ui/ConfirmationModal";
 import { RiTakeawayLine } from "react-icons/ri";
@@ -14,7 +14,7 @@ import { createOrder, generateOrderNumber } from "../../../lib/orderApi";
 import { MOCK_STAFF_ID } from "../../../lib/orderingConstants";
 
 interface OrderItem {
-  item: MenuItem;
+  item: Dish;
   quantity: number;
   notes: string;
   status: "pending" | "cooking" | "served";
@@ -56,7 +56,7 @@ export function OrderingPage() {
   const { items: filteredItems } = useOrderingDishes(selectedCategory);
   
   // Fetch tables from API - only show occupied tables
-  const { tables, isLoading: isLoadingTables, error: tablesError } = useTables("occupied");
+  const { tables, loading: isLoadingTables, error: tablesError } = useTables();
 
   const categories = ["all", "Khai vị", "Món chính", "Đồ uống"];
   const quickNotes = ["Ít đá", "Không cay", "Không hành", "Ít dầu", "Thêm rau"];
@@ -72,7 +72,7 @@ export function OrderingPage() {
 
   const [addingItem, setAddingItem] = useState<string | null>(null);
 
-  const handleAddToOrder = async (item: MenuItem) => {
+  const handleAddToOrder = async (item: Dish) => {
     // Prevent spam clicking
     if (addingItem === item.id) {
       return;

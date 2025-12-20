@@ -1,46 +1,95 @@
-import { useState, useEffect } from "react";
-import { fetchTables, TableDTO } from "../lib/orderingPageApi";
+import { useState, useCallback, useEffect } from 'react';
+import { Table, TableStatus } from '../types';
+import { tableApi, TableData } from '../lib/tableApi';
 
-interface UseTablesResult {
-  tables: TableDTO[];
-  isLoading: boolean;
-  error: string | null;
-  refetch: () => Promise<void>;
-}
-
-/**
- * Hook to fetch tables from API
- * @param status - Optional status filter
- */
-export function useTables(
-  status?: "available" | "occupied" | "reserved" | "maintenance"
-): UseTablesResult {
-  const [tables, setTables] = useState<TableDTO[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+// Hook for managing tables state and operations
+export function useTables() {
+  const [tables, setTables] = useState<Table[]>([]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchTables = useCallback(async () => {
     try {
-      setIsLoading(true);
+      setLoading(true);
       setError(null);
-      const data = await fetchTables(status);
-      setTables(data);
-    } catch (err: any) {
-      console.error("Error fetching tables:", err);
-      setError(err.message || "Failed to fetch tables");
+      const response = await tableApi.getAll();
+      setTables(response.data);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to fetch tables';
+      setError(message);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
+    }
+  }, []);
+
+  
+  useEffect(() => {
+    fetchTables();
+  }, [fetchTables]);
+
+  const createTable = async (data: TableData) => {
+    try {
+      setError(null);
+      const response = await tableApi.create(data);
+      const newTable = response.data;
+      setTables([...tables, newTable]);
+      return newTable;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create table';
+      setError(message);
+      throw err;
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [status]);
+  const updateTable = async (id: string, data: Partial<TableData>) => {
+    try {
+      setError(null);
+      const response = await tableApi.update(id, data);
+      const updated = response.data;
+      setTables(tables.map(t => t.id === id ? updated : t));
+      return updated;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to update table';
+      setError(message);
+      throw err;
+    }
+  };
+
+  const updateTableStatus = async (id: string, status: TableStatus, brokenReason?: string) => {
+    try {
+      setError(null);
+      const response = await tableApi.updateStatus(id, status, brokenReason);
+      const updated = response.data;
+      setTables(tables.map(t => t.id === id ? updated : t));
+      return updated;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to update table status';
+      setError(message);
+      throw err;
+    }
+  };
+
+  const deleteTable = async (id: string) => {
+    try {
+      setError(null);
+      await tableApi.delete(id);
+      setTables(tables.filter(t => t.id !== id));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to delete table';
+      setError(message);
+      throw err;
+    }
+  };
 
   return {
     tables,
-    isLoading,
+    setTables,
+    loading,
     error,
-    refetch: fetchData,
+    fetchTables,
+    createTable,
+    updateTable,
+    updateTableStatus,
+    deleteTable,
   };
 }

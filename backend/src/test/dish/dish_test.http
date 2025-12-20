@@ -174,7 +174,7 @@ Content-Type: application/json
 }
 
 
-### PATCH /dishes/{id}/availability - Make unavailable
+### PATCH /dishes/{id}/availability - Make unavailable with reason
 PATCH {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d1/availability
 Content-Type: application/json
 
@@ -193,7 +193,7 @@ Content-Type: application/json
 }
 
 
-### PATCH /dishes/{id}/availability - FAIL - Missing reason
+### PATCH /dishes/{id}/availability - SUCCESS - Make unavailable without reason
 PATCH {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d1/availability
 Content-Type: application/json
 
@@ -354,6 +354,30 @@ DELETE {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d2/ingredients/00000000000000000
 
 
 ### GET /dishes/{id}/ingredients - Verify ingredient removed
+GET {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d2/ingredients
+
+
+### POST /dishes/{id}/ingredients/bulk/replace - Bulk replace ingredients
+POST {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d2/ingredients/bulk/replace
+Content-Type: application/json
+
+{
+  "ingredients": [
+    {
+      "ingredient_id": "693e93aed977b610436eb292",
+      "quantity_required": 300,
+      "unit": "g"
+    },
+    {
+      "ingredient_id": "693e93aed977b610436eb293",
+      "quantity_required": 150,
+      "unit": "ml"
+    }
+  ]
+}
+
+
+### GET /dishes/{id}/ingredients - Verify bulk replace
 GET {{baseUrl}}/dishes/674da30bb19ecab3d0c9f0d2/ingredients
 
 

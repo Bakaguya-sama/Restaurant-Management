@@ -22,46 +22,77 @@ export type TableStatus = "free" | "occupied" | "reserved" | "dirty" | "broken";
 
 export interface Table {
   id: string;
-  number: string;
-  area: string;
-  seats: number;
+  table_number: string;
+  location_id: string;
+  capacity: number;
   status: TableStatus;
   floor?: string;
   brokenReason?: string;
+  created_at?: string;
 }
 
 // Location/Area Management Types
 export interface Location {
   id: string;
   name: string;
-  floor: string;
+  floor_id: string;
   description?: string;
-  capacity?: number; // Total capacity for this location
+  //capacity?: number; // Total capacity for this location
   createdAt?: string;
 }
 
 export interface Floor {
   id: string;
-  name: string;
-  level: number;
+  floor_name: string;
+  floor_number: number;
   description?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // Menu Types
-export interface MenuItem {
+export interface Dish {
   id: string;
   name: string;
   category: string;
   price: number;
   description?: string;
-  image?: string;
-  available: boolean;
-  ingredients?: string[];
+  image_url?: string;
+  is_available: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  manual_unavailable_reason?: string;
+  manual_unavailable_at?: string;
+  manual_unavailable_by?: string;
+}
+
+export interface Ingredient {
+  id: string;
+  name: string;
+  unit: string;
+  quantity_in_stock: number;
+  minimum_quantity: number;
+  unit_price: number;
+  supplier_name: string;
+  supplier_contact: string;
+  expiry_date?: string;
+  stock_status: string;
+  expiry_status: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface DishIngredient {
+  id: string;
+  dish_id: string;
+  ingredient_id: string;
+  quantity_required: string;
+  unit: string;
 }
 
 export interface OrderItem {
   id: string;
-  menuItem: MenuItem;
+  dish_id: string;
   quantity: number;
   notes?: string;
   status: "pending" | "cooking" | "served";
