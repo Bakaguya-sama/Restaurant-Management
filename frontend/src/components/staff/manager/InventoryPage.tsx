@@ -21,14 +21,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../ui/select";
-import { mockInventory, mockSuppliers } from "../../../lib/mockData";
-import { Ingredient, Supplier } from "../../../types";
+import { InventoryItem, Supplier } from "../../../types";
 import { toast } from "sonner";
 import { ConfirmationModal } from "../../ui/ConfirmationModal";
+import { useInventory, useSuppliers } from "../../../hooks/useInventory";
+import {
+  importInventoryItems,
+  exportInventoryItems,
+  createSupplier,
+  updateSupplier,
+  deleteSupplier,
+} from "../../../lib/inventoryPageApi";
 
 export function InventoryPage() {
-  const [inventory, setInventory] = useState<Ingredient[]>(mockInventory);
-  const [suppliers, setSuppliers] = useState<Supplier[]>(mockSuppliers);
+  // Fetch data from API
+  const {
+    items: inventory,
+    loading: inventoryLoading,
+    error: inventoryError,
+    refresh: refreshInventory,
+  } = useInventory();
+  const {
+    suppliers,
+    loading: suppliersLoading,
+    error: suppliersError,
+    refresh: refreshSuppliers,
+  } = useSuppliers();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showImportModal, setShowImportModal] = useState(false);
@@ -139,88 +158,58 @@ export function InventoryPage() {
     setImportItems(newItems);
   };
 
-  const handleImport = () => {
+  const handleImport = async () => {
     if (!selectedSupplier) {
       toast.error("Vui lòng chọn nhà cung cấp");
       return;
     }
 
-    const validItems = importItems.filter(
-      (item) =>
-        item.quantity > 0 &&
-        (item.type === "existing" ? item.existingItemId : item.itemName)
-    );
+    // Filter valid items - check for both new and existing types
+    const validItems = importItems.filter((item) => {
+      if (item.quantity <= 0) return false;
+      if (item.type === "existing") return !!item.existingItemId;
+      if (item.type === "new") return !!item.itemName && !!item.unit;
+      return false;
+    });
+    
     if (validItems.length === 0) {
-      toast.error("Vui lòng nhập ít nhất một nguyên liệu");
+      toast.error("Vui lòng nhập đầy đủ thông tin nguyên liệu và số lượng");
       return;
     }
 
-    let updatedInventory = [...inventory];
-    let addedCount = 0;
-    let updatedCount = 0;
-
-    validItems.forEach((importItem) => {
-      if (importItem.type === "existing" && importItem.existingItemId) {
-        // Nhập tiếp nguyên liệu cũ: chỉ cộng thêm số lượng
-        const existingItemIndex = updatedInventory.findIndex(
-          (item) => item.id === importItem.existingItemId
-        );
-        if (existingItemIndex !== -1) {
-          updatedInventory[existingItemIndex] = {
-            ...updatedInventory[existingItemIndex],
-            quantity:
-              updatedInventory[existingItemIndex].quantity +
-              importItem.quantity,
-            lastUpdated: new Date().toISOString().split("T")[0],
+    try {
+      // Map to API format
+      const items = validItems.map((importItem) => {
+        if (importItem.type === "existing") {
+          return {
+            itemId: importItem.existingItemId!,
+            quantity: importItem.quantity,
+            supplierId: selectedSupplier,
+            expiryDate: importItem.expiryDate || new Date().toISOString().split('T')[0],
           };
-          updatedCount++;
+        } else {
+          // New ingredient
+          return {
+            name: importItem.itemName,
+            unit: importItem.unit,
+            unitPrice: importItem.price,
+            quantity: importItem.quantity,
+            supplierId: selectedSupplier,
+            expiryDate: importItem.expiryDate || new Date().toISOString().split('T')[0],
+          };
         }
-      } else if (importItem.type === "new" && importItem.itemName) {
-        // Nhập mới: kiểm tra trùng tên
-        const isDuplicate = updatedInventory.some(
-          (item) =>
-            item.name.toLowerCase() === importItem.itemName.toLowerCase()
-        );
-        if (isDuplicate) {
-          toast.error(
-            `Nguyên liệu "${importItem.itemName}" đã tồn tại. Vui lòng chọn "Nhập tiếp" nếu muốn cộng thêm số lượng.`
-          );
-          return;
-        }
+      });
 
-        // Thêm nguyên liệu mới
-        const newItem: Ingredient = {
-          id: `INV${String(updatedInventory.length + 1).padStart(3, "0")}`,
-          name: importItem.itemName,
-          quantity_in_stock: importItem.quantity,
-          unit: importItem.unit,
-          minimum_quantity: 0,
-          unit_price: 0,
-          supplier_name: selectedSupplier,
-          supplier_contact: "",
-          stock_status: "available",
-          expiry_status: "valid",
-          expiry_date: importItem.expiryDate || undefined,
-        };
-        updatedInventory.push(newItem);
-        addedCount++;
-      }
-    });
+      await importInventoryItems({
+        items,
+      });
 
-    setInventory(updatedInventory);
-
-    // Thông báo kết quả
-    if (addedCount > 0 && updatedCount > 0) {
-      toast.success(
-        `Đã nhập kho: ${addedCount} nguyên liệu mới, ${updatedCount} nguyên liệu cập nhật số lượng`
-      );
-    } else if (addedCount > 0) {
-      toast.success(`Đã thêm ${addedCount} nguyên liệu mới vào kho`);
-    } else if (updatedCount > 0) {
-      toast.success(`Đã cập nhật số lượng cho ${updatedCount} nguyên liệu`);
+      toast.success("Đã nhập kho thành công!");
+      await refreshInventory();
+      setShowImportModal(false);
+    } catch (error: any) {
+      toast.error(error.message || "Không thể nhập kho");
     }
-
-    setShowImportModal(false);
     setImportItems([
       {
         type: "new",
@@ -235,8 +224,8 @@ export function InventoryPage() {
     setSelectedSupplier("");
   };
 
-  const handleDispose = () => {
-    const item = inventory.find((i) => i.id === disposeData.itemId);
+  const handleDispose = async () => {
+    const item = inventory.find((i) => i.ingredientId === disposeData.itemId);
     if (!item) {
       toast.error("Vui lòng chọn nguyên liệu");
       return;
@@ -247,27 +236,35 @@ export function InventoryPage() {
       return;
     }
 
-    const updatedInventory = inventory.map((i) =>
-      i.id === disposeData.itemId
-        ? { ...i, quantity: i.quantity - disposeData.quantity }
-        : i
-    );
-    setInventory(updatedInventory);
+    try {
+      await exportInventoryItems({
+        items: [
+          {
+            itemId: disposeData.itemId,
+            quantity: disposeData.quantity,
+            reason: disposeData.reason,
+          },
+        ],
+      });
 
-    const reasonText = {
-      expired: "hết hạn",
-      damaged: "hư hỏng",
-      returned: "trả hàng",
-    }[disposeData.reason];
+      const reasonText = {
+        expired: "hết hạn",
+        damaged: "hư hỏng",
+        returned: "trả hàng",
+      }[disposeData.reason];
 
-    toast.success(
-      `Đã xuất hủy ${disposeData.quantity} ${item.unit} ${item.name} (${reasonText})`
-    );
-    setShowDisposeModal(false);
-    setDisposeData({ itemId: "", quantity: 0, reason: "expired" });
+      toast.success(
+        `Đã xuất hủy ${disposeData.quantity} ${item.unit} ${item.name} (${reasonText})`
+      );
+      await refreshInventory();
+      setShowDisposeModal(false);
+      setDisposeData({ itemId: "", quantity: 0, reason: "expired" });
+    } catch (error: any) {
+      toast.error(error.message || "Không thể xuất hủy");
+    }
   };
 
-  const handleAddSupplier = () => {
+  const handleAddSupplier = async () => {
     if (!supplierForm.name.trim() || !supplierForm.phone.trim()) {
       toast.error("Vui lòng điền đầy đủ thông tin");
       return;
@@ -290,17 +287,20 @@ export function InventoryPage() {
       return;
     }
 
-    const newSupplier: Supplier = {
-      id: `SUP${String(suppliers.length + 1).padStart(3, "0")}`,
-      name: supplierForm.name.trim(),
-      phone: supplierForm.phone.trim(),
-      address: supplierForm.address.trim(),
-    };
+    try {
+      await createSupplier({
+        name: supplierForm.name.trim(),
+        phone: supplierForm.phone.trim(),
+        address: supplierForm.address.trim(),
+      });
 
-    setSuppliers([...suppliers, newSupplier]);
-    toast.success("Thêm nhà cung cấp thành công!");
-    setShowAddSupplierModal(false);
-    setSupplierForm({ name: "", phone: "", address: "" });
+      toast.success("Thêm nhà cung cấp thành công!");
+      await refreshSuppliers();
+      setShowAddSupplierModal(false);
+      setSupplierForm({ name: "", phone: "", address: "" });
+    } catch (error: any) {
+      toast.error(error.message || "Không thể thêm nhà cung cấp");
+    }
   };
 
   const handleEditSupplier = (supplier: Supplier) => {
@@ -313,7 +313,7 @@ export function InventoryPage() {
     setShowEditSupplierModal(true);
   };
 
-  const handleUpdateSupplier = () => {
+  const handleUpdateSupplier = async () => {
     if (
       !editingSupplier ||
       !supplierForm.name.trim() ||
@@ -341,22 +341,21 @@ export function InventoryPage() {
       return;
     }
 
-    const updatedSuppliers = suppliers.map((s) =>
-      s.id === editingSupplier.id
-        ? {
-            ...s,
-            name: supplierForm.name.trim(),
-            phone: supplierForm.phone.trim(),
-            address: supplierForm.address.trim(),
-          }
-        : s
-    );
+    try {
+      await updateSupplier(editingSupplier.id, {
+        name: supplierForm.name.trim(),
+        phone: supplierForm.phone.trim(),
+        address: supplierForm.address.trim(),
+      });
 
-    setSuppliers(updatedSuppliers);
-    toast.success("Cập nhật nhà cung cấp thành công!");
-    setShowEditSupplierModal(false);
-    setEditingSupplier(null);
-    setSupplierForm({ name: "", phone: "", address: "" });
+      toast.success("Cập nhật nhà cung cấp thành công!");
+      await refreshSuppliers();
+      setShowEditSupplierModal(false);
+      setEditingSupplier(null);
+      setSupplierForm({ name: "", phone: "", address: "" });
+    } catch (error: any) {
+      toast.error(error.message || "Không thể cập nhật nhà cung cấp");
+    }
   };
 
   const handleDeleteSupplier = (supplier: Supplier) => {
@@ -376,16 +375,18 @@ export function InventoryPage() {
     setShowDeleteSupplierModal(true);
   };
 
-  const confirmDeleteSupplier = () => {
+  const confirmDeleteSupplier = async () => {
     if (!editingSupplier) return;
 
-    const updatedSuppliers = suppliers.filter(
-      (s) => s.id !== editingSupplier.id
-    );
-    setSuppliers(updatedSuppliers);
-    toast.success("Đã xóa nhà cung cấp");
-    setShowDeleteSupplierModal(false);
-    setEditingSupplier(null);
+    try {
+      await deleteSupplier(editingSupplier.id);
+      toast.success("Đã xóa nhà cung cấp");
+      await refreshSuppliers();
+      setShowDeleteSupplierModal(false);
+      setEditingSupplier(null);
+    } catch (error: any) {
+      toast.error(error.message || "Không thể xóa nhà cung cấp");
+    }
   };
 
   return (
@@ -650,15 +651,22 @@ export function InventoryPage() {
             <label className="block mb-2">Nhà cung cấp</label>
             <select
               value={selectedSupplier}
-              onChange={(e) => setSelectedSupplier(e.target.value)}
+              onChange={(e) => {
+                console.log('Selected supplier ID:', e.target.value);
+                console.log('All suppliers:', suppliers);
+                setSelectedSupplier(e.target.value);
+              }}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg"
             >
               <option value="">Chọn nhà cung cấp</option>
-              {suppliers.map((supplier) => (
-                <option key={supplier.id} value={supplier.id}>
-                  {supplier.name}
-                </option>
-              ))}
+              {suppliers.map((supplier) => {
+                console.log('Supplier:', supplier);
+                return (
+                  <option key={supplier.id} value={supplier.id}>
+                    {supplier.name}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
@@ -729,7 +737,7 @@ export function InventoryPage() {
                         >
                           <option value="">Chọn nguyên liệu</option>
                           {inventory.map((invItem) => (
-                            <option key={invItem.id} value={invItem.id}>
+                            <option key={invItem.id} value={invItem.ingredientId}>
                               {invItem.name} (Tồn: {invItem.quantity}{" "}
                               {invItem.unit})
                             </option>
@@ -933,7 +941,7 @@ export function InventoryPage() {
             >
               <option value="">Chọn nguyên liệu</option>
               {inventory.map((item) => (
-                <option key={item.id} value={item.id}>
+                <option key={item.id} value={item.ingredientId}>
                   {item.name} (Tồn: {item.quantity} {item.unit})
                 </option>
               ))}

@@ -30,7 +30,9 @@ async function importItems(items) {
   if (!Array.isArray(items) || items.length === 0) throw { status: 400, message: 'items must be a non-empty array' };
 
   for (const it of items) {
-    if (!it.itemId) throw { status: 400, message: 'itemId is required for each item' };
+    // Either itemId (existing) or name (new) is required
+    if (!it.itemId && !it.name) throw { status: 400, message: 'itemId or name is required for each item' };
+    if (it.name && !it.unit) throw { status: 400, message: 'unit is required for new ingredients' };
     if (!it.quantity || typeof it.quantity !== 'number' || it.quantity <= 0) throw { status: 400, message: 'quantity must be > 0' };
     if (!it.supplierId) throw { status: 400, message: 'supplierId is required' };
     if (!it.expiryDate || isNaN(Date.parse(it.expiryDate))) throw { status: 400, message: 'expiryDate is required and must be a valid date' };

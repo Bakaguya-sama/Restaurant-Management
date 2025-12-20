@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { Table, TableStatus } from '../types';
 import { tableApi, TableData } from '../lib/tableApi';
 
+// Hook for managing tables state and operations
 export function useTables() {
   const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(false);

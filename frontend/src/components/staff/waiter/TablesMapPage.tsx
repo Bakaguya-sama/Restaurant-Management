@@ -20,7 +20,10 @@ import { useTables } from "../../../hooks/useTables";
 import { useLocations } from "../../../hooks/useLocations";
 
 export function TablesMapPage() {
-  const { tables, loading, error, setTables, updateTableStatus } = useTables();
+  const hookResult = useTables();
+  console.log('useTables hook result:', hookResult);
+  console.log('updateTableStatus type:', typeof hookResult.updateTableStatus);
+  const { tables, loading, error, setTables, updateTableStatus } = hookResult;
   const { locations } = useLocations();
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [showActionModal, setShowActionModal] = useState(false);
@@ -169,7 +172,9 @@ export function TablesMapPage() {
         `Đã tạo order cho bàn ${selectedTable.table_number} - Khách: ${customerInfo}`
       );
     } catch (err) {
-      toast.error("Lỗi khi cập nhật trạng thái bàn");
+      console.error("Error creating order:", err);
+      const errorMsg = err instanceof Error ? err.message : "Lỗi khi cập nhật trạng thái bàn";
+      toast.error(`Lỗi: ${errorMsg}`);
       return;
     }
 
@@ -202,7 +207,9 @@ export function TablesMapPage() {
       await updateTableStatus(selectedTable.id, "occupied");
       toast.success(`Đã check-in khách cho bàn ${selectedTable.table_number}`);
     } catch (err) {
-      toast.error("Lỗi khi cập nhật trạng thái bàn");
+      console.error("Error checking in:", err);
+      const errorMsg = err instanceof Error ? err.message : "Lỗi khi cập nhật trạng thái bàn";
+      toast.error(`Lỗi: ${errorMsg}`);
       return;
     }
 
@@ -227,7 +234,9 @@ export function TablesMapPage() {
       await updateTableStatus(selectedTable.id, "free");
       toast.success(`Đã dọn xong bàn ${selectedTable.table_number}`);
     } catch (err) {
-      toast.error("Lỗi khi cập nhật trạng thái bàn");
+      console.error("Error cleaning table:", err);
+      const errorMsg = err instanceof Error ? err.message : "Lỗi khi cập nhật trạng thái bàn";
+      toast.error(`Lỗi: ${errorMsg}`);
       return;
     }
 
@@ -248,7 +257,9 @@ export function TablesMapPage() {
       await updateTableStatus(selectedTable.id, "dirty");
       toast.success(`Đã giải phóng bàn ${selectedTable.table_number}`);
     } catch (err) {
-      toast.error("Lỗi khi cập nhật trạng thái bàn");
+      console.error("Error checking out table:", err);
+      const errorMsg = err instanceof Error ? err.message : "Lỗi khi cập nhật trạng thái bàn";
+      toast.error(`Lỗi: ${errorMsg}`);
       return;
     }
 
@@ -269,7 +280,9 @@ export function TablesMapPage() {
       await updateTableStatus(selectedTable.id, "broken", brokenReason);
       toast.success(`Đã báo hỏng bàn ${selectedTable.table_number}`);
     } catch (err) {
-      toast.error("Lỗi khi cập nhật trạng thái bàn");
+      console.error("Error marking table as broken:", err);
+      const errorMsg = err instanceof Error ? err.message : "Lỗi khi cập nhật trạng thái bàn";
+      toast.error(`Lỗi: ${errorMsg}`);
       return;
     }
 

@@ -57,7 +57,7 @@ class OrderController {
 
   async createOrder(req, res) {
     try {
-      const { order_number, order_type, order_time, table_id, customer_id, staff_id, notes } = req.body;
+      const { order_number, order_type, order_time, table_id, customer_id, staff_id, notes, orderItems } = req.body;
 
       if (!order_number || !order_type || !order_time) {
         return res.status(400).json({
@@ -78,7 +78,8 @@ class OrderController {
         notes,
         table_id,
         customer_id,
-        staff_id
+        staff_id,
+        orderItems // Pass orderItems to service for inventory validation
       };
 
       const order = await this.orderService.createOrder(orderData);
@@ -90,6 +91,17 @@ class OrderController {
         message: 'Order created successfully'
       });
     } catch (error) {
+      // Handle INSUFFICIENT_INVENTORY error
+      if (error.status === 400 && error.message === 'INSUFFICIENT_INVENTORY') {
+        return res.status(400).json({
+          success: false,
+          data: null,
+          message: error.message,
+          details: error.details,
+          insufficientItems: error.insufficientItems
+        });
+      }
+
       const statusCode = error.message.includes('already exists') ? 409 : 400;
       res.status(statusCode).json({
         success: false,
