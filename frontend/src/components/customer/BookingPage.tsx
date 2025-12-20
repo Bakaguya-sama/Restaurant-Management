@@ -35,7 +35,7 @@ export function BookingPage() {
   const currentCustomer = mockCustomers.find(
     (c) => c.phone === userProfile?.phone || c.email === userProfile?.email
   );
-  const isBlacklisted = currentCustomer?.isBlacklisted || false;
+  const isBlacklisted = currentCustomer?.isBanned || false;
 
   const availableTables = mockTables.filter(
     (t) =>

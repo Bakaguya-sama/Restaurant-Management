@@ -43,9 +43,6 @@ const StaffModelCashier = UserModel.discriminator('cashier', StaffSchema);
 const StaffModelManager = UserModel.discriminator('manager', StaffSchema);
 const CustomerModel = UserModel.discriminator('customer', CustomerSchema);
 
-// Legacy Staff and Customer models for backward compatibility (point to User)
-// These collections will now use the 'users' collection with role discrimination
-
 
 // ==================== TABLE ====================
 const FloorSchema = new Schema({
@@ -232,6 +229,7 @@ const OrderSchema = new Schema({
   order_type: { type: String, default: false },
   order_date: { type: Date, default: Date.now },
   order_time: { type: String, required: true },
+  customer_id: { type: Schema.Types.ObjectId, ref: 'User'},
   status: { 
     type: String, 
     enum: ['pending', 'preparing', 'ready', 'served', 'completed', 'cancelled'], 
@@ -249,11 +247,9 @@ const OrderSchema = new Schema({
 
 const DineInByCustomer = OrderSchema.discriminator('dine-in-customer', new Schema({
   table_id: { type: Schema.Types.ObjectId, ref: 'Table', required: true },
-  customer_id: { type: Schema.Types.ObjectId, ref: 'User'}
 }));
 
 const TakeawayByCustomer = OrderSchema.discriminator('takeaway-customer', new Schema({
-  customer_id: { type: Schema.Types.ObjectId, ref: 'User'}
 }));
 
 const DineInByWaiter = OrderSchema.discriminator('dine-in-waiter', new Schema({
@@ -273,7 +269,7 @@ const OrderDetailSchema = new Schema({
   unit_price: { type: Number, required: true },
   line_total: { type: Number, required: true },
   special_instructions: String, 
-  status: { type: String, enum: ['pending', 'preparing', 'ready', 'served'], default: 'pending' }
+  status: { type: String, enum: ['pending', 'preparing', 'ready', 'served', 'cancelled'], default: 'pending' }
 });
 
 // ==================== PROMOTION ====================

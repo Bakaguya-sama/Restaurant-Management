@@ -130,6 +130,48 @@ class OrderDetailController {
       });
     }
   }
+
+  async updateOrderDetailStatus(req, res) {
+    try {
+      const { status } = req.body;
+
+      if (!status) {
+        return res.status(400).json({
+          success: false,
+          data: null,
+          message: 'status is required'
+        });
+      }
+
+      const validStatuses = ['pending', 'preparing', 'ready', 'served', 'cancelled'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({
+          success: false,
+          data: null,
+          message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`
+        });
+      }
+
+      const detail = await this.orderDetailService.updateOrderItem(
+        req.params.orderId,
+        req.params.detailId,
+        { status }
+      );
+
+      res.json({
+        success: true,
+        data: detail,
+        message: 'Order detail status updated successfully'
+      });
+    } catch (error) {
+      const statusCode = error.message.includes('not found') ? 404 : 400;
+      res.status(statusCode).json({
+        success: false,
+        data: null,
+        message: error.message
+      });
+    }
+  }
 }
 
 module.exports = OrderDetailController;
