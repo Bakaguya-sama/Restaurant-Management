@@ -2,7 +2,7 @@ const request = require('supertest');
 const app = require('../../../server');
 const connectDB = require('../../../config/database');
 const mongoose = require('mongoose');
-const { RatingReply, Rating, Staff, Customer } = require('../../models');
+const { RatingReply, Rating, User, StaffWaiter, Customer } = require('../../models');
 
 describe('Rating Reply Integration Tests', () => {
   let createdReplyId;
@@ -12,13 +12,16 @@ describe('Rating Reply Integration Tests', () => {
   beforeAll(async () => {
     await connectDB();
 
-    let customer = await Customer.findOne();
+    let customer = await Customer.findOne({ role: 'customer' });
     if (!customer) {
       customer = await Customer.create({
         full_name: 'Test Customer',
         email: `testcustomer${Date.now()}@test.com`,
         phone: '0900000001',
         password_hash: 'hashedpassword',
+        role: 'customer',
+        username: `testcust${Date.now()}`,
+        is_active: true,
         membership_level: 'silver'
       });
     }
@@ -33,16 +36,16 @@ describe('Rating Reply Integration Tests', () => {
     }
     testRatingId = rating._id;
 
-    let staff = await Staff.findOne();
+    let staff = await StaffWaiter.findOne({ role: 'waiter' });
     if (!staff) {
-      staff = await Staff.create({
+      staff = await StaffWaiter.create({
         full_name: 'Test Staff',
         username: `teststaff${Date.now()}`,
         email: `teststaff${Date.now()}@test.com`,
         phone: '0900000002',
         password_hash: 'hashedpassword',
         role: 'waiter',
-        status: 'active'
+        is_active: true
       });
     }
     testStaffId = staff._id;

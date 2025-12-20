@@ -2,7 +2,7 @@ const request = require('supertest');
 const app = require('../../../server');
 const connectDB = require('../../../config/database');
 const mongoose = require('mongoose');
-const { Complaint, Customer, Staff } = require('../../models');
+const { Complaint, Customer, User, StaffWaiter } = require('../../models');
 
 describe('Complaint Integration Tests', () => {
   let createdComplaintId;
@@ -13,13 +13,16 @@ describe('Complaint Integration Tests', () => {
     await connectDB();
 
     // Create test customer if doesn't exist
-    let customer = await Customer.findOne();
+    let customer = await Customer.findOne({ role: 'customer' });
     if (!customer) {
       customer = await Customer.create({
         full_name: `Test Customer ${Date.now()}`,
         email: `customer${Date.now()}@test.com`,
         phone: `0${Math.floor(Math.random() * 900000000) + 100000000}`,
         password_hash: 'hashed_password',
+        role: 'customer',
+        username: `testcust${Date.now()}`,
+        is_active: true,
         membership_level: 'silver',
         points: 0
       });
@@ -27,9 +30,9 @@ describe('Complaint Integration Tests', () => {
     testCustomerId = customer._id;
 
     // Create test staff if doesn't exist
-    let staff = await Staff.findOne();
+    let staff = await StaffWaiter.findOne({ role: 'waiter' });
     if (!staff) {
-      staff = await Staff.create({
+      staff = await StaffWaiter.create({
         full_name: `Test Staff ${Date.now()}`,
         phone: `0${Math.floor(Math.random() * 900000000) + 100000000}`,
         email: `staff${Date.now()}@test.com`,

@@ -18,6 +18,7 @@ import { Table, TableStatus, Customer } from "../../../types";
 import { toast } from "sonner";
 import { useTables } from "../../../hooks/useTables";
 import { useLocations } from "../../../hooks/useLocations";
+import { createOrder } from "../../../lib/orderingPageApi";
 
 export function TablesMapPage() {
   const hookResult = useTables();
@@ -33,7 +34,7 @@ export function TablesMapPage() {
   const [bookingCode, setBookingCode] = useState("");
   const [brokenReason, setBrokenReason] = useState("");
 
-  // Customer info states
+  
   const [customerType, setCustomerType] = useState<"member" | "walk-in">(
     "member"
   );
@@ -99,10 +100,8 @@ export function TablesMapPage() {
 
     setIsSearching(true);
 
-    // TODO: Replace with actual API call
-    // Simulate API call
+    
     setTimeout(() => {
-      // Mock customer data - replace with actual API call
       const mockCustomer: Customer = {
         id: "C001",
         name: "Nguyễn Văn A",
@@ -114,7 +113,6 @@ export function TablesMapPage() {
         isBlacklisted: false,
       };
 
-      // Check if customer exists
       if (customerPhone === "0123456789") {
         setFoundCustomer(mockCustomer);
         setCustomerName(mockCustomer.name);
@@ -136,7 +134,6 @@ export function TablesMapPage() {
       return;
     }
 
-    // Show customer info modal first
     setShowActionModal(false);
     setShowCustomerModal(true);
   };
@@ -144,7 +141,6 @@ export function TablesMapPage() {
   const handleConfirmCustomerAndCreateOrder = async () => {
     if (!selectedTable) return;
 
-    // Validate customer info
     if (customerType === "member") {
       if (!foundCustomer) {
         toast.error("Vui lòng tìm kiếm thông tin khách hàng thành viên");
@@ -157,8 +153,19 @@ export function TablesMapPage() {
       }
     }
 
-    // Update table status to occupied via API
     try {
+      const orderData = {
+        order_number: `ORD-${Date.now()}`,
+        order_type: "dine-in-waiter" as const,
+        order_time: new Date().toISOString(),
+        table_id: selectedTable.id,
+        customer_id: customerType === "member" ? foundCustomer?.id : undefined,
+        status: "pending" as const,
+      };
+
+      const createdOrder = await createOrder(orderData);
+      console.log("Order created:", createdOrder);
+
       await updateTableStatus(selectedTable.id, "occupied");
 
       const customerInfo =
@@ -173,12 +180,11 @@ export function TablesMapPage() {
       );
     } catch (err) {
       console.error("Error creating order:", err);
-      const errorMsg = err instanceof Error ? err.message : "Lỗi khi cập nhật trạng thái bàn";
+      const errorMsg = err instanceof Error ? err.message : "Lỗi khi tạo order";
       toast.error(`Lỗi: ${errorMsg}`);
       return;
     }
 
-    // Reset states
     setShowCustomerModal(false);
     setSelectedTable(null);
     setCustomerType("member");
@@ -186,7 +192,6 @@ export function TablesMapPage() {
     setCustomerName("");
     setFoundCustomer(null);
 
-    // TODO: Navigate to OrderingPage with customer info and table
   };
 
   const handleCheckIn = async () => {
@@ -195,14 +200,12 @@ export function TablesMapPage() {
       return;
     }
 
-    // Find booking
     const booking = mockBookings.find((b) => b.id === bookingCode);
     if (!booking) {
       toast.error("Không tìm thấy mã đặt bàn");
       return;
     }
 
-    // Update table status via API
     try {
       await updateTableStatus(selectedTable.id, "occupied");
       toast.success(`Đã check-in khách cho bàn ${selectedTable.table_number}`);
@@ -218,7 +221,6 @@ export function TablesMapPage() {
     setSelectedTable(null);
     setBookingCode("");
 
-    //TODO: Call api cập nhật phiếu đặt bàn của khách
   };
 
   const handleCleanTable = async () => {
@@ -229,7 +231,6 @@ export function TablesMapPage() {
       return;
     }
 
-    // Update table status via API
     try {
       await updateTableStatus(selectedTable.id, "free");
       toast.success(`Đã dọn xong bàn ${selectedTable.table_number}`);
@@ -252,7 +253,7 @@ export function TablesMapPage() {
       return;
     }
 
-    // Update table status via API
+    
     try {
       await updateTableStatus(selectedTable.id, "dirty");
       toast.success(`Đã giải phóng bàn ${selectedTable.table_number}`);
@@ -266,7 +267,7 @@ export function TablesMapPage() {
     setShowActionModal(false);
     setSelectedTable(null);
 
-    //TODO: Call api để cập nhật trạng thái bàn, hóa đơn của khách
+    
   };
 
   const handleMarkBroken = async () => {
@@ -275,7 +276,7 @@ export function TablesMapPage() {
       return;
     }
 
-    // Update table status via API
+    
     try {
       await updateTableStatus(selectedTable.id, "broken", brokenReason);
       toast.success(`Đã báo hỏng bàn ${selectedTable.table_number}`);
@@ -292,7 +293,7 @@ export function TablesMapPage() {
     setBrokenReason("");
   };
 
-  // Group tables by area
+  
   const tablesByArea = tables.reduce((acc, table) => {
     if (!acc[table.location_id]) {
       acc[table.location_id] = [];

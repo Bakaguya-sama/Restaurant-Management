@@ -1,6 +1,6 @@
 const RatingRepository = require('../../infrastructure_layer/rating/rating.repository');
 const RatingEntity = require('../../domain_layer/rating/rating.entity');
-const { Customer, Staff } = require('../../models');
+const { User } = require('../../models');
 
 class RatingService {
   constructor() {
@@ -23,8 +23,8 @@ class RatingService {
       throw new Error(validation.errors.join(', '));
     }
 
-    const customer = await Customer.findById(data.customer_id);
-    if (!customer) {
+    const customer = await User.findById(data.customer_id);
+    if (!customer || customer.role !== 'customer') {
       throw new Error('Customer not found');
     }
 
@@ -59,8 +59,8 @@ class RatingService {
   async createRatingReply(ratingId, staffId, replyText) {
     await this.ratingRepository.findById(ratingId);
 
-    const staff = await Staff.findById(staffId);
-    if (!staff) {
+    const staff = await User.findById(staffId);
+    if (!staff || !['waiter', 'cashier', 'manager'].includes(staff.role)) {
       throw new Error('Staff not found');
     }
 

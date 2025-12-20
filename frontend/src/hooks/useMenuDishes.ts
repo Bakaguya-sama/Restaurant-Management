@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MenuItem } from "../types";
+import { Dish } from "../types";
 import {
   fetchDishes,
   GetDishesParams,
@@ -26,7 +26,7 @@ export function useMenuDishes(
   selectedCategory: string,
   debounceMs: number = 300
 ) {
-  const [items, setItems] = useState<MenuItem[]>([]);
+  const [items, setItems] = useState<Dish[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

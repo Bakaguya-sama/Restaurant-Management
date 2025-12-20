@@ -1,7 +1,7 @@
 const request = require('supertest');
 const app = require('../../../server');
 const connectDB = require('../../../config/database');
-const { Customer } = require('../../models');
+const { User, Customer } = require('../../models');
 const mongoose = require('mongoose');
 
 describe('Customer Integration Tests', () => {
@@ -14,7 +14,7 @@ describe('Customer Integration Tests', () => {
 
   afterAll(async () => {
     if (createdCustomerId) {
-      await Customer.findByIdAndDelete(createdCustomerId);
+      await User.findByIdAndDelete(createdCustomerId);
     }
     await mongoose.connection.close();
   });
@@ -27,6 +27,7 @@ describe('Customer Integration Tests', () => {
         phone: '0123456789',
         address: '456 Customer Street',
         date_of_birth: '1998-08-20',
+        username: `testcust${Date.now()}`,
         password: 'password123'
       };
 
@@ -47,10 +48,12 @@ describe('Customer Integration Tests', () => {
 
     it('should fail when creating customer with duplicate email', async () => {
       // First, create the customer to ensure the email exists
+      const uniqueEmail = `duplicate.test.${Date.now()}@example.com`;
       const firstCustomer = {
         full_name: 'First Customer',
-        email: 'duplicate.test@example.com',
+        email: uniqueEmail,
         phone: '0987654321',
+        username: `first${Date.now()}`,
         password: 'password123'
       };
 
@@ -62,8 +65,9 @@ describe('Customer Integration Tests', () => {
       // Then try to create another customer with the same email
       const duplicateCustomer = {
         full_name: 'Duplicate Customer',
-        email: 'duplicate.test@example.com',
+        email: uniqueEmail,
         phone: '0987654322',
+        username: `dup${Date.now()}`,
         password: 'password456'
       };
 

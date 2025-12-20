@@ -1,6 +1,6 @@
 const ViolationRepository = require('../../infrastructure_layer/violation/violation.repository');
 const ViolationEntity = require('../../domain_layer/violation/violation.entity');
-const { Customer } = require('../../models');
+const { User } = require('../../models');
 
 class ViolationService {
   constructor() {
@@ -16,8 +16,8 @@ class ViolationService {
   }
 
   async getViolationsByCustomerId(customerId) {
-    const customer = await Customer.findById(customerId);
-    if (!customer) {
+    const customer = await User.findById(customerId);
+    if (!customer || customer.role !== 'customer') {
       throw new Error('Customer not found');
     }
 
@@ -32,8 +32,8 @@ class ViolationService {
       throw new Error(validation.errors.join(', '));
     }
 
-    const customer = await Customer.findById(data.customer_id);
-    if (!customer) {
+    const customer = await User.findById(data.customer_id);
+    if (!customer || customer.role !== 'customer') {
       throw new Error('Customer not found');
     }
 

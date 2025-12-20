@@ -1,0 +1,151 @@
+### Customer API Tests
+### Base URL: http://localhost:5000/api/v1
+
+@baseUrl = http://localhost:5000/api/v1
+@contentType = application/json
+@timestamp = {{$timestamp}}
+
+###
+### 1. CREATE CUSTOMER
+###
+POST {{baseUrl}}/customers
+Content-Type: {{contentType}}
+
+{
+  "full_name": "John Doe",
+  "email": "john.doe@example.com",
+  "phone": "0912345678",
+  "address": "123 Main Street, City",
+  "date_of_birth": "1990-05-15",
+  "username": "johndoe_{{$timestamp}}",
+  "password": "SecurePassword123!"
+}
+
+###
+### 2. CREATE CUSTOMER WITH MINIMAL FIELDS
+###
+POST {{baseUrl}}/customers
+Content-Type: {{contentType}}
+
+{
+  "full_name": "Jane Smith",
+  "email": "jane.smith@example.com",
+  "phone": "0987654321",
+  "username": "janesmith_{{$timestamp}}",
+  "password": "SecurePassword456!"
+}
+
+###
+### 3. GET ALL CUSTOMERS
+###
+GET {{baseUrl}}/customers
+Content-Type: {{contentType}}
+
+###
+### 4. GET ALL CUSTOMERS WITH PAGINATION
+###
+GET {{baseUrl}}/customers?page=1&limit=10
+Content-Type: {{contentType}}
+
+###
+### 5. FILTER CUSTOMERS BY MEMBERSHIP LEVEL
+###
+GET {{baseUrl}}/customers?membership_level=silver
+Content-Type: {{contentType}}
+
+###
+### 6. SEARCH CUSTOMERS BY NAME
+###
+GET {{baseUrl}}/customers?search=john
+Content-Type: {{contentType}}
+
+###
+### 7. FILTER BY ACTIVE STATUS
+###
+GET {{baseUrl}}/customers?is_active=true
+Content-Type: {{contentType}}
+
+###
+### 8. GET CUSTOMER BY ID (Replace with actual customer ID)
+###
+GET {{baseUrl}}/customers/{{customerId}}
+Content-Type: {{contentType}}
+
+###
+### 9. UPDATE CUSTOMER (Replace with actual customer ID)
+###
+PUT {{baseUrl}}/customers/{{customerId}}
+Content-Type: {{contentType}}
+
+{
+  "full_name": "John Doe Updated",
+  "phone": "0912345679",
+  "address": "456 Main Street, New City",
+  "date_of_birth": "1990-05-15"
+}
+
+###
+### 10. ADD POINTS TO CUSTOMER (Replace with actual customer ID)
+###
+PATCH {{baseUrl}}/customers/{{customerId}}/points
+Content-Type: {{contentType}}
+
+{
+  "points": 100
+}
+
+###
+### 11. ADD SPENDING TO CUSTOMER (Replace with actual customer ID)
+###
+PATCH {{baseUrl}}/customers/{{customerId}}/spending
+Content-Type: {{contentType}}
+
+{
+  "amount": 500000
+}
+
+###
+### 12. BAN CUSTOMER (Replace with actual customer ID)
+###
+PATCH {{baseUrl}}/customers/{{customerId}}/ban
+Content-Type: {{contentType}}
+
+{
+  "reason": "Violation of terms and conditions"
+}
+
+###
+### 13. UNBAN CUSTOMER (Replace with actual customer ID)
+###
+PATCH {{baseUrl}}/customers/{{customerId}}/unban
+Content-Type: {{contentType}}
+
+###
+### 14. UPDATE CUSTOMER MEMBERSHIP LEVEL (Replace with actual customer ID)
+###
+PATCH {{baseUrl}}/customers/{{customerId}}/membership
+Content-Type: {{contentType}}
+
+{
+  "membership_level": "gold"
+}
+
+###
+### 15. GET CUSTOMER STATISTICS
+###
+GET {{baseUrl}}/customers/statistics
+Content-Type: {{contentType}}
+
+###
+### 16. DELETE CUSTOMER (Replace with actual customer ID)
+###
+DELETE {{baseUrl}}/customers/{{customerId}}
+Content-Type: {{contentType}}
+
+###
+### NOTES:
+### - Replace {{customerId}} with actual MongoDB ObjectId
+### - Use {{$timestamp}} or {{$randomInt}} for unique usernames and emails
+### - Customer roles: 'customer' (enum: ['regular', 'bronze', 'silver', 'gold', 'platinum', 'diamond'])
+### - Available membership levels: regular, bronze, silver, gold, platinum, diamond
+### - Password requirements: At least 8 characters, mix of upper/lowercase, numbers, special chars

@@ -1,6 +1,6 @@
 const ComplaintRepository = require('../../infrastructure_layer/complaint/complaint.repository');
 const ComplaintEntity = require('../../domain_layer/complaint/complaint.entity');
-const { Customer, Staff } = require('../../models');
+const { User } = require('../../models');
 
 class ComplaintService {
   constructor() {
@@ -23,8 +23,8 @@ class ComplaintService {
       throw new Error(validation.errors.join(', '));
     }
 
-    const customer = await Customer.findById(data.customer_id);
-    if (!customer) {
+    const customer = await User.findById(data.customer_id);
+    if (!customer || customer.role !== 'customer') {
       throw new Error('Customer not found');
     }
 
@@ -71,8 +71,8 @@ class ComplaintService {
       throw new Error('Cannot assign a closed complaint');
     }
 
-    const staff = await Staff.findById(staffId);
-    if (!staff) {
+    const staff = await User.findById(staffId);
+    if (!staff || !['waiter', 'cashier', 'manager'].includes(staff.role)) {
       throw new Error('Staff not found');
     }
 

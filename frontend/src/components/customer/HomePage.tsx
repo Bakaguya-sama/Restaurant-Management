@@ -1,19 +1,19 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { Modal } from "../ui/Modal";
-import { mockMenuItems, mockPromotions } from "../../lib/mockData";
-import { MenuItem } from "../../types";
+import { mockDishes } from "../../lib/mockData";
+import { Dish } from "../../types";
 // import { PromotionCard } from "./PromotionCard";
 import { useNavigate } from "react-router-dom";
 
 export function HomePage() {
   const navigate = useNavigate();
-  const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
+  const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
 
   // Get first 3 available dishes
-  const featuredDishes = mockMenuItems
-    .filter((item) => item.available)
+  const featuredDishes = mockDishes
+    .filter((item) => item.is_available)
     .slice(0, 3);
 
   return (
@@ -110,7 +110,10 @@ export function HomePage() {
           {featuredDishes.map((item) => (
             <Card key={item.id} hover className="overflow-hidden">
               <img
-                src={item.image}
+                src={
+                  item.image_url ||
+                  "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400"
+                }
                 alt={item.name}
                 className="w-full h-48 object-cover"
               />
@@ -159,7 +162,7 @@ export function HomePage() {
             <div>
               <img
                 src={
-                  selectedDish.image ||
+                  selectedDish.image_url ||
                   "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=800"
                 }
                 alt={selectedDish.name}
@@ -172,23 +175,6 @@ export function HomePage() {
               <p className="text-gray-600 text-lg">
                 {selectedDish.description}
               </p>
-
-              {selectedDish.ingredients &&
-                selectedDish.ingredients.length > 0 && (
-                  <div>
-                    <p className="font-medium text-lg mb-3">Thành phần:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedDish.ingredients.map((ing, i) => (
-                        <span
-                          key={i}
-                          className="px-4 py-2 bg-gray-100 rounded-full text-sm"
-                        >
-                          {ing}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
               <div className="flex items-center justify-between pt-4 border-t">
                 <span className="text-gray-600 text-lg">Giá:</span>

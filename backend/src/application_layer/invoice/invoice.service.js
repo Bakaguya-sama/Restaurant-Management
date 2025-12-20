@@ -1,7 +1,7 @@
 const InvoiceRepository = require('../../infrastructure_layer/invoice/invoice.repository');
 const PromotionService = require('../promotion/promotion.service');
 const InvoiceEntity = require('../../domain_layer/invoice/invoice.entity');
-const { Order } = require('../../models');
+const { Order, User } = require('../../models');
 
 class InvoiceService {
   constructor() {
@@ -41,6 +41,15 @@ class InvoiceService {
     const order = await Order.findById(invoiceData.order_id);
     if (!order) {
       throw new Error('Order not found');
+    }
+
+    const staff = await User.findById(invoiceData.staff_id);
+    if (!staff) {
+      throw new Error('Staff not found');
+    }
+
+    if (!['waiter', 'cashier', 'manager'].includes(staff.role)) {
+      throw new Error('User is not a staff member');
     }
 
     const existingInvoice = await this.invoiceRepository.findByOrderId(invoiceData.order_id);

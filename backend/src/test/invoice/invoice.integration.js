@@ -2,7 +2,7 @@ const request = require('supertest');
 const app = require('../../../server');
 const connectDB = require('../../../config/database');
 const mongoose = require('mongoose');
-const { Invoice, Order, Staff, Customer } = require('../../models');
+const { Invoice, Order, User, StaffCashier, Customer } = require('../../models');
 
 describe('Invoice Integration Tests', () => {
   let createdInvoiceId;
@@ -13,27 +13,30 @@ describe('Invoice Integration Tests', () => {
   beforeAll(async () => {
     await connectDB();
 
-    let staff = await Staff.findOne({ role: 'cashier' });
+    let staff = await StaffCashier.findOne({ role: 'cashier' });
     if (!staff) {
-      staff = await Staff.create({
+      staff = await StaffCashier.create({
         full_name: 'Test Cashier',
         username: `testcashier${Date.now()}`,
         email: `testcashier${Date.now()}@test.com`,
         phone: '0900000003',
         password_hash: 'hashedpassword',
         role: 'cashier',
-        status: 'active'
+        is_active: true
       });
     }
     testStaffId = staff._id;
 
-    let customer = await Customer.findOne();
+    let customer = await Customer.findOne({ role: 'customer' });
     if (!customer) {
       customer = await Customer.create({
         full_name: 'Test Customer Invoice',
         email: `testinvoicecust${Date.now()}@test.com`,
         phone: '0900000004',
         password_hash: 'hashedpassword',
+        role: 'customer',
+        username: `testcust${Date.now()}`,
+        is_active: true,
         membership_level: 'silver'
       });
     }

@@ -18,7 +18,7 @@ class CustomerController {
       res.status(200).json({
         success: true,
         count: customers.length,
-        data: customers
+        data: customers.map(c => c.toJSON ? c.toJSON() : c)
       });
     } catch (error) {
       res.status(500).json({
@@ -34,7 +34,7 @@ class CustomerController {
       
       res.status(200).json({
         success: true,
-        data: customer
+        data: customer.toJSON ? customer.toJSON() : customer
       });
     } catch (error) {
       res.status(404).json({
@@ -50,7 +50,7 @@ class CustomerController {
       
       res.status(201).json({
         success: true,
-        data: customer
+        data: customer.toJSON ? customer.toJSON() : customer
       });
     } catch (error) {
       res.status(400).json({
@@ -66,7 +66,7 @@ class CustomerController {
       
       res.status(200).json({
         success: true,
-        data: customer
+        data: customer.toJSON ? customer.toJSON() : customer
       });
     } catch (error) {
       res.status(400).json({
@@ -98,7 +98,7 @@ class CustomerController {
       
       res.status(200).json({
         success: true,
-        data: customer
+        data: customer.toJSON ? customer.toJSON() : customer
       });
     } catch (error) {
       res.status(404).json({
@@ -114,7 +114,7 @@ class CustomerController {
       
       res.status(200).json({
         success: true,
-        data: customer
+        data: customer.toJSON ? customer.toJSON() : customer
       });
     } catch (error) {
       res.status(404).json({
@@ -164,7 +164,7 @@ class CustomerController {
       
       res.status(200).json({
         success: true,
-        data: customer
+        data: customer.toJSON ? customer.toJSON() : customer
       });
     } catch (error) {
       res.status(404).json({
@@ -189,7 +189,7 @@ class CustomerController {
       
       res.status(200).json({
         success: true,
-        data: customer
+        data: customer.toJSON ? customer.toJSON() : customer
       });
     } catch (error) {
       res.status(404).json({
@@ -223,7 +223,7 @@ class CustomerController {
       res.status(200).json({
         success: true,
         count: customers.length,
-        data: customers
+        data: customers.map(c => c.toJSON ? c.toJSON() : c)
       });
     } catch (error) {
       res.status(500).json({

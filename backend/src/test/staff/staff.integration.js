@@ -1,7 +1,7 @@
 const request = require('supertest');
 const app = require('../../../server');
 const connectDB = require('../../../config/database');
-const { Staff } = require('../../models');
+const { User, StaffWaiter, StaffCashier, StaffManager } = require('../../models');
 const mongoose = require('mongoose');
 
 describe('Staff Integration Tests', () => {
@@ -14,7 +14,7 @@ describe('Staff Integration Tests', () => {
 
   afterAll(async () => {
     if (createdStaffId) {
-      await Staff.findByIdAndDelete(createdStaffId);
+      await User.findByIdAndDelete(createdStaffId);
     }
     await mongoose.connection.close();
   });

@@ -6,11 +6,11 @@ class CustomerEntity {
     this.phone = data.phone;
     this.address = data.address;
     this.date_of_birth = data.date_of_birth;
-    this.membership_level = data.membership_level;
-    this.points = data.points;
-    this.total_spent = data.total_spent;
+    this.membership_level = data.membership_level || 'regular';
+    this.points = data.points || 0;
+    this.total_spent = data.total_spent || 0;
     this.image_url = data.image_url;
-    this.isBanned = data.isBanned;
+    this.isBanned = data.isBanned || false;
     this.created_at = data.created_at;
     this.updated_at = data.updated_at;
   }

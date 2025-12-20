@@ -17,7 +17,7 @@ import { Badge } from "../../ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
 import { Switch } from "../../ui/switch";
 import {
-  mockMenuItems,
+  mockDishes,
   mockPromotions,
 } from "../../../lib/mockData";
 import { Dish, Promotion } from "../../../types";

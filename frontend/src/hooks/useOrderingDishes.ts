@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MenuItem } from "../types";
+import { Dish } from "../types";
 import { fetchDishes, mapUiCategoryToApi } from "../lib/menuPageApi";
 
 // ==================== CUSTOM HOOK ====================
@@ -17,7 +17,7 @@ import { fetchDishes, mapUiCategoryToApi } from "../lib/menuPageApi";
  * ```
  */
 export function useOrderingDishes(selectedCategory: string) {
-  const [items, setItems] = useState<MenuItem[]>([]);
+  const [items, setItems] = useState<Dish[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
