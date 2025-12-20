@@ -31,7 +31,7 @@ backend/
 │   │       ├── tables.routes.js
 │   │       ├── staff.routes.js
 │   │       ├── customer.routes.js
-│   │       ├── orders.routes.js       # Order routes (13 endpoints)
+│   │       ├── orders.routes.js       # Order routes (15 endpoints)
 │   │       └── ...
 │   ├── application_layer/
 │   │   ├── floor/           # Business logic for floors
@@ -67,7 +67,7 @@ backend/
 │       ├── table/
 │       ├── staff/
 │       ├── customer/
-│       ├── order/           # Order integration tests (26 tests)
+│       ├── order/           # Order integration tests (60 tests)
 │       │   ├── order.integration.js
 │       │   ├── orderdetail.integration.js
 │       │   └── orders.http
@@ -602,11 +602,13 @@ Violation:
 | GET | `/:id` | Lấy chi tiết đơn hàng |
 | POST | `/` | Tạo đơn hàng mới |
 | PUT | `/:id` | Cập nhật đơn hàng (status, notes) |
+| PATCH | `/:id/status` | Cập nhật trạng thái đơn hàng (chỉ status) |
 | DELETE | `/:id` | Xóa đơn hàng (cascade delete order details) |
 | POST | `/:id/calculate` | Tính toán lại tổng tiền đơn hàng |
 | GET | `/:orderId/details` | Lấy danh sách item trong đơn hàng |
 | POST | `/:orderId/details` | Thêm item vào đơn hàng |
 | PUT | `/:orderId/details/:detailId` | Cập nhật item trong đơn hàng |
+| PATCH | `/:orderId/details/:detailId/status` | Cập nhật trạng thái item (chỉ status) |
 | DELETE | `/:orderId/details/:detailId` | Xóa item khỏi đơn hàng |
 
 **Order Types (4 loại):**
@@ -619,7 +621,7 @@ Violation:
 - `pending` → `preparing` → `ready` → `served` → `completed` (hoặc `cancelled` tại bất kỳ điểm)
 
 **OrderDetail Status:**
-- `pending` → `preparing` → `ready` → `served`
+- `pending` → `preparing` → `ready` → `served` (hoặc `cancelled` tại bất kỳ điểm)
 
 **Calculations:**
 - `line_total = quantity × unit_price`
@@ -628,7 +630,7 @@ Violation:
 - `total_amount = subtotal + tax`
 
 **Testing:**
-- Integration tests: 26 Order tests + 18 OrderDetail tests (44 total, ✅ 100% passing)
+- Integration tests: 33 Order tests + 27 OrderDetail tests (60 total, ✅ 100% passing)
 - Manual testing: [orders.http](src/test/order/orders.http) với 40+ request examples
 
 ---
@@ -702,8 +704,11 @@ npm run seed
 
 ##  Next Steps
 
-1. Done Tạo API routes cho Floor, Location, Table
-2. Done Tạo API routes cho Order & OrderDetail (13 endpoints, 44 integration tests)
+1. ✅ Done - Tạo API routes cho Floor, Location, Table
+2. ✅ Done - Tạo API routes cho Order & OrderDetail (15 endpoints, 60 integration tests)
+   - ✅ Implemented PATCH routes for status-only updates
+   - ✅ Added updateOrderStatus & updateOrderDetailStatus controller methods
+   - ✅ Support for cancelled status in OrderDetail
 3.  Tạo API routes cho các entity khác (Invoice, Reservation, Promotion, etc.)
 4.  Implement authentication & authorization middleware
 5.  Add validation middleware
