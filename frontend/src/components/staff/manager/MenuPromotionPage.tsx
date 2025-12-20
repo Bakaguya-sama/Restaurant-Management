@@ -17,7 +17,7 @@ import { Badge } from "../../ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
 import { Switch } from "../../ui/switch";
 import {
-  mockMenuItems,
+  mockDishes,
   mockPromotions,
 } from "../../../lib/mockData";
 import { Dish, Promotion } from "../../../types";
@@ -1424,29 +1424,12 @@ export function MenuPromotionPage() {
                   {selectedDish.description || "Món ăn ngon tuyệt vời"}
                 </p>
                 <Switch
-                  checked={selectedDish.available}
+                  checked={selectedDish.is_available}
                   onCheckedChange={() =>
                     handleToggleAvailability(selectedDish.id)
                   }
                 />
               </div>
-
-              {selectedDish.ingredients &&
-                selectedDish.ingredients.length > 0 && (
-                  <div>
-                    <p className="font-medium text-lg mb-3">Thành phần:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedDish.ingredients.map((ing, i) => (
-                        <span
-                          key={i}
-                          className="px-4 py-2 bg-gray-100 rounded-full text-sm"
-                        >
-                          {ing}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
               <div className="flex items-center justify-between pt-4 border-t">
                 <span className="text-gray-600 text-lg">Giá:</span>
@@ -1462,7 +1445,7 @@ export function MenuPromotionPage() {
                 </span>
               </div>
 
-              {!selectedDish.available && (
+              {!selectedDish.is_available && (
                 <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-center">
                   <p className="text-red-700 font-medium">
                     Món ăn đang tạm ngưng phục vụ

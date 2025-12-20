@@ -1,5 +1,3 @@
-import { MenuItem } from "../types";
-
 // ==================== TYPE DEFINITIONS ====================
 
 export interface OrderDTO {
