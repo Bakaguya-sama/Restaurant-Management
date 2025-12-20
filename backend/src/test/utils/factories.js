@@ -6,6 +6,9 @@ async function createCustomer(overrides = {}) {
     email: `test${Date.now()}@example.com`,
     phone: '0900000000',
     password_hash: 'hash',
+    role: 'customer',
+    username: `testuser${Date.now()}`,
+    is_active: true,
     ...overrides,
   });
   return await customer.save();

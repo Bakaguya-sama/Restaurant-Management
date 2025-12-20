@@ -18,6 +18,7 @@ import { Table, TableStatus, Customer } from "../../../types";
 import { toast } from "sonner";
 import { useTables } from "../../../hooks/useTables";
 import { useLocations } from "../../../hooks/useLocations";
+import { createOrder } from "../../../lib/orderingPageApi";
 
 export function TablesMapPage() {
   const hookResult = useTables();
@@ -153,6 +154,18 @@ export function TablesMapPage() {
     }
 
     try {
+      const orderData = {
+        order_number: `ORD-${Date.now()}`,
+        order_type: "dine-in-waiter" as const,
+        order_time: new Date().toISOString(),
+        table_id: selectedTable.id,
+        customer_id: customerType === "member" ? foundCustomer?.id : undefined,
+        status: "pending" as const,
+      };
+
+      const createdOrder = await createOrder(orderData);
+      console.log("Order created:", createdOrder);
+
       await updateTableStatus(selectedTable.id, "occupied");
 
       const customerInfo =
@@ -167,7 +180,7 @@ export function TablesMapPage() {
       );
     } catch (err) {
       console.error("Error creating order:", err);
-      const errorMsg = err instanceof Error ? err.message : "Lỗi khi cập nhật trạng thái bàn";
+      const errorMsg = err instanceof Error ? err.message : "Lỗi khi tạo order";
       toast.error(`Lỗi: ${errorMsg}`);
       return;
     }

@@ -2,7 +2,7 @@ const OrderRepository = require('../../infrastructure_layer/order/order.reposito
 const OrderDetailRepository = require('../../infrastructure_layer/orderdetail/orderdetail.repository');
 const OrderDetailService = require('../../application_layer/orderdetail/orderdetail.service');
 const OrderEntity = require('../../domain_layer/order/order.entity');
-const { Table, Customer, Staff, Order, DishIngredient, Ingredient, StockImportDetail, StockExport, StockExportDetail } = require('../../models');
+const { Table, User, Order, DishIngredient, Ingredient, StockImportDetail, StockExport, StockExportDetail } = require('../../models');
 const mongoose = require('mongoose');
 
 class OrderService {
@@ -197,23 +197,23 @@ class OrderService {
     }
 
     const orderType = orderData.order_type;
-    // Skip all table validation for testing/development
-    // In production, uncomment this block:
-    // if (orderType === 'dine-in-customer' || orderType === 'dine-in-waiter') {
-    //   if (orderData.table_id && orderData.table_id.length === 24) {
-    //     const table = await Table.findById(orderData.table_id);
-    //     if (!table) {
-    //       throw new Error('Table not found');
-    //     }
-    //   }
-    // }
+    
+    if (orderType === 'dine-in-customer' || orderType === 'dine-in-waiter') {
+      if (!orderData.table_id) {
+        throw new Error('table_id is required for dine-in orders');
+      }
+      const table = await Table.findById(orderData.table_id);
+      if (!table) {
+        throw new Error('Table not found');
+      }
+    }
 
     if (orderType === 'dine-in-customer' || orderType === 'takeaway-customer') {
       if (!orderData.customer_id) {
         throw new Error('customer_id is required for customer orders');
       }
-      const customer = await Customer.findById(orderData.customer_id);
-      if (!customer) {
+      const customer = await User.findById(orderData.customer_id);
+      if (!customer || customer.role !== 'customer') {
         throw new Error('Customer not found');
       }
     }
@@ -222,11 +222,9 @@ class OrderService {
       if (!orderData.staff_id) {
         throw new Error('staff_id is required for staff orders');
       }
-      // Skip staff validation for testing with mock data (if ID is 24 chars but not in DB)
-      if (orderData.staff_id && orderData.staff_id.length === 24) {
-        const staff = await Staff.findById(orderData.staff_id);
-        // Only throw error if we actually tried to query and got null (not for mock IDs)
-        // For now, skip validation to allow testing
+      const staff = await User.findById(orderData.staff_id);
+      if (!staff || !['waiter', 'cashier', 'manager'].includes(staff.role)) {
+        throw new Error('Staff not found');
       }
     }
 

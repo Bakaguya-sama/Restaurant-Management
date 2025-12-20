@@ -1,7 +1,7 @@
 const request = require('supertest');
 const app = require('../../../server');
 const connectDB = require('../../../config/database');
-const { Order, OrderDetail, Table, Customer, Staff, Dish } = require('../../models');
+const { Order, OrderDetail, Table, User, Customer, StaffWaiter, Dish } = require('../../models');
 const mongoose = require('mongoose');
 
 describe('Order Integration Tests', () => {
@@ -26,18 +26,22 @@ describe('Order Integration Tests', () => {
       full_name: `Customer ${Date.now()}`,
       email: `customer${Date.now()}@test.com`,
       phone: '0123456789',
-      password_hash: 'hashed_password'
+      password_hash: 'hashed_password',
+      role: 'customer',
+      username: `testcust${Date.now()}`,
+      is_active: true
     });
     const savedCustomer = await customer.save();
     customerId = savedCustomer._id.toString();
 
-    const staff = new Staff({
+    const staff = new StaffWaiter({
       full_name: `Waiter ${Date.now()}`,
       email: `waiter${Date.now()}@test.com`,
       phone: '0987654321',
       role: 'waiter',
       username: `waiter${Date.now()}`,
-      password_hash: 'hashed_password'
+      password_hash: 'hashed_password',
+      is_active: true
     });
     const savedStaff = await staff.save();
     staffId = savedStaff._id.toString();
@@ -61,10 +65,10 @@ describe('Order Integration Tests', () => {
       await Table.findByIdAndDelete(tableId);
     }
     if (customerId) {
-      await Customer.findByIdAndDelete(customerId);
+      await User.findByIdAndDelete(customerId);
     }
     if (staffId) {
-      await Staff.findByIdAndDelete(staffId);
+      await User.findByIdAndDelete(staffId);
     }
     if (dishId) {
       await Dish.findByIdAndDelete(dishId);

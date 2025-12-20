@@ -1,0 +1,2644 @@
+
+> restaurant-management-backend@1.0.0 test
+> jest --runInBand --verbose --detectOpenHandles --forceExit
+
+FAIL src/test/rating_reply/rating_reply.integration.js
+  Rating Reply Integration Tests
+    POST /api/v1/rating-replies - Create Rating Reply
+      ├ù should create new rating reply (104 ms)
+      ΓêÜ should fail when missing required fields (13 ms)
+      ΓêÜ should fail when reply text is empty (12 ms)
+    GET /api/v1/rating-replies - Get All Rating Replies
+      ├ù should return list of all rating replies (19 ms)
+      ├ù should filter by rating ID (23 ms)
+      ├ù should filter by staff ID (22 ms)
+    GET /api/v1/rating-replies/:id - Get Rating Reply by ID
+      ├ù should return rating reply details (13 ms)
+      ΓêÜ should fail when rating reply not found (28 ms)
+    GET /api/v1/rating-replies/rating/:ratingId - Get Replies by Rating
+      ├ù should return all replies for specific rating (24 ms)
+      ΓêÜ should fail when rating not found (18 ms)
+    GET /api/v1/rating-replies/staff/:staffId - Get Replies by Staff
+      ΓêÜ should return all replies by specific staff (25 ms)
+      ΓêÜ should fail when staff not found (14 ms)
+    PUT /api/v1/rating-replies/:id - Update Rating Reply
+      ├ù should update rating reply (13 ms)
+      ├ù should fail when updating with empty reply text (25 ms)
+      ├ù should fail when reply text exceeds maximum length (13 ms)
+    GET /api/v1/rating-replies/statistics - Get Statistics
+      ΓêÜ should return rating reply statistics (21 ms)
+      ΓêÜ should filter statistics by staff (14 ms)
+    GET /api/v1/rating-replies/statistics/top-staff - Get Top Responding Staff
+      ΓêÜ should return top responding staff (15 ms)
+      ΓêÜ should limit top staff list (15 ms)
+    DELETE /api/v1/rating-replies/:id - Delete Rating Reply
+      ├ù should delete rating reply (11 ms)
+      ΓêÜ should fail when deleting non-existent reply (24 ms)
+    DELETE /api/v1/rating-replies/rating/:ratingId - Delete All Replies for Rating
+      ΓêÜ should delete all replies for a rating (30 ms)
+      ΓêÜ should fail when rating not found (23 ms)
+
+  ΓùÅ Rating Reply Integration Tests ΓÇ║ POST /api/v1/rating-replies - Create Rating Reply ΓÇ║ should create new rating reply
+
+    expected 201 "Created", got 400 "Bad Request"
+
+      69 |         .post('/api/v1/rating-replies')
+      70 |         .send(newReply)
+    > 71 |         .expect(201);
+         |          ^
+      72 |
+      73 |       expect(response.body.success).toBe(true);
+      74 |       expect(response.body.data).toHaveProperty('id');
+
+      at Object.expect (src/test/rating_reply/rating_reply.integration.js:71:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Reply Integration Tests ΓÇ║ GET /api/v1/rating-replies - Get All Rating Replies ΓÇ║ should return list of all rating replies
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      113 |       const response = await request(app)
+      114 |         .get('/api/v1/rating-replies')
+    > 115 |         .expect(200);
+          |          ^
+      116 |
+      117 |       expect(response.body.success).toBe(true);
+      118 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/rating_reply/rating_reply.integration.js:115:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Reply Integration Tests ΓÇ║ GET /api/v1/rating-replies - Get All Rating Replies ΓÇ║ should filter by rating ID
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      123 |       const response = await request(app)
+      124 |         .get(`/api/v1/rating-replies?rating_id=${testRatingId}`)
+    > 125 |         .expect(200);
+          |          ^
+      126 |
+      127 |       expect(response.body.success).toBe(true);
+      128 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/rating_reply/rating_reply.integration.js:125:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Reply Integration Tests ΓÇ║ GET /api/v1/rating-replies - Get All Rating Replies ΓÇ║ should filter by staff ID
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      132 |       const response = await request(app)
+      133 |         .get(`/api/v1/rating-replies?staff_id=${testStaffId}`)
+    > 134 |         .expect(200);
+          |          ^
+      135 |
+      136 |       expect(response.body.success).toBe(true);
+      137 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/rating_reply/rating_reply.integration.js:134:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Reply Integration Tests ΓÇ║ GET /api/v1/rating-replies/:id - Get Rating Reply by ID ΓÇ║ should return rating reply details
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      143 |       const response = await request(app)
+      144 |         .get(`/api/v1/rating-replies/${createdReplyId}`)
+    > 145 |         .expect(200);
+          |          ^
+      146 |
+      147 |       expect(response.body.success).toBe(true);
+      148 |       expect(response.body.data).toHaveProperty('id');
+
+      at Object.expect (src/test/rating_reply/rating_reply.integration.js:145:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Reply Integration Tests ΓÇ║ GET /api/v1/rating-replies/rating/:ratingId - Get Replies by Rating ΓÇ║ should return all replies for specific rating
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      164 |       const response = await request(app)
+      165 |         .get(`/api/v1/rating-replies/rating/${testRatingId}`)
+    > 166 |         .expect(200);
+          |          ^
+      167 |
+      168 |       expect(response.body.success).toBe(true);
+      169 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/rating_reply/rating_reply.integration.js:166:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Reply Integration Tests ΓÇ║ PUT /api/v1/rating-replies/:id - Update Rating Reply ΓÇ║ should update rating reply
+
+    expected 200 "OK", got 400 "Bad Request"
+
+      209 |         .put(`/api/v1/rating-replies/${createdReplyId}`)
+      210 |         .send(updates)
+    > 211 |         .expect(200);
+          |          ^
+      212 |
+      213 |       expect(response.body.success).toBe(true);
+      214 |       expect(response.body.data.reply_text).toBe(updates.reply_text);
+
+      at Object.expect (src/test/rating_reply/rating_reply.integration.js:211:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Reply Integration Tests ΓÇ║ PUT /api/v1/rating-replies/:id - Update Rating Reply ΓÇ║ should fail when updating with empty reply text
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "empty"
+    Received string:    "Cast to ObjectId failed for value \"undefined\" (type string) at path \"_id\" for model \"RatingReply\""
+
+      226 |
+      227 |       expect(response.body.success).toBe(false);
+    > 228 |       expect(response.body.message).toContain('empty');
+          |                                     ^
+      229 |     });
+      230 |
+      231 |     it('should fail when reply text exceeds maximum length', async () => {
+
+      at Object.toContain (src/test/rating_reply/rating_reply.integration.js:228:37)
+
+  ΓùÅ Rating Reply Integration Tests ΓÇ║ PUT /api/v1/rating-replies/:id - Update Rating Reply ΓÇ║ should fail when reply text exceeds maximum length
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "exceed"
+    Received string:    "Cast to ObjectId failed for value \"undefined\" (type string) at path \"_id\" for model \"RatingReply\""
+
+      241 |
+      242 |       expect(response.body.success).toBe(false);
+    > 243 |       expect(response.body.message).toContain('exceed');
+          |                                     ^
+      244 |     });
+      245 |   });
+      246 |
+
+      at Object.toContain (src/test/rating_reply/rating_reply.integration.js:243:37)
+
+  ΓùÅ Rating Reply Integration Tests ΓÇ║ DELETE /api/v1/rating-replies/:id - Delete Rating Reply ΓÇ║ should delete rating reply
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      292 |       const response = await request(app)
+      293 |         .delete(`/api/v1/rating-replies/${createdReplyId}`)
+    > 294 |         .expect(200);
+          |          ^
+      295 |
+      296 |       expect(response.body.success).toBe(true);
+      297 |       expect(response.body.data.message).toContain('deleted successfully');
+
+      at Object.expect (src/test/rating_reply/rating_reply.integration.js:294:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+FAIL src/test/violation/violation.integration.js
+  Violation Integration Tests
+    POST /api/v1/violations - Create Violation
+      ΓêÜ should create new violation (119 ms)
+      ΓêÜ should fail when missing required fields (21 ms)
+      ΓêÜ should fail with invalid violation type (14 ms)
+    GET /api/v1/violations - Get All Violations
+      ├ù should return list of all violations (19 ms)
+      ├ù should filter by type (16 ms)
+      ΓêÜ should filter by date range (16 ms)
+    GET /api/v1/violations/:id - Get Violation by ID
+      ├ù should return violation details (14 ms)
+      ΓêÜ should fail when violation not found (16 ms)
+    GET /api/v1/violations/customer/:customerId - Get Violations by Customer
+      ΓêÜ should return all violations for customer (20 ms)
+      ΓêÜ should filter customer violations by type (19 ms)
+    PUT /api/v1/violations/:id - Update Violation
+      ├ù should update violation (18 ms)
+    GET /api/v1/violations/statistics - Get Statistics
+      ΓêÜ should return violation statistics (24 ms)
+      ΓêÜ should filter statistics by type (23 ms)
+    GET /api/v1/violations/statistics/top-violators - Get Top Violators
+      ΓêÜ should return top violators list (19 ms)
+      ΓêÜ should limit top violators list (14 ms)
+    DELETE /api/v1/violations/:id - Delete Violation
+      ΓêÜ should delete violation (15 ms)
+
+  ΓùÅ Violation Integration Tests ΓÇ║ GET /api/v1/violations - Get All Violations ΓÇ║ should return list of all violations
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      90 |       const response = await request(app)
+      91 |         .get('/api/v1/violations')
+    > 92 |         .expect(200);
+         |          ^
+      93 |
+      94 |       expect(response.body.success).toBe(true);
+      95 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/violation/violation.integration.js:92:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Violation Integration Tests ΓÇ║ GET /api/v1/violations - Get All Violations ΓÇ║ should filter by type
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      100 |       const response = await request(app)
+      101 |         .get('/api/v1/violations?violation_type=no_show')
+    > 102 |         .expect(200);
+          |          ^
+      103 |
+      104 |       expect(response.body.success).toBe(true);
+      105 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/violation/violation.integration.js:102:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Violation Integration Tests ΓÇ║ GET /api/v1/violations/:id - Get Violation by ID ΓÇ║ should return violation details
+
+    expected 200 "OK", got 404 "Not Found"
+
+      126 |       const response = await request(app)
+      127 |         .get(`/api/v1/violations/${createdViolationId}`)
+    > 128 |         .expect(200);
+          |          ^
+      129 |
+      130 |       expect(response.body.success).toBe(true);
+      131 |       expect(response.body.data).toHaveProperty('id');
+
+      at Object.expect (src/test/violation/violation.integration.js:128:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Violation Integration Tests ΓÇ║ PUT /api/v1/violations/:id - Update Violation ΓÇ║ should update violation
+
+    expected 200 "OK", got 400 "Bad Request"
+
+      176 |         .put(`/api/v1/violations/${createdViolationId}`)
+      177 |         .send(updates)
+    > 178 |         .expect(200);
+          |          ^
+      179 |
+      180 |       expect(response.body.success).toBe(true);
+      181 |       expect(response.body.data.description).toBe(updates.description);
+
+      at Object.expect (src/test/violation/violation.integration.js:178:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+FAIL src/test/complaint/complaint.integration.js
+  Complaint Integration Tests
+    POST /api/v1/complaints - Create Complaint
+      ΓêÜ should create new complaint (60 ms)
+      ΓêÜ should fail when missing required fields (10 ms)
+    GET /api/v1/complaints - Get All Complaints
+      ├ù should return list of all complaints (18 ms)
+      ├ù should filter by status (18 ms)
+      ├ù should filter by customer ID (15 ms)
+    GET /api/v1/complaints/:id - Get Complaint by ID
+      ├ù should return complaint details (14 ms)
+      ΓêÜ should fail when complaint not found (15 ms)
+    PUT /api/v1/complaints/:id - Update Complaint
+      ├ù should update complaint details (14 ms)
+      ├ù should fail when updating closed complaint (24 ms)
+    PATCH /api/v1/complaints/:id/status - Update Complaint Status
+      ├ù should update complaint status (14 ms)
+      ΓêÜ should fail with invalid status (14 ms)
+    PATCH /api/v1/complaints/:id/assign - Assign Complaint to Staff
+      ├ù should assign complaint to staff (17 ms)
+      ΓêÜ should fail when staff not found (15 ms)
+    PATCH /api/v1/complaints/:id/resolve - Resolve Complaint
+      ├ù should resolve complaint (18 ms)
+      ΓêÜ should fail when complaint is already closed (17 ms)
+    GET /api/v1/complaints/statistics - Get Statistics
+      ΓêÜ should return complaint statistics (42 ms)
+    DELETE /api/v1/complaints/:id - Delete Complaint
+      ΓêÜ should delete complaint (15 ms)
+
+  ΓùÅ Complaint Integration Tests ΓÇ║ GET /api/v1/complaints - Get All Complaints ΓÇ║ should return list of all complaints
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+       95 |       const response = await request(app)
+       96 |         .get('/api/v1/complaints')
+    >  97 |         .expect(200);
+          |          ^
+       98 |
+       99 |       expect(response.body.success).toBe(true);
+      100 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/complaint/complaint.integration.js:97:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Complaint Integration Tests ΓÇ║ GET /api/v1/complaints - Get All Complaints ΓÇ║ should filter by status
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      105 |       const response = await request(app)
+      106 |         .get('/api/v1/complaints?status=open')
+    > 107 |         .expect(200);
+          |          ^
+      108 |
+      109 |       expect(response.body.success).toBe(true);
+      110 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/complaint/complaint.integration.js:107:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Complaint Integration Tests ΓÇ║ GET /api/v1/complaints - Get All Complaints ΓÇ║ should filter by customer ID
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      114 |       const response = await request(app)
+      115 |         .get(`/api/v1/complaints?customer_id=${testCustomerId}`)
+    > 116 |         .expect(200);
+          |          ^
+      117 |
+      118 |       expect(response.body.success).toBe(true);
+      119 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/complaint/complaint.integration.js:116:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Complaint Integration Tests ΓÇ║ GET /api/v1/complaints/:id - Get Complaint by ID ΓÇ║ should return complaint details
+
+    expected 200 "OK", got 404 "Not Found"
+
+      125 |       const response = await request(app)
+      126 |         .get(`/api/v1/complaints/${createdComplaintId}`)
+    > 127 |         .expect(200);
+          |          ^
+      128 |
+      129 |       expect(response.body.success).toBe(true);
+      130 |       expect(response.body.data).toHaveProperty('id');
+
+      at Object.expect (src/test/complaint/complaint.integration.js:127:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Complaint Integration Tests ΓÇ║ PUT /api/v1/complaints/:id - Update Complaint ΓÇ║ should update complaint details
+
+    expected 200 "OK", got 400 "Bad Request"
+
+      152 |         .put(`/api/v1/complaints/${createdComplaintId}`)
+      153 |         .send(updates)
+    > 154 |         .expect(200);
+          |          ^
+      155 |
+      156 |       expect(response.body.success).toBe(true);
+      157 |       expect(response.body.data.priority).toBe(updates.priority);
+
+      at Object.expect (src/test/complaint/complaint.integration.js:154:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Complaint Integration Tests ΓÇ║ PUT /api/v1/complaints/:id - Update Complaint ΓÇ║ should fail when updating closed complaint
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "closed"
+    Received string:    "Schema hasn't been registered for model \"Customer\".
+    Use mongoose.model(name, schema)"
+
+      170 |
+      171 |       expect(response.body.success).toBe(false);
+    > 172 |       expect(response.body.message).toContain('closed');
+          |                                     ^
+      173 |
+      174 |       await Complaint.findByIdAndUpdate(createdComplaintId, { status: 'open' });
+      175 |     });
+
+      at Object.toContain (src/test/complaint/complaint.integration.js:172:37)
+
+  ΓùÅ Complaint Integration Tests ΓÇ║ PATCH /api/v1/complaints/:id/status - Update Complaint Status ΓÇ║ should update complaint status
+
+    expected 200 "OK", got 400 "Bad Request"
+
+      181 |         .patch(`/api/v1/complaints/${createdComplaintId}/status`)
+      182 |         .send({ status: 'in_progress' })
+    > 183 |         .expect(200);
+          |          ^
+      184 |
+      185 |       expect(response.body.success).toBe(true);
+      186 |       expect(response.body.data.status).toBe('in_progress');
+
+      at Object.expect (src/test/complaint/complaint.integration.js:183:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Complaint Integration Tests ΓÇ║ PATCH /api/v1/complaints/:id/assign - Assign Complaint to Staff ΓÇ║ should assign complaint to staff
+
+    expected 200 "OK", got 400 "Bad Request"
+
+      202 |         .patch(`/api/v1/complaints/${createdComplaintId}/assign`)
+      203 |         .send({ staff_id: testStaffId })
+    > 204 |         .expect(200);
+          |          ^
+      205 |
+      206 |       expect(response.body.success).toBe(true);
+      207 |       const assignedStaffId = typeof response.body.data.assigned_to_staff_id === 'object' 
+
+      at Object.expect (src/test/complaint/complaint.integration.js:204:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Complaint Integration Tests ΓÇ║ PATCH /api/v1/complaints/:id/resolve - Resolve Complaint ΓÇ║ should resolve complaint
+
+    expected 200 "OK", got 400 "Bad Request"
+
+      229 |         .patch(`/api/v1/complaints/${createdComplaintId}/resolve`)
+      230 |         .send({ resolution: 'Issue resolved successfully' })
+    > 231 |         .expect(200);
+          |          ^
+      232 |
+      233 |       expect(response.body.success).toBe(true);
+      234 |       expect(response.body.data.status).toBe('resolved');
+
+      at Object.expect (src/test/complaint/complaint.integration.js:231:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+FAIL src/test/customer/customer.integration.js
+  Customer Integration Tests
+    POST /api/v1/customers - Create Customer
+      ├ù should create a new customer successfully (206 ms)
+      ├ù should fail when creating customer with duplicate email (108 ms)
+      ΓêÜ should fail when required fields are missing (16 ms)
+    GET /api/v1/customers - Get All Customers
+      ΓêÜ should return list of all customers (16 ms)
+      ΓêÜ should filter customers by membership level (18 ms)
+      ΓêÜ should search customers by name (14 ms)
+    GET /api/v1/customers/:id - Get Customer by ID
+      ΓêÜ should return customer details for valid ID (1 ms)
+      ΓêÜ should return 404 for invalid ID (16 ms)
+    PUT /api/v1/customers/:id - Update Customer
+      ΓêÜ should update customer information
+    PATCH /api/v1/customers/:id/points - Add Points
+      ΓêÜ should add points to customer account (1 ms)
+    PATCH /api/v1/customers/:id/spending - Add Spending
+      ΓêÜ should add spending and auto-upgrade membership if threshold reached (1 ms)
+    PATCH /api/v1/customers/:id/ban - Ban Customer
+      ΓêÜ should ban a customer (1 ms)
+    PATCH /api/v1/customers/:id/unban - Unban Customer
+      ΓêÜ should unban a customer (1 ms)
+    GET /api/v1/customers/statistics - Get Customer Statistics
+      ΓêÜ should return customer statistics (27 ms)
+    GET /api/v1/customers/top - Get Top Customers
+      ΓêÜ should return top customers by spending (14 ms)
+      ΓêÜ should return top customers with custom limit (14 ms)
+    DELETE /api/v1/customers/:id - Delete Customer
+      ΓêÜ should delete a customer (1 ms)
+
+  ΓùÅ Customer Integration Tests ΓÇ║ POST /api/v1/customers - Create Customer ΓÇ║ should create a new customer successfully
+
+    expected 201 "Created", got 400 "Bad Request"
+
+      34 |         .post('/api/v1/customers')
+      35 |         .send(newCustomer)
+    > 36 |         .expect(201);
+         |          ^
+      37 |
+      38 |       expect(response.body.success).toBe(true);
+      39 |       expect(response.body.data).toHaveProperty('id');
+
+      at Object.expect (src/test/customer/customer.integration.js:36:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Customer Integration Tests ΓÇ║ POST /api/v1/customers - Create Customer ΓÇ║ should fail when creating customer with duplicate email
+
+    expected 201 "Created", got 400 "Bad Request"
+
+      58 |         .post('/api/v1/customers')
+      59 |         .send(firstCustomer)
+    > 60 |         .expect(201);
+         |          ^
+      61 |
+      62 |       // Then try to create another customer with the same email
+      63 |       const duplicateCustomer = {
+
+      at Object.expect (src/test/customer/customer.integration.js:60:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+FAIL src/test/invoice/invoice.integration.js
+  Invoice Integration Tests
+    POST /api/v1/invoices - Create Invoice
+      ├ù should create invoice without promo code (60 ms)
+      ├ù should fail when creating invoice for same order (26 ms)
+    GET /api/v1/invoices - Get All Invoices
+      ├ù should return list of all invoices (24 ms)
+      ├ù should filter invoices by payment status (19 ms)
+      ├ù should filter invoices by payment method (18 ms)
+    GET /api/v1/invoices/:id - Get Invoice by ID
+      ├ù should return invoice details with populated data (13 ms)
+      ΓêÜ should fail when invoice not found (14 ms)
+    PATCH /api/v1/invoices/:id/paid - Mark as Paid
+      ├ù should mark invoice as paid (16 ms)
+      ├ù should fail when invoice already paid (11 ms)
+    GET /api/v1/invoices/statistics - Get Invoice Statistics
+      ΓêÜ should return invoice statistics (34 ms)
+    DELETE /api/v1/invoices/:id - Delete Invoice
+      ├ù should fail to delete paid invoice (12 ms)
+
+  ΓùÅ Invoice Integration Tests ΓÇ║ POST /api/v1/invoices - Create Invoice ΓÇ║ should create invoice without promo code
+
+    expected 201 "Created", got 400 "Bad Request"
+
+      82 |         .post('/api/v1/invoices')
+      83 |         .send(newInvoice)
+    > 84 |         .expect(201);
+         |          ^
+      85 |
+      86 |       expect(response.body.success).toBe(true);
+      87 |       expect(response.body.data).toHaveProperty('id');
+
+      at Object.expect (src/test/invoice/invoice.integration.js:84:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Invoice Integration Tests ΓÇ║ POST /api/v1/invoices - Create Invoice ΓÇ║ should fail when creating invoice for same order
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "already exists"
+    Received string:    "Schema hasn't been registered for model \"Staff\".
+    Use mongoose.model(name, schema)"
+
+      107 |
+      108 |       expect(response.body.success).toBe(false);
+    > 109 |       expect(response.body.message).toContain('already exists');
+          |                                     ^
+      110 |     });
+      111 |   });
+      112 |
+
+      at Object.toContain (src/test/invoice/invoice.integration.js:109:37)
+
+  ΓùÅ Invoice Integration Tests ΓÇ║ GET /api/v1/invoices - Get All Invoices ΓÇ║ should return list of all invoices
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      115 |       const response = await request(app)
+      116 |         .get('/api/v1/invoices')
+    > 117 |         .expect(200);
+          |          ^
+      118 |
+      119 |       expect(response.body.success).toBe(true);
+      120 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/invoice/invoice.integration.js:117:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Invoice Integration Tests ΓÇ║ GET /api/v1/invoices - Get All Invoices ΓÇ║ should filter invoices by payment status
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      125 |       const response = await request(app)
+      126 |         .get('/api/v1/invoices?payment_status=pending')
+    > 127 |         .expect(200);
+          |          ^
+      128 |
+      129 |       expect(response.body.success).toBe(true);
+      130 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/invoice/invoice.integration.js:127:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Invoice Integration Tests ΓÇ║ GET /api/v1/invoices - Get All Invoices ΓÇ║ should filter invoices by payment method
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      134 |       const response = await request(app)
+      135 |         .get('/api/v1/invoices?payment_method=cash')
+    > 136 |         .expect(200);
+          |          ^
+      137 |
+      138 |       expect(response.body.success).toBe(true);
+      139 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/invoice/invoice.integration.js:136:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Invoice Integration Tests ΓÇ║ GET /api/v1/invoices/:id - Get Invoice by ID ΓÇ║ should return invoice details with populated data
+
+    expected 200 "OK", got 404 "Not Found"
+
+      145 |       const response = await request(app)
+      146 |         .get(`/api/v1/invoices/${createdInvoiceId}`)
+    > 147 |         .expect(200);
+          |          ^
+      148 |
+      149 |       expect(response.body.success).toBe(true);
+      150 |       expect(response.body.data).toHaveProperty('id');
+
+      at Object.expect (src/test/invoice/invoice.integration.js:147:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Invoice Integration Tests ΓÇ║ PATCH /api/v1/invoices/:id/paid - Mark as Paid ΓÇ║ should mark invoice as paid
+
+    expected 200 "OK", got 400 "Bad Request"
+
+      167 |       const response = await request(app)
+      168 |         .patch(`/api/v1/invoices/${createdInvoiceId}/paid`)
+    > 169 |         .expect(200);
+          |          ^
+      170 |
+      171 |       expect(response.body.success).toBe(true);
+      172 |       expect(response.body.data.payment_status).toBe('paid');
+
+      at Object.expect (src/test/invoice/invoice.integration.js:169:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Invoice Integration Tests ΓÇ║ PATCH /api/v1/invoices/:id/paid - Mark as Paid ΓÇ║ should fail when invoice already paid
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "already paid"
+    Received string:    "Cast to ObjectId failed for value \"undefined\" (type string) at path \"_id\" for model \"Invoice\""
+
+      180 |
+      181 |       expect(response.body.success).toBe(false);
+    > 182 |       expect(response.body.message).toContain('already paid');
+          |                                     ^
+      183 |     });
+      184 |   });
+      185 |
+
+      at Object.toContain (src/test/invoice/invoice.integration.js:182:37)
+
+  ΓùÅ Invoice Integration Tests ΓÇ║ DELETE /api/v1/invoices/:id - Delete Invoice ΓÇ║ should fail to delete paid invoice
+
+    expected 400 "Bad Request", got 404 "Not Found"
+
+      202 |       const response = await request(app)
+      203 |         .delete(`/api/v1/invoices/${createdInvoiceId}`)
+    > 204 |         .expect(400);
+          |          ^
+      205 |
+      206 |       expect(response.body.success).toBe(false);
+      207 |       expect(response.body.message).toContain('Cannot delete paid invoice');
+
+      at Object.expect (src/test/invoice/invoice.integration.js:204:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+FAIL src/test/rating/rating.integration.js
+  Rating Integration Tests
+    POST /api/v1/ratings - Create Rating
+      ├ù should create new rating (77 ms)
+      ΓêÜ should fail when score is out of range (15 ms)
+    GET /api/v1/ratings - Get All Ratings
+      ├ù should return list of all ratings (21 ms)
+      ├ù should filter by customer ID (21 ms)
+      ├ù should filter by minimum score (15 ms)
+    GET /api/v1/ratings/:id - Get Rating by ID
+      ├ù should return rating details (12 ms)
+      ΓêÜ should fail when rating not found (15 ms)
+    PUT /api/v1/ratings/:id - Update Rating
+      ├ù should update rating (15 ms)
+    POST /api/v1/ratings/:id/reply - Create Rating Reply
+      ├ù should create reply to rating (11 ms)
+      ΓêÜ should fail when reply text is empty (12 ms)
+    GET /api/v1/ratings/:id/replies - Get Rating Replies
+      ├ù should return all replies for rating (17 ms)
+    PUT /api/v1/ratings/replies/:replyId - Update Rating Reply
+      ├ù should update reply (16 ms)
+    GET /api/v1/ratings/statistics - Get Statistics
+      ΓêÜ should return rating statistics (47 ms)
+    DELETE /api/v1/ratings/replies/:replyId - Delete Rating Reply
+      ├ù should delete reply (14 ms)
+    DELETE /api/v1/ratings/:id - Delete Rating
+      ├ù should delete rating and cascade delete replies (12 ms)
+
+  ΓùÅ Rating Integration Tests ΓÇ║ POST /api/v1/ratings - Create Rating ΓÇ║ should create new rating
+
+    expected 201 "Created", got 400 "Bad Request"
+
+      64 |         .post('/api/v1/ratings')
+      65 |         .send(newRating)
+    > 66 |         .expect(201);
+         |          ^
+      67 |
+      68 |       expect(response.body.success).toBe(true);
+      69 |       expect(response.body.data).toHaveProperty('id');
+
+      at Object.expect (src/test/rating/rating.integration.js:66:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Integration Tests ΓÇ║ GET /api/v1/ratings - Get All Ratings ΓÇ║ should return list of all ratings
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+       95 |       const response = await request(app)
+       96 |         .get('/api/v1/ratings')
+    >  97 |         .expect(200);
+          |          ^
+       98 |
+       99 |       expect(response.body.success).toBe(true);
+      100 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/rating/rating.integration.js:97:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Integration Tests ΓÇ║ GET /api/v1/ratings - Get All Ratings ΓÇ║ should filter by customer ID
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      105 |       const response = await request(app)
+      106 |         .get(`/api/v1/ratings?customer_id=${testCustomerId}`)
+    > 107 |         .expect(200);
+          |          ^
+      108 |
+      109 |       expect(response.body.success).toBe(true);
+      110 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/rating/rating.integration.js:107:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Integration Tests ΓÇ║ GET /api/v1/ratings - Get All Ratings ΓÇ║ should filter by minimum score
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      114 |       const response = await request(app)
+      115 |         .get('/api/v1/ratings?min_score=4')
+    > 116 |         .expect(200);
+          |          ^
+      117 |
+      118 |       expect(response.body.success).toBe(true);
+      119 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/rating/rating.integration.js:116:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Integration Tests ΓÇ║ GET /api/v1/ratings/:id - Get Rating by ID ΓÇ║ should return rating details
+
+    expected 200 "OK", got 404 "Not Found"
+
+      128 |       const response = await request(app)
+      129 |         .get(`/api/v1/ratings/${createdRatingId}`)
+    > 130 |         .expect(200);
+          |          ^
+      131 |
+      132 |       expect(response.body.success).toBe(true);
+      133 |       expect(response.body.data).toHaveProperty('id');
+
+      at Object.expect (src/test/rating/rating.integration.js:130:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Integration Tests ΓÇ║ PUT /api/v1/ratings/:id - Update Rating ΓÇ║ should update rating
+
+    expected 200 "OK", got 400 "Bad Request"
+
+      155 |         .put(`/api/v1/ratings/${createdRatingId}`)
+      156 |         .send(updates)
+    > 157 |         .expect(200);
+          |          ^
+      158 |
+      159 |       expect(response.body.success).toBe(true);
+      160 |       expect(response.body.data.score).toBe(updates.score);
+
+      at Object.expect (src/test/rating/rating.integration.js:157:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Integration Tests ΓÇ║ POST /api/v1/ratings/:id/reply - Create Rating Reply ΓÇ║ should create reply to rating
+
+    expected 201 "Created", got 400 "Bad Request"
+
+      173 |         .post('/api/v1/rating-replies')
+      174 |         .send({ ...newReply, rating_id: createdRatingId })
+    > 175 |         .expect(201);
+          |          ^
+      176 |
+      177 |       expect(response.body.success).toBe(true);
+      178 |       expect(response.body.data).toHaveProperty('id');
+
+      at Object.expect (src/test/rating/rating.integration.js:175:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Integration Tests ΓÇ║ GET /api/v1/ratings/:id/replies - Get Rating Replies ΓÇ║ should return all replies for rating
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      201 |       const response = await request(app)
+      202 |         .get(`/api/v1/rating-replies/rating/${createdRatingId}`)
+    > 203 |         .expect(200);
+          |          ^
+      204 |
+      205 |       expect(response.body.success).toBe(true);
+      206 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/rating/rating.integration.js:203:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Integration Tests ΓÇ║ PUT /api/v1/ratings/replies/:replyId - Update Rating Reply ΓÇ║ should update reply
+
+    expected 200 "OK", got 400 "Bad Request"
+
+      218 |         .put(`/api/v1/rating-replies/${createdReplyId}`)
+      219 |         .send(updates)
+    > 220 |         .expect(200);
+          |          ^
+      221 |
+      222 |       expect(response.body.success).toBe(true);
+      223 |       expect(response.body.data.reply_text).toBe(updates.reply_text);
+
+      at Object.expect (src/test/rating/rating.integration.js:220:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Integration Tests ΓÇ║ DELETE /api/v1/ratings/replies/:replyId - Delete Rating Reply ΓÇ║ should delete reply
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      241 |       const response = await request(app)
+      242 |         .delete(`/api/v1/rating-replies/${createdReplyId}`)
+    > 243 |         .expect(200);
+          |          ^
+      244 |
+      245 |       expect(response.body.success).toBe(true);
+      246 |       expect(response.body.data.message).toContain('deleted successfully');
+
+      at Object.expect (src/test/rating/rating.integration.js:243:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Integration Tests ΓÇ║ DELETE /api/v1/ratings/:id - Delete Rating ΓÇ║ should delete rating and cascade delete replies
+
+    expected 200 "OK", got 404 "Not Found"
+
+      254 |       const response = await request(app)
+      255 |         .delete(`/api/v1/ratings/${createdRatingId}`)
+    > 256 |         .expect(200);
+          |          ^
+      257 |
+      258 |       expect(response.body.success).toBe(true);
+      259 |       expect(response.body.data.message).toContain('deleted successfully');
+
+      at Object.expect (src/test/rating/rating.integration.js:256:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+PASS src/test/table/table.integration.js
+  Table Integration Tests
+    POST /api/v1/tables - Create Table
+      ΓêÜ should create a new table successfully (89 ms)
+      ΓêÜ should fail when creating table without table_number (18 ms)
+      ΓêÜ should fail when creating table without location_id (14 ms)
+      ΓêÜ should fail when creating table without capacity (18 ms)
+      ΓêÜ should fail when creating table with non-existent location (17 ms)
+      ΓêÜ should fail when creating table with duplicate number (52 ms)
+    GET /api/v1/tables - Get All Tables
+      ΓêÜ should retrieve all tables successfully (20 ms)
+      ΓêÜ should filter tables by status (19 ms)
+      ΓêÜ should filter tables by location (23 ms)
+    GET /api/v1/tables/:id - Get Table by ID
+      ΓêÜ should retrieve table by ID successfully (25 ms)
+      ΓêÜ should return 404 for non-existent table (20 ms)
+    GET /api/v1/tables/location/:locationId - Get Tables by Location
+      ΓêÜ should retrieve tables by location successfully (33 ms)
+      ΓêÜ should return 404 for non-existent location (17 ms)
+    GET /api/v1/tables/status/:status - Get Tables by Status
+      ΓêÜ should retrieve tables by status successfully (35 ms)
+      ΓêÜ should fail with invalid status (17 ms)
+    PUT /api/v1/tables/:id - Update Table
+      ΓêÜ should update table successfully (48 ms)
+      ΓêÜ should return 404 when updating non-existent table (21 ms)
+    PATCH /api/v1/tables/:id/status - Update Table Status
+      ΓêÜ should change table status to occupied (32 ms)
+      ΓêÜ should change table status to reserved (31 ms)
+      ΓêÜ should change table status to dirty (39 ms)
+      ΓêÜ should change table status to broken with reason (50 ms)
+      ΓêÜ should fail when changing to broken without reason (32 ms)
+      ΓêÜ should clear brokenReason when changing from broken to other status (67 ms)
+      ΓêÜ should fail with invalid status (32 ms)
+      ΓêÜ should return 404 for non-existent table (27 ms)
+    DELETE /api/v1/tables/:id - Delete Table
+      ΓêÜ should delete table successfully (50 ms)
+      ΓêÜ should return 404 when deleting non-existent table (28 ms)
+    GET /api/v1/tables/statistics/summary - Get Table Statistics
+      ΓêÜ should retrieve table status summary successfully (44 ms)
+
+PASS src/test/order/order.integration.js
+  Order Integration Tests
+    POST /api/v1/orders - Create Order
+      ΓêÜ should create a dine-in order by customer successfully (73 ms)
+      ΓêÜ should create a takeaway order by customer successfully (57 ms)
+      ΓêÜ should create a dine-in order by waiter successfully (48 ms)
+      ΓêÜ should fail when creating order without order_number (18 ms)
+      ΓêÜ should fail when creating order without order_type (15 ms)
+      ΓêÜ should fail when creating order without order_time (19 ms)
+      ΓêÜ should fail with invalid order_type (23 ms)
+      ΓêÜ should fail with duplicate order_number (63 ms)
+      ΓêÜ should fail when table_id not found for dine-in order (24 ms)
+      ΓêÜ should fail when customer_id not found (28 ms)
+      ΓêÜ should fail when staff_id not found for waiter order (27 ms)
+    GET /api/v1/orders - Get All Orders
+      ΓêÜ should retrieve all orders successfully (23 ms)
+      ΓêÜ should filter orders by status (27 ms)
+      ΓêÜ should filter orders by order_type (22 ms)
+      ΓêÜ should filter orders by customer_id (19 ms)
+    GET /api/v1/orders/:id - Get Order by ID
+      ΓêÜ should retrieve order by ID successfully (20 ms)
+      ΓêÜ should return 404 for non-existent order (19 ms)
+    GET /api/v1/orders/table/:tableId - Get Order by Table
+      ΓêÜ should retrieve order by table ID successfully (23 ms)
+    GET /api/v1/orders/customer/:customerId - Get Orders by Customer
+      ΓêÜ should retrieve orders by customer ID successfully (20 ms)
+    PUT /api/v1/orders/:id - Update Order
+      ΓêÜ should update order status successfully (33 ms)
+      ΓêÜ should update order notes successfully (25 ms)
+      ΓêÜ should return 404 when updating non-existent order (22 ms)
+    POST /api/v1/orders/:id/calculate - Calculate Order Total
+      ΓêÜ should calculate order total successfully (31 ms)
+    DELETE /api/v1/orders/:id - Delete Order
+      ΓêÜ should delete order successfully (67 ms)
+      ΓêÜ should return 404 when deleting non-existent order (25 ms)
+    GET /api/v1/orders/statistics - Get Order Statistics
+      ΓêÜ should retrieve order statistics successfully (22 ms)
+
+PASS src/test/staff/staff.integration.js
+  Staff Integration Tests
+    POST /api/v1/staff - Create Staff
+      ΓêÜ should create a new staff member successfully (282 ms)
+      ΓêÜ should fail when creating staff with duplicate email (115 ms)
+      ΓêÜ should fail when required fields are missing (28 ms)
+    GET /api/v1/staff - Get All Staff
+      ΓêÜ should return list of all staff members (17 ms)
+      ΓêÜ should filter staff by role (17 ms)
+      ΓêÜ should search staff by name (18 ms)
+    GET /api/v1/staff/:id - Get Staff by ID
+      ΓêÜ should return staff details for valid ID (20 ms)
+      ΓêÜ should return 404 for invalid ID (17 ms)
+    PUT /api/v1/staff/:id - Update Staff
+      ΓêÜ should update staff information (27 ms)
+    PATCH /api/v1/staff/:id/deactivate - Deactivate Staff
+      ΓêÜ should deactivate a staff member (18 ms)
+    PATCH /api/v1/staff/:id/activate - Activate Staff
+      ΓêÜ should activate a staff member (20 ms)
+    GET /api/v1/staff/statistics - Get Staff Statistics
+      ΓêÜ should return staff statistics (33 ms)
+    DELETE /api/v1/staff/:id - Delete Staff
+      ΓêÜ should delete a staff member (23 ms)
+
+PASS src/test/order/orderdetail.integration.js
+  OrderDetail Integration Tests
+    GET /api/v1/orders/:orderId/details - Get Order Details
+      ΓêÜ should retrieve order details successfully (41 ms)
+    POST /api/v1/orders/:orderId/details - Add Item to Order
+      ΓêÜ should add item to order successfully (39 ms)
+      ΓêÜ should fail when adding item without dish_id (15 ms)
+      ΓêÜ should fail when adding item without quantity (16 ms)
+      ΓêÜ should fail when adding item without unit_price (18 ms)
+      ΓêÜ should fail when quantity is not greater than 0 (15 ms)
+      ΓêÜ should fail when unit_price is negative (16 ms)
+      ΓêÜ should fail when adding non-existent dish (20 ms)
+      ΓêÜ should fail when adding same dish twice (54 ms)
+    PUT /api/v1/orders/:orderId/details/:detailId - Update Order Item
+      ΓêÜ should update item quantity successfully (53 ms)
+      ΓêÜ should update item unit_price successfully (56 ms)
+      ΓêÜ should update item special_instructions successfully (62 ms)
+      ΓêÜ should update item status successfully (57 ms)
+      ΓêÜ should update multiple fields successfully (57 ms)
+      ΓêÜ should fail when no data provided (46 ms)
+      ΓêÜ should fail when detail not found in order (46 ms)
+    DELETE /api/v1/orders/:orderId/details/:detailId - Remove Item from Order
+      ΓêÜ should remove item from order successfully (54 ms)
+      ΓêÜ should fail when detail not found in order (53 ms)
+
+  console.error
+    createIngredient error: { status: 400, message: 'Ingredient name is required' }
+
+    [0m [90m 47 |[39m     [36mreturn[39m formatSuccess(res[33m,[39m ingredient[33m,[39m [32m'Ingredient created successfully'[39m[33m,[39m [35m201[39m)[33m;[39m
+     [90m 48 |[39m   } [36mcatch[39m (err) {
+    [31m[1m>[22m[39m[90m 49 |[39m     console[33m.[39merror([32m'createIngredient error:'[39m[33m,[39m err)[33m;[39m
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 50 |[39m     [36mreturn[39m formatError(res[33m,[39m err[33m.[39mstatus [33m||[39m [35m500[39m[33m,[39m err[33m.[39mmessage [33m||[39m [32m'Internal Server Error'[39m)[33m;[39m
+     [90m 51 |[39m   }
+     [90m 52 |[39m }[33m;[39m[0m
+
+      at error (src/presentation_layer/controllers/ingredient/ingredient.controller.js:49:13)
+
+  console.error
+    createIngredient error: { status: 400, message: 'Ingredient unit is required' }
+
+    [0m [90m 47 |[39m     [36mreturn[39m formatSuccess(res[33m,[39m ingredient[33m,[39m [32m'Ingredient created successfully'[39m[33m,[39m [35m201[39m)[33m;[39m
+     [90m 48 |[39m   } [36mcatch[39m (err) {
+    [31m[1m>[22m[39m[90m 49 |[39m     console[33m.[39merror([32m'createIngredient error:'[39m[33m,[39m err)[33m;[39m
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 50 |[39m     [36mreturn[39m formatError(res[33m,[39m err[33m.[39mstatus [33m||[39m [35m500[39m[33m,[39m err[33m.[39mmessage [33m||[39m [32m'Internal Server Error'[39m)[33m;[39m
+     [90m 51 |[39m   }
+     [90m 52 |[39m }[33m;[39m[0m
+
+      at error (src/presentation_layer/controllers/ingredient/ingredient.controller.js:49:13)
+
+  console.error
+    createIngredient error: { status: 400, message: 'Ingredient unit_price is required' }
+
+    [0m [90m 47 |[39m     [36mreturn[39m formatSuccess(res[33m,[39m ingredient[33m,[39m [32m'Ingredient created successfully'[39m[33m,[39m [35m201[39m)[33m;[39m
+     [90m 48 |[39m   } [36mcatch[39m (err) {
+    [31m[1m>[22m[39m[90m 49 |[39m     console[33m.[39merror([32m'createIngredient error:'[39m[33m,[39m err)[33m;[39m
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 50 |[39m     [36mreturn[39m formatError(res[33m,[39m err[33m.[39mstatus [33m||[39m [35m500[39m[33m,[39m err[33m.[39mmessage [33m||[39m [32m'Internal Server Error'[39m)[33m;[39m
+     [90m 51 |[39m   }
+     [90m 52 |[39m }[33m;[39m[0m
+
+      at error (src/presentation_layer/controllers/ingredient/ingredient.controller.js:49:13)
+
+  console.error
+    createIngredient error: { status: 400, message: 'Ingredient with this name already exists' }
+
+    [0m [90m 47 |[39m     [36mreturn[39m formatSuccess(res[33m,[39m ingredient[33m,[39m [32m'Ingredient created successfully'[39m[33m,[39m [35m201[39m)[33m;[39m
+     [90m 48 |[39m   } [36mcatch[39m (err) {
+    [31m[1m>[22m[39m[90m 49 |[39m     console[33m.[39merror([32m'createIngredient error:'[39m[33m,[39m err)[33m;[39m
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 50 |[39m     [36mreturn[39m formatError(res[33m,[39m err[33m.[39mstatus [33m||[39m [35m500[39m[33m,[39m err[33m.[39mmessage [33m||[39m [32m'Internal Server Error'[39m)[33m;[39m
+     [90m 51 |[39m   }
+     [90m 52 |[39m }[33m;[39m[0m
+
+      at error (src/presentation_layer/controllers/ingredient/ingredient.controller.js:49:13)
+
+  console.error
+    getIngredientById error: { status: 404, message: 'Ingredient not found' }
+
+    [0m [90m 25 |[39m     [36mreturn[39m formatSuccess(res[33m,[39m ingredient[33m,[39m [32m'Ingredient retrieved successfully'[39m)[33m;[39m
+     [90m 26 |[39m   } [36mcatch[39m (err) {
+    [31m[1m>[22m[39m[90m 27 |[39m     console[33m.[39merror([32m'getIngredientById error:'[39m[33m,[39m err)[33m;[39m
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 28 |[39m     [36mreturn[39m formatError(res[33m,[39m err[33m.[39mstatus [33m||[39m [35m500[39m[33m,[39m err[33m.[39mmessage [33m||[39m [32m'Internal Server Error'[39m)[33m;[39m
+     [90m 29 |[39m   }
+     [90m 30 |[39m }[33m;[39m[0m
+
+      at error (src/presentation_layer/controllers/ingredient/ingredient.controller.js:27:13)
+
+  console.error
+    updateIngredient error: { status: 404, message: 'Ingredient not found' }
+
+    [0m [90m 70 |[39m     [36mreturn[39m formatSuccess(res[33m,[39m ingredient[33m,[39m [32m'Ingredient updated successfully'[39m)[33m;[39m
+     [90m 71 |[39m   } [36mcatch[39m (err) {
+    [31m[1m>[22m[39m[90m 72 |[39m     console[33m.[39merror([32m'updateIngredient error:'[39m[33m,[39m err)[33m;[39m
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 73 |[39m     [36mreturn[39m formatError(res[33m,[39m err[33m.[39mstatus [33m||[39m [35m500[39m[33m,[39m err[33m.[39mmessage [33m||[39m [32m'Internal Server Error'[39m)[33m;[39m
+     [90m 74 |[39m   }
+     [90m 75 |[39m }[33m;[39m[0m
+
+      at error (src/presentation_layer/controllers/ingredient/ingredient.controller.js:72:13)
+
+  console.error
+    updateIngredient error: { status: 400, message: 'Ingredient with this name already exists' }
+
+    [0m [90m 70 |[39m     [36mreturn[39m formatSuccess(res[33m,[39m ingredient[33m,[39m [32m'Ingredient updated successfully'[39m)[33m;[39m
+     [90m 71 |[39m   } [36mcatch[39m (err) {
+    [31m[1m>[22m[39m[90m 72 |[39m     console[33m.[39merror([32m'updateIngredient error:'[39m[33m,[39m err)[33m;[39m
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 73 |[39m     [36mreturn[39m formatError(res[33m,[39m err[33m.[39mstatus [33m||[39m [35m500[39m[33m,[39m err[33m.[39mmessage [33m||[39m [32m'Internal Server Error'[39m)[33m;[39m
+     [90m 74 |[39m   }
+     [90m 75 |[39m }[33m;[39m[0m
+
+      at error (src/presentation_layer/controllers/ingredient/ingredient.controller.js:72:13)
+
+  console.error
+    getIngredientById error: { status: 404, message: 'Ingredient not found' }
+
+    [0m [90m 25 |[39m     [36mreturn[39m formatSuccess(res[33m,[39m ingredient[33m,[39m [32m'Ingredient retrieved successfully'[39m)[33m;[39m
+     [90m 26 |[39m   } [36mcatch[39m (err) {
+    [31m[1m>[22m[39m[90m 27 |[39m     console[33m.[39merror([32m'getIngredientById error:'[39m[33m,[39m err)[33m;[39m
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 28 |[39m     [36mreturn[39m formatError(res[33m,[39m err[33m.[39mstatus [33m||[39m [35m500[39m[33m,[39m err[33m.[39mmessage [33m||[39m [32m'Internal Server Error'[39m)[33m;[39m
+     [90m 29 |[39m   }
+     [90m 30 |[39m }[33m;[39m[0m
+
+      at error (src/presentation_layer/controllers/ingredient/ingredient.controller.js:27:13)
+
+  console.error
+    deleteIngredient error: { status: 404, message: 'Ingredient not found' }
+
+    [0m [90m 104 |[39m     [36mreturn[39m formatSuccess(res[33m,[39m result[33m,[39m [32m'Ingredient deleted successfully'[39m)[33m;[39m
+     [90m 105 |[39m   } [36mcatch[39m (err) {
+    [31m[1m>[22m[39m[90m 106 |[39m     console[33m.[39merror([32m'deleteIngredient error:'[39m[33m,[39m err)[33m;[39m
+     [90m     |[39m             [31m[1m^[22m[39m
+     [90m 107 |[39m     [36mreturn[39m formatError(res[33m,[39m err[33m.[39mstatus [33m||[39m [35m500[39m[33m,[39m err[33m.[39mmessage [33m||[39m [32m'Internal Server Error'[39m)[33m;[39m
+     [90m 108 |[39m   }
+     [90m 109 |[39m }[33m;[39m[0m
+
+      at error (src/presentation_layer/controllers/ingredient/ingredient.controller.js:106:13)
+
+PASS src/test/ingredient/ingredient.integration.test.js
+  Ingredient Integration Tests
+    POST /api/v1/ingredients
+      ΓêÜ Create new ingredient with all fields (67 ms)
+      ΓêÜ Create ingredient with minimal required fields (25 ms)
+      ΓêÜ Missing name should be rejected (24 ms)
+      ΓêÜ Missing unit should be rejected (14 ms)
+      ΓêÜ Missing unit_price should be rejected (12 ms)
+      ΓêÜ Duplicate name should be rejected (39 ms)
+    GET /api/v1/ingredients
+      ΓêÜ Return array of ingredients (19 ms)
+      ΓêÜ Returned ingredients have all required fields (17 ms)
+    GET /api/v1/ingredients/:id
+      ΓêÜ Get ingredient by ID (40 ms)
+      ΓêÜ Get non-existent ingredient returns 404 (20 ms)
+    PUT /api/v1/ingredients/:id
+      ΓêÜ Update ingredient with new values (55 ms)
+      ΓêÜ Update non-existent ingredient returns 404 (19 ms)
+      ΓêÜ Update with duplicate name should be rejected (73 ms)
+    PATCH /api/v1/ingredients/:id/quantity
+      ΓêÜ Update ingredient quantity (42 ms)
+      ΓêÜ Update quantity to zero is allowed (41 ms)
+      ΓêÜ Missing quantity_in_stock should be rejected (28 ms)
+      ΓêÜ Negative quantity should be rejected (32 ms)
+    DELETE /api/v1/ingredients/:id
+      ΓêÜ Delete ingredient (56 ms)
+      ΓêÜ Delete non-existent ingredient returns 404 (17 ms)
+
+PASS src/test/dish/dishingredient.integration.js
+  DishIngredient Integration Tests
+    GET /api/v1/dishes/:id/ingredients - Get Dish Ingredients
+      ΓêÜ should retrieve ingredients for a dish (45 ms)
+      ΓêÜ should return 404 for non-existent dish (22 ms)
+    POST /api/v1/dishes/:id/ingredients - Add Ingredient to Dish
+      ΓêÜ should add ingredient to dish successfully (41 ms)
+      ΓêÜ should fail when adding ingredient without ingredient_id (20 ms)
+      ΓêÜ should fail when adding ingredient without quantity_required (16 ms)
+      ΓêÜ should fail when adding ingredient without unit (17 ms)
+      ΓêÜ should fail when adding non-existent ingredient (31 ms)
+      ΓêÜ should fail when adding same ingredient twice (68 ms)
+    PUT /api/v1/dishes/:id/ingredients/:ingredientId - Update Dish Ingredient
+      ΓêÜ should update ingredient quantity successfully (52 ms)
+      ΓêÜ should update ingredient unit successfully (55 ms)
+      ΓêÜ should fail when updating ingredient not in dish (57 ms)
+      ΓêÜ should fail when updating with no data (51 ms)
+    DELETE /api/v1/dishes/:id/ingredients/:ingredientId - Remove Ingredient from Dish
+      ΓêÜ should remove ingredient from dish successfully (53 ms)
+      ΓêÜ should fail when removing ingredient not in dish (51 ms)
+      ΓêÜ should fail when removing from non-existent dish (56 ms)
+
+PASS src/test/dish/dish.integration.js
+  Dish Integration Tests
+    POST /api/v1/dishes - Create Dish
+      ΓêÜ should create a new dish successfully (197 ms)
+      ΓêÜ should fail when creating dish without name (33 ms)
+      ΓêÜ should fail when creating dish without category (15 ms)
+      ΓêÜ should fail when creating dish without price (12 ms)
+      ΓêÜ should fail when creating dish with invalid category (11 ms)
+      ΓêÜ should fail when creating dish with duplicate name (46 ms)
+    GET /api/v1/dishes - Get All Dishes
+      ΓêÜ should retrieve all dishes successfully (19 ms)
+      ΓêÜ should filter dishes by category (17 ms)
+      ΓêÜ should filter dishes by availability (19 ms)
+      ΓêÜ should search dishes by name (20 ms)
+    GET /api/v1/dishes/:id - Get Dish by ID
+      ΓêÜ should retrieve dish by ID successfully (26 ms)
+      ΓêÜ should return 404 for non-existent dish (25 ms)
+    PUT /api/v1/dishes/:id - Update Dish
+      ΓêÜ should update dish successfully (34 ms)
+      ΓêÜ should fail when updating dish without required fields (20 ms)
+      ΓêÜ should return 404 when updating non-existent dish (20 ms)
+    PATCH /api/v1/dishes/:id/availability - Update Dish Availability
+      ΓêÜ should mark dish as unavailable with reason (30 ms)
+      ΓêÜ should mark dish as available again (50 ms)
+      ΓêÜ should fail when marking unavailable without reason (30 ms)
+      ΓêÜ should return 404 for non-existent dish (24 ms)
+    DELETE /api/v1/dishes/:id - Delete Dish
+      ΓêÜ should delete dish successfully (53 ms)
+      ΓêÜ should return 404 when deleting non-existent dish (26 ms)
+
+PASS src/test/reservation/reservation.test.js
+  Reservation API
+    POST /api/v1/reservations - Create Reservation
+      ΓêÜ creates a reservation with initial table (68 ms)
+      ΓêÜ returns 400 when details are missing (13 ms)
+    GET /api/v1/reservations - List Reservations
+      ΓêÜ lists all reservations (23 ms)
+      ΓêÜ filters by customer_id (18 ms)
+    GET /api/v1/reservations/:id - Get Reservation
+      ΓêÜ gets reservation by id (21 ms)
+    POST /api/v1/reservations/:id/add-table - Add Table
+      ΓêÜ adds an additional table to the reservation (47 ms)
+      ΓêÜ is tolerant when adding the same table/time slot again (40 ms)
+    DELETE /api/v1/reservations/:id/remove-table/:tableId - Remove Table
+      ΓêÜ removes a table from the reservation (27 ms)
+    PUT /api/v1/reservations/:id - Update Reservation
+      ΓêÜ updates number_of_guests (26 ms)
+      ΓêÜ cancels the reservation (36 ms)
+    DELETE /api/v1/reservations/:id - Delete Reservation
+      ΓêÜ deletes a reservation (43 ms)
+
+PASS src/test/location/location.integration.js
+  Location Integration Tests
+    POST /api/v1/locations - Create Location
+      ΓêÜ should create a new location successfully (164 ms)
+      ΓêÜ should fail when creating location without name (19 ms)
+      ΓêÜ should fail when creating location without floor_id (16 ms)
+      ΓêÜ should fail when creating location with non-existent floor (16 ms)
+      ΓêÜ should fail when creating location with duplicate name (62 ms)
+    GET /api/v1/locations - Get All Locations
+      ΓêÜ should retrieve all locations successfully (20 ms)
+      ΓêÜ should filter locations by floor_id (19 ms)
+    GET /api/v1/locations/:id - Get Location by ID
+      ΓêÜ should retrieve location by ID successfully (25 ms)
+      ΓêÜ should return 404 for non-existent location (24 ms)
+    GET /api/v1/locations/floor/:floorId - Get Locations by Floor
+      ΓêÜ should retrieve locations by floor ID successfully (24 ms)
+      ΓêÜ should return 404 for non-existent floor (22 ms)
+    PUT /api/v1/locations/:id - Update Location
+      ΓêÜ should update location successfully (41 ms)
+      ΓêÜ should fail when updating location without name (23 ms)
+      ΓêÜ should fail when updating with non-existent floor (37 ms)
+      ΓêÜ should return 404 when updating non-existent location (26 ms)
+    DELETE /api/v1/locations/:id - Delete Location
+      ΓêÜ should delete location successfully (55 ms)
+      ΓêÜ should return 404 when deleting non-existent location (19 ms)
+
+PASS src/test/floor/floor.integration.js
+  Floor Integration Tests
+    POST /api/v1/floors - Create Floor
+      ΓêÜ should create a new floor successfully (198 ms)
+      ΓêÜ should fail when creating floor without floor_name (14 ms)
+      ΓêÜ should fail when creating floor without floor_number (13 ms)
+      ΓêÜ should fail when creating floor with duplicate floor_name (51 ms)
+      ΓêÜ should fail when creating floor with duplicate floor_number (47 ms)
+    GET /api/v1/floors - Get All Floors
+      ΓêÜ should retrieve all floors successfully (17 ms)
+    GET /api/v1/floors/:id - Get Floor by ID
+      ΓêÜ should retrieve floor by ID successfully (28 ms)
+      ΓêÜ should return 404 for non-existent floor ID (23 ms)
+    PUT /api/v1/floors/:id - Update Floor
+      ΓêÜ should update floor successfully (37 ms)
+      ΓêÜ should fail when updating floor without floor_name (15 ms)
+      ΓêÜ should return 404 when updating non-existent floor (20 ms)
+    DELETE /api/v1/floors/:id - Delete Floor
+      ΓêÜ should delete floor successfully (44 ms)
+      ΓêÜ should return 404 when deleting non-existent floor (26 ms)
+
+PASS src/test/invoice_promotion/invoice_promotion.integration.js
+  Invoice Promotion Integration Tests
+    POST /api/v1/invoice-promotions - Create Invoice Promotion
+      ΓêÜ should create invoice promotion (59 ms)
+      ΓêÜ should fail when invoice promotion already exists (54 ms)
+    GET /api/v1/invoice-promotions - Get All Invoice Promotions
+      ΓêÜ should return list of all invoice promotions (28 ms)
+      ΓêÜ should filter by invoice ID (22 ms)
+    GET /api/v1/invoice-promotions/:id - Get Invoice Promotion by ID
+      ΓêÜ should return invoice promotion details (27 ms)
+      ΓêÜ should fail when invoice promotion not found (18 ms)
+    GET /api/v1/invoice-promotions/invoice/:invoiceId - Get Promotions by Invoice
+      ΓêÜ should return promotions applied to invoice (30 ms)
+    GET /api/v1/invoice-promotions/statistics - Get Statistics
+      ΓêÜ should return invoice promotion statistics (29 ms)
+    DELETE /api/v1/invoice-promotions/:id - Delete Invoice Promotion
+      ΓêÜ should delete invoice promotion (19 ms)
+
+PASS src/test/promotion/promotion.integration.js
+  Promotion Integration Tests
+    POST /api/v1/promotions - Create Promotion
+      ΓêÜ should create a percentage discount promotion (180 ms)
+      ΓêÜ should create a fixed amount discount promotion (37 ms)
+      ΓêÜ should fail when creating promotion with duplicate promo code (18 ms)
+      ΓêÜ should fail when discount value is invalid (14 ms)
+    GET /api/v1/promotions - Get All Promotions
+      ΓêÜ should return list of all promotions (18 ms)
+      ΓêÜ should filter promotions by active status (19 ms)
+      ΓêÜ should filter promotions by type (25 ms)
+    GET /api/v1/promotions/:id - Get Promotion by ID
+      ΓêÜ should return promotion details (15 ms)
+      ΓêÜ should fail when promotion not found (16 ms)
+    POST /api/v1/promotions/validate - Validate Promo Code
+      ΓêÜ should validate promo code successfully (16 ms)
+      ΓêÜ should fail when order amount is below minimum (18 ms)
+    PUT /api/v1/promotions/:id - Update Promotion
+      ΓêÜ should update promotion successfully (24 ms)
+    PATCH /api/v1/promotions/:id/activate - Activate Promotion
+      ΓêÜ should activate promotion (16 ms)
+    PATCH /api/v1/promotions/:id/deactivate - Deactivate Promotion
+      ΓêÜ should deactivate promotion (15 ms)
+    GET /api/v1/promotions/statistics - Get Promotion Statistics
+      ΓêÜ should return promotion statistics (35 ms)
+    DELETE /api/v1/promotions/:id - Delete Promotion
+      ΓêÜ should delete promotion successfully (23 ms)
+
+  console.error
+    importItems error { status: 400, message: 'supplierId is required' }
+
+    [0m [90m 29 |[39m     [36mreturn[39m res[33m.[39mstatus([35m201[39m)[33m.[39mjson({ success[33m:[39m [36mtrue[39m[33m,[39m data[33m:[39m result[33m,[39m message[33m:[39m [32m'Import recorded'[39m })[33m;[39m
+     [90m 30 |[39m   } [36mcatch[39m (err) {
+    [31m[1m>[22m[39m[90m 31 |[39m     console[33m.[39merror([32m'importItems error'[39m[33m,[39m err)[33m;[39m
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 32 |[39m     [36mreturn[39m res[33m.[39mstatus(err[33m.[39mstatus [33m||[39m [35m500[39m)[33m.[39mjson({ success[33m:[39m [36mfalse[39m[33m,[39m data[33m:[39m [36mnull[39m[33m,[39m message[33m:[39m err[33m.[39mmessage [33m||[39m [32m'Internal Server Error'[39m })[33m;[39m
+     [90m 33 |[39m   }
+     [90m 34 |[39m }[33m;[39m[0m
+
+      at error (src/presentation_layer/controllers/inventory/inventory.controller.js:31:13)
+
+  console.error
+    exportItems error { status: 400, message: 'Insufficient stock for Tomato' }
+
+    [0m [90m 40 |[39m     [36mreturn[39m res[33m.[39mstatus([35m201[39m)[33m.[39mjson({ success[33m:[39m [36mtrue[39m[33m,[39m data[33m:[39m result[33m,[39m message[33m:[39m [32m'Export recorded'[39m })[33m;[39m
+     [90m 41 |[39m   } [36mcatch[39m (err) {
+    [31m[1m>[22m[39m[90m 42 |[39m     console[33m.[39merror([32m'exportItems error'[39m[33m,[39m err)[33m;[39m
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 43 |[39m     [36mreturn[39m res[33m.[39mstatus(err[33m.[39mstatus [33m||[39m [35m500[39m)[33m.[39mjson({ success[33m:[39m [36mfalse[39m[33m,[39m data[33m:[39m [36mnull[39m[33m,[39m message[33m:[39m err[33m.[39mmessage [33m||[39m [32m'Internal Server Error'[39m })[33m;[39m
+     [90m 44 |[39m   }
+     [90m 45 |[39m }[33m;[39m[0m
+
+      at error (src/presentation_layer/controllers/inventory/inventory.controller.js:42:13)
+
+PASS src/test/inventory/inventory.integration.test.js
+  Inventory Integration Tests
+    POST /api/v1/inventory/import
+      ΓêÜ Valid import should create new import and not override old batches (69 ms)
+      ΓêÜ Missing required field should return 400 (15 ms)
+    GET /api/v1/inventory
+      ΓêÜ Retrieve all inventory batches (18 ms)
+      ΓêÜ Filter lowStock=true returns low stock batches (24 ms)
+      ΓêÜ Filter expiring=true returns batches expiring in next 7 days (15 ms)
+    POST /api/v1/inventory/export
+      ΓêÜ Valid export should decrement ingredient stock (45 ms)
+      ΓêÜ Export more than available should fail (20 ms)
+
+PASS src/test/reservation/reservationdetail.test.js
+  ReservationDetail API
+    POST /api/v1/reservation-details - Create Detail
+      ΓêÜ creates a reservation detail (59 ms)
+    GET /api/v1/reservation-details - List Details
+      ΓêÜ lists all reservation details (17 ms)
+    GET /api/v1/reservation-details/:id - Get Detail
+      ΓêÜ gets reservation detail by id (17 ms)
+      ΓêÜ returns 404 for non-existent detail (17 ms)
+    PUT /api/v1/reservation-details/:id - Update Detail
+      ΓêÜ updates reservation detail (19 ms)
+    DELETE /api/v1/reservation-details/:id - Delete Detail
+      ΓêÜ deletes reservation detail (25 ms)
+
+  console.error
+    createSupplier error { status: 409, message: 'Supplier with this name already exists' }
+
+    [0m [90m 26 |[39m     [36mreturn[39m res[33m.[39mstatus([35m201[39m)[33m.[39mjson({ success[33m:[39m [36mtrue[39m[33m,[39m data[33m:[39m result[33m,[39m message[33m:[39m [32m'Supplier created'[39m })[33m;[39m
+     [90m 27 |[39m   } [36mcatch[39m (err) {
+    [31m[1m>[22m[39m[90m 28 |[39m     console[33m.[39merror([32m'createSupplier error'[39m[33m,[39m err)[33m;[39m
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 29 |[39m     [36mreturn[39m res[33m.[39mstatus(err[33m.[39mstatus [33m||[39m [35m500[39m)[33m.[39mjson({ success[33m:[39m [36mfalse[39m[33m,[39m data[33m:[39m [36mnull[39m[33m,[39m message[33m:[39m err[33m.[39mmessage [33m||[39m [32m'Internal Server Error'[39m })[33m;[39m
+     [90m 30 |[39m   }
+     [90m 31 |[39m }[33m;[39m[0m
+
+      at error (src/presentation_layer/controllers/supplier/supplier.controller.js:28:13)
+
+  console.error
+    updateSupplier error { status: 404, message: 'Supplier not found' }
+
+    [0m [90m 38 |[39m     [36mreturn[39m res[33m.[39mjson({ success[33m:[39m [36mtrue[39m[33m,[39m data[33m:[39m result[33m,[39m message[33m:[39m [32m'Supplier updated'[39m })[33m;[39m
+     [90m 39 |[39m   } [36mcatch[39m (err) {
+    [31m[1m>[22m[39m[90m 40 |[39m     console[33m.[39merror([32m'updateSupplier error'[39m[33m,[39m err)[33m;[39m
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 41 |[39m     [36mreturn[39m res[33m.[39mstatus(err[33m.[39mstatus [33m||[39m [35m500[39m)[33m.[39mjson({ success[33m:[39m [36mfalse[39m[33m,[39m data[33m:[39m [36mnull[39m[33m,[39m message[33m:[39m err[33m.[39mmessage [33m||[39m [32m'Internal Server Error'[39m })[33m;[39m
+     [90m 42 |[39m   }
+     [90m 43 |[39m }[33m;[39m[0m
+
+      at error (src/presentation_layer/controllers/supplier/supplier.controller.js:40:13)
+
+  console.error
+    deleteSupplier error { status: 404, message: 'Supplier not found' }
+
+    [0m [90m 49 |[39m     [36mreturn[39m res[33m.[39mjson({ success[33m:[39m [36mtrue[39m[33m,[39m data[33m:[39m [36mnull[39m[33m,[39m message[33m:[39m [32m'Supplier deleted'[39m })[33m;[39m
+     [90m 50 |[39m   } [36mcatch[39m (err) {
+    [31m[1m>[22m[39m[90m 51 |[39m     console[33m.[39merror([32m'deleteSupplier error'[39m[33m,[39m err)[33m;[39m
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 52 |[39m     [36mreturn[39m res[33m.[39mstatus(err[33m.[39mstatus [33m||[39m [35m500[39m)[33m.[39mjson({ success[33m:[39m [36mfalse[39m[33m,[39m data[33m:[39m [36mnull[39m[33m,[39m message[33m:[39m err[33m.[39mmessage [33m||[39m [32m'Internal Server Error'[39m })[33m;[39m
+     [90m 53 |[39m   }
+     [90m 54 |[39m }[33m;[39m[0m
+
+      at error (src/presentation_layer/controllers/supplier/supplier.controller.js:51:13)
+
+PASS src/test/supplier/supplier.integration.test.js
+  Supplier Integration Tests
+    POST /api/v1/suppliers
+      ΓêÜ Create new supplier (52 ms)
+      ΓêÜ Duplicate name should be rejected (case-insensitive) (17 ms)
+    GET /api/v1/suppliers
+      ΓêÜ Return array of suppliers (15 ms)
+    PUT /api/v1/suppliers/:id
+      ΓêÜ Update supplier info (35 ms)
+      ΓêÜ Update non-existent supplier returns 404 (25 ms)
+    DELETE /api/v1/suppliers/:id
+      ΓêÜ Delete supplier (52 ms)
+      ΓêÜ Delete non-existent supplier returns 404 (16 ms)
+
+Summary of all failing tests
+FAIL src/test/rating_reply/rating_reply.integration.js
+  ΓùÅ Rating Reply Integration Tests ΓÇ║ POST /api/v1/rating-replies - Create Rating Reply ΓÇ║ should create new rating reply
+
+    expected 201 "Created", got 400 "Bad Request"
+
+      69 |         .post('/api/v1/rating-replies')
+      70 |         .send(newReply)
+    > 71 |         .expect(201);
+         |          ^
+      72 |
+      73 |       expect(response.body.success).toBe(true);
+      74 |       expect(response.body.data).toHaveProperty('id');
+
+      at Object.expect (src/test/rating_reply/rating_reply.integration.js:71:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Reply Integration Tests ΓÇ║ GET /api/v1/rating-replies - Get All Rating Replies ΓÇ║ should return list of all rating replies
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      113 |       const response = await request(app)
+      114 |         .get('/api/v1/rating-replies')
+    > 115 |         .expect(200);
+          |          ^
+      116 |
+      117 |       expect(response.body.success).toBe(true);
+      118 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/rating_reply/rating_reply.integration.js:115:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Reply Integration Tests ΓÇ║ GET /api/v1/rating-replies - Get All Rating Replies ΓÇ║ should filter by rating ID
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      123 |       const response = await request(app)
+      124 |         .get(`/api/v1/rating-replies?rating_id=${testRatingId}`)
+    > 125 |         .expect(200);
+          |          ^
+      126 |
+      127 |       expect(response.body.success).toBe(true);
+      128 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/rating_reply/rating_reply.integration.js:125:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Reply Integration Tests ΓÇ║ GET /api/v1/rating-replies - Get All Rating Replies ΓÇ║ should filter by staff ID
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      132 |       const response = await request(app)
+      133 |         .get(`/api/v1/rating-replies?staff_id=${testStaffId}`)
+    > 134 |         .expect(200);
+          |          ^
+      135 |
+      136 |       expect(response.body.success).toBe(true);
+      137 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/rating_reply/rating_reply.integration.js:134:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Reply Integration Tests ΓÇ║ GET /api/v1/rating-replies/:id - Get Rating Reply by ID ΓÇ║ should return rating reply details
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      143 |       const response = await request(app)
+      144 |         .get(`/api/v1/rating-replies/${createdReplyId}`)
+    > 145 |         .expect(200);
+          |          ^
+      146 |
+      147 |       expect(response.body.success).toBe(true);
+      148 |       expect(response.body.data).toHaveProperty('id');
+
+      at Object.expect (src/test/rating_reply/rating_reply.integration.js:145:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Reply Integration Tests ΓÇ║ GET /api/v1/rating-replies/rating/:ratingId - Get Replies by Rating ΓÇ║ should return all replies for specific rating
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      164 |       const response = await request(app)
+      165 |         .get(`/api/v1/rating-replies/rating/${testRatingId}`)
+    > 166 |         .expect(200);
+          |          ^
+      167 |
+      168 |       expect(response.body.success).toBe(true);
+      169 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/rating_reply/rating_reply.integration.js:166:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Reply Integration Tests ΓÇ║ PUT /api/v1/rating-replies/:id - Update Rating Reply ΓÇ║ should update rating reply
+
+    expected 200 "OK", got 400 "Bad Request"
+
+      209 |         .put(`/api/v1/rating-replies/${createdReplyId}`)
+      210 |         .send(updates)
+    > 211 |         .expect(200);
+          |          ^
+      212 |
+      213 |       expect(response.body.success).toBe(true);
+      214 |       expect(response.body.data.reply_text).toBe(updates.reply_text);
+
+      at Object.expect (src/test/rating_reply/rating_reply.integration.js:211:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Reply Integration Tests ΓÇ║ PUT /api/v1/rating-replies/:id - Update Rating Reply ΓÇ║ should fail when updating with empty reply text
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "empty"
+    Received string:    "Cast to ObjectId failed for value \"undefined\" (type string) at path \"_id\" for model \"RatingReply\""
+
+      226 |
+      227 |       expect(response.body.success).toBe(false);
+    > 228 |       expect(response.body.message).toContain('empty');
+          |                                     ^
+      229 |     });
+      230 |
+      231 |     it('should fail when reply text exceeds maximum length', async () => {
+
+      at Object.toContain (src/test/rating_reply/rating_reply.integration.js:228:37)
+
+  ΓùÅ Rating Reply Integration Tests ΓÇ║ PUT /api/v1/rating-replies/:id - Update Rating Reply ΓÇ║ should fail when reply text exceeds maximum length
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "exceed"
+    Received string:    "Cast to ObjectId failed for value \"undefined\" (type string) at path \"_id\" for model \"RatingReply\""
+
+      241 |
+      242 |       expect(response.body.success).toBe(false);
+    > 243 |       expect(response.body.message).toContain('exceed');
+          |                                     ^
+      244 |     });
+      245 |   });
+      246 |
+
+      at Object.toContain (src/test/rating_reply/rating_reply.integration.js:243:37)
+
+  ΓùÅ Rating Reply Integration Tests ΓÇ║ DELETE /api/v1/rating-replies/:id - Delete Rating Reply ΓÇ║ should delete rating reply
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      292 |       const response = await request(app)
+      293 |         .delete(`/api/v1/rating-replies/${createdReplyId}`)
+    > 294 |         .expect(200);
+          |          ^
+      295 |
+      296 |       expect(response.body.success).toBe(true);
+      297 |       expect(response.body.data.message).toContain('deleted successfully');
+
+      at Object.expect (src/test/rating_reply/rating_reply.integration.js:294:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+FAIL src/test/violation/violation.integration.js
+  ΓùÅ Violation Integration Tests ΓÇ║ GET /api/v1/violations - Get All Violations ΓÇ║ should return list of all violations
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      90 |       const response = await request(app)
+      91 |         .get('/api/v1/violations')
+    > 92 |         .expect(200);
+         |          ^
+      93 |
+      94 |       expect(response.body.success).toBe(true);
+      95 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/violation/violation.integration.js:92:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Violation Integration Tests ΓÇ║ GET /api/v1/violations - Get All Violations ΓÇ║ should filter by type
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      100 |       const response = await request(app)
+      101 |         .get('/api/v1/violations?violation_type=no_show')
+    > 102 |         .expect(200);
+          |          ^
+      103 |
+      104 |       expect(response.body.success).toBe(true);
+      105 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/violation/violation.integration.js:102:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Violation Integration Tests ΓÇ║ GET /api/v1/violations/:id - Get Violation by ID ΓÇ║ should return violation details
+
+    expected 200 "OK", got 404 "Not Found"
+
+      126 |       const response = await request(app)
+      127 |         .get(`/api/v1/violations/${createdViolationId}`)
+    > 128 |         .expect(200);
+          |          ^
+      129 |
+      130 |       expect(response.body.success).toBe(true);
+      131 |       expect(response.body.data).toHaveProperty('id');
+
+      at Object.expect (src/test/violation/violation.integration.js:128:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Violation Integration Tests ΓÇ║ PUT /api/v1/violations/:id - Update Violation ΓÇ║ should update violation
+
+    expected 200 "OK", got 400 "Bad Request"
+
+      176 |         .put(`/api/v1/violations/${createdViolationId}`)
+      177 |         .send(updates)
+    > 178 |         .expect(200);
+          |          ^
+      179 |
+      180 |       expect(response.body.success).toBe(true);
+      181 |       expect(response.body.data.description).toBe(updates.description);
+
+      at Object.expect (src/test/violation/violation.integration.js:178:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+FAIL src/test/complaint/complaint.integration.js
+  ΓùÅ Complaint Integration Tests ΓÇ║ GET /api/v1/complaints - Get All Complaints ΓÇ║ should return list of all complaints
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+       95 |       const response = await request(app)
+       96 |         .get('/api/v1/complaints')
+    >  97 |         .expect(200);
+          |          ^
+       98 |
+       99 |       expect(response.body.success).toBe(true);
+      100 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/complaint/complaint.integration.js:97:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Complaint Integration Tests ΓÇ║ GET /api/v1/complaints - Get All Complaints ΓÇ║ should filter by status
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      105 |       const response = await request(app)
+      106 |         .get('/api/v1/complaints?status=open')
+    > 107 |         .expect(200);
+          |          ^
+      108 |
+      109 |       expect(response.body.success).toBe(true);
+      110 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/complaint/complaint.integration.js:107:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Complaint Integration Tests ΓÇ║ GET /api/v1/complaints - Get All Complaints ΓÇ║ should filter by customer ID
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      114 |       const response = await request(app)
+      115 |         .get(`/api/v1/complaints?customer_id=${testCustomerId}`)
+    > 116 |         .expect(200);
+          |          ^
+      117 |
+      118 |       expect(response.body.success).toBe(true);
+      119 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/complaint/complaint.integration.js:116:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Complaint Integration Tests ΓÇ║ GET /api/v1/complaints/:id - Get Complaint by ID ΓÇ║ should return complaint details
+
+    expected 200 "OK", got 404 "Not Found"
+
+      125 |       const response = await request(app)
+      126 |         .get(`/api/v1/complaints/${createdComplaintId}`)
+    > 127 |         .expect(200);
+          |          ^
+      128 |
+      129 |       expect(response.body.success).toBe(true);
+      130 |       expect(response.body.data).toHaveProperty('id');
+
+      at Object.expect (src/test/complaint/complaint.integration.js:127:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Complaint Integration Tests ΓÇ║ PUT /api/v1/complaints/:id - Update Complaint ΓÇ║ should update complaint details
+
+    expected 200 "OK", got 400 "Bad Request"
+
+      152 |         .put(`/api/v1/complaints/${createdComplaintId}`)
+      153 |         .send(updates)
+    > 154 |         .expect(200);
+          |          ^
+      155 |
+      156 |       expect(response.body.success).toBe(true);
+      157 |       expect(response.body.data.priority).toBe(updates.priority);
+
+      at Object.expect (src/test/complaint/complaint.integration.js:154:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Complaint Integration Tests ΓÇ║ PUT /api/v1/complaints/:id - Update Complaint ΓÇ║ should fail when updating closed complaint
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "closed"
+    Received string:    "Schema hasn't been registered for model \"Customer\".
+    Use mongoose.model(name, schema)"
+
+      170 |
+      171 |       expect(response.body.success).toBe(false);
+    > 172 |       expect(response.body.message).toContain('closed');
+          |                                     ^
+      173 |
+      174 |       await Complaint.findByIdAndUpdate(createdComplaintId, { status: 'open' });
+      175 |     });
+
+      at Object.toContain (src/test/complaint/complaint.integration.js:172:37)
+
+  ΓùÅ Complaint Integration Tests ΓÇ║ PATCH /api/v1/complaints/:id/status - Update Complaint Status ΓÇ║ should update complaint status
+
+    expected 200 "OK", got 400 "Bad Request"
+
+      181 |         .patch(`/api/v1/complaints/${createdComplaintId}/status`)
+      182 |         .send({ status: 'in_progress' })
+    > 183 |         .expect(200);
+          |          ^
+      184 |
+      185 |       expect(response.body.success).toBe(true);
+      186 |       expect(response.body.data.status).toBe('in_progress');
+
+      at Object.expect (src/test/complaint/complaint.integration.js:183:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Complaint Integration Tests ΓÇ║ PATCH /api/v1/complaints/:id/assign - Assign Complaint to Staff ΓÇ║ should assign complaint to staff
+
+    expected 200 "OK", got 400 "Bad Request"
+
+      202 |         .patch(`/api/v1/complaints/${createdComplaintId}/assign`)
+      203 |         .send({ staff_id: testStaffId })
+    > 204 |         .expect(200);
+          |          ^
+      205 |
+      206 |       expect(response.body.success).toBe(true);
+      207 |       const assignedStaffId = typeof response.body.data.assigned_to_staff_id === 'object' 
+
+      at Object.expect (src/test/complaint/complaint.integration.js:204:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Complaint Integration Tests ΓÇ║ PATCH /api/v1/complaints/:id/resolve - Resolve Complaint ΓÇ║ should resolve complaint
+
+    expected 200 "OK", got 400 "Bad Request"
+
+      229 |         .patch(`/api/v1/complaints/${createdComplaintId}/resolve`)
+      230 |         .send({ resolution: 'Issue resolved successfully' })
+    > 231 |         .expect(200);
+          |          ^
+      232 |
+      233 |       expect(response.body.success).toBe(true);
+      234 |       expect(response.body.data.status).toBe('resolved');
+
+      at Object.expect (src/test/complaint/complaint.integration.js:231:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+FAIL src/test/customer/customer.integration.js
+  ΓùÅ Customer Integration Tests ΓÇ║ POST /api/v1/customers - Create Customer ΓÇ║ should create a new customer successfully
+
+    expected 201 "Created", got 400 "Bad Request"
+
+      34 |         .post('/api/v1/customers')
+      35 |         .send(newCustomer)
+    > 36 |         .expect(201);
+         |          ^
+      37 |
+      38 |       expect(response.body.success).toBe(true);
+      39 |       expect(response.body.data).toHaveProperty('id');
+
+      at Object.expect (src/test/customer/customer.integration.js:36:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Customer Integration Tests ΓÇ║ POST /api/v1/customers - Create Customer ΓÇ║ should fail when creating customer with duplicate email
+
+    expected 201 "Created", got 400 "Bad Request"
+
+      58 |         .post('/api/v1/customers')
+      59 |         .send(firstCustomer)
+    > 60 |         .expect(201);
+         |          ^
+      61 |
+      62 |       // Then try to create another customer with the same email
+      63 |       const duplicateCustomer = {
+
+      at Object.expect (src/test/customer/customer.integration.js:60:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+FAIL src/test/invoice/invoice.integration.js
+  ΓùÅ Invoice Integration Tests ΓÇ║ POST /api/v1/invoices - Create Invoice ΓÇ║ should create invoice without promo code
+
+    expected 201 "Created", got 400 "Bad Request"
+
+      82 |         .post('/api/v1/invoices')
+      83 |         .send(newInvoice)
+    > 84 |         .expect(201);
+         |          ^
+      85 |
+      86 |       expect(response.body.success).toBe(true);
+      87 |       expect(response.body.data).toHaveProperty('id');
+
+      at Object.expect (src/test/invoice/invoice.integration.js:84:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Invoice Integration Tests ΓÇ║ POST /api/v1/invoices - Create Invoice ΓÇ║ should fail when creating invoice for same order
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "already exists"
+    Received string:    "Schema hasn't been registered for model \"Staff\".
+    Use mongoose.model(name, schema)"
+
+      107 |
+      108 |       expect(response.body.success).toBe(false);
+    > 109 |       expect(response.body.message).toContain('already exists');
+          |                                     ^
+      110 |     });
+      111 |   });
+      112 |
+
+      at Object.toContain (src/test/invoice/invoice.integration.js:109:37)
+
+  ΓùÅ Invoice Integration Tests ΓÇ║ GET /api/v1/invoices - Get All Invoices ΓÇ║ should return list of all invoices
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      115 |       const response = await request(app)
+      116 |         .get('/api/v1/invoices')
+    > 117 |         .expect(200);
+          |          ^
+      118 |
+      119 |       expect(response.body.success).toBe(true);
+      120 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/invoice/invoice.integration.js:117:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Invoice Integration Tests ΓÇ║ GET /api/v1/invoices - Get All Invoices ΓÇ║ should filter invoices by payment status
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      125 |       const response = await request(app)
+      126 |         .get('/api/v1/invoices?payment_status=pending')
+    > 127 |         .expect(200);
+          |          ^
+      128 |
+      129 |       expect(response.body.success).toBe(true);
+      130 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/invoice/invoice.integration.js:127:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Invoice Integration Tests ΓÇ║ GET /api/v1/invoices - Get All Invoices ΓÇ║ should filter invoices by payment method
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      134 |       const response = await request(app)
+      135 |         .get('/api/v1/invoices?payment_method=cash')
+    > 136 |         .expect(200);
+          |          ^
+      137 |
+      138 |       expect(response.body.success).toBe(true);
+      139 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/invoice/invoice.integration.js:136:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Invoice Integration Tests ΓÇ║ GET /api/v1/invoices/:id - Get Invoice by ID ΓÇ║ should return invoice details with populated data
+
+    expected 200 "OK", got 404 "Not Found"
+
+      145 |       const response = await request(app)
+      146 |         .get(`/api/v1/invoices/${createdInvoiceId}`)
+    > 147 |         .expect(200);
+          |          ^
+      148 |
+      149 |       expect(response.body.success).toBe(true);
+      150 |       expect(response.body.data).toHaveProperty('id');
+
+      at Object.expect (src/test/invoice/invoice.integration.js:147:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Invoice Integration Tests ΓÇ║ PATCH /api/v1/invoices/:id/paid - Mark as Paid ΓÇ║ should mark invoice as paid
+
+    expected 200 "OK", got 400 "Bad Request"
+
+      167 |       const response = await request(app)
+      168 |         .patch(`/api/v1/invoices/${createdInvoiceId}/paid`)
+    > 169 |         .expect(200);
+          |          ^
+      170 |
+      171 |       expect(response.body.success).toBe(true);
+      172 |       expect(response.body.data.payment_status).toBe('paid');
+
+      at Object.expect (src/test/invoice/invoice.integration.js:169:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Invoice Integration Tests ΓÇ║ PATCH /api/v1/invoices/:id/paid - Mark as Paid ΓÇ║ should fail when invoice already paid
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "already paid"
+    Received string:    "Cast to ObjectId failed for value \"undefined\" (type string) at path \"_id\" for model \"Invoice\""
+
+      180 |
+      181 |       expect(response.body.success).toBe(false);
+    > 182 |       expect(response.body.message).toContain('already paid');
+          |                                     ^
+      183 |     });
+      184 |   });
+      185 |
+
+      at Object.toContain (src/test/invoice/invoice.integration.js:182:37)
+
+  ΓùÅ Invoice Integration Tests ΓÇ║ DELETE /api/v1/invoices/:id - Delete Invoice ΓÇ║ should fail to delete paid invoice
+
+    expected 400 "Bad Request", got 404 "Not Found"
+
+      202 |       const response = await request(app)
+      203 |         .delete(`/api/v1/invoices/${createdInvoiceId}`)
+    > 204 |         .expect(400);
+          |          ^
+      205 |
+      206 |       expect(response.body.success).toBe(false);
+      207 |       expect(response.body.message).toContain('Cannot delete paid invoice');
+
+      at Object.expect (src/test/invoice/invoice.integration.js:204:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+FAIL src/test/rating/rating.integration.js
+  ΓùÅ Rating Integration Tests ΓÇ║ POST /api/v1/ratings - Create Rating ΓÇ║ should create new rating
+
+    expected 201 "Created", got 400 "Bad Request"
+
+      64 |         .post('/api/v1/ratings')
+      65 |         .send(newRating)
+    > 66 |         .expect(201);
+         |          ^
+      67 |
+      68 |       expect(response.body.success).toBe(true);
+      69 |       expect(response.body.data).toHaveProperty('id');
+
+      at Object.expect (src/test/rating/rating.integration.js:66:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Integration Tests ΓÇ║ GET /api/v1/ratings - Get All Ratings ΓÇ║ should return list of all ratings
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+       95 |       const response = await request(app)
+       96 |         .get('/api/v1/ratings')
+    >  97 |         .expect(200);
+          |          ^
+       98 |
+       99 |       expect(response.body.success).toBe(true);
+      100 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/rating/rating.integration.js:97:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Integration Tests ΓÇ║ GET /api/v1/ratings - Get All Ratings ΓÇ║ should filter by customer ID
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      105 |       const response = await request(app)
+      106 |         .get(`/api/v1/ratings?customer_id=${testCustomerId}`)
+    > 107 |         .expect(200);
+          |          ^
+      108 |
+      109 |       expect(response.body.success).toBe(true);
+      110 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/rating/rating.integration.js:107:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Integration Tests ΓÇ║ GET /api/v1/ratings - Get All Ratings ΓÇ║ should filter by minimum score
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      114 |       const response = await request(app)
+      115 |         .get('/api/v1/ratings?min_score=4')
+    > 116 |         .expect(200);
+          |          ^
+      117 |
+      118 |       expect(response.body.success).toBe(true);
+      119 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/rating/rating.integration.js:116:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Integration Tests ΓÇ║ GET /api/v1/ratings/:id - Get Rating by ID ΓÇ║ should return rating details
+
+    expected 200 "OK", got 404 "Not Found"
+
+      128 |       const response = await request(app)
+      129 |         .get(`/api/v1/ratings/${createdRatingId}`)
+    > 130 |         .expect(200);
+          |          ^
+      131 |
+      132 |       expect(response.body.success).toBe(true);
+      133 |       expect(response.body.data).toHaveProperty('id');
+
+      at Object.expect (src/test/rating/rating.integration.js:130:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Integration Tests ΓÇ║ PUT /api/v1/ratings/:id - Update Rating ΓÇ║ should update rating
+
+    expected 200 "OK", got 400 "Bad Request"
+
+      155 |         .put(`/api/v1/ratings/${createdRatingId}`)
+      156 |         .send(updates)
+    > 157 |         .expect(200);
+          |          ^
+      158 |
+      159 |       expect(response.body.success).toBe(true);
+      160 |       expect(response.body.data.score).toBe(updates.score);
+
+      at Object.expect (src/test/rating/rating.integration.js:157:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Integration Tests ΓÇ║ POST /api/v1/ratings/:id/reply - Create Rating Reply ΓÇ║ should create reply to rating
+
+    expected 201 "Created", got 400 "Bad Request"
+
+      173 |         .post('/api/v1/rating-replies')
+      174 |         .send({ ...newReply, rating_id: createdRatingId })
+    > 175 |         .expect(201);
+          |          ^
+      176 |
+      177 |       expect(response.body.success).toBe(true);
+      178 |       expect(response.body.data).toHaveProperty('id');
+
+      at Object.expect (src/test/rating/rating.integration.js:175:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Integration Tests ΓÇ║ GET /api/v1/ratings/:id/replies - Get Rating Replies ΓÇ║ should return all replies for rating
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      201 |       const response = await request(app)
+      202 |         .get(`/api/v1/rating-replies/rating/${createdRatingId}`)
+    > 203 |         .expect(200);
+          |          ^
+      204 |
+      205 |       expect(response.body.success).toBe(true);
+      206 |       expect(response.body.data).toBeInstanceOf(Array);
+
+      at Object.expect (src/test/rating/rating.integration.js:203:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Integration Tests ΓÇ║ PUT /api/v1/ratings/replies/:replyId - Update Rating Reply ΓÇ║ should update reply
+
+    expected 200 "OK", got 400 "Bad Request"
+
+      218 |         .put(`/api/v1/rating-replies/${createdReplyId}`)
+      219 |         .send(updates)
+    > 220 |         .expect(200);
+          |          ^
+      221 |
+      222 |       expect(response.body.success).toBe(true);
+      223 |       expect(response.body.data.reply_text).toBe(updates.reply_text);
+
+      at Object.expect (src/test/rating/rating.integration.js:220:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Integration Tests ΓÇ║ DELETE /api/v1/ratings/replies/:replyId - Delete Rating Reply ΓÇ║ should delete reply
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      241 |       const response = await request(app)
+      242 |         .delete(`/api/v1/rating-replies/${createdReplyId}`)
+    > 243 |         .expect(200);
+          |          ^
+      244 |
+      245 |       expect(response.body.success).toBe(true);
+      246 |       expect(response.body.data.message).toContain('deleted successfully');
+
+      at Object.expect (src/test/rating/rating.integration.js:243:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+  ΓùÅ Rating Integration Tests ΓÇ║ DELETE /api/v1/ratings/:id - Delete Rating ΓÇ║ should delete rating and cascade delete replies
+
+    expected 200 "OK", got 404 "Not Found"
+
+      254 |       const response = await request(app)
+      255 |         .delete(`/api/v1/ratings/${createdRatingId}`)
+    > 256 |         .expect(200);
+          |          ^
+      257 |
+      258 |       expect(response.body.success).toBe(true);
+      259 |       expect(response.body.data.message).toContain('deleted successfully');
+
+      at Object.expect (src/test/rating/rating.integration.js:256:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:252:14)
+      at node_modules/supertest/lib/test.js:308:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:285:13)
+      at Test.assert (node_modules/supertest/lib/test.js:164:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:120:14)
+
+
+Test Suites: 6 failed, 15 passed, 21 total
+Tests:       45 failed, 280 passed, 325 total
+Snapshots:   0 total
+Time:        20.626 s
+Ran all test suites.
+
+Jest has detected the following 4 open handles potentially keeping Jest from exiting:
+
+  ΓùÅ  TCPWRAP
+
+      3 | const connectDB = async () => {
+      4 |   try {
+    > 5 |     const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/restaurant_management', {
+        |                                 ^
+      6 |       // Mongoose 6+ kh├┤ng cß║ºn c├íc options n├áy nß╗»a
+      7 |     });
+      8 |
+
+      at makeSocket (node_modules/mongodb/src/cmap/connect.ts:379:18)
+      at node_modules/mongodb/src/sdam/monitor.ts:383:36
+      at checkServer (node_modules/mongodb/src/sdam/monitor.ts:394:5)
+      at MonitorInterval.fn (node_modules/mongodb/src/sdam/monitor.ts:441:5)
+      at MonitorInterval._executeAndReschedule (node_modules/mongodb/src/sdam/monitor.ts:686:10)
+      at new MonitorInterval (node_modules/mongodb/src/sdam/monitor.ts:603:12)
+      at Monitor.connect (node_modules/mongodb/src/sdam/monitor.ts:160:22)
+      at Server.connect (node_modules/mongodb/src/sdam/server.ts:243:21)
+      at createAndConnectServer (node_modules/mongodb/src/sdam/topology.ts:853:10)
+      at node_modules/mongodb/src/sdam/topology.ts:437:9
+          at Array.map (<anonymous>)
+      at Topology._connect (node_modules/mongodb/src/sdam/topology.ts:435:26)
+      at Topology.connect (node_modules/mongodb/src/sdam/topology.ts:402:34)
+      at topologyConnect (node_modules/mongodb/src/mongo_client.ts:695:30)
+      at MongoClient._connect (node_modules/mongodb/src/mongo_client.ts:707:13)
+      at MongoClient.connect (node_modules/mongodb/src/mongo_client.ts:618:34)
+      at NativeConnection.createClient (node_modules/mongoose/lib/drivers/node-mongodb-native/connection.js:351:16)
+      at NativeConnection.openUri (node_modules/mongoose/lib/connection.js:1075:34)
+      at Mongoose.connect (node_modules/mongoose/lib/mongoose.js:450:15)
+      at connect (config/database.js:5:33)
+      at Object.connectDB (server.js:33:1)
+      at Object.require (src/test/rating_reply/rating_reply.integration.js:2:13)
+
+
+  ΓùÅ  TCPWRAP
+
+      3 | const connectDB = async () => {
+      4 |   try {
+    > 5 |     const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/restaurant_management', {
+        |                                 ^
+      6 |       // Mongoose 6+ kh├┤ng cß║ºn c├íc options n├áy nß╗»a
+      7 |     });
+      8 |
+
+      at makeSocket (node_modules/mongodb/src/cmap/connect.ts:379:18)
+      at node_modules/mongodb/src/sdam/monitor.ts:383:36
+      at checkServer (node_modules/mongodb/src/sdam/monitor.ts:394:5)
+      at MonitorInterval.fn (node_modules/mongodb/src/sdam/monitor.ts:441:5)
+      at MonitorInterval._executeAndReschedule (node_modules/mongodb/src/sdam/monitor.ts:686:10)
+      at new MonitorInterval (node_modules/mongodb/src/sdam/monitor.ts:603:12)
+      at Monitor.connect (node_modules/mongodb/src/sdam/monitor.ts:160:22)
+      at Server.connect (node_modules/mongodb/src/sdam/server.ts:243:21)
+      at createAndConnectServer (node_modules/mongodb/src/sdam/topology.ts:853:10)
+      at node_modules/mongodb/src/sdam/topology.ts:437:9
+          at Array.map (<anonymous>)
+      at Topology._connect (node_modules/mongodb/src/sdam/topology.ts:435:26)
+      at Topology.connect (node_modules/mongodb/src/sdam/topology.ts:402:34)
+      at topologyConnect (node_modules/mongodb/src/mongo_client.ts:695:30)
+      at MongoClient._connect (node_modules/mongodb/src/mongo_client.ts:707:13)
+      at MongoClient.connect (node_modules/mongodb/src/mongo_client.ts:618:34)
+      at NativeConnection.createClient (node_modules/mongoose/lib/drivers/node-mongodb-native/connection.js:351:16)
+      at NativeConnection.openUri (node_modules/mongoose/lib/connection.js:1075:34)
+      at Mongoose.connect (node_modules/mongoose/lib/mongoose.js:450:15)
+      at connect (config/database.js:5:33)
+      at Object.connectDB (server.js:33:1)
+      at Object.require (src/test/invoice/invoice.integration.js:2:13)
+
+
+  ΓùÅ  TCPWRAP
+
+      3 | const connectDB = async () => {
+      4 |   try {
+    > 5 |     const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/restaurant_management', {
+        |                                 ^
+      6 |       // Mongoose 6+ kh├┤ng cß║ºn c├íc options n├áy nß╗»a
+      7 |     });
+      8 |
+
+      at makeSocket (node_modules/mongodb/src/cmap/connect.ts:379:18)
+      at node_modules/mongodb/src/sdam/monitor.ts:383:36
+      at checkServer (node_modules/mongodb/src/sdam/monitor.ts:394:5)
+      at MonitorInterval.fn (node_modules/mongodb/src/sdam/monitor.ts:441:5)
+      at MonitorInterval._executeAndReschedule (node_modules/mongodb/src/sdam/monitor.ts:686:10)
+      at new MonitorInterval (node_modules/mongodb/src/sdam/monitor.ts:603:12)
+      at Monitor.connect (node_modules/mongodb/src/sdam/monitor.ts:160:22)
+      at Server.connect (node_modules/mongodb/src/sdam/server.ts:243:21)
+      at createAndConnectServer (node_modules/mongodb/src/sdam/topology.ts:853:10)
+      at node_modules/mongodb/src/sdam/topology.ts:437:9
+          at Array.map (<anonymous>)
+      at Topology._connect (node_modules/mongodb/src/sdam/topology.ts:435:26)
+      at Topology.connect (node_modules/mongodb/src/sdam/topology.ts:402:34)
+      at topologyConnect (node_modules/mongodb/src/mongo_client.ts:695:30)
+      at MongoClient._connect (node_modules/mongodb/src/mongo_client.ts:707:13)
+      at MongoClient.connect (node_modules/mongodb/src/mongo_client.ts:618:34)
+      at NativeConnection.createClient (node_modules/mongoose/lib/drivers/node-mongodb-native/connection.js:351:16)
+      at NativeConnection.openUri (node_modules/mongoose/lib/connection.js:1075:34)
+      at Mongoose.connect (node_modules/mongoose/lib/mongoose.js:450:15)
+      at connect (config/database.js:5:33)
+      at Object.connectDB (server.js:33:1)
+      at Object.require (src/test/rating/rating.integration.js:2:13)
+
+
+  ΓùÅ  TCPWRAP
+
+      3 | const connectDB = async () => {
+      4 |   try {
+    > 5 |     const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/restaurant_management', {
+        |                                 ^
+      6 |       // Mongoose 6+ kh├┤ng cß║ºn c├íc options n├áy nß╗»a
+      7 |     });
+      8 |
+
+      at makeSocket (node_modules/mongodb/src/cmap/connect.ts:379:18)
+      at node_modules/mongodb/src/sdam/monitor.ts:383:36
+      at checkServer (node_modules/mongodb/src/sdam/monitor.ts:394:5)
+      at MonitorInterval.fn (node_modules/mongodb/src/sdam/monitor.ts:441:5)
+      at MonitorInterval._executeAndReschedule (node_modules/mongodb/src/sdam/monitor.ts:686:10)
+      at new MonitorInterval (node_modules/mongodb/src/sdam/monitor.ts:603:12)
+      at Monitor.connect (node_modules/mongodb/src/sdam/monitor.ts:160:22)
+      at Server.connect (node_modules/mongodb/src/sdam/server.ts:243:21)
+      at createAndConnectServer (node_modules/mongodb/src/sdam/topology.ts:853:10)
+      at node_modules/mongodb/src/sdam/topology.ts:437:9
+          at Array.map (<anonymous>)
+      at Topology._connect (node_modules/mongodb/src/sdam/topology.ts:435:26)
+      at Topology.connect (node_modules/mongodb/src/sdam/topology.ts:402:34)
+      at topologyConnect (node_modules/mongodb/src/mongo_client.ts:695:30)
+      at MongoClient._connect (node_modules/mongodb/src/mongo_client.ts:707:13)
+      at MongoClient.connect (node_modules/mongodb/src/mongo_client.ts:618:34)
+      at NativeConnection.createClient (node_modules/mongoose/lib/drivers/node-mongodb-native/connection.js:351:16)
+      at NativeConnection.openUri (node_modules/mongoose/lib/connection.js:1075:34)
+      at Mongoose.connect (node_modules/mongoose/lib/mongoose.js:450:15)
+      at connect (config/database.js:5:33)
+      at Object.connectDB (server.js:33:1)
+      at Object.require (src/test/invoice_promotion/invoice_promotion.integration.js:2:13)
+

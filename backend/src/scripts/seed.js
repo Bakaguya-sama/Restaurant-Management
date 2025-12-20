@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 const {
-  Staff, Customer, Floor, Location, Table, Reservation, ReservationDetail, Complaint,
+  User, StaffWaiter, StaffCashier, StaffManager, Customer, Floor, Location, Table, Reservation, ReservationDetail, Complaint,
   Supplier, Ingredient, StockImport, StockImportDetail, Dish, DishIngredient,
   StockExport, StockExportDetail,
   Order, OrderDetail, Promotion, Invoice, InvoicePromotion,
@@ -29,7 +29,7 @@ async function seedDatabase() {
     console.log('Xóa dữ liệu cũ...');
     // Ensure all models are loaded; fail fast if any missing
     const modelsToCheck = {
-      Staff, Customer, Floor, Location, Table, Reservation, ReservationDetail, Complaint,
+      User, StaffWaiter, StaffCashier, StaffManager, Customer, Floor, Location, Table, Reservation, ReservationDetail, Complaint,
       Supplier, Ingredient, StockImport, StockImportDetail, StockExport, StockExportDetail, Dish, DishIngredient,
       Order, OrderDetail, Promotion, Invoice, InvoicePromotion,
       Violation, Rating, RatingReply
@@ -37,7 +37,7 @@ async function seedDatabase() {
     const missing = Object.entries(modelsToCheck).filter(([, v]) => !v).map(([k]) => k);
     if (missing.length) throw new Error(`Missing model(s): ${missing.join(', ')}`);
     await Promise.all([
-      Staff.deleteMany({}), Customer.deleteMany({}), 
+      User.deleteMany({}),
       Floor.deleteMany({}), Location.deleteMany({}), Table.deleteMany({}), 
       Reservation.deleteMany({}), ReservationDetail.deleteMany({}), Complaint.deleteMany({}),
       Supplier.deleteMany({}),
@@ -53,7 +53,7 @@ async function seedDatabase() {
     
     // ==================== 1. STAFF ====================
     console.log('1/24 Tạo Staff...');
-    const staffs = await Staff.insertMany([
+    const waiterData = [
       { 
         full_name: 'Nguyễn Văn Hùng', 
         email: 'hung.waiter@restaurant.vn', 
@@ -79,7 +79,10 @@ async function seedDatabase() {
         username: 'mai.waiter', 
         password_hash: password,
         is_active: true
-      },
+      }
+    ];
+    
+    const cashierData = [
       { 
         full_name: 'Lê Văn Nam', 
         email: 'nam.cashier@restaurant.vn', 
@@ -105,7 +108,10 @@ async function seedDatabase() {
         username: 'lan.cashier', 
         password_hash: password,
         is_active: true
-      },
+      }
+    ];
+    
+    const managerData = [
       { 
         full_name: 'Đỗ Văn Minh', 
         email: 'minh.manager@restaurant.vn', 
@@ -132,7 +138,12 @@ async function seedDatabase() {
         password_hash: password,
         is_active: true
       }
-    ]);
+    ];
+    
+    const waiters = await StaffWaiter.insertMany(waiterData);
+    const cashiers = await StaffCashier.insertMany(cashierData);
+    const managers = await StaffManager.insertMany(managerData);
+    const staffs = [...waiters, ...cashiers, ...managers];
     console.log(`   OK ${staffs.length} staff\n`);
 
     // ==================== 2. CUSTOMERS ====================
@@ -147,8 +158,11 @@ async function seedDatabase() {
         membership_level: 'diamond', 
         points: 5000, 
         total_spent: 50000000, 
-        image_url: '/images/customers/customer1.jpg', 
+        image_url: '/images/customers/customer1.jpg',
+        role: 'customer',
+        username: 'tuan.customer',
         password_hash: password,
+        is_active: true,
         isBanned: false
       },
       { 
@@ -160,8 +174,11 @@ async function seedDatabase() {
         membership_level: 'platinum', 
         points: 3000, 
         total_spent: 30000000, 
-        image_url: '/images/customers/customer2.jpg', 
+        image_url: '/images/customers/customer2.jpg',
+        role: 'customer',
+        username: 'huong.customer',
         password_hash: password,
+        is_active: true,
         isBanned: false
       },
       { 
@@ -173,8 +190,11 @@ async function seedDatabase() {
         membership_level: 'gold', 
         points: 1800, 
         total_spent: 15000000, 
-        image_url: '/images/customers/customer3.jpg', 
+        image_url: '/images/customers/customer3.jpg',
+        role: 'customer',
+        username: 'huy.customer',
         password_hash: password,
+        is_active: true,
         isBanned: false
       },
       { 
@@ -186,8 +206,11 @@ async function seedDatabase() {
         membership_level: 'silver', 
         points: 800, 
         total_spent: 5000000, 
-        image_url: '/images/customers/customer4.jpg', 
+        image_url: '/images/customers/customer4.jpg',
+        role: 'customer',
+        username: 'nga.customer',
         password_hash: password,
+        is_active: true,
         isBanned: false
       },
       { 
@@ -199,8 +222,11 @@ async function seedDatabase() {
         membership_level: 'bronze', 
         points: 300, 
         total_spent: 2000000, 
-        image_url: '/images/customers/customer5.jpg', 
+        image_url: '/images/customers/customer5.jpg',
+        role: 'customer',
+        username: 'khoa.customer',
         password_hash: password,
+        is_active: true,
         isBanned: false
       },
       {
@@ -213,7 +239,10 @@ async function seedDatabase() {
         points: 50,
         total_spent: 500000,
         image_url: '/images/customers/customer6.jpg',
+        role: 'customer',
+        username: 'son.customer',
         password_hash: password,
+        is_active: true,
         isBanned: false
       }
     ]);

@@ -2,7 +2,7 @@ const request = require('supertest');
 const app = require('../../../server');
 const connectDB = require('../../../config/database');
 const mongoose = require('mongoose');
-const { Violation, Customer } = require('../../models');
+const { Violation, User, Customer } = require('../../models');
 
 describe('Violation Integration Tests', () => {
   let createdViolationId;
@@ -12,13 +12,16 @@ describe('Violation Integration Tests', () => {
     await connectDB();
 
     // Create test customer if doesn't exist
-    let customer = await Customer.findOne();
+    let customer = await Customer.findOne({ role: 'customer' });
     if (!customer) {
       customer = await Customer.create({
         full_name: `Test Customer ${Date.now()}`,
         email: `customer${Date.now()}@test.com`,
         phone: `0${Math.floor(Math.random() * 900000000) + 100000000}`,
         password_hash: 'hashed_password',
+        username: `testcust${Date.now()}`,
+        role: 'customer',
+        is_active: true,
         membership_level: 'silver',
         points: 0
       });

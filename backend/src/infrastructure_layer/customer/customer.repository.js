@@ -1,9 +1,9 @@
-const { Customer } = require('../../models');
+const { User, Customer: CustomerModel } = require('../../models');
 const CustomerEntity = require('../../domain_layer/customer/customer.entity');
 
 class CustomerRepository {
   async findAll(filters = {}) {
-    const query = {};
+    const query = { role: 'customer' };
     
     if (filters.membership_level) {
       query.membership_level = filters.membership_level;
@@ -21,106 +21,131 @@ class CustomerRepository {
       ];
     }
 
-    const customers = await Customer.find(query).select('-password_hash');
+    const customers = await User.find(query).select('-password_hash');
     return customers.map(customer => new CustomerEntity(customer.toObject()));
   }
 
   async findById(id) {
-    const customer = await Customer.findById(id).select('-password_hash');
-    if (!customer) return null;
+    const customer = await User.findById(id).select('-password_hash');
+    if (!customer || customer.role !== 'customer') return null;
     return new CustomerEntity(customer.toObject());
   }
 
   async findByEmail(email) {
-    const customer = await Customer.findOne({ email });
+    const customer = await User.findOne({ email, role: 'customer' });
     if (!customer) return null;
     return customer;
   }
 
   async create(customerData) {
-    const customer = new Customer(customerData);
+    customerData.role = 'customer';
+    const customer = new CustomerModel(customerData);
     const savedCustomer = await customer.save();
     return new CustomerEntity(savedCustomer.toObject());
   }
 
   async update(id, updateData) {
     updateData.updated_at = new Date();
-    const customer = await Customer.findByIdAndUpdate(
+    const customer = await User.findByIdAndUpdate(
       id,
       updateData,
       { new: true, runValidators: true }
     ).select('-password_hash');
     
-    if (!customer) return null;
+    if (!customer || customer.role !== 'customer') return null;
     return new CustomerEntity(customer.toObject());
   }
 
   async delete(id) {
-    const customer = await Customer.findByIdAndDelete(id);
+    const customer = await User.findByIdAndDelete(id);
     return customer !== null;
   }
 
   async ban(id) {
-    const customer = await Customer.findByIdAndUpdate(
+    // Use CustomerModel to ensure proper schema access
+    const customer = await CustomerModel.findByIdAndUpdate(
       id,
       { isBanned: true, updated_at: new Date() },
-      { new: true }
+      { new: true, runValidators: true }
     ).select('-password_hash');
     
-    if (!customer) return null;
+    if (!customer) {
+      throw new Error('Customer not found');
+    }
     return new CustomerEntity(customer.toObject());
   }
 
   async unban(id) {
-    const customer = await Customer.findByIdAndUpdate(
+    // Use CustomerModel to ensure proper schema access
+    const customer = await CustomerModel.findByIdAndUpdate(
       id,
       { isBanned: false, updated_at: new Date() },
-      { new: true }
+      { new: true, runValidators: true }
     ).select('-password_hash');
     
-    if (!customer) return null;
+    if (!customer) {
+      throw new Error('Customer not found');
+    }
     return new CustomerEntity(customer.toObject());
   }
 
   async updatePoints(id, points) {
-    const customer = await Customer.findByIdAndUpdate(
+    // Use CustomerModel to ensure discriminator fields are accessible
+    const customer = await CustomerModel.findByIdAndUpdate(
       id,
-      { $inc: { points: points }, updated_at: new Date() },
-      { new: true }
+      { 
+        $inc: { points: points },
+        updated_at: new Date()
+      },
+      { new: true, runValidators: true }
     ).select('-password_hash');
     
-    if (!customer) return null;
+    if (!customer) {
+      throw new Error('Customer not found');
+    }
+
     return new CustomerEntity(customer.toObject());
   }
 
   async updateTotalSpent(id, amount) {
-    const customer = await Customer.findByIdAndUpdate(
+    // Use CustomerModel to ensure discriminator fields are accessible
+    const customer = await CustomerModel.findByIdAndUpdate(
       id,
-      { $inc: { total_spent: amount }, updated_at: new Date() },
-      { new: true }
+      { 
+        $inc: { total_spent: amount },
+        updated_at: new Date()
+      },
+      { new: true, runValidators: true }
     ).select('-password_hash');
     
-    if (!customer) return null;
+    if (!customer) {
+      throw new Error('Failed to update customer spending');
+    }
+
     return new CustomerEntity(customer.toObject());
   }
 
   async upgradeMembership(id, newLevel) {
-    const customer = await Customer.findByIdAndUpdate(
+    // Use CustomerModel to ensure proper schema access
+    const customer = await CustomerModel.findByIdAndUpdate(
       id,
       { membership_level: newLevel, updated_at: new Date() },
-      { new: true }
+      { new: true, runValidators: true }
     ).select('-password_hash');
     
-    if (!customer) return null;
+    if (!customer) {
+      throw new Error('Customer not found');
+    }
     return new CustomerEntity(customer.toObject());
   }
 
   async getStatistics() {
-    const total = await Customer.countDocuments();
-    const banned = await Customer.countDocuments({ isBanned: true });
+    const total = await User.countDocuments({ role: 'customer' });
+    const banned = await User.countDocuments({ role: 'customer', isBanned: true });
     const active = total - banned;
 
-    const byMembershipLevel = await Customer.aggregate([
+    const byMembershipLevel = await User.aggregate([
+      { $match: { role: 'customer' } },
       {
         $group: {
           _id: '$membership_level',
@@ -129,7 +154,8 @@ class CustomerRepository {
       }
     ]);
 
-    const totalSpending = await Customer.aggregate([
+    const totalSpending = await User.aggregate([
+      { $match: { role: 'customer' } },
       {
         $group: {
           _id: null,
@@ -151,7 +177,7 @@ class CustomerRepository {
   }
 
   async getTopCustomers(limit = 10) {
-    const customers = await Customer.find()
+    const customers = await User.find({ role: 'customer' })
       .sort({ total_spent: -1 })
       .limit(limit)
       .select('-password_hash');

@@ -2,15 +2,20 @@
 
 export interface OrderDTO {
   id: string;
-  table_id?: string;
-  customer_id?: string;
-  staff_id?: string;
+  order_number: string;
+  order_type: "dine-in-customer" | "takeaway-customer" | "dine-in-waiter" | "takeaway-staff";
+  order_date?: string;
+  order_time: string;
+  status: "pending" | "preparing" | "ready" | "served" | "completed" | "cancelled";
+  subtotal?: number;
+  tax?: number;
   total_amount?: number;
-  status: "pending" | "in_progress" | "completed" | "cancelled";
-  order_type: "dine_in" | "takeaway";
+  notes?: string;
+  table_id?: string | null;
+  customer_id?: string | null;
+  staff_id?: string | null;
   created_at?: string;
   updated_at?: string;
-  notes?: string;
 }
 
 export interface OrderDetailDTO {
@@ -25,13 +30,13 @@ export interface OrderDetailDTO {
 
 export interface CreateOrderRequest {
   order_number: string;
-  order_type: "dine_in" | "takeaway";
+  order_type: "dine-in-customer" | "takeaway-customer" | "dine-in-waiter" | "takeaway-staff";
   order_time: string;
   table_id?: string;
   customer_id?: string;
   staff_id?: string;
-  status?: "pending" | "in_progress";
   notes?: string;
+  orderItems?: any[];
 }
 
 export interface AddOrderItemRequest {

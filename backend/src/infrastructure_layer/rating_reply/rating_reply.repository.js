@@ -1,4 +1,4 @@
-const { RatingReply, Rating, Staff } = require('../../models');
+const { RatingReply, Rating } = require('../../models');
 const RatingReplyEntity = require('../../domain_layer/rating_reply/rating_reply.entity');
 
 class RatingReplyRepository {
@@ -118,7 +118,7 @@ class RatingReplyRepository {
             { $limit: 10 },
             {
               $lookup: {
-                from: 'staffs',
+                from: 'users',
                 localField: 'staff_id',
                 foreignField: '_id',
                 as: 'staff'
@@ -157,7 +157,7 @@ class RatingReplyRepository {
       { $limit: limit },
       {
         $lookup: {
-          from: 'staffs',
+          from: 'users',
           localField: '_id',
           foreignField: '_id',
           as: 'staff'
@@ -185,8 +185,9 @@ class RatingReplyRepository {
   }
 
   async checkStaffExists(staffId) {
-    const staff = await Staff.findById(staffId);
-    return !!staff;
+    const { User } = require('../../models');
+    const staff = await User.findById(staffId);
+    return !!staff && ['waiter', 'cashier', 'manager'].includes(staff.role);
   }
 }
 
