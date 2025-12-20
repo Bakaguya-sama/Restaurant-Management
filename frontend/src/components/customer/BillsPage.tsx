@@ -4,6 +4,7 @@ import {
   Check,
   Utensils,
   MessageSquare,
+  Eye,
   Star,
   CreditCard,
   Tag,
@@ -184,8 +185,8 @@ export function BillsPage() {
       paymentMethod: "online",
       feedback: "Món ăn rất ngon, phục vụ tận tình!",
       feedbackDate: "2025-12-09",
-      // managerReply: "Cảm ơn bạn đã đánh giá!...", // NOT IN API SPEC
-      // managerReplyDate: "2025-12-10", // NOT IN API SPEC
+      feedbackReply: "Cảm ơn bạn đã đánh giá!...", // NOT IN API SPEC
+      feedbackReplyDate: "2025-12-10", // NOT IN API SPEC
       bookingId: "BK002",
       booking: {
         customerName: "Trần Thị Bình",
@@ -494,7 +495,7 @@ export function BillsPage() {
             )}
 
             {/* Manager Reply - NOT IN API SPEC - COMMENTED OUT FOR NOW */}
-            {/* {bill.managerReply && (
+            {/* {bill.feedbackReply && (
               <div className="mt-3 pt-3 border-t">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <div className="flex items-start gap-2">
@@ -504,11 +505,11 @@ export function BillsPage() {
                         Phản hồi từ nhà hàng
                       </p>
                       <p className="text-sm text-gray-700">
-                        {bill.managerReply}
+                        {bill.feedbackReply}
                       </p>
-                      {bill.managerReplyDate && (
+                      {bill.feedbackReplyDate && (
                         <p className="text-xs text-gray-500 mt-1">
-                          {new Date(bill.managerReplyDate).toLocaleDateString(
+                          {new Date(bill.feedbackReplyDate).toLocaleDateString(
                             "vi-VN"
                           )}
                         </p>
@@ -798,25 +799,37 @@ export function BillsPage() {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3">
-              {selectedBill.status === "pending" ? (
-                <Button fullWidth onClick={() => setShowPaymentModal(true)}>
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  Thanh toán
-                </Button>
-              ) : (
-                !selectedBill.feedback && (
-                  <Button
-                    fullWidth
-                    variant="secondary"
-                    onClick={() => setShowFeedbackModal(true)}
-                  >
-                    <MessageSquare className="w-4 h-4 mr-2" />
-                    Gửi đánh giá
-                  </Button>
-                )
-              )}
-            </div>
+            {(() => {
+              const hasFeedback = !!selectedBill.feedback;
+              return (
+                <div className="flex gap-3">
+                  {selectedBill.status === "pending" ? (
+                    <Button fullWidth onClick={() => setShowPaymentModal(true)}>
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Thanh toán
+                    </Button>
+                  ) : (
+                    <Button
+                      fullWidth
+                      variant={hasFeedback ? "secondary" : undefined}
+                      className={
+                        hasFeedback
+                          ? "bg-blue-50 text-[#625EE8] border-none"
+                          : ""
+                      }
+                      onClick={() => setShowFeedbackModal(true)}
+                    >
+                      {hasFeedback ? (
+                        <Eye className="w-4 h-4 mr-2 text-[#625EE8]" />
+                      ) : (
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                      )}
+                      {hasFeedback ? "Xem đánh giá" : "Gửi đánh giá"}
+                    </Button>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         )}
       </Modal>
@@ -990,28 +1003,73 @@ export function BillsPage() {
         title="Gửi đánh giá"
       >
         <div className="space-y-6">
-          <div>
-            <label className="block mb-2">Chia sẻ cảm nhận của bạn</label>
-            <Textarea
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
-              placeholder="Món ăn ngon, phục vụ tận tình..."
-              rows={4}
-            />
-          </div>
+          {selectedBill?.feedback ? (
+            <>
+              <div>
+                <label className="block mb-2">Đánh giá của bạn</label>
+                <div className="p-3 bg-gray-50 rounded-lg border text-sm text-gray-700">
+                  {selectedBill.feedback}
+                </div>
+              </div>
+              {selectedBill.feedbackReply && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="flex items-start gap-2">
+                    <MessageSquare className="w-4 h-4 text-[#625EE8] mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-xs text-[#625EE8] font-medium mb-1">
+                        Phản hồi từ nhà hàng
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        {selectedBill.feedbackReply}
+                      </p>
+                      {selectedBill.feedbackReplyDate && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(
+                            selectedBill.feedbackReplyDate
+                          ).toLocaleDateString("vi-VN")}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
-          <div className="flex gap-4">
-            <Button
-              variant="secondary"
-              fullWidth
-              onClick={() => setShowFeedbackModal(false)}
-            >
-              Bỏ qua
-            </Button>
-            <Button fullWidth onClick={handleSubmitFeedback}>
-              Gửi đánh giá
-            </Button>
-          </div>
+              <div className="flex gap-4">
+                <Button
+                  variant="secondary"
+                  fullWidth
+                  onClick={() => setShowFeedbackModal(false)}
+                >
+                  Bỏ qua
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <label className="block mb-2">Chia sẻ cảm nhận của bạn</label>
+                <Textarea
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  placeholder="Món ăn ngon, phục vụ tận tình..."
+                  rows={4}
+                />
+              </div>
+
+              <div className="flex gap-4">
+                <Button
+                  variant="secondary"
+                  fullWidth
+                  onClick={() => setShowFeedbackModal(false)}
+                >
+                  Bỏ qua
+                </Button>
+                <Button fullWidth onClick={handleSubmitFeedback}>
+                  Gửi đánh giá
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </Modal>
     </div>
