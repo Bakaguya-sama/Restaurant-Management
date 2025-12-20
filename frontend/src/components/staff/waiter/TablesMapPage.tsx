@@ -13,11 +13,12 @@ import { Card } from "../../ui/Card";
 import { Modal } from "../../ui/Modal";
 import { Input, Textarea } from "../../ui/Input";
 import { Badge } from "../../ui/badge";
-import { mockBookings } from "../../../lib/mockData";
 import { Table, TableStatus, Customer } from "../../../types";
 import { toast } from "sonner";
 import { useTables } from "../../../hooks/useTables";
 import { useLocations } from "../../../hooks/useLocations";
+import { useCustomers } from "../../../hooks/useCustomers";
+import { useStaff } from "../../../hooks/useStaff";
 import { createOrder } from "../../../lib/orderingPageApi";
 
 export function TablesMapPage() {
@@ -26,6 +27,8 @@ export function TablesMapPage() {
   console.log('updateTableStatus type:', typeof hookResult.updateTableStatus);
   const { tables, loading, error, setTables, updateTableStatus } = hookResult;
   const { locations } = useLocations();
+  const { customers, loading: customersLoading, error: customersError, fetchCustomers } = useCustomers();
+  const { staff, loading: staffLoading, error: staffError, fetchStaff } = useStaff();
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [showActionModal, setShowActionModal] = useState(false);
   const [showCheckInModal, setShowCheckInModal] = useState(false);
@@ -42,6 +45,8 @@ export function TablesMapPage() {
   const [customerName, setCustomerName] = useState("");
   const [foundCustomer, setFoundCustomer] = useState<Customer | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+
+  const firstWaiter = staff.find((s) => s.role === "waiter");
 
   const getLocationName = (locationId: string) => {
     const location = locations.find(l => l.id === locationId);
@@ -93,37 +98,44 @@ export function TablesMapPage() {
   };
 
   const handleSearchCustomer = async () => {
-    if (!customerPhone || customerPhone.length < 10) {
-      toast.error("Vui lòng nhập số điện thoại hợp lệ");
+    const phoneInput = customerPhone.trim();
+    
+    if (!phoneInput || phoneInput.length < 10) {
+      toast.error("Vui lòng nhập số điện thoại hợp lệ (ít nhất 10 chữ số)");
       return;
     }
 
     setIsSearching(true);
 
-    
-    setTimeout(() => {
-      const mockCustomer: Customer = {
-        id: "C001",
-        name: "Nguyễn Văn A",
-        phone: customerPhone,
-        role: "customer",
-        membershipTier: "gold",
-        points: 1250,
-        violations: [],
-        isBlacklisted: false,
-      };
-
-      if (customerPhone === "0123456789") {
-        setFoundCustomer(mockCustomer);
-        setCustomerName(mockCustomer.name);
-        toast.success("Tìm thấy thông tin khách hàng");
-      } else {
-        setFoundCustomer(null);
-        toast.error("Không tìm thấy khách hàng. Vui lòng chọn khách vãng lai.");
+    try {
+      if (!customers || customers.length === 0) {
+        console.log("Fetching customers...");
+        await fetchCustomers();
       }
 
+      console.log("Available customers:", customers.map(c => ({ id: c.id, phone: c.phone, name: c.full_name })));
+      console.log("Searching for phone:", phoneInput);
+
+      let customer = customers.find((c) => c.phone.trim() === phoneInput) as Customer | undefined;
+
+      if (!customer) {
+        customer = customers.find((c) => c.phone.includes(phoneInput) || phoneInput.includes(c.phone)) as Customer | undefined;
+      }
+
+      if (customer) {
+        setFoundCustomer(customer as Customer);
+        setCustomerName(customer.full_name);
+        toast.success(`Tìm thấy: ${customer.full_name}`);
+      } else {
+        setFoundCustomer(null);
+        toast.error("Không tìm thấy khách hàng với số điện thoại này");
+      }
+    } catch (err) {
+      console.error("Error searching customer:", err);
+      toast.error("Lỗi khi tìm kiếm khách hàng");
+    } finally {
       setIsSearching(false);
-    }, 500);
+    }
   };
 
   const handleCreateOrder = () => {
@@ -153,6 +165,11 @@ export function TablesMapPage() {
       }
     }
 
+    if (!firstWaiter) {
+      toast.error("Không có nhân viên phục vụ nào. Vui lòng thử lại sau.");
+      return;
+    }
+
     try {
       const orderData = {
         order_number: `ORD-${Date.now()}`,
@@ -160,6 +177,7 @@ export function TablesMapPage() {
         order_time: new Date().toISOString(),
         table_id: selectedTable.id,
         customer_id: customerType === "member" ? foundCustomer?.id : undefined,
+        staff_id: firstWaiter.id,
         status: "pending" as const,
       };
 
@@ -171,8 +189,8 @@ export function TablesMapPage() {
       const customerInfo =
         customerType === "member"
           ? `${
-              foundCustomer?.name
-            } (Thành viên ${foundCustomer?.membershipTier?.toUpperCase()})`
+              foundCustomer?.full_name
+            } (Thành viên ${foundCustomer?.membership_level?.toUpperCase()})`
           : customerName;
 
       toast.success(
@@ -197,12 +215,6 @@ export function TablesMapPage() {
   const handleCheckIn = async () => {
     if (!selectedTable || !bookingCode) {
       toast.error("Vui lòng nhập mã đặt bàn");
-      return;
-    }
-
-    const booking = mockBookings.find((b) => b.id === bookingCode);
-    if (!booking) {
-      toast.error("Không tìm thấy mã đặt bàn");
       return;
     }
 
@@ -658,26 +670,42 @@ export function TablesMapPage() {
                 />
                 <Button
                   onClick={handleSearchCustomer}
-                  disabled={isSearching}
+                  disabled={isSearching || customersLoading}
                   className="mt-7"
                 >
-                  <Search className="w-4 h-4" />
+                  {isSearching ? (
+                    <span className="animate-spin">⟳</span>
+                  ) : (
+                    <Search className="w-4 h-4" />
+                  )}
                 </Button>
               </div>
+
+              {customersLoading && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-800">Đang tải danh sách khách hàng...</p>
+                </div>
+              )}
+
+              {customersError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-sm text-red-800">Lỗi: {customersError}</p>
+                </div>
+              )}
 
               {foundCustomer && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <p className="font-semibold text-green-900">
-                        {foundCustomer.name}
+                        {foundCustomer.full_name}
                       </p>
                       <p className="text-sm text-green-700">
                         {foundCustomer.phone}
                       </p>
                     </div>
                     <Badge className="bg-yellow-100 text-yellow-800">
-                      {foundCustomer.membershipTier.toUpperCase()}
+                      {foundCustomer.membership_level.toUpperCase()}
                     </Badge>
                   </div>
                   <div className="text-sm text-green-700">

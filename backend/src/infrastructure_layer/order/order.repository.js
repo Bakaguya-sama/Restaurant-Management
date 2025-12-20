@@ -1,4 +1,5 @@
 const { Order } = require('../../models');
+const mongoose = require('mongoose');
 
 class OrderRepository {
   async findAll(filters = {}) {
@@ -17,14 +18,21 @@ class OrderRepository {
     }
 
     if (filters.table_id) {
-      query.table_id = filters.table_id;
+      // Convert string table_id to ObjectId if needed
+      query.table_id = mongoose.Types.ObjectId.isValid(filters.table_id) 
+        ? new mongoose.Types.ObjectId(filters.table_id)
+        : filters.table_id;
+      console.log('Searching for orders with table_id:', filters.table_id, 'Converted:', query.table_id);
     }
 
     if (filters.staff_id) {
       query.staff_id = filters.staff_id;
     }
 
-    return await Order.find(query).sort({ created_at: -1 });
+    console.log('Order.find query:', JSON.stringify(query));
+    const result = await Order.find(query).sort({ created_at: -1 });
+    console.log('Order.find result count:', result.length);
+    return result;
   }
 
   async findById(id) {
