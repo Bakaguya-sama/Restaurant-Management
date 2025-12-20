@@ -36,6 +36,7 @@ export function TablesMapPage() {
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [bookingCode, setBookingCode] = useState("");
   const [brokenReason, setBrokenReason] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   
   const [customerType, setCustomerType] = useState<"member" | "walk-in">(
@@ -305,8 +306,12 @@ export function TablesMapPage() {
     setBrokenReason("");
   };
 
+  // Filter tables based on search query
+  const filteredTables = tables.filter((table) =>
+    table.table_number.toLowerCase().includes(searchQuery.toLowerCase())
+  );
   
-  const tablesByArea = tables.reduce((acc, table) => {
+  const tablesByArea = filteredTables.reduce((acc, table) => {
     if (!acc[table.location_id]) {
       acc[table.location_id] = [];
     }
@@ -339,6 +344,25 @@ export function TablesMapPage() {
       <div className="mb-6">
         <h2 className="mb-4">Sơ đồ bàn</h2>
 
+        {/* Search Bar */}
+        <div className="mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-3 text-gray-400" size={20} />
+            <input
+              type="text"
+              placeholder="Tìm bàn (Bàn A1, A2, ...)"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          {searchQuery && (
+            <p className="text-sm text-gray-600 mt-2">
+              Tìm thấy {filteredTables.length} bàn
+            </p>
+          )}
+        </div>
+
         {/* Legend */}
         <div className="flex flex-wrap gap-4 mb-6">
           <div className="flex items-center gap-2">
@@ -368,31 +392,31 @@ export function TablesMapPage() {
           <Card className="p-4">
             <p className="text-gray-600 mb-1 text-sm">Trống</p>
             <p className="text-2xl text-green-600">
-              {tables.filter((t) => t.status === "free").length}
+              {filteredTables.filter((t) => t.status === "free").length}
             </p>
           </Card>
           <Card className="p-4">
             <p className="text-gray-600 mb-1 text-sm">Có khách</p>
             <p className="text-2xl text-red-600">
-              {tables.filter((t) => t.status === "occupied").length}
+              {filteredTables.filter((t) => t.status === "occupied").length}
             </p>
           </Card>
           <Card className="p-4">
             <p className="text-gray-600 mb-1 text-sm">Đã đặt</p>
             <p className="text-2xl text-yellow-600">
-              {tables.filter((t) => t.status === "reserved").length}
+              {filteredTables.filter((t) => t.status === "reserved").length}
             </p>
           </Card>
           <Card className="p-4">
             <p className="text-gray-600 mb-1 text-sm">Chờ dọn</p>
             <p className="text-2xl text-orange-600">
-              {tables.filter((t) => t.status === "dirty").length}
+              {filteredTables.filter((t) => t.status === "dirty").length}
             </p>
           </Card>
           <Card className="p-4">
             <p className="text-gray-600 mb-1 text-sm">Hỏng</p>
             <p className="text-2xl text-gray-600">
-              {tables.filter((t) => t.status === "broken").length}
+              {filteredTables.filter((t) => t.status === "broken").length}
             </p>
           </Card>
         </div>
