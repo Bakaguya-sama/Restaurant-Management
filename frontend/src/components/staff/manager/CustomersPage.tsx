@@ -24,7 +24,7 @@ import { mockCustomers } from "../../../lib/mockData";
 import { Customer, Violation } from "../../../types";
 import { toast } from "sonner";
 import { ConfirmationModal } from "../../ui/ConfirmationModal";
-import { customerApi, violationApi, ratingApi } from "../../../lib/api";
+import { customerApi, violationApi, ratingApi, staffApi } from "../../../lib/api";
 
 export function CustomersPage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -87,15 +87,16 @@ export function CustomersPage() {
     try {
       const data = await ratingApi.getAll();
       const transformedData = await Promise.all(data.map(async (rating: any) => {
-        const replies = await ratingApi.getReplies(rating.id).catch(() => []);
+        const ratingId = rating._id || rating.id;
+        const replies = await ratingApi.getReplies(ratingId).catch(() => []);
         const customer = customers.find(c => c.id === rating.customer_id);
         return {
-          id: rating.id,
+          id: ratingId,
           customerId: rating.customer_id,
-          customerName: customer?.name || rating.customer_name || 'Khách hàng',
-          comment: rating.comment,
+          customerName: customer?.name || 'Khách hàng',
+          comment: rating.description || '',
           rating: rating.score,
-          date: rating.created_at || rating.date,
+          date: rating.rating_date || rating.created_at || rating.date,
           response: replies.length > 0 ? replies[0].reply_text : '',
           replyId: replies.length > 0 ? replies[0].id : null,
         };
@@ -615,8 +616,20 @@ export function CustomersPage() {
                 }
 
                 try {
-                  const staffId = localStorage.getItem('staffId') || '1';
-                  await ratingApi.createReply(selectedRating.id, staffId, feedbackResponse);
+                  // Lấy staff manager đầu tiên để gửi reply
+                  const staffList = await staffApi.getAll({ role: 'manager' });
+                  if (!staffList || staffList.length === 0) {
+                    toast.error('Không tìm thấy manager để gửi phản hồi');
+                    return;
+                  }
+                  const staffId = staffList[0].id;
+
+                  // Gọi API với object RatingReplyData đúng signature
+                  await ratingApi.createReply(selectedRating.id, {
+                    staff_id: staffId,
+                    reply_text: feedbackResponse
+                  });
+
                   await fetchFeedbacks();
                   toast.success("Đã gửi phản hồi");
                   setShowFeedbackModal(false);

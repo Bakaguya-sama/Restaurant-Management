@@ -266,11 +266,11 @@ export const ratingApi = {
     return handleResponse<any[]>(response);
   },
 
-  createReply: async (ratingId: string, staff_id: string, reply_text: string) => {
-    const response = await fetch(`${API_BASE_URL}/ratings/${ratingId}/reply`, {
+  createReply: async (ratingId: string, data: { staff_id: string; reply_text: string }) => {
+    const response = await fetch(`${API_BASE_URL}/ratings/${ratingId}/replies`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ staff_id, reply_text }),
+      body: JSON.stringify(data),
     });
     return handleResponse<any>(response);
   },
