@@ -1,4 +1,4 @@
-import { MenuItem } from "../types";
+import { Dish } from "../types";
 
 // ==================== TYPE DEFINITIONS ====================
 
@@ -48,21 +48,6 @@ export const CATEGORY_MAP = {
 // ==================== UTILITY FUNCTIONS ====================
 
 /**
- * Map API dish data to MenuItem format for UI
- */
-export function mapDishToMenuItem(dish: DishDTO): MenuItem {
-  return {
-    id: dish.id,
-    name: dish.name,
-    category: CATEGORY_MAP.apiToUi[dish.category] || dish.category,
-    price: dish.price,
-    description: dish.description,
-    image: dish.image_url,
-    available: dish.is_available,
-  };
-}
-
-/**
  * Map Vietnamese UI category to API category
  */
 export function mapUiCategoryToApi(
@@ -76,11 +61,11 @@ export function mapUiCategoryToApi(
 /**
  * Fetch dishes from backend API
  * @param params - Query parameters for filtering dishes
- * @returns Promise<MenuItem[]> - Array of menu items
+ * @returns Promise<Dish[]> - Array of dishes
  */
 export async function fetchDishes(
   params: GetDishesParams = {}
-): Promise<MenuItem[]> {
+): Promise<Dish[]> {
   const url = new URL(`${API_BASE}/dishes`);
 
   // Add query parameters
@@ -101,8 +86,8 @@ export async function fetchDishes(
   }
 
   const json = await response.json();
-  const dishes = (json?.data || []) as DishDTO[];
+  const dishes = (json?.data || []) as Dish[];
 
-  // Map API data to UI format
-  return dishes.map(mapDishToMenuItem);
+  // Return dishes directly (already in Dish format)
+  return dishes;
 }

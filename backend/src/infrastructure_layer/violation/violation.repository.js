@@ -108,7 +108,7 @@ class ViolationRepository {
       },
       {
         $lookup: {
-          from: 'customers',
+          from: 'users',
           localField: '_id',
           foreignField: '_id',
           as: 'customer'
@@ -149,7 +149,7 @@ class ViolationRepository {
       },
       {
         $lookup: {
-          from: 'customers',
+          from: 'users',
           localField: '_id',
           foreignField: '_id',
           as: 'customer'

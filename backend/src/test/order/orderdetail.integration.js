@@ -293,6 +293,93 @@ describe('OrderDetail Integration Tests', () => {
     });
   });
 
+  describe('PATCH /api/v1/orders/:orderId/details/:detailId/status - Patch Order Detail Status', () => {
+    let detailId;
+
+    beforeEach(async () => {
+      const newItem = {
+        dish_id: dishIds[0],
+        quantity: 1,
+        unit_price: 200000
+      };
+
+      const response = await request(app)
+        .post(`/api/v1/orders/${createdOrderId}/details`)
+        .send(newItem);
+
+      detailId = response.body.data.id;
+    });
+
+    it('should update item status to preparing with PATCH', async () => {
+      const response = await request(app)
+        .patch(`/api/v1/orders/${createdOrderId}/details/${detailId}/status`)
+        .send({ status: 'preparing' })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.status).toBe('preparing');
+    });
+
+    it('should update item status to ready', async () => {
+      const response = await request(app)
+        .patch(`/api/v1/orders/${createdOrderId}/details/${detailId}/status`)
+        .send({ status: 'ready' })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.status).toBe('ready');
+    });
+
+    it('should update item status to served', async () => {
+      const response = await request(app)
+        .patch(`/api/v1/orders/${createdOrderId}/details/${detailId}/status`)
+        .send({ status: 'served' })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.status).toBe('served');
+    });
+
+    it('should update item status to cancelled', async () => {
+      const response = await request(app)
+        .patch(`/api/v1/orders/${createdOrderId}/details/${detailId}/status`)
+        .send({ status: 'cancelled' })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.status).toBe('cancelled');
+    });
+
+    it('should return 404 when detail not found', async () => {
+      const fakeId = new mongoose.Types.ObjectId();
+
+      const response = await request(app)
+        .patch(`/api/v1/orders/${createdOrderId}/details/${fakeId}/status`)
+        .send({ status: 'ready' })
+        .expect(404);
+
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should fail when no status provided', async () => {
+      const response = await request(app)
+        .patch(`/api/v1/orders/${createdOrderId}/details/${detailId}/status`)
+        .send({})
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should fail with invalid status', async () => {
+      const response = await request(app)
+        .patch(`/api/v1/orders/${createdOrderId}/details/${detailId}/status`)
+        .send({ status: 'invalid-status' })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+    });
+  });
+
   describe('DELETE /api/v1/orders/:orderId/details/:detailId - Remove Item from Order', () => {
     let detailId;
 

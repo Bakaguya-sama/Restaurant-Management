@@ -1,7 +1,7 @@
 const request = require('supertest');
 const app = require('../../../server');
 const connectDB = require('../../../config/database');
-const { Order, OrderDetail, Table, Customer, Staff, Dish } = require('../../models');
+const { Order, OrderDetail, Table, User, Customer, StaffWaiter, Dish } = require('../../models');
 const mongoose = require('mongoose');
 
 describe('Order Integration Tests', () => {
@@ -26,18 +26,22 @@ describe('Order Integration Tests', () => {
       full_name: `Customer ${Date.now()}`,
       email: `customer${Date.now()}@test.com`,
       phone: '0123456789',
-      password_hash: 'hashed_password'
+      password_hash: 'hashed_password',
+      role: 'customer',
+      username: `testcust${Date.now()}`,
+      is_active: true
     });
     const savedCustomer = await customer.save();
     customerId = savedCustomer._id.toString();
 
-    const staff = new Staff({
+    const staff = new StaffWaiter({
       full_name: `Waiter ${Date.now()}`,
       email: `waiter${Date.now()}@test.com`,
       phone: '0987654321',
       role: 'waiter',
       username: `waiter${Date.now()}`,
-      password_hash: 'hashed_password'
+      password_hash: 'hashed_password',
+      is_active: true
     });
     const savedStaff = await staff.save();
     staffId = savedStaff._id.toString();
@@ -61,10 +65,10 @@ describe('Order Integration Tests', () => {
       await Table.findByIdAndDelete(tableId);
     }
     if (customerId) {
-      await Customer.findByIdAndDelete(customerId);
+      await User.findByIdAndDelete(customerId);
     }
     if (staffId) {
-      await Staff.findByIdAndDelete(staffId);
+      await User.findByIdAndDelete(staffId);
     }
     if (dishId) {
       await Dish.findByIdAndDelete(dishId);
@@ -449,6 +453,122 @@ describe('Order Integration Tests', () => {
         .put(`/api/v1/orders/${fakeId}`)
         .send({ status: 'ready' })
         .expect(404);
+
+      expect(response.body.success).toBe(false);
+    });
+  });
+
+  describe('PATCH /api/v1/orders/:id/status - Patch Order Status', () => {
+    it('should update order status successfully with PATCH', async () => {
+      if (!createdOrderId) {
+        const newOrder = {
+          order_number: `ORD-${Date.now()}`,
+          order_type: 'dine-in-customer',
+          order_time: '19:30',
+          table_id: tableId,
+          customer_id: customerId
+        };
+
+        const createResponse = await request(app)
+          .post('/api/v1/orders')
+          .send(newOrder);
+
+        createdOrderId = createResponse.body.data.id;
+      }
+
+      const response = await request(app)
+        .patch(`/api/v1/orders/${createdOrderId}/status`)
+        .send({ status: 'ready' })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.status).toBe('ready');
+    });
+
+    it('should update order to served status', async () => {
+      if (!createdOrderId) {
+        const newOrder = {
+          order_number: `ORD-${Date.now()}`,
+          order_type: 'dine-in-customer',
+          order_time: '19:30',
+          table_id: tableId,
+          customer_id: customerId
+        };
+
+        const createResponse = await request(app)
+          .post('/api/v1/orders')
+          .send(newOrder);
+
+        createdOrderId = createResponse.body.data.id;
+      }
+
+      const response = await request(app)
+        .patch(`/api/v1/orders/${createdOrderId}/status`)
+        .send({ status: 'served' })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.status).toBe('served');
+    });
+
+    it('should update order to completed status', async () => {
+      if (!createdOrderId) {
+        const newOrder = {
+          order_number: `ORD-${Date.now()}`,
+          order_type: 'dine-in-customer',
+          order_time: '19:30',
+          table_id: tableId,
+          customer_id: customerId
+        };
+
+        const createResponse = await request(app)
+          .post('/api/v1/orders')
+          .send(newOrder);
+
+        createdOrderId = createResponse.body.data.id;
+      }
+
+      const response = await request(app)
+        .patch(`/api/v1/orders/${createdOrderId}/status`)
+        .send({ status: 'completed' })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.status).toBe('completed');
+    });
+
+    it('should return 404 when patching non-existent order status', async () => {
+      const fakeId = new mongoose.Types.ObjectId();
+
+      const response = await request(app)
+        .patch(`/api/v1/orders/${fakeId}/status`)
+        .send({ status: 'ready' })
+        .expect(404);
+
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should fail when no status provided', async () => {
+      if (!createdOrderId) {
+        const newOrder = {
+          order_number: `ORD-${Date.now()}`,
+          order_type: 'dine-in-customer',
+          order_time: '19:30',
+          table_id: tableId,
+          customer_id: customerId
+        };
+
+        const createResponse = await request(app)
+          .post('/api/v1/orders')
+          .send(newOrder);
+
+        createdOrderId = createResponse.body.data.id;
+      }
+
+      const response = await request(app)
+        .patch(`/api/v1/orders/${createdOrderId}/status`)
+        .send({})
+        .expect(400);
 
       expect(response.body.success).toBe(false);
     });

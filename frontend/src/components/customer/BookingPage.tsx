@@ -5,8 +5,8 @@ import { Button } from "../ui/Button";
 import { Input, Textarea } from "../ui/Input";
 import { Card } from "../ui/Card";
 // import { Modal } from "../ui/Modal";
-import { mockTables, mockMenuItems, mockCustomers } from "../../lib/mockData";
-import { Table, MenuItem } from "../../types";
+import { mockTables, mockCustomers } from "../../lib/mockData";
+import { Table } from "../../types";
 import { toast } from "sonner";
 import { useAuth } from "../../contexts/AuthContext";
 import {
@@ -35,12 +35,12 @@ export function BookingPage() {
   const currentCustomer = mockCustomers.find(
     (c) => c.phone === userProfile?.phone || c.email === userProfile?.email
   );
-  const isBlacklisted = currentCustomer?.isBlacklisted || false;
+  const isBlacklisted = currentCustomer?.isBanned || false;
 
   const availableTables = mockTables.filter(
     (t) =>
       (t.status === "free" || t.status === "reserved") &&
-      t.seats >= bookingData.guests
+      t.capacity >= bookingData.guests
   );
 
   const handleTableSelect = (table: Table) => {
@@ -83,11 +83,11 @@ export function BookingPage() {
               </div>
               <div>
                 <p className="text-gray-600">Bàn số</p>
-                <p>{selectedTable?.number}</p>
+                <p>{selectedTable?.table_number}</p>
               </div>
               <div>
                 <p className="text-gray-600">Khu vực</p>
-                <p>{selectedTable?.area}</p>
+                <p>{selectedTable?.location_id}</p>
               </div>
             </div>
           </div>
@@ -317,10 +317,10 @@ export function BookingPage() {
                         }`}
                       >
                         <div className="text-center">
-                          <p className="mb-1">{table.number}</p>
-                          <p className="text-sm text-gray-600">{table.area}</p>
+                          <p className="mb-1">{table.table_number}</p>
+                          <p className="text-sm text-gray-600">{table.location_id}</p>
                           <p className="text-xs text-gray-500">
-                            {table.seats} chỗ ngồi
+                            {table.capacity} chỗ ngồi
                           </p>
                         </div>
                       </button>
@@ -431,7 +431,7 @@ export function BookingPage() {
                     <div className="flex justify-between">
                       <span className="text-gray-600">Bàn số:</span>
                       <span>
-                        {selectedTable?.number} - {selectedTable?.area}
+                        {selectedTable?.table_number} - {selectedTable?.location_id}
                       </span>
                     </div>
                     <div className="flex justify-between">

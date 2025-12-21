@@ -1,20 +1,32 @@
 // User Types
 export type UserRole = "customer" | "manager" | "cashier" | "waiter";
+export type StaffRole = "waiter" | "cashier" | "manager";
+export type MembershipLevel = "regular" | "bronze" | "silver" | "gold" | "platinum" | "diamond";
 
 export interface User {
   id: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  role: UserRole;
-  employeeId?: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  address?: string;
+  date_of_birth?: string;
+  image_url?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Staff extends User {
+  role: StaffRole;
+  hire_date?: string;
+  is_active: boolean;
+  username: string;
 }
 
 export interface Customer extends User {
-  membershipTier: "diamond" | "platinum" | "gold" | "silver" | "bronze";
+  membership_level: MembershipLevel;
   points: number;
-  violations: Violation[];
-  isBlacklisted: boolean;
+  total_spent: number;
+  isBanned: boolean;
 }
 
 // Table Types

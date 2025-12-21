@@ -18,7 +18,9 @@ class OrderController {
       if (table_id) filters.table_id = table_id;
       if (staff_id) filters.staff_id = staff_id;
 
+      console.log('getAllOrders filters:', filters);
       const orders = await this.orderService.getAllOrders(filters);
+      console.log('getAllOrders result:', orders);
       const formattedOrders = orders.map(order => this.orderService.formatOrderResponse(order));
 
       res.json({
@@ -151,6 +153,36 @@ class OrderController {
       });
     } catch (error) {
       const statusCode = error.message === 'Order not found' ? 404 : 500;
+      res.status(statusCode).json({
+        success: false,
+        data: null,
+        message: error.message
+      });
+    }
+  }
+
+  async updateOrderStatus(req, res) {
+    try {
+      const { status } = req.body;
+
+      if (!status) {
+        return res.status(400).json({
+          success: false,
+          data: null,
+          message: 'status is required'
+        });
+      }
+
+      const order = await this.orderService.updateOrder(req.params.id, { status });
+      const formatted = this.orderService.formatOrderResponse(order);
+
+      res.json({
+        success: true,
+        data: formatted,
+        message: 'Order status updated successfully'
+      });
+    } catch (error) {
+      const statusCode = error.message === 'Order not found' ? 404 : 400;
       res.status(statusCode).json({
         success: false,
         data: null,

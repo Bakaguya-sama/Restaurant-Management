@@ -1,50 +1,48 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
+// ==================== USER ====================
 
-// ==================== STAFF====================
-
-const StaffSchema = new Schema({
+const UserSchema = new Schema({
   full_name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   phone: { type: String, required: true },
   address: String,
   date_of_birth: Date,
-  hire_date: { type: Date, default: Date.now },
-  //salary: { type: Number, required: true },
-  is_active: { type: Boolean, default: true },
+  image_url: String,
+  username: { type: String, required: true, unique: true },
+  password_hash: { type: String, required: true },
   role: { 
     type: String, 
-    enum: ['waiter', 'cashier', 'manager'], 
+    enum: ['waiter', 'cashier', 'manager', 'customer'], 
     required: true 
   },
-  image_url: String,
-  // For authentication
-  username: { type: String, required: true, unique: true }, // Could be email or custom username
-  password_hash: { type: String, required: true },
+  is_active: { type: Boolean, default: true },
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now }
+}, {discriminatorKey: 'role', collection: 'users'});
+
+// ==================== STAFF (Discriminator of USER) ====================
+
+const StaffSchema = new Schema({
+  hire_date: { type: Date, default: Date.now }
 });
 
-
-// ==================== CUSTOMER ====================
+// ==================== CUSTOMER (Discriminator of USER) ====================
 
 const CustomerSchema = new Schema({
-  full_name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  phone: { type: String, required: true },
-  address: String,
-  date_of_birth: Date,
   membership_level: { type: String, enum: ['regular', 'bronze', 'silver', 'gold', 'platinum', 'diamond'], default: 'regular' },
   points: { type: Number, default: 0 },
   total_spent: { type: Number, default: 0 },
-  image_url: String,
-  isBanned: { type: Boolean, default: false },
-  // For authentication
-  // Use email and phone as username options
-  password_hash: { type: String, required: true },
-  created_at: { type: Date, default: Date.now },
-  updated_at: { type: Date, default: Date.now }
+  isBanned: { type: Boolean, default: false }
 });
+
+// Create discriminators for User schema
+const UserModel = mongoose.model('User', UserSchema);
+const StaffModel = UserModel.discriminator('waiter', StaffSchema);
+const StaffModelCashier = UserModel.discriminator('cashier', StaffSchema);
+const StaffModelManager = UserModel.discriminator('manager', StaffSchema);
+const CustomerModel = UserModel.discriminator('customer', CustomerSchema);
+
 
 // ==================== TABLE ====================
 const FloorSchema = new Schema({
@@ -74,8 +72,8 @@ const TableSchema = new Schema({
 // ==================== RESERVATION ====================
 
 const ReservationSchema = new Schema({
-  customer_id: { type: Schema.Types.ObjectId, ref: 'Customer', required: true },
-  //staff_id: { type: Schema.Types.ObjectId, ref: 'Staff', required: true }, // Waiter
+  customer_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  //staff_id: { type: Schema.Types.ObjectId, ref: 'User', required: true }, // Waiter
   reservation_date: { type: Date, required: true },
   reservation_time: { type: String, required: true }, // "18:30"
   number_of_guests: { type: Number, required: true },
@@ -93,13 +91,13 @@ const ReservationDetailSchema = new Schema({
 // ==================== COMPLAINT ====================
 
 const ComplaintSchema = new Schema({
-  customer_id: { type: Schema.Types.ObjectId, ref: 'Customer', required: true },
+  customer_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   subject: { type: String, required: true },
   description: { type: String, required: true },
   category: { type: String, enum: ['food', 'service', 'cleanliness', 'other'], default: 'other' },
   status: { type: String, enum: ['open', 'in_progress', 'resolved', 'closed'], default: 'open' },
   priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
-  assigned_to_staff_id: { type: Schema.Types.ObjectId, ref: 'Staff' },
+  assigned_to_staff_id: { type: Schema.Types.ObjectId, ref: 'User' },
   resolution: String,
   created_at: { type: Date, default: Date.now },
   resolved_at: Date
@@ -133,7 +131,7 @@ const IngredientSchema = new Schema({
 
 const StockImportSchema = new Schema({
   import_number: { type: String, required: true, unique: true },
-  staff_id: { type: Schema.Types.ObjectId, ref: 'Staff' }, // WarehouseStaff (optional)
+  staff_id: { type: Schema.Types.ObjectId, ref: 'User' }, // WarehouseStaff (optional)
   supplier_id: { type: Schema.Types.ObjectId, ref: 'Supplier' },
   import_date: { type: Date, default: Date.now },
   total_cost: { type: Number, default: 0 },
@@ -156,7 +154,7 @@ const StockImportDetailSchema = new Schema({
 
 const StockExportSchema = new Schema({
   export_number: { type: String, required: true, unique: true },
-  staff_id: { type: Schema.Types.ObjectId, ref: 'Staff' },
+  staff_id: { type: Schema.Types.ObjectId, ref: 'User' },
   export_date: { type: Date, default: Date.now },
   total_cost: { type: Number, default: 0 },
   notes: String,
@@ -188,7 +186,7 @@ const DishSchema = new Schema({
   is_available: { type: Boolean, default: true },
 
   manual_unavailable_reason: { type: String }, // e.g. "Tạm ngưng phục vụ"
-  manual_unavailable_by: { type: Schema.Types.ObjectId, ref: 'Staff' },
+  manual_unavailable_by: { type: Schema.Types.ObjectId, ref: 'User' },
   manual_unavailable_at: { type: Date },
   //is_special: { type: Boolean, default: false },
   //calories: Number,
@@ -231,6 +229,7 @@ const OrderSchema = new Schema({
   order_type: { type: String, default: false },
   order_date: { type: Date, default: Date.now },
   order_time: { type: String, required: true },
+  customer_id: { type: Schema.Types.ObjectId, ref: 'User'},
   status: { 
     type: String, 
     enum: ['pending', 'preparing', 'ready', 'served', 'completed', 'cancelled'], 
@@ -248,20 +247,18 @@ const OrderSchema = new Schema({
 
 const DineInByCustomer = OrderSchema.discriminator('dine-in-customer', new Schema({
   table_id: { type: Schema.Types.ObjectId, ref: 'Table', required: true },
-  customer_id: { type: Schema.Types.ObjectId, ref: 'Customer'}
 }));
 
 const TakeawayByCustomer = OrderSchema.discriminator('takeaway-customer', new Schema({
-  customer_id: { type: Schema.Types.ObjectId, ref: 'Customer'}
 }));
 
 const DineInByWaiter = OrderSchema.discriminator('dine-in-waiter', new Schema({
   table_id: { type: Schema.Types.ObjectId, ref: 'Table', required: true },
-  staff_id: { type: Schema.Types.ObjectId, ref: 'Staff', required: true } // Waiter
+  staff_id: { type: Schema.Types.ObjectId, ref: 'User', required: true } // Waiter
 }));
 
 const TakeawayByStaff = OrderSchema.discriminator('takeaway-staff', new Schema({
-  staff_id: { type: Schema.Types.ObjectId, ref: 'Staff', required: true } // Waiter
+  staff_id: { type: Schema.Types.ObjectId, ref: 'User', required: true } // Waiter
 }));
 
 
@@ -272,7 +269,7 @@ const OrderDetailSchema = new Schema({
   unit_price: { type: Number, required: true },
   line_total: { type: Number, required: true },
   special_instructions: String, 
-  status: { type: String, enum: ['pending', 'preparing', 'ready', 'served'], default: 'pending' }
+  status: { type: String, enum: ['pending', 'preparing', 'ready', 'served', 'cancelled'], default: 'pending' }
 });
 
 // ==================== PROMOTION ====================
@@ -297,8 +294,8 @@ const PromotionSchema = new Schema({
 const InvoiceSchema = new Schema({
   invoice_number: { type: String, required: true, unique: true },
   order_id: { type: Schema.Types.ObjectId, ref: 'Order', required: true },
-  staff_id: { type: Schema.Types.ObjectId, ref: 'Staff', required: true }, // Cashier
-  customer_id: { type: Schema.Types.ObjectId, ref: 'Customer' },
+  staff_id: { type: Schema.Types.ObjectId, ref: 'User', required: true }, // Cashier
+  customer_id: { type: Schema.Types.ObjectId, ref: 'User' },
   invoice_date: { type: Date, default: Date.now },
   subtotal: { type: Number, required: true },
   tax: { type: Number, default: 0 },
@@ -318,7 +315,7 @@ const InvoicePromotionSchema = new Schema({
 });
 // ==================== VIOLATIONS ====================
 const ViolationSchema = new Schema({
-  customer_id: { type: Schema.Types.ObjectId, ref: 'Customer', required: true },
+  customer_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   description: { type: String, required: true },
   violation_date: { type: Date, default: Date.now },
   violation_type: { type: String, enum: ['no_show', 'late_cancel', 'property_damage', 'other'], default: 'no_show' },
@@ -327,7 +324,7 @@ const ViolationSchema = new Schema({
 });
 // ==================== RATINGS ====================
 const RatingSchema = new Schema({
-  customer_id: { type: Schema.Types.ObjectId, ref: 'Customer', required: true },
+  customer_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   description: String,
   rating_date: { type: Date, default: Date.now },
   score: { type: Number, required: true, min: 1, max: 5 },
@@ -336,15 +333,15 @@ const RatingSchema = new Schema({
 //Replies to ratings
 const RatingReplySchema = new Schema({
   rating_id: { type: Schema.Types.ObjectId, ref: 'Rating', required: true },
-  staff_id: { type: Schema.Types.ObjectId, ref: 'Staff', required: true },
+  staff_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   reply_text: { type: String, required: true },
   reply_date: { type: Date, default: Date.now },
 });
 
 // ==================== EXPORTS ====================
-
-const Staff = mongoose.model('Staff', StaffSchema);
-const Customer = mongoose.model('Customer', CustomerSchema);
+const User = UserModel;
+const Staff = StaffModel;
+const Customer = CustomerModel;
 const Floor = mongoose.model('Floor', FloorSchema);
 const Location = mongoose.model('Location', LocationSchema);
 const Table = mongoose.model('Table', TableSchema);
@@ -374,8 +371,12 @@ const StockExportDetail = mongoose.model('StockExportDetail', StockExportDetailS
 // (exported below)
 
 module.exports = {
-  Staff,
-  Customer,
+  User,
+  Staff: StaffModel,
+  StaffWaiter: StaffModel,
+  StaffCashier: StaffModelCashier,
+  StaffManager: StaffModelManager,
+  Customer: CustomerModel,
   Supplier,
   Floor,
   Location,
@@ -388,8 +389,6 @@ module.exports = {
   StockImportDetail,
   Dish,
   DishIngredient,
-  // Menu,
-  // MenuEntry,
   Order,
   OrderDetail,
   Promotion,
@@ -397,8 +396,8 @@ module.exports = {
   InvoicePromotion,
   Violation,
   Rating,
-  RatingReply
-  ,StockExport,
+  RatingReply,
+  StockExport,
   StockExportDetail
 };
 

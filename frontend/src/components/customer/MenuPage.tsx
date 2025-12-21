@@ -1,20 +1,20 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Search } from "lucide-react";
 import { Card } from "../ui/Card";
 import { Modal } from "../ui/Modal";
 import { Input } from "../ui/Input";
-import { MenuItem } from "../../types";
+import { Dish } from "../../types";
 import { useMenuDishes } from "../../hooks/useMenuDishes";
 
 export function MenuPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
+  const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
 
   const categories = ["all", "Khai vị", "Món chính", "Đồ uống"];
 
   // Fetch dishes from API
-  const { items, loading, error } = useMenuDishes(searchQuery, selectedCategory);
+  const { items } = useMenuDishes(searchQuery, selectedCategory);
 
   // Client-side filter (for additional refinement if needed)
   const filteredItems = items.filter((item) => {
@@ -68,19 +68,19 @@ export function MenuPage() {
           <Card
             key={item.id}
             hover
-            onClick={() => item.available && setSelectedDish(item)}
-            className={`overflow-hidden ${!item.available ? "opacity-60" : ""}`}
+            onClick={() => item.is_available && setSelectedDish(item)}
+            className={`overflow-hidden ${!item.is_available ? "opacity-60" : ""}`}
           >
             <div className="relative">
               <img
                 src={
-                  item.image ||
+                  item.image_url ||
                   "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400"
                 }
                 alt={item.name}
                 className="w-full h-48 object-cover"
               />
-              {!item.available && (
+              {!item.is_available && (
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                   <span className="text-white px-4 py-2 bg-red-500 rounded-lg">
                     Tạm hết
@@ -122,7 +122,7 @@ export function MenuPage() {
             <div>
               <img
                 src={
-                  selectedDish.image ||
+                  selectedDish.image_url ||
                   "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=800"
                 }
                 alt={selectedDish.name}
@@ -135,23 +135,6 @@ export function MenuPage() {
               <p className="text-gray-600 text-lg">
                 {selectedDish.description}
               </p>
-
-              {selectedDish.ingredients &&
-                selectedDish.ingredients.length > 0 && (
-                  <div>
-                    <p className="font-medium text-lg mb-3">Thành phần:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedDish.ingredients.map((ing, i) => (
-                        <span
-                          key={i}
-                          className="px-4 py-2 bg-gray-100 rounded-full text-sm"
-                        >
-                          {ing}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
               <div className="flex items-center justify-between pt-4 border-t">
                 <span className="text-gray-600 text-lg">Giá:</span>

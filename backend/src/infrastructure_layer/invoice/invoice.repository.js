@@ -1,4 +1,4 @@
-const { Invoice, InvoicePromotion, Order, Staff, Customer } = require('../../models');
+const { Invoice, InvoicePromotion, Order } = require('../../models');
 const InvoiceEntity = require('../../domain_layer/invoice/invoice.entity');
 
 class InvoiceRepository {

@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 const {
-  Staff, Customer, Floor, Location, Table, Reservation, ReservationDetail, Complaint,
+  User, StaffWaiter, StaffCashier, StaffManager, Customer, Floor, Location, Table, Reservation, ReservationDetail, Complaint,
   Supplier, Ingredient, StockImport, StockImportDetail, Dish, DishIngredient,
   StockExport, StockExportDetail,
   Order, OrderDetail, Promotion, Invoice, InvoicePromotion,
@@ -29,7 +29,7 @@ async function seedDatabase() {
     console.log('Xóa dữ liệu cũ...');
     // Ensure all models are loaded; fail fast if any missing
     const modelsToCheck = {
-      Staff, Customer, Floor, Location, Table, Reservation, ReservationDetail, Complaint,
+      User, StaffWaiter, StaffCashier, StaffManager, Customer, Floor, Location, Table, Reservation, ReservationDetail, Complaint,
       Supplier, Ingredient, StockImport, StockImportDetail, StockExport, StockExportDetail, Dish, DishIngredient,
       Order, OrderDetail, Promotion, Invoice, InvoicePromotion,
       Violation, Rating, RatingReply
@@ -37,7 +37,7 @@ async function seedDatabase() {
     const missing = Object.entries(modelsToCheck).filter(([, v]) => !v).map(([k]) => k);
     if (missing.length) throw new Error(`Missing model(s): ${missing.join(', ')}`);
     await Promise.all([
-      Staff.deleteMany({}), Customer.deleteMany({}), 
+      User.deleteMany({}),
       Floor.deleteMany({}), Location.deleteMany({}), Table.deleteMany({}), 
       Reservation.deleteMany({}), ReservationDetail.deleteMany({}), Complaint.deleteMany({}),
       Supplier.deleteMany({}),
@@ -53,7 +53,7 @@ async function seedDatabase() {
     
     // ==================== 1. STAFF ====================
     console.log('1/24 Tạo Staff...');
-    const staffs = await Staff.insertMany([
+    const waiterData = [
       { 
         full_name: 'Nguyễn Văn Hùng', 
         email: 'hung.waiter@restaurant.vn', 
@@ -79,7 +79,10 @@ async function seedDatabase() {
         username: 'mai.waiter', 
         password_hash: password,
         is_active: true
-      },
+      }
+    ];
+    
+    const cashierData = [
       { 
         full_name: 'Lê Văn Nam', 
         email: 'nam.cashier@restaurant.vn', 
@@ -105,7 +108,10 @@ async function seedDatabase() {
         username: 'lan.cashier', 
         password_hash: password,
         is_active: true
-      },
+      }
+    ];
+    
+    const managerData = [
       { 
         full_name: 'Đỗ Văn Minh', 
         email: 'minh.manager@restaurant.vn', 
@@ -132,7 +138,12 @@ async function seedDatabase() {
         password_hash: password,
         is_active: true
       }
-    ]);
+    ];
+    
+    const waiters = await StaffWaiter.insertMany(waiterData);
+    const cashiers = await StaffCashier.insertMany(cashierData);
+    const managers = await StaffManager.insertMany(managerData);
+    const staffs = [...waiters, ...cashiers, ...managers];
     console.log(`   OK ${staffs.length} staff\n`);
 
     // ==================== 2. CUSTOMERS ====================
@@ -147,8 +158,11 @@ async function seedDatabase() {
         membership_level: 'diamond', 
         points: 5000, 
         total_spent: 50000000, 
-        image_url: '/images/customers/customer1.jpg', 
+        image_url: '/images/customers/customer1.jpg',
+        role: 'customer',
+        username: 'tuan.customer',
         password_hash: password,
+        is_active: true,
         isBanned: false
       },
       { 
@@ -160,8 +174,11 @@ async function seedDatabase() {
         membership_level: 'platinum', 
         points: 3000, 
         total_spent: 30000000, 
-        image_url: '/images/customers/customer2.jpg', 
+        image_url: '/images/customers/customer2.jpg',
+        role: 'customer',
+        username: 'huong.customer',
         password_hash: password,
+        is_active: true,
         isBanned: false
       },
       { 
@@ -173,8 +190,11 @@ async function seedDatabase() {
         membership_level: 'gold', 
         points: 1800, 
         total_spent: 15000000, 
-        image_url: '/images/customers/customer3.jpg', 
+        image_url: '/images/customers/customer3.jpg',
+        role: 'customer',
+        username: 'huy.customer',
         password_hash: password,
+        is_active: true,
         isBanned: false
       },
       { 
@@ -186,8 +206,11 @@ async function seedDatabase() {
         membership_level: 'silver', 
         points: 800, 
         total_spent: 5000000, 
-        image_url: '/images/customers/customer4.jpg', 
+        image_url: '/images/customers/customer4.jpg',
+        role: 'customer',
+        username: 'nga.customer',
         password_hash: password,
+        is_active: true,
         isBanned: false
       },
       { 
@@ -199,8 +222,11 @@ async function seedDatabase() {
         membership_level: 'bronze', 
         points: 300, 
         total_spent: 2000000, 
-        image_url: '/images/customers/customer5.jpg', 
+        image_url: '/images/customers/customer5.jpg',
+        role: 'customer',
+        username: 'khoa.customer',
         password_hash: password,
+        is_active: true,
         isBanned: false
       },
       {
@@ -213,7 +239,10 @@ async function seedDatabase() {
         points: 50,
         total_spent: 500000,
         image_url: '/images/customers/customer6.jpg',
+        role: 'customer',
+        username: 'son.customer',
         password_hash: password,
+        is_active: true,
         isBanned: false
       }
     ]);
@@ -595,6 +624,7 @@ async function seedDatabase() {
         order_type: 'dine-in-waiter',
         order_date: new Date('2025-12-11'),
         order_time: '12:30', 
+        customer_id: customers[0]._id,
         status: 'served', 
         subtotal: 770000, 
         tax: 77000, 
@@ -608,6 +638,7 @@ async function seedDatabase() {
         order_type: 'dine-in-waiter',
         order_date: new Date('2025-12-11'),
         order_time: '13:15', 
+        customer_id: customers[1]._id,
         status: 'completed', 
         subtotal: 360000, 
         tax: 36000, 
@@ -621,23 +652,23 @@ async function seedDatabase() {
         order_type: 'dine-in-customer',
         order_date: new Date('2025-12-11'),
         order_time: '14:00', 
+        customer_id: customers[3]._id,
         status: 'completed', 
         subtotal: 150000, 
         tax: 15000, 
         total_amount: 165000,
-        table_id: tables[0]._id,
-        customer_id: customers[3]._id
+        table_id: tables[0]._id
       },
       { 
         order_number: 'ORD-004', 
         order_type: 'takeaway-customer',
         order_date: new Date('2025-12-11'),
         order_time: '15:30', 
+        customer_id: customers[0]._id,
         status: 'completed', 
         subtotal: 635000, 
         tax: 63500, 
         total_amount: 698500,
-        customer_id: customers[0]._id,
         notes: 'Đóng gói chắc chắn'
       },
       { 
@@ -645,12 +676,12 @@ async function seedDatabase() {
         order_type: 'dine-in-waiter',
         order_date: new Date('2025-12-18'),
         order_time: '18:45', 
+        customer_id: customers[1]._id,
         status: 'served', 
         subtotal: 520000, 
         tax: 52000, 
         total_amount: 572000,
         table_id: tables[10]._id,
-        customer_id: customers[1]._id,
         staff_id: staffs[0]._id,
         notes: 'Yêu cầu thêm tương ớt'
       },
@@ -659,24 +690,24 @@ async function seedDatabase() {
         order_type: 'dine-in-customer',
         order_date: new Date('2025-12-18'),
         order_time: '19:15', 
+        customer_id: customers[2]._id,
         status: 'served', 
         subtotal: 245000, 
         tax: 24500, 
         total_amount: 269500,
-        table_id: tables[11]._id,
-        customer_id: customers[2]._id
+        table_id: tables[11]._id
       },
       { 
         order_number: 'ORD-007', 
         order_type: 'dine-in-waiter',
         order_date: new Date('2025-12-18'),
         order_time: '20:00', 
+        customer_id: customers[4]._id,
         status: 'served', 
         subtotal: 890000, 
         tax: 89000, 
         total_amount: 979000,
         table_id: tables[12]._id,
-        customer_id: customers[4]._id,
         staff_id: staffs[1]._id,
         notes: 'Khách yêu cầu thanh toán'
       }
