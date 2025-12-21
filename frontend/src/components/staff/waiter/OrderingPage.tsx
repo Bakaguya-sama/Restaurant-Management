@@ -179,7 +179,7 @@ export function OrderingPage() {
     setAddingItem(item.id);
     try {
       if (orderType === "table") {
-        // For table orders: find pending order, then add orderDetail
+        // For table orders: find or create order, then add orderDetail
         const selectedTableObj = tables.find(
           (t) => t.table_number === selectedTable
         );
@@ -190,30 +190,48 @@ export function OrderingPage() {
 
         let tableOrder = tableOrdersMap[selectedTableObj.id];
 
-        // If not in local cache, fetch pending order from backend
+        // If not in local cache, fetch or create order
         if (!tableOrder) {
-          const pendingOrder = await getPendingOrderByTableId(selectedTableObj.id);
-          if (pendingOrder) {
-            const orderId = pendingOrder._id || pendingOrder.id;
+          const existingOrder = await getPendingOrderByTableId(selectedTableObj.id);
+          if (existingOrder) {
+            const orderId = existingOrder._id || existingOrder.id;
             if (!orderId) {
-              console.error('Order ID is undefined:', pendingOrder);
+              console.error('Order ID is undefined:', existingOrder);
               toast.error('Không thể tải đơn hàng: thiếu ID');
               return;
             }
             const orderDetails = await getOrderDetails(orderId);
             tableOrder = {
-              order: pendingOrder,
+              order: existingOrder,
               orderDetails: orderDetails,
             };
-            // Cache it
-            setTableOrdersMap({
-              ...tableOrdersMap,
-              [selectedTableObj.id]: tableOrder,
-            });
           } else {
-            toast.error("Không tìm thấy đơn hàng đang chờ cho bàn này");
-            return;
+            // Create new order if none exists
+            console.log(`Creating new order for table ${selectedTable}`);
+            if (!firstWaiterId) {
+              toast.error("Không tìm thấy nhân viên phục vụ");
+              return;
+            }
+            const orderNumber = await generateOrderNumber();
+            const newOrder = await createOrder({
+              order_number: orderNumber,
+              table_id: selectedTableObj.id,
+              staff_id: firstWaiterId,
+              status: "pending",
+              order_type: "dine-in-waiter",
+              order_time: new Date().toISOString(),
+            });
+            tableOrder = {
+              order: newOrder,
+              orderDetails: [],
+            };
+            toast.success(`Đã tạo đơn mới cho bàn ${selectedTable}`);
           }
+          // Cache it
+          setTableOrdersMap({
+            ...tableOrdersMap,
+            [selectedTableObj.id]: tableOrder,
+          });
         }
 
         // Create order detail for the existing pending order
@@ -291,9 +309,31 @@ export function OrderingPage() {
         const newQuantity = orderDetail.quantity + delta;
 
         if (newQuantity <= 0) {
-          // Delete order detail by setting appropriate status or removing
-          // For now, just remove from local state
-          const updated = currentTableOrder.orderDetails.filter((_, i) => i !== index);
+          // Set status to cancelled instead of deleting
+          const orderId = currentTableOrder.order._id || currentTableOrder.order.id as string;
+          const detailId = orderDetail._id || orderDetail.id as string;
+          
+          // Update status to cancelled via API
+          await fetch(
+            `${(import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:5000/api/v1"}/orders/${orderId}/details/${detailId}`,
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                status: "cancelled",
+              }),
+            }
+          );
+
+          // Update local state
+          const updated = [...currentTableOrder.orderDetails];
+          updated[index] = {
+            ...updated[index],
+            status: "cancelled",
+          };
+
           const selectedTableObj = tables.find(
             (t) => t.table_number === selectedTable
           );
@@ -306,7 +346,7 @@ export function OrderingPage() {
               },
             });
           }
-          toast.success("Đã xóa món");
+          toast.success("Đã hủy món");
           return;
         }
 
@@ -385,54 +425,87 @@ export function OrderingPage() {
     setShowCustomizeModal(true);
   };
 
-  const handleSaveCustomization = () => {
+  const handleSaveCustomization = async () => {
     if (!customizingItem || customizingIndex < 0) return;
 
-    if (orderType === "table" && currentTableOrder) {
-      // Update order detail with special instructions
-      const updated = [...currentTableOrder.orderDetails];
-      updated[customizingIndex] = {
-        ...updated[customizingIndex],
-        special_instructions: customizingItem.notes,
-      };
+    try {
+      if (orderType === "table" && currentTableOrder) {
+        // Update order detail with special instructions via API
+        const orderDetail = currentTableOrder.orderDetails[customizingIndex];
+        if (!orderDetail) return;
 
-      const selectedTableObj = tables.find(
-        (t) => t.table_number === selectedTable
-      );
-      if (selectedTableObj) {
-        setTableOrdersMap({
-          ...tableOrdersMap,
-          [selectedTableObj.id]: {
-            order: currentTableOrder.order,
-            orderDetails: updated,
-          },
+        const orderId = currentTableOrder.order._id || currentTableOrder.order.id as string;
+        const detailId = orderDetail._id || orderDetail.id as string;
+
+        // Call API to update special_instructions
+        const response = await fetch(
+          `${(import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:5000/api/v1"}/orders/${orderId}/details/${detailId}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              special_instructions: customizingItem.notes,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to update special instructions");
+        }
+
+        // Update local state
+        const updated = [...currentTableOrder.orderDetails];
+        updated[customizingIndex] = {
+          ...updated[customizingIndex],
+          special_instructions: customizingItem.notes,
+        };
+
+        const selectedTableObj = tables.find(
+          (t) => t.table_number === selectedTable
+        );
+        if (selectedTableObj) {
+          setTableOrdersMap({
+            ...tableOrdersMap,
+            [selectedTableObj.id]: {
+              order: currentTableOrder.order,
+              orderDetails: updated,
+            },
+          });
+        }
+        
+        toast.success("Đã lưu tùy chỉnh");
+      } else {
+        // For takeaway orders
+        const orders = takeawayOrders;
+        const setOrders = setTakeawayOrders;
+        const orderId = selectedTakeawayOrder;
+
+        const currentOrderList = orders[orderId] || [];
+        const newOrder = [...currentOrderList];
+        newOrder[customizingIndex] = customizingItem;
+      
+        setOrders({
+          ...orders,
+          [orderId]: newOrder,
         });
+        
+        toast.success("Đã lưu tùy chỉnh");
       }
-    } else {
-      // For takeaway orders
-      const orders = takeawayOrders;
-      const setOrders = setTakeawayOrders;
-      const orderId = selectedTakeawayOrder;
-
-      const currentOrderList = orders[orderId] || [];
-      const newOrder = [...currentOrderList];
-      newOrder[customizingIndex] = customizingItem;
-    
-      setOrders({
-        ...orders,
-        [orderId]: newOrder,
-      });
+    } catch (error: any) {
+      console.error("Error saving customization:", error);
+      toast.error("Không thể lưu tùy chỉnh");
     }
 
     setShowCustomizeModal(false);
     setCustomizingItem(null);
     setCustomizingIndex(-1);
-    toast.success("Đã lưu tùy chỉnh");
   };
 
   const handleUpdateStatus = async (
     index: number,
-    newStatus: "pending" | "cooking" | "served"
+    newStatus: "pending" | "preparing" | "served"
   ) => {
     try {
       if (orderType === "table" && currentTableOrder) {
@@ -443,19 +516,14 @@ export function OrderingPage() {
         // Update order detail status
         const orderId = currentTableOrder.order._id || currentTableOrder.order.id as string;
         const detailId = orderDetail._id || orderDetail.id as string;
-        const statusMap: Record<string, "pending" | "preparing" | "ready" | "served"> = {
-          pending: "pending",
-          cooking: "preparing",
-          served: "served",
-        };
 
-        await patchOrderDetailStatus(orderId, detailId, statusMap[newStatus] || "pending");
+        await patchOrderDetailStatus(orderId, detailId, newStatus);
 
         // Update local state
         const updated = [...currentTableOrder.orderDetails];
         updated[index] = {
           ...updated[index],
-          status: statusMap[newStatus] || "pending",
+          status: newStatus,
         };
 
         const selectedTableObj = tables.find(
@@ -524,35 +592,54 @@ export function OrderingPage() {
     try {
       if (orderType === "table" && currentTableOrder) {
         // For table orders: mark order as completed/served based on all details being served
-        const allServed = currentTableOrder.orderDetails.every(
+        // Filter out cancelled items
+        const activeItems = currentTableOrder.orderDetails.filter(
+          (od) => od.status !== "cancelled"
+        );
+        
+        if (activeItems.length === 0) {
+          toast.error("Không có món nào để tạo hóa đơn");
+          setIsProcessingInvoice(false);
+          return;
+        }
+        
+        const allServed = activeItems.every(
           (od) => od.status === "served"
         );
 
         if (!allServed) {
-          toast.error("Tất cả các món phải được phục vụ trước khi kết thúc đơn");
+          toast.error("Tất cả các món (trừ món đã hủy) phải được phục vụ trước khi kết thúc đơn");
           setIsProcessingInvoice(false);
           return;
         }
 
-        // Create invoice with existing order
-        const totalAmount = currentTableOrder.orderDetails.reduce(
-          (sum, od) => sum + od.line_total,
-          0
+        // Get the latest order data from backend to ensure accurate totals
+        const orderId = currentTableOrder.order._id || currentTableOrder.order.id as string;
+        const orderResponse = await fetch(
+          `${(import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:5000/api/v1"}/orders/${orderId}`
         );
+        
+        if (!orderResponse.ok) {
+          throw new Error("Không thể tải thông tin đơn hàng");
+        }
+        
+        const orderData = await orderResponse.json();
+        const latestOrder = orderData.data;
 
+        // Create invoice using order's calculated totals
         const invoiceData = {
           invoice_number: `INV-${Date.now()}`,
-          order_id: currentTableOrder.order._id || currentTableOrder.order.id,
-          subtotal: totalAmount,
+          order_id: orderId,
+          subtotal: latestOrder.subtotal || 0,
           discount_amount: 0,
-          tax_amount: 0,
-          total_amount: totalAmount,
+          tax_amount: latestOrder.tax || 0,
+          total_amount: latestOrder.total_amount || 0,
           payment_method: "cash",
           payment_status: "pending",
           table_id: currentTableOrder.order.table_id,
           staff_id: firstWaiterId,
           invoice_time: new Date().toISOString(),
-          notes: `Bàn ${selectedTable}`,
+          notes: latestOrder.notes || `Bàn ${selectedTable}`,
         };
 
         const response = await fetch(
@@ -571,8 +658,10 @@ export function OrderingPage() {
           throw new Error(error.message || "Failed to create invoice");
         }
 
+        const invoiceResult = await response.json();
+        console.log("Invoice created successfully:", invoiceResult);
+
         // Update order status to served
-        const orderId = currentTableOrder.order._id || currentTableOrder.order.id as string;
         await patchOrderStatus(
           orderId,
           "served"
@@ -590,7 +679,7 @@ export function OrderingPage() {
           setTableOrdersMap(newMap);
         }
 
-        toast.success("Đã tạo hóa đơn và kết thúc đơn hàng");
+        toast.success(`Đã tạo hóa đơn thành công! Mã hóa đơn: ${invoiceResult.data.invoice_number || 'N/A'}`);
       } else if (orderType === "takeaway") {
         // For takeaway: use existing logic
         const orders = takeawayOrders;
@@ -632,6 +721,9 @@ export function OrderingPage() {
           throw new Error(error.message || "Failed to create invoice");
         }
 
+        const invoiceResult = await response.json();
+        console.log("Invoice created successfully for takeaway:", invoiceResult);
+
         // Clear the takeaway order
         const newOrders = { ...orders };
         delete newOrders[orderId];
@@ -646,7 +738,7 @@ export function OrderingPage() {
         setSelectedTakeawayOrder(newOrderId);
         setTakeawayOrderCounter(takeawayOrderCounter + 1);
 
-        toast.success("Đã tạo hóa đơn");
+        toast.success(`Đã tạo hóa đơn thành công! Mã hóa đơn: ${invoiceResult.data.invoice_number || 'N/A'}`);
       }
     } catch (error: any) {
       console.error("Error completing order:", error);
@@ -855,7 +947,7 @@ export function OrderingPage() {
                           key={table.id}
                           onClick={() => {
                             if (!isSelectable) {
-                              toast.error(`Bàn ${table.table_number} không ở trạng thái có khách. Chỉ có thể tạo order trên bàn có khách.`);
+                              toast.error(`Bàn ${table.table_number} không ở trạng thái có khách.`);
                               return;
                             }
                             setSelectedTable(table.table_number);
@@ -1068,14 +1160,14 @@ export function OrderingPage() {
 
                       {}
                       <select
-                        value={orderItem.status}
+                        value={orderItem.status === "preparing" ? "preparing" : orderItem.status}
                         onChange={(e) =>
                           handleUpdateStatus(index, e.target.value as any)
                         }
                         className="px-2 py-1 text-sm border rounded-lg hover:bg-gray-50 cursor-pointer"
                       >
                         <option value="pending">Chờ xử lý</option>
-                        <option value="cooking">Đang nấu</option>
+                        <option value="preparing">Đang nấu</option>
                         <option value="served">Đã phục vụ</option>
                       </select>
                     </div>
@@ -1088,6 +1180,7 @@ export function OrderingPage() {
                   <span className="font-medium">Tổng cộng:</span>
                   <span className="text-xl text-[#625EE8] font-bold">
                     {currentOrders
+                      .filter((o) => o.status !== "cancelled")
                       .reduce((sum, o) => sum + o.item.price * o.quantity, 0)
                       .toLocaleString()}
                     đ
@@ -1095,7 +1188,9 @@ export function OrderingPage() {
                 </div>
                 <div className="mt-2 text-sm text-gray-600">
                   Tổng món:{" "}
-                  {currentOrders.reduce((sum, o) => sum + o.quantity, 0)}
+                  {currentOrders
+                    .filter((o) => o.status !== "cancelled")
+                    .reduce((sum, o) => sum + o.quantity, 0)}
                 </div>
 
                 {}
@@ -1103,18 +1198,22 @@ export function OrderingPage() {
                   fullWidth
                   className="mt-4"
                   disabled={
-                    currentOrders.length === 0 ||
-                    !currentOrders.every((o) => o.status === "served") ||
+                    currentOrders.filter((o) => o.status !== "cancelled").length === 0 ||
+                    !currentOrders
+                      .filter((o) => o.status !== "cancelled")
+                      .every((o) => o.status === "served") ||
                     isProcessingInvoice
                   }
                   onClick={handleConfirmInvoice}
                 >
                   {isProcessingInvoice ? "Đang xử lý..." : "Xác nhận hóa đơn"}
                 </Button>
-                {currentOrders.length > 0 &&
-                  !currentOrders.every((o) => o.status === "served") && (
+                {currentOrders.filter((o) => o.status !== "cancelled").length > 0 &&
+                  !currentOrders
+                    .filter((o) => o.status !== "cancelled")
+                    .every((o) => o.status === "served") && (
                     <p className="text-xs text-amber-600 mt-2 text-center">
-                      Tất cả món phải ở trạng thái "Đã phục vụ" để xác nhận hóa
+                      Tất cả món (trừ món đã hủy) phải ở trạng thái "Đã phục vụ" để xác nhận hóa
                       đơn
                     </p>
                   )}

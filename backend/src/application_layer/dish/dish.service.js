@@ -1,6 +1,7 @@
 const DishRepository = require('../../infrastructure_layer/dish/dish.repository');
 const DishIngredientService = require('../../application_layer/dishingredient/dishingredient.service');
 const DishEntity = require('../../domain_layer/dish/dish.entity');
+const { DishIngredient, Ingredient } = require('../../models');
 
 class DishService {
   constructor() {
@@ -8,8 +9,68 @@ class DishService {
     this.dishIngredientService = new DishIngredientService();
   }
 
+  async checkDishAvailability(dishId) {
+    try {
+      // Get all ingredients required for this dish
+      const dishIngredients = await DishIngredient.find({ dish_id: dishId });
+      
+      if (dishIngredients.length === 0) {
+        // No ingredients required, dish is available
+        return { available: true, missingIngredients: [] };
+      }
+
+      const missingIngredients = [];
+
+      // Check each ingredient
+      for (const dishIngredient of dishIngredients) {
+        const ingredient = await Ingredient.findById(dishIngredient.ingredient_id);
+        
+        if (!ingredient) {
+          missingIngredients.push({
+            name: 'Unknown',
+            required: dishIngredient.quantity_required,
+            available: 0
+          });
+          continue;
+        }
+
+        // Check if there's enough stock
+        if (ingredient.quantity_in_stock < dishIngredient.quantity_required) {
+          missingIngredients.push({
+            name: ingredient.name,
+            required: dishIngredient.quantity_required,
+            available: ingredient.quantity_in_stock,
+            unit: ingredient.unit
+          });
+        }
+      }
+
+      return {
+        available: missingIngredients.length === 0,
+        missingIngredients
+      };
+    } catch (error) {
+      console.error('Error checking dish availability:', error);
+      return { available: false, missingIngredients: [] };
+    }
+  }
+
   async getAllDishes(filters = {}) {
-    return await this.dishRepository.findAll(filters);
+    const dishes = await this.dishRepository.findAll(filters);
+    
+    // Check availability for each dish
+    const dishesWithAvailability = await Promise.all(
+      dishes.map(async (dish) => {
+        const availability = await this.checkDishAvailability(dish._id || dish.id);
+        return {
+          ...dish.toObject ? dish.toObject() : dish,
+          is_available: availability.available,
+          missing_ingredients: availability.missingIngredients
+        };
+      })
+    );
+    
+    return dishesWithAvailability;
   }
 
   async getDishById(id) {
