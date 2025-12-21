@@ -273,7 +273,7 @@ async function seedDatabase() {
       { table_number: 'T02', capacity: 4, location_id: locations[0]._id, status: 'free' },
       { table_number: 'T03', capacity: 4, location_id: locations[0]._id, status: 'occupied' },
       { table_number: 'T04', capacity: 6, location_id: locations[1]._id, status: 'free' },
-      { table_number: 'T05', capacity: 8, location_id: locations[3]._id, status: 'reserved' },
+      { table_number: 'T05', capacity: 8, location_id: locations[3]._id, status: 'occupied' },
       { table_number: 'T06', capacity: 4, location_id: locations[1]._id, status: 'free' },
       { table_number: 'T07', capacity: 2, location_id: locations[2]._id, status: 'free' },
       { table_number: 'T08', capacity: 6, location_id: locations[4]._id, status: 'free' },

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar, Clock, Users, CreditCard, CheckCircle } from "lucide-react";
+import { QRCodeSVG } from 'qrcode.react';;
 import { Button } from "../ui/Button";
 import { Input, Textarea } from "../ui/Input";
 import { Card } from "../ui/Card";
@@ -197,12 +198,21 @@ export function BookingPage() {
           <h2 className="mb-4 text-green-600">Đặt bàn thành công!</h2>
           <div className="bg-gray-50 rounded-lg p-6 mb-6">
             <div className="text-6xl mb-4">
-              <div className="w-32 h-32 mx-auto bg-white rounded-lg flex items-center justify-center border-2 border-gray-300">
-                <span className="text-sm">QR Code</span>
+              <div className="w-40 h-40 mx-auto bg-white rounded-lg flex items-center justify-center border-2 border-gray-200 shadow-sm p-2">
+                {createdReservation?.id ? (
+                  <QRCodeSVG
+                    value={createdReservation.id}
+                    size={160}
+                    level="H"
+                    includeMargin={false}
+                  />
+                ) : (
+                  <span className="text-sm text-gray-400">QR Code</span>
+                )}
               </div>
             </div>
-            <p className="text-gray-600 mb-2">Mã đặt bàn</p>
-            <p className="text-2xl mb-4">{createdReservation?.id || "BOOKING-001"}</p>
+            <p className="text-gray-600 mb-2 text-center">Mã đặt bàn</p>
+            <p className="text-2xl mb-4 text-center font-semibold">{createdReservation?.id || "BOOKING-001"}</p>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-gray-600">Ngày giờ</p>

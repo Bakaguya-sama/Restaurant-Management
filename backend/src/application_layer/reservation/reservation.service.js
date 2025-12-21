@@ -11,7 +11,16 @@ class ReservationService {
   }
 
   isWithin60Minutes(reservationDate, reservationTime) {
-    const [year, month, day] = reservationDate.split('-').map(Number);
+    // Handle both Date objects and strings for reservationDate
+    let dateStr = reservationDate;
+    if (reservationDate instanceof Date) {
+      const year = reservationDate.getFullYear();
+      const month = String(reservationDate.getMonth() + 1).padStart(2, '0');
+      const day = String(reservationDate.getDate()).padStart(2, '0');
+      dateStr = `${year}-${month}-${day}`;
+    }
+
+    const [year, month, day] = dateStr.split('-').map(Number);
     const [hour, minute] = reservationTime.split(':').map(Number);
     const reservationDateTime = new Date(year, month - 1, day, hour, minute);
     const now = new Date();
@@ -21,7 +30,16 @@ class ReservationService {
   }
 
   shouldAutoCancelReservation(reservation) {
-    const [year, month, day] = reservation.reservation_date.split('-').map(Number);
+    // Handle both Date objects and strings for reservation_date
+    let dateStr = reservation.reservation_date;
+    if (reservation.reservation_date instanceof Date) {
+      const year = reservation.reservation_date.getFullYear();
+      const month = String(reservation.reservation_date.getMonth() + 1).padStart(2, '0');
+      const day = String(reservation.reservation_date.getDate()).padStart(2, '0');
+      dateStr = `${year}-${month}-${day}`;
+    }
+
+    const [year, month, day] = dateStr.split('-').map(Number);
     const [checkoutHour, checkoutMinute] = reservation.reservation_checkout_time.split(':').map(Number);
     const [resHour, resMinute] = reservation.reservation_time.split(':').map(Number);
     
@@ -256,10 +274,19 @@ class ReservationService {
   }
 
   formatReservationResponse(reservation) {
+    // Convert reservation_date to YYYY-MM-DD string format
+    let formattedDate = reservation.reservation_date;
+    if (reservation.reservation_date instanceof Date) {
+      const year = reservation.reservation_date.getFullYear();
+      const month = String(reservation.reservation_date.getMonth() + 1).padStart(2, '0');
+      const day = String(reservation.reservation_date.getDate()).padStart(2, '0');
+      formattedDate = `${year}-${month}-${day}`;
+    }
+
     return {
       id: reservation._id || reservation.id,
       customer_id: reservation.customer_id,
-      reservation_date: reservation.reservation_date,
+      reservation_date: formattedDate,
       reservation_time: reservation.reservation_time,
       reservation_checkout_time: reservation.reservation_checkout_time,
       number_of_guests: reservation.number_of_guests,
