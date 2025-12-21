@@ -39,7 +39,8 @@ describe('Reservation API', () => {
           reservation_time: timeStr,
           reservation_checkout_time: checkoutTimeStr,
           details: [{ table_id: table1._id }],
-          number_of_guests: 2
+          number_of_guests: 2,
+          deposit_amount: 200000
         });
       expect(res.statusCode).toBe(201);
       expect(res.body.success).toBe(true);
@@ -59,7 +60,8 @@ describe('Reservation API', () => {
           reservation_date: dateStr,
           reservation_time: '19:00',
           reservation_checkout_time: checkoutTimeStr,
-          number_of_guests: 2
+          number_of_guests: 2,
+          deposit_amount: 200000
         });
       expect(res.statusCode).toBe(400);
       expect(res.body.success).toBe(false);
@@ -79,7 +81,8 @@ describe('Reservation API', () => {
           reservation_time: timeStr,
           reservation_checkout_time: timeStr,
           details: [{ table_id: table1._id }],
-          number_of_guests: 2
+          number_of_guests: 2,
+          deposit_amount: 200000
         });
       expect(res.statusCode).toBe(400);
       expect(res.body.success).toBe(false);
@@ -102,7 +105,8 @@ describe('Reservation API', () => {
           reservation_time: timeStr,
           reservation_checkout_time: checkoutTimeStr,
           details: [{ table_id: table1._id }],
-          number_of_guests: 2
+          number_of_guests: 2,
+          deposit_amount: 200000
         });
       expect(res.statusCode).toBe(201);
       expect(res.body.success).toBe(true);
@@ -141,7 +145,8 @@ describe('Reservation API', () => {
           reservation_time: timeStr,
           reservation_checkout_time: checkoutTimeStr,
           details: [{ table_id: table1._id }],
-          number_of_guests: 2
+          number_of_guests: 2,
+          deposit_amount: 200000
         });
       
       const resId = createRes.body.data.id;
@@ -176,7 +181,8 @@ describe('Reservation API', () => {
           reservation_time: timeStr,
           reservation_checkout_time: checkoutTimeStr,
           details: [{ table_id: table1._id }],
-          number_of_guests: 2
+          number_of_guests: 2,
+          deposit_amount: 200000
         });
       const resId = createRes.body.data.id;
 
@@ -205,7 +211,8 @@ describe('Reservation API', () => {
           reservation_time: timeStr,
           reservation_checkout_time: checkoutTimeStr,
           details: [{ table_id: table1._id }],
-          number_of_guests: 2
+          number_of_guests: 2,
+          deposit_amount: 200000
         });
       const resId = createRes.body.data.id;
 
@@ -233,7 +240,8 @@ describe('Reservation API', () => {
           reservation_time: timeStr,
           reservation_checkout_time: checkoutTimeStr,
           details: [{ table_id: table1._id }],
-          number_of_guests: 2
+          number_of_guests: 2,
+          deposit_amount: 200000
         });
       const resId = createRes.body.data.id;
 
@@ -261,7 +269,8 @@ describe('Reservation API', () => {
           reservation_time: timeStr,
           reservation_checkout_time: checkoutTimeStr,
           details: [{ table_id: table1._id }],
-          number_of_guests: 2
+          number_of_guests: 2,
+          deposit_amount: 200000
         });
       const resId = createRes.body.data.id;
 
@@ -295,7 +304,8 @@ describe('Reservation API', () => {
           reservation_time: timeStr,
           reservation_checkout_time: checkoutTimeStr,
           details: [{ table_id: table1._id }],
-          number_of_guests: 2
+          number_of_guests: 2,
+          deposit_amount: 200000
         });
       const resId = createRes.body.data.id;
 
@@ -311,3 +321,32 @@ describe('Reservation API', () => {
       expect(['confirmed', 'in_progress']).toContain(res.body.data.status);
     });
   });
+
+  describe('DELETE /api/v1/reservations/:id', () => {
+    it('deletes a reservation', async () => {
+      const futureDate = new Date();
+      futureDate.setMinutes(futureDate.getMinutes() + 30);
+      const dateStr = futureDate.toISOString().split('T')[0];
+      const timeStr = `${String(futureDate.getHours()).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
+      const checkoutHour = (futureDate.getHours() + 2) % 24;
+      const checkoutTimeStr = `${String(checkoutHour).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
+      
+      const createRes = await request(app)
+        .post('/api/v1/reservations')
+        .send({
+          customer_id: customer._id,
+          reservation_date: dateStr,
+          reservation_time: timeStr,
+          reservation_checkout_time: checkoutTimeStr,
+          details: [{ table_id: table1._id }],
+          number_of_guests: 2,
+          deposit_amount: 200000
+        });
+      const resId = createRes.body.data.id;
+
+      const res = await request(app).delete(`/api/v1/reservations/${resId}`);
+      expect(res.statusCode).toBe(200);
+      expect(res.body.success).toBe(true);
+    });
+  });
+});
