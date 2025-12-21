@@ -42,77 +42,106 @@ export function BillsPage() {
 
   const customerPoints = 1500;
 
-  useEffect(() => {
-    const fetchInvoices = async () => {
-      try {
-        setLoading(true);
-        
-        const customersResponse = await customerApi.getAll({ isBanned: false });
-        if (!customersResponse.success || customersResponse.data.length === 0) {
-          toast.error("Không tìm thấy khách hàng");
-          setLoading(false);
-          return;
-        }
-
-        const firstCustomer = customersResponse.data[0];
-        const customerId = (firstCustomer as any)._id || firstCustomer.id;
-        setCustomerId(customerId);
-
-        const response = await invoiceApi.getAll({ 
-          customer_id: customerId 
-        });
-        
-        if (!response.success || !response.data) {
-          setAllBills([]);
-          setLoading(false);
-          return;
-        }
-        
-        const transformedBills = response.data.map((invoice: any) => {
-          const invoiceObj = invoice._id ? invoice : invoice;
-          const orderItems = invoiceObj.order_id?.items || [];
-          
-          return {
-            id: invoiceObj.invoice_number || invoiceObj._id,
-            date: new Date(invoiceObj.created_at).toISOString().split("T")[0],
-            time: new Date(invoiceObj.created_at).toLocaleTimeString("vi-VN", {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-            items: orderItems.map((item: any) => ({
-              id: item._id,
-              name: item.dish_id?.name || "Món ăn",
-              quantity: item.quantity,
-              price: item.unit_price,
-              status: item.status,
-              notes: item.special_instructions,
-            })),
-            subtotal: invoiceObj.subtotal,
-            tax: invoiceObj.tax,
-            discount: 0,
-            voucherDiscount: invoiceObj.discount_amount || 0,
-            pointsDiscount: 0,
-            total: invoiceObj.total_amount,
-            status: invoiceObj.payment_status,
-            createdAt: invoiceObj.created_at,
-            voucherCode: null,
-            voucherUsed: null,
-            pointsUsed: 0,
-            paymentMethod: invoiceObj.payment_method,
-            orderId: invoiceObj.order_id?._id,
-            invoiceId: invoiceObj._id,
-          };
-        });
-
-        setAllBills(transformedBills);
-      } catch (error: any) {
-        console.error("Error fetching invoices:", error);
-        toast.error(error.message || "Không thể tải danh sách hóa đơn");
-      } finally {
+  const fetchInvoices = async () => {
+    try {
+      setLoading(true);
+      
+      const customersResponse = await customerApi.getAll({ isBanned: false });
+      if (!customersResponse.success || customersResponse.data.length === 0) {
+        toast.error("Không tìm thấy khách hàng");
         setLoading(false);
+        return;
       }
-    };
 
+      const firstCustomer = customersResponse.data[0];
+      const customerId = (firstCustomer as any)._id || firstCustomer.id;
+      setCustomerId(customerId);
+
+      const response = await invoiceApi.getAll({ 
+        customer_id: customerId 
+      });
+      
+      if (!response.success || !response.data) {
+        setAllBills([]);
+        setLoading(false);
+        return;
+      }
+
+      // Lấy ratings và replies của customer
+      let customerRating = null;
+      let ratingReply = null;
+      try {
+        const ratingsResponse = await ratingApi.getAll({ customer_id: customerId });
+        if (ratingsResponse.success && ratingsResponse.data && ratingsResponse.data.length > 0) {
+          // Lấy rating mới nhất
+          const ratings = ratingsResponse.data;
+          customerRating = ratings.sort((a: any, b: any) => {
+            const dateA = new Date(a.rating_date || a.created_at).getTime();
+            const dateB = new Date(b.rating_date || b.created_at).getTime();
+            return dateB - dateA;
+          })[0];
+
+          // Lấy reply của rating này (nếu có)
+          const ratingId = (customerRating as any)._id || customerRating.id;
+          const repliesResponse = await ratingApi.getReplies(ratingId);
+          if (repliesResponse.success && repliesResponse.data && repliesResponse.data.length > 0) {
+            ratingReply = repliesResponse.data[0];
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching ratings/replies:", error);
+      }
+      
+      const transformedBills = response.data.map((invoice: any) => {
+        const invoiceObj = invoice._id ? invoice : invoice;
+        const orderItems = invoiceObj.order_id?.items || [];
+        
+        return {
+          id: invoiceObj.invoice_number || invoiceObj._id,
+          date: new Date(invoiceObj.created_at).toISOString().split("T")[0],
+          time: new Date(invoiceObj.created_at).toLocaleTimeString("vi-VN", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          items: orderItems.map((item: any) => ({
+            id: item._id,
+            name: item.dish_id?.name || "Món ăn",
+            quantity: item.quantity,
+            price: item.unit_price,
+            status: item.status,
+            notes: item.special_instructions,
+          })),
+          subtotal: invoiceObj.subtotal,
+          tax: invoiceObj.tax,
+          discount: 0,
+          voucherDiscount: invoiceObj.discount_amount || 0,
+          pointsDiscount: 0,
+          total: invoiceObj.total_amount,
+          status: invoiceObj.payment_status,
+          createdAt: invoiceObj.created_at,
+          voucherCode: null,
+          voucherUsed: null,
+          pointsUsed: 0,
+          paymentMethod: invoiceObj.payment_method,
+          orderId: invoiceObj.order_id?._id,
+          invoiceId: invoiceObj._id,
+          // Gắn rating và reply vào tất cả hóa đơn đã thanh toán
+          feedback: invoiceObj.payment_status === 'paid' && customerRating ? customerRating.description : null,
+          feedbackReply: invoiceObj.payment_status === 'paid' && ratingReply ? ratingReply.reply_text : null,
+          feedbackReplyDate: invoiceObj.payment_status === 'paid' && ratingReply ? ratingReply.reply_date : null,
+        };
+      });
+
+      setAllBills(transformedBills);
+    } catch (error: any) {
+      console.error("Error fetching invoices:", error);
+      toast.error(error.message || "Không thể tải danh sách hóa đơn");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchInvoices();
   }, []);
 
@@ -295,6 +324,9 @@ export function BillsPage() {
       toast.success("Cảm ơn bạn đã gửi đánh giá!");
       setShowFeedbackModal(false);
       setFeedback("");
+      
+      // Refresh bills để cập nhật feedback
+      await fetchInvoices();
     } catch (error: any) {
       console.error("Rating error:", error);
       toast.error(error.message || "Gửi đánh giá thất bại");
