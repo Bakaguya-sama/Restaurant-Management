@@ -72,11 +72,42 @@ Content-Type: application/json
 }
 
 # Update reservation status (PATCH - status only)
+# Note: Status transitions are validated based on current status
+# pending -> confirmed (when payment is received)
+# pending -> in_progress is NOT allowed (must pay deposit first)
+# confirmed -> in_progress (automatic within 1 hour of reservation time)
+# confirmed -> cancelled (customer cancellation)
+# in_progress -> completed (automatic when past checkout time)
+
 PATCH http://localhost:5001/api/v1/reservations/{{reservationId}}/status
 Content-Type: application/json
 
 {
   "status": "confirmed"
+}
+
+# Confirm payment - transition from pending to confirmed
+PATCH http://localhost:5001/api/v1/reservations/{{reservationId}}/status
+Content-Type: application/json
+
+{
+  "status": "confirmed"
+}
+
+# Cancel reservation - transition from confirmed to cancelled
+PATCH http://localhost:5001/api/v1/reservations/{{reservationId}}/status
+Content-Type: application/json
+
+{
+  "status": "cancelled"
+}
+
+# Try to transition from pending to in_progress (should fail with error)
+PATCH http://localhost:5001/api/v1/reservations/{{reservationId}}/status
+Content-Type: application/json
+
+{
+  "status": "in_progress"
 }
 
 # Delete reservation

@@ -3,11 +3,17 @@
 # Get all reservation details
 GET http://localhost:5001/api/v1/reservation-details
 
-# Get reservation details filtered by reservation_id
+# Get reservation details filtered by reservation_id (query parameter)
 GET http://localhost:5001/api/v1/reservation-details?reservation_id={{reservationId}}
 
-# Get reservation details filtered by table_id
+# Get reservation details filtered by table_id (query parameter)
 GET http://localhost:5001/api/v1/reservation-details?table_id={{tableId}}
+
+# Get reservation details by reservation_id (dedicated route)
+GET http://localhost:5001/api/v1/reservation-details/reservation/{{reservationId}}
+
+# Get reservation details by table_id (dedicated route)
+GET http://localhost:5001/api/v1/reservation-details/table/{{tableId}}
 
 # Get reservation detail by id
 GET http://localhost:5001/api/v1/reservation-details/{{detailId}}

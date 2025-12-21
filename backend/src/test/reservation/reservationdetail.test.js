@@ -47,6 +47,38 @@ describe('ReservationDetail API', () => {
     });
   });
 
+  describe('GET /api/v1/reservation-details/reservation/:reservationId - Dedicated Reservation Filter', () => {
+    it('gets details filtered by reservation id', async () => {
+      const futureDate = new Date();
+      futureDate.setMinutes(futureDate.getMinutes() + 30);
+      const { reservation } = await createReservation({ customer, table: table1, number_of_guests: 2, date: futureDate });
+      
+      const res = await request(app).get(`/api/v1/reservation-details/reservation/${reservation._id}`);
+      expect(res.statusCode).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(Array.isArray(res.body.data)).toBe(true);
+      if (res.body.data.length > 0) {
+        expect(res.body.data[0].reservation_id).toBe(reservation._id.toString());
+      }
+    });
+  });
+
+  describe('GET /api/v1/reservation-details/table/:tableId - Dedicated Table Filter', () => {
+    it('gets details filtered by table id', async () => {
+      const futureDate = new Date();
+      futureDate.setMinutes(futureDate.getMinutes() + 30);
+      const { detail } = await createReservation({ customer, table: table1, number_of_guests: 2, date: futureDate });
+      
+      const res = await request(app).get(`/api/v1/reservation-details/table/${table1._id}`);
+      expect(res.statusCode).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(Array.isArray(res.body.data)).toBe(true);
+      if (res.body.data.length > 0) {
+        expect(res.body.data[0].table_id).toBe(table1._id.toString());
+      }
+    });
+  });
+
   describe('GET /api/v1/reservation-details/:id', () => {
     it('gets existing reservation detail by id', async () => {
       const futureDate = new Date();

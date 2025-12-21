@@ -188,8 +188,8 @@ describe('Reservation API', () => {
     });
   });
 
-  describe('DELETE /api/v1/reservations/:id', () => {
-    it('deletes a reservation', async () => {
+  describe('PATCH /api/v1/reservations/:id/status - Update Status', () => {
+    it('prevents status change from pending to in_progress without payment', async () => {
       const futureDate = new Date();
       futureDate.setMinutes(futureDate.getMinutes() + 30);
       const dateStr = futureDate.toISOString().split('T')[0];
@@ -209,9 +209,105 @@ describe('Reservation API', () => {
         });
       const resId = createRes.body.data.id;
 
-      const res = await request(app).delete(`/api/v1/reservations/${resId}`);
+      const res = await request(app)
+        .patch(`/api/v1/reservations/${resId}/status`)
+        .send({ status: 'in_progress' });
+      expect(res.statusCode).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toContain('Cannot change status to in_progress from pending');
+    });
+
+    it('allows status change from pending to confirmed', async () => {
+      const futureDate = new Date();
+      futureDate.setMinutes(futureDate.getMinutes() + 30);
+      const dateStr = futureDate.toISOString().split('T')[0];
+      const timeStr = `${String(futureDate.getHours()).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
+      const checkoutHour = (futureDate.getHours() + 2) % 24;
+      const checkoutTimeStr = `${String(checkoutHour).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
+      
+      const createRes = await request(app)
+        .post('/api/v1/reservations')
+        .send({
+          customer_id: customer._id,
+          reservation_date: dateStr,
+          reservation_time: timeStr,
+          reservation_checkout_time: checkoutTimeStr,
+          details: [{ table_id: table1._id }],
+          number_of_guests: 2
+        });
+      const resId = createRes.body.data.id;
+
+      const res = await request(app)
+        .patch(`/api/v1/reservations/${resId}/status`)
+        .send({ status: 'confirmed' });
       expect(res.statusCode).toBe(200);
       expect(res.body.success).toBe(true);
+      expect(res.body.data.status).toBe('confirmed');
+    });
+
+    it('allows status change from confirmed to cancelled', async () => {
+      const futureDate = new Date();
+      futureDate.setMinutes(futureDate.getMinutes() + 30);
+      const dateStr = futureDate.toISOString().split('T')[0];
+      const timeStr = `${String(futureDate.getHours()).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
+      const checkoutHour = (futureDate.getHours() + 2) % 24;
+      const checkoutTimeStr = `${String(checkoutHour).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
+      
+      const createRes = await request(app)
+        .post('/api/v1/reservations')
+        .send({
+          customer_id: customer._id,
+          reservation_date: dateStr,
+          reservation_time: timeStr,
+          reservation_checkout_time: checkoutTimeStr,
+          details: [{ table_id: table1._id }],
+          number_of_guests: 2
+        });
+      const resId = createRes.body.data.id;
+
+      // First confirm the reservation
+      await request(app)
+        .patch(`/api/v1/reservations/${resId}/status`)
+        .send({ status: 'confirmed' });
+
+      // Then cancel it
+      const res = await request(app)
+        .patch(`/api/v1/reservations/${resId}/status`)
+        .send({ status: 'cancelled' });
+      expect(res.statusCode).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.status).toBe('cancelled');
+    });
+
+    it('allows confirmed status to auto-transition to in_progress within 1 hour window', async () => {
+      const futureDate = new Date();
+      futureDate.setMinutes(futureDate.getMinutes() + 30);
+      const dateStr = futureDate.toISOString().split('T')[0];
+      const timeStr = `${String(futureDate.getHours()).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
+      const checkoutHour = (futureDate.getHours() + 2) % 24;
+      const checkoutTimeStr = `${String(checkoutHour).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
+      
+      const createRes = await request(app)
+        .post('/api/v1/reservations')
+        .send({
+          customer_id: customer._id,
+          reservation_date: dateStr,
+          reservation_time: timeStr,
+          reservation_checkout_time: checkoutTimeStr,
+          details: [{ table_id: table1._id }],
+          number_of_guests: 2
+        });
+      const resId = createRes.body.data.id;
+
+      // First confirm the reservation
+      await request(app)
+        .patch(`/api/v1/reservations/${resId}/status`)
+        .send({ status: 'confirmed' });
+
+      // Fetch the reservation - it should auto-transition to in_progress
+      const res = await request(app).get(`/api/v1/reservations/${resId}`);
+      expect(res.statusCode).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(['confirmed', 'in_progress']).toContain(res.body.data.status);
     });
   });
-});
