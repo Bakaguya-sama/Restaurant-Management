@@ -8,12 +8,13 @@ export interface OrderItemDTO {
 
 export interface CreateOrderParams {
   order_number: string;
-  order_type: 'dine-in-waiter' | 'takeaway-staff';
+  order_type: 'dine-in-customer' | 'takeaway-customer' | 'dine-in-waiter' | 'takeaway-staff';
   order_time: string;
   table_id?: string;
+  customer_id?: string;
   staff_id?: string;
   notes?: string;
-  orderItems: OrderItemDTO[];
+  orderItems?: OrderItemDTO[];
 }
 
 export interface OrderDetailParams {
@@ -225,6 +226,37 @@ export async function updateOrderDetailQuantity(
     throw {
       status: response.status,
       message: data.message || "Failed to update order detail quantity",
+    };
+  }
+
+  return data.data;
+}
+
+/**
+ * Update order detail special instructions
+ */
+export async function updateOrderDetailNotes(
+  orderId: string,
+  detailId: string,
+  special_instructions: string
+): Promise<OrderDetail> {
+  const response = await fetch(
+    `${API_BASE}/orders/${orderId}/details/${detailId}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ special_instructions }),
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw {
+      status: response.status,
+      message: data.message || "Failed to update order detail notes",
     };
   }
 

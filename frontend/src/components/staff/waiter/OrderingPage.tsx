@@ -19,6 +19,7 @@ import {
   updateOrderStatus,
   updateOrderDetailStatus,
   updateOrderDetailQuantity,
+  updateOrderDetailNotes,
   patchOrderStatus,
   patchOrderDetailStatus,
   generateOrderNumber,
@@ -46,12 +47,10 @@ export function OrderingPage() {
   // Backend order management - stores pending orders fetched from DB
   const [tableOrdersMap, setTableOrdersMap] = useState<Record<string, TableOrder>>({});
   
-  // Takeaway orders management (local state for now)
-  const [takeawayOrders, setTakeawayOrders] = useState<
-    Record<string, OrderItem[]>
-  >({});
-  const [selectedTakeawayOrder, setSelectedTakeawayOrder] = useState("TO-001");
-  const [takeawayOrderCounter, setTakeawayOrderCounter] = useState(2);
+  // Takeaway orders management - now using API like table orders
+  const [takeawayOrdersMap, setTakeawayOrdersMap] = useState<Record<string, TableOrder>>({});
+  const [selectedTakeawayOrder, setSelectedTakeawayOrder] = useState<string | null>(null);
+  const [takeawayOrderCounter, setTakeawayOrderCounter] = useState(1);
 
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [showCustomizeModal, setShowCustomizeModal] = useState(false);
@@ -152,9 +151,18 @@ export function OrderingPage() {
             orderDetailId: od._id || od.id,
           };
         })
-      : orderType === "table"
-      ? []
-      : takeawayOrders[selectedTakeawayOrder] || [];
+      : orderType === "takeaway" && selectedTakeawayOrder && takeawayOrdersMap[selectedTakeawayOrder]
+      ? takeawayOrdersMap[selectedTakeawayOrder].orderDetails.map((od) => {
+          const dish = filteredItems.find((d) => d.id === od.dish_id);
+          return {
+            item: dish || ({ id: od.dish_id, name: "Unknown", price: 0 } as Dish),
+            quantity: od.quantity,
+            notes: od.special_instructions || "",
+            status: od.status as "pending" | "cooking" | "served",
+            orderDetailId: od._id || od.id,
+          };
+        })
+      : [];
 
   const currentOrderId =
     orderType === "table" ? selectedTable : selectedTakeawayOrder;
@@ -243,35 +251,45 @@ export function OrderingPage() {
 
         toast.success(`Đã thêm ${item.name} vào đơn`);
       } else {
-        // For takeaway orders: use local state (existing logic)
-        const orders = takeawayOrders;
-        const orderId = selectedTakeawayOrder;
-
-        const currentOrderList = orders[orderId] || [];
-        const existing = currentOrderList.find(
-          (o) => o.item.id === item.id && !o.notes
-        );
-
-        if (existing) {
-          setTakeawayOrders({
-            ...orders,
-            [orderId]: currentOrderList.map((o) =>
-              o.item.id === item.id && !o.notes
-                ? { ...o, quantity: o.quantity + 1 }
-                : o
-            ),
-          });
-        } else {
-          setTakeawayOrders({
-            ...orders,
-            [orderId]: [
-              ...currentOrderList,
-              { item, quantity: 1, notes: "", status: "pending" },
-            ],
-          });
+        // For takeaway orders: use API like table orders
+        if (!selectedTakeawayOrder) {
+          toast.error('Vui lòng chọn đơn mang về');
+          return;
         }
 
-        toast.success(`Đã thêm ${item.name} (chưa trừ kho)`);
+        const takeawayOrder = takeawayOrdersMap[selectedTakeawayOrder];
+        if (!takeawayOrder) {
+          toast.error('Không tìm thấy đơn mang về');
+          return;
+        }
+
+        // Create order detail for the takeaway order
+        const lineTotal = item.price * 1;
+        const orderId = takeawayOrder.order._id || takeawayOrder.order.id;
+        if (!orderId) {
+          console.error('Order ID is undefined. Order object:', takeawayOrder.order);
+          throw new Error('Cannot create order detail: Order ID is undefined');
+        }
+
+        const orderDetail = await createOrderDetail({
+          order_id: orderId,
+          dish_id: item.id,
+          quantity: 1,
+          unit_price: item.price,
+          line_total: lineTotal,
+          status: 'pending',
+        });
+
+        // Update local state
+        setTakeawayOrdersMap({
+          ...takeawayOrdersMap,
+          [selectedTakeawayOrder]: {
+            order: takeawayOrder.order,
+            orderDetails: [...takeawayOrder.orderDetails, orderDetail],
+          },
+        });
+
+        toast.success(`Đã thêm ${item.name} vào đơn`);
       }
     } catch (error: any) {
       console.error("Error adding item to order:", error);
@@ -342,35 +360,54 @@ export function OrderingPage() {
         } else {
           toast.info("Đã giảm số lượng");
         }
-      } else if (orderType === "takeaway") {
-        // For takeaway orders: use local state
-        const orders = takeawayOrders;
-        const orderId = selectedTakeawayOrder;
+      } else if (orderType === "takeaway" && selectedTakeawayOrder && takeawayOrdersMap[selectedTakeawayOrder]) {
+        // For takeaway orders: update via API
+        const takeawayOrder = takeawayOrdersMap[selectedTakeawayOrder];
+        const orderDetail = takeawayOrder.orderDetails[index];
+        if (!orderDetail) return;
 
-        const currentOrderList = [...(orders[orderId] || [])];
-        const orderItem = currentOrderList[index];
-        const newQuantity = orderItem.quantity + delta;
+        const newQuantity = orderDetail.quantity + delta;
 
         if (newQuantity <= 0) {
-          currentOrderList.splice(index, 1);
-          setTakeawayOrders({
-            ...orders,
-            [orderId]: currentOrderList,
+          // Delete order detail by removing from local state
+          const updated = takeawayOrder.orderDetails.filter((_, i) => i !== index);
+          setTakeawayOrdersMap({
+            ...takeawayOrdersMap,
+            [selectedTakeawayOrder]: {
+              order: takeawayOrder.order,
+              orderDetails: updated,
+            },
           });
           toast.success("Đã xóa món");
           return;
         }
 
-        currentOrderList[index].quantity = newQuantity;
-        setTakeawayOrders({
-          ...orders,
-          [orderId]: currentOrderList,
+        // Update quantity via API
+        const orderId = takeawayOrder.order._id || takeawayOrder.order.id as string;
+        const detailId = orderDetail._id || orderDetail.id as string;
+        
+        await updateOrderDetailQuantity(orderId, detailId, newQuantity);
+
+        // Update local state
+        const updated = [...takeawayOrder.orderDetails];
+        updated[index] = {
+          ...updated[index],
+          quantity: newQuantity,
+          line_total: newQuantity * updated[index].unit_price,
+        };
+
+        setTakeawayOrdersMap({
+          ...takeawayOrdersMap,
+          [selectedTakeawayOrder]: {
+            order: takeawayOrder.order,
+            orderDetails: updated,
+          },
         });
 
         if (delta > 0) {
-          toast.success(`Đã tăng số lượng ${orderItem.item.name}`);
+          toast.success("Đã tăng số lượng");
         } else {
-          toast.info(`Đã giảm số lượng ${orderItem.item.name}`);
+          toast.info("Đã giảm số lượng");
         }
       }
     } catch (error: any) {
@@ -385,49 +422,90 @@ export function OrderingPage() {
     setShowCustomizeModal(true);
   };
 
-  const handleSaveCustomization = () => {
+  const handleSaveCustomization = async () => {
     if (!customizingItem || customizingIndex < 0) return;
 
-    if (orderType === "table" && currentTableOrder) {
-      // Update order detail with special instructions
-      const updated = [...currentTableOrder.orderDetails];
-      updated[customizingIndex] = {
-        ...updated[customizingIndex],
-        special_instructions: customizingItem.notes,
-      };
+    try {
+      if (orderType === "table" && currentTableOrder) {
+        // Update order detail with special instructions and quantity via API
+        const orderDetail = currentTableOrder.orderDetails[customizingIndex];
+        if (!orderDetail) return;
 
-      const selectedTableObj = tables.find(
-        (t) => t.table_number === selectedTable
-      );
-      if (selectedTableObj) {
-        setTableOrdersMap({
-          ...tableOrdersMap,
-          [selectedTableObj.id]: {
-            order: currentTableOrder.order,
+        const orderId = currentTableOrder.order._id || currentTableOrder.order.id as string;
+        const detailId = orderDetail._id || orderDetail.id as string;
+
+        // Update notes via API
+        await updateOrderDetailNotes(orderId, detailId, customizingItem.notes);
+        
+        // Update quantity via API if changed
+        if (customizingItem.quantity !== orderDetail.quantity) {
+          await updateOrderDetailQuantity(orderId, detailId, customizingItem.quantity);
+        }
+
+        // Update local state
+        const updated = [...currentTableOrder.orderDetails];
+        updated[customizingIndex] = {
+          ...updated[customizingIndex],
+          special_instructions: customizingItem.notes,
+          quantity: customizingItem.quantity,
+          line_total: customizingItem.quantity * updated[customizingIndex].unit_price,
+        };
+
+        const selectedTableObj = tables.find(
+          (t) => t.table_number === selectedTable
+        );
+        if (selectedTableObj) {
+          setTableOrdersMap({
+            ...tableOrdersMap,
+            [selectedTableObj.id]: {
+              order: currentTableOrder.order,
+              orderDetails: updated,
+            },
+          });
+        }
+      } else if (orderType === "takeaway" && selectedTakeawayOrder && takeawayOrdersMap[selectedTakeawayOrder]) {
+        // For takeaway orders: update via API
+        const takeawayOrder = takeawayOrdersMap[selectedTakeawayOrder];
+        const orderDetail = takeawayOrder.orderDetails[customizingIndex];
+        if (!orderDetail) return;
+
+        const orderId = takeawayOrder.order._id || takeawayOrder.order.id as string;
+        const detailId = orderDetail._id || orderDetail.id as string;
+
+        // Update notes via API
+        await updateOrderDetailNotes(orderId, detailId, customizingItem.notes);
+        
+        // Update quantity via API if changed
+        if (customizingItem.quantity !== orderDetail.quantity) {
+          await updateOrderDetailQuantity(orderId, detailId, customizingItem.quantity);
+        }
+
+        // Update local state
+        const updated = [...takeawayOrder.orderDetails];
+        updated[customizingIndex] = {
+          ...updated[customizingIndex],
+          special_instructions: customizingItem.notes,
+          quantity: customizingItem.quantity,
+          line_total: customizingItem.quantity * updated[customizingIndex].unit_price,
+        };
+
+        setTakeawayOrdersMap({
+          ...takeawayOrdersMap,
+          [selectedTakeawayOrder]: {
+            order: takeawayOrder.order,
             orderDetails: updated,
           },
         });
       }
-    } else {
-      // For takeaway orders
-      const orders = takeawayOrders;
-      const setOrders = setTakeawayOrders;
-      const orderId = selectedTakeawayOrder;
 
-      const currentOrderList = orders[orderId] || [];
-      const newOrder = [...currentOrderList];
-      newOrder[customizingIndex] = customizingItem;
-    
-      setOrders({
-        ...orders,
-        [orderId]: newOrder,
-      });
+      setShowCustomizeModal(false);
+      setCustomizingItem(null);
+      setCustomizingIndex(-1);
+      toast.success("Đã lưu tùy chỉnh");
+    } catch (error: any) {
+      console.error("Error saving customization:", error);
+      toast.error(`Không thể lưu tùy chỉnh: ${error.message || "Lỗi không xác định"}`);
     }
-
-    setShowCustomizeModal(false);
-    setCustomizingItem(null);
-    setCustomizingIndex(-1);
-    toast.success("Đã lưu tùy chỉnh");
   };
 
   const handleUpdateStatus = async (
@@ -474,23 +552,41 @@ export function OrderingPage() {
         toast.success(
           `Đã cập nhật: ${getStatusText(newStatus)}`
         );
-      } else if (orderType === "takeaway") {
-        // For takeaway orders
-        const orders = takeawayOrders;
-        const setOrders = setTakeawayOrders;
-        const orderId = selectedTakeawayOrder;
+      } else if (orderType === "takeaway" && selectedTakeawayOrder && takeawayOrdersMap[selectedTakeawayOrder]) {
+        // For takeaway orders: update via API
+        const takeawayOrder = takeawayOrdersMap[selectedTakeawayOrder];
+        const orderDetail = takeawayOrder.orderDetails[index];
+        if (!orderDetail || !orderDetail._id && !orderDetail.id) return;
 
-        const currentOrderList = [...(orders[orderId] || [])];
-        const orderItem = currentOrderList[index];
-        const oldStatus = orderItem.status;
+        // Update order detail status
+        const orderId = takeawayOrder.order._id || takeawayOrder.order.id as string;
+        const detailId = orderDetail._id || orderDetail.id as string;
+        const statusMap: Record<string, "pending" | "preparing" | "ready" | "served"> = {
+          pending: "pending",
+          cooking: "preparing",
+          served: "served",
+        };
 
-        // Just update status locally for takeaway
-        currentOrderList[index].status = newStatus;
-        setOrders({
-          ...orders,
-          [orderId]: currentOrderList,
+        await patchOrderDetailStatus(orderId, detailId, statusMap[newStatus] || "pending");
+
+        // Update local state
+        const updated = [...takeawayOrder.orderDetails];
+        updated[index] = {
+          ...updated[index],
+          status: statusMap[newStatus] || "pending",
+        };
+
+        setTakeawayOrdersMap({
+          ...takeawayOrdersMap,
+          [selectedTakeawayOrder]: {
+            order: takeawayOrder.order,
+            orderDetails: updated,
+          },
         });
-        toast.success(`Đã cập nhật trạng thái: ${getStatusText(newStatus)}`);
+
+        toast.success(
+          `Đã cập nhật: ${getStatusText(newStatus)}`
+        );
       }
     } catch (error: any) {
       console.error("Error updating status:", error);
@@ -591,20 +687,30 @@ export function OrderingPage() {
         }
 
         toast.success("Đã tạo hóa đơn và kết thúc đơn hàng");
-      } else if (orderType === "takeaway") {
-        // For takeaway: use existing logic
-        const orders = takeawayOrders;
-        const setOrders = setTakeawayOrders;
-        const orderId = selectedTakeawayOrder;
+      } else if (orderType === "takeaway" && selectedTakeawayOrder && takeawayOrdersMap[selectedTakeawayOrder]) {
+        // For takeaway: use new API-based approach
+        const takeawayOrder = takeawayOrdersMap[selectedTakeawayOrder];
+
+        // Validate all details are served
+        const allServed = takeawayOrder.orderDetails.every(
+          (od) => od.status === "served"
+        );
+
+        if (!allServed) {
+          toast.error("Tất cả các món phải được phục vụ trước khi kết thúc đơn");
+          setIsProcessingInvoice(false);
+          return;
+        }
 
         // Calculate total amount
-        const totalAmount = (orders[orderId] || []).reduce(
-          (sum, o) => sum + o.item.price * o.quantity,
+        const totalAmount = takeawayOrder.orderDetails.reduce(
+          (sum, od) => sum + od.line_total,
           0
         );
 
         const invoiceData = {
           invoice_number: `INV-${Date.now()}`,
+          order_id: takeawayOrder.order._id || takeawayOrder.order.id,
           subtotal: totalAmount,
           discount_amount: 0,
           tax_amount: 0,
@@ -613,7 +719,7 @@ export function OrderingPage() {
           payment_status: "pending",
           staff_id: firstWaiterId,
           invoice_time: new Date().toISOString(),
-          notes: `Đơn mang về ${selectedTakeawayOrder}`,
+          notes: `Đơn mang về ${takeawayOrder.order.order_number || selectedTakeawayOrder}`,
         };
 
         const response = await fetch(
@@ -632,19 +738,17 @@ export function OrderingPage() {
           throw new Error(error.message || "Failed to create invoice");
         }
 
-        // Clear the takeaway order
-        const newOrders = { ...orders };
-        delete newOrders[orderId];
-        setOrders(newOrders);
+        // Update order status to served
+        const orderId = takeawayOrder.order._id || takeawayOrder.order.id as string;
+        await patchOrderStatus(orderId, "served");
 
-        // Create new takeaway order
-        const newOrderId = `TO-${String(takeawayOrderCounter).padStart(3, "0")}`;
-        setTakeawayOrders({
-          ...newOrders,
-          [newOrderId]: [],
-        });
-        setSelectedTakeawayOrder(newOrderId);
-        setTakeawayOrderCounter(takeawayOrderCounter + 1);
+        // Clear the takeaway order from map
+        const newMap = { ...takeawayOrdersMap };
+        delete newMap[selectedTakeawayOrder];
+        setTakeawayOrdersMap(newMap);
+
+        // Clear selected takeaway order
+        setSelectedTakeawayOrder(null);
 
         toast.success("Đã tạo hóa đơn");
       }
@@ -665,11 +769,10 @@ export function OrderingPage() {
         (sum, od) => sum + od.line_total,
         0
       );
-    } else if (orderType === "takeaway") {
-      const orders = takeawayOrders;
-      const orderId = selectedTakeawayOrder;
-      totalAmount = (orders[orderId] || []).reduce(
-        (sum, o) => sum + o.item.price * o.quantity,
+    } else if (orderType === "takeaway" && selectedTakeawayOrder && takeawayOrdersMap[selectedTakeawayOrder]) {
+      const takeawayOrder = takeawayOrdersMap[selectedTakeawayOrder];
+      totalAmount = takeawayOrder.orderDetails.reduce(
+        (sum, od) => sum + od.line_total,
         0
       );
     }
@@ -689,15 +792,41 @@ export function OrderingPage() {
     setShowConfirmModal(true);
   };
 
-  const handleAddTakeawayOrder = () => {
-    const newOrderId = `TO-${String(takeawayOrderCounter).padStart(3, "0")}`;
-    setTakeawayOrders({
-      ...takeawayOrders,
-      [newOrderId]: [],
-    });
-    setSelectedTakeawayOrder(newOrderId);
-    setTakeawayOrderCounter(takeawayOrderCounter + 1);
-    toast.success(`Đã tạo đơn mang về ${newOrderId}`);
+  const handleAddTakeawayOrder = async () => {
+    try {
+      // Create takeaway order via API with order_type 'takeaway-staff'
+      const orderNumber = await generateOrderNumber('takeaway-staff');
+      const currentTime = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      const order = await createOrder({
+        order_number: orderNumber,
+        order_type: 'takeaway-staff',
+        order_time: currentTime,
+        staff_id: firstWaiterId,
+        notes: `Đơn mang về ${orderNumber}`,
+      });
+
+      const orderId = order._id || order.id;
+      if (!orderId) {
+        toast.error('Không thể tạo đơn: thiếu ID');
+        return;
+      }
+
+      // Cache the new order
+      setTakeawayOrdersMap({
+        ...takeawayOrdersMap,
+        [orderId]: {
+          order,
+          orderDetails: [],
+        },
+      });
+
+      setSelectedTakeawayOrder(orderId);
+      setTakeawayOrderCounter(takeawayOrderCounter + 1);
+      toast.success(`Đã tạo đơn mang về ${orderNumber}`);
+    } catch (error: any) {
+      console.error('Error creating takeaway order:', error);
+      toast.error(`Không thể tạo đơn: ${error.message || 'Lỗi không xác định'}`);
+    }
   };
 
   const handleRemoveItem = (index: number) => {
@@ -720,9 +849,7 @@ export function OrderingPage() {
           const detailId = orderDetail._id || orderDetail.id as string;
 
           // Update status to cancelled via API
-          await updateOrderDetailStatus(orderId, detailId, {
-            status: "cancelled",
-          });
+          await patchOrderDetailStatus(orderId, detailId, "cancelled");
 
           // Update local state
           const updated = [...currentTableOrder.orderDetails];
@@ -744,17 +871,33 @@ export function OrderingPage() {
             });
           }
           toast.success("Đã hủy món");
-        } else if (orderType === "takeaway") {
-          // For takeaway orders: remove from local state
-          const orders = takeawayOrders;
-          const orderId = selectedTakeawayOrder;
-          const currentOrderList = orders[orderId] || [];
-          const newOrders = [...currentOrderList];
-          newOrders.splice(index, 1);
-          setTakeawayOrders({
-            ...orders,
-            [orderId]: newOrders,
+        } else if (orderType === "takeaway" && selectedTakeawayOrder && takeawayOrdersMap[selectedTakeawayOrder]) {
+          // For takeaway orders: update status to cancelled via API
+          const takeawayOrder = takeawayOrdersMap[selectedTakeawayOrder];
+          const orderDetail = takeawayOrder.orderDetails[index];
+          if (!orderDetail) return;
+
+          const orderId = takeawayOrder.order._id || takeawayOrder.order.id as string;
+          const detailId = orderDetail._id || orderDetail.id as string;
+
+          // Update status to cancelled via API
+          await patchOrderDetailStatus(orderId, detailId, "cancelled");
+
+          // Update local state
+          const updated = [...takeawayOrder.orderDetails];
+          updated[index] = {
+            ...updated[index],
+            status: "cancelled",
+          };
+
+          setTakeawayOrdersMap({
+            ...takeawayOrdersMap,
+            [selectedTakeawayOrder]: {
+              order: takeawayOrder.order,
+              orderDetails: updated,
+            },
           });
+
           toast.success("Đã hủy món");
         }
       } catch (error: any) {
@@ -905,8 +1048,9 @@ export function OrderingPage() {
 
                 {}
                 <div className="grid grid-cols-4 md:grid-cols-6 gap-3 mb-6 p-4 bg-white rounded-lg border-2 border-[#625EE8]">
-                  {Object.keys(takeawayOrders).map((orderId) => {
-                    const hasOrders = takeawayOrders[orderId]?.length > 0;
+                  {Object.keys(takeawayOrdersMap).map((orderId) => {
+                    const takeawayOrder = takeawayOrdersMap[orderId];
+                    const hasOrders = takeawayOrder?.orderDetails?.length > 0;
                     return (
                       <button
                         key={orderId}
@@ -921,10 +1065,10 @@ export function OrderingPage() {
                       >
                         <div className="text-center">
                           <RiTakeawayLine className="w-6 h-6 mx-auto mb-1" />
-                          <span className="text-xs">{orderId}</span>
+                          <span className="text-xs">{takeawayOrder?.order?.order_number || orderId}</span>
                           {hasOrders && (
                             <span className="block text-xs mt-1">
-                              ({takeawayOrders[orderId].length} món)
+                              ({takeawayOrder?.orderDetails?.length} món)
                             </span>
                           )}
                         </div>
