@@ -1,12 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar, Clock, Users, CreditCard, CheckCircle } from "lucide-react";
+import { QRCodeSVG } from 'qrcode.react';;
 import { Button } from "../ui/Button";
 import { Input, Textarea } from "../ui/Input";
 import { Card } from "../ui/Card";
-// import { Modal } from "../ui/Modal";
-import { mockTables, mockCustomers } from "../../lib/mockData";
-import { Table } from "../../types";
+import { customerApi } from "../../lib/customerApi";
+import { tableApi } from "../../lib/tableApi";
+import { locationApi } from "../../lib/locationApi";
+import { floorApi } from "../../lib/floorApi";
+import { Table, Reservation, ReservationData, Floor, Location } from "../../types";
+import type { Customer } from "../../lib/customerApi";
+import { useReservations } from "../../hooks/useReservations";
+import { useFloors } from "../../hooks/useFloors";
 import { toast } from "sonner";
 import { useAuth } from "../../contexts/AuthContext";
 import {
@@ -18,10 +24,19 @@ import {
 export function BookingPage() {
   const navigate = useNavigate();
   const { userProfile } = useAuth();
+  const { createReservation, updateReservationStatus } = useReservations();
   const [step, setStep] = useState(1);
+  const [tables, setTables] = useState<Table[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [floors, setFloors] = useState<Floor[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [createdReservation, setCreatedReservation] = useState<Reservation | null>(null);
   const [bookingData, setBookingData] = useState({
     date: "",
     time: "",
+    checkoutTime: "",
     guests: 2,
     name: "",
     phone: "",
@@ -31,13 +46,98 @@ export function BookingPage() {
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // Check if current user is blacklisted
-  const currentCustomer = mockCustomers.find(
-    (c) => c.phone === userProfile?.phone || c.email === userProfile?.email
-  );
-  const isBlacklisted = currentCustomer?.isBanned || false;
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [tablesResponse, customersResponse, floorsResponse, locationsResponse] = await Promise.all([
+          tableApi.getAll(),
+          customerApi.getAll({ isBanned: false }),
+          floorApi.getAll(),
+          locationApi.getAll(),
+        ]);
 
-  const availableTables = mockTables.filter(
+        if (tablesResponse.success && tablesResponse.data) {
+          setTables(tablesResponse.data);
+          console.log("Tables loaded:", tablesResponse.data);
+        } else {
+          setError("Không thể tải danh sách bàn");
+          toast.error("Không thể tải danh sách bàn");
+        }
+
+        if (customersResponse.success && customersResponse.data) {
+          setCustomers(customersResponse.data);
+        } else {
+          setError("Không thể tải danh sách khách hàng");
+          toast.error("Không thể tải danh sách khách hàng");
+        }
+
+        if (floorsResponse.success && floorsResponse.data) {
+          setFloors(floorsResponse.data);
+          console.log("Floors loaded:", floorsResponse.data);
+        }
+
+        if (locationsResponse.success && locationsResponse.data) {
+          setLocations(locationsResponse.data);
+          console.log("Locations loaded:", locationsResponse.data);
+        }
+
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Lỗi khi tải dữ liệu";
+        setError(errorMessage);
+        toast.error(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const firstNonBannedCustomer = customers.find((c) => !c.isBanned);
+  const isBlacklisted = !firstNonBannedCustomer;
+
+  const getFloorName = (locationId?: string) => {
+    if (!locationId) return "N/A";
+    
+    const location = locations.find((l) => l.id === locationId || (l as any)._id === locationId);
+    if (!location) {
+      console.warn(`Location not found for ID: ${locationId}. Available locations:`, locations);
+      return "N/A";
+    }
+    
+    const floorId = location.floor_id || (location as any).floor;
+    if (!floorId) {
+      console.warn(`Floor ID not found for location:`, location);
+      return "N/A";
+    }
+    
+    const floor = floors.find((f) => f.id === floorId || (f as any)._id === floorId);
+    if (!floor) {
+      console.warn(`Floor not found for ID: ${floorId}. Available floors:`, floors);
+      return floorId;
+    }
+    
+    return floor.floor_name || "N/A";
+  };
+
+  const formatDateTime = (date?: string, time?: string) => {
+    if (!date || !time) return "N/A";
+    
+    let formattedDate = date;
+    if (date.includes("T")) {
+      formattedDate = date.split("T")[0];
+    }
+    
+    let formattedTime = time;
+    if (time.includes(":")) {
+      formattedTime = time.split(":").slice(0, 2).join(":");
+    }
+    
+    return `${formattedDate} ${formattedTime}`;
+  };
+
+  const availableTables = tables.filter(
     (t) =>
       (t.status === "free" || t.status === "reserved") &&
       t.capacity >= bookingData.guests
@@ -48,8 +148,43 @@ export function BookingPage() {
     setBookingData({ ...bookingData, tableId: table.id });
   };
 
-  const handleConfirmBooking = () => {
-    setShowSuccess(true);
+  const handleConfirmBooking = async () => {
+    if (!firstNonBannedCustomer || !selectedTable) {
+      toast.error("Vui lòng chọn bàn");
+      return;
+    }
+
+    if (!bookingData.checkoutTime) {
+      toast.error("Vui lòng chọn giờ kết thúc");
+      return;
+    }
+
+    try {
+      const reservationData: ReservationData = {
+        customer_id: firstNonBannedCustomer.id,
+        reservation_date: bookingData.date,
+        reservation_time: bookingData.time,
+        reservation_checkout_time: bookingData.checkoutTime,
+        number_of_guests: bookingData.guests,
+        deposit_amount: "200000",
+        special_requests: bookingData.notes,
+        status: "pending",
+        details: [
+          {
+            table_id: selectedTable.id,
+          },
+        ],
+      };
+
+      const reservation = await createReservation(reservationData);
+      if (reservation) {
+        setCreatedReservation(reservation);
+        setShowSuccess(true);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Lỗi khi tạo đặt bàn";
+      toast.error(errorMessage);
+    }
   };
 
   const depositAmount = 200000;
@@ -64,22 +199,35 @@ export function BookingPage() {
           <h2 className="mb-4 text-green-600">Đặt bàn thành công!</h2>
           <div className="bg-gray-50 rounded-lg p-6 mb-6">
             <div className="text-6xl mb-4">
-              <div className="w-32 h-32 mx-auto bg-white rounded-lg flex items-center justify-center border-2 border-gray-300">
-                <span className="text-sm">QR Code</span>
+              <div className="w-40 h-40 mx-auto bg-white rounded-lg flex items-center justify-center border-2 border-gray-200 shadow-sm p-2">
+                {createdReservation?.id ? (
+                  <QRCodeSVG
+                    value={createdReservation.id}
+                    size={160}
+                    level="H"
+                    includeMargin={false}
+                  />
+                ) : (
+                  <span className="text-sm text-gray-400">QR Code</span>
+                )}
               </div>
             </div>
-            <p className="text-gray-600 mb-2">Mã đặt bàn</p>
-            <p className="text-2xl mb-4">BK12345</p>
+            <p className="text-gray-600 mb-2 text-center">Mã đặt bàn</p>
+            <p className="text-2xl mb-4 text-center font-semibold">{createdReservation?.id || "BOOKING-001"}</p>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-gray-600">Ngày giờ</p>
                 <p>
-                  {bookingData.date} {bookingData.time}
+                  {formatDateTime(createdReservation?.reservation_date, createdReservation?.reservation_time)}
                 </p>
               </div>
               <div>
+                <p className="text-gray-600">Giờ kết thúc</p>
+                <p>{createdReservation?.reservation_checkout_time || "N/A"}</p>
+              </div>
+              <div>
                 <p className="text-gray-600">Số người</p>
-                <p>{bookingData.guests} người</p>
+                <p>{createdReservation?.number_of_guests} người</p>
               </div>
               <div>
                 <p className="text-gray-600">Bàn số</p>
@@ -87,7 +235,7 @@ export function BookingPage() {
               </div>
               <div>
                 <p className="text-gray-600">Khu vực</p>
-                <p>{selectedTable?.location_id}</p>
+                <p>{getFloorName(selectedTable?.location_id)}</p>
               </div>
             </div>
           </div>
@@ -202,7 +350,7 @@ export function BookingPage() {
           {step === 1 && (
             <Card className="p-8">
               <h3 className="mb-6">Chọn ngày giờ đặt bàn</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <Input
                   label="Ngày"
                   type="date"
@@ -225,6 +373,17 @@ export function BookingPage() {
                   max="20:00"
                 />
                 <Input
+                  label="Giờ kết thúc (Tối đa 3h)"
+                  type="time"
+                  icon={<Clock className="w-4 h-4" />}
+                  value={bookingData.checkoutTime}
+                  onChange={(e) =>
+                    setBookingData({ ...bookingData, checkoutTime: e.target.value })
+                  }
+                  min="08:00"
+                  max="20:00"
+                />
+                <Input
                   label="Số người"
                   type="number"
                   icon={<Users className="w-4 h-4" />}
@@ -242,7 +401,6 @@ export function BookingPage() {
               </div>
               <Button
                 onClick={() => {
-                  // Validate date
                   const dateValidation = validateFutureDate(
                     bookingData.date,
                     "Ngày đặt bàn"
@@ -269,7 +427,51 @@ export function BookingPage() {
                     }
                   }
 
-                  // Validate guests count
+                  // Validate checkout time
+                  if (!bookingData.checkoutTime) {
+                    toast.error("Vui lòng chọn giờ kết thúc");
+                    return;
+                  }
+
+                  if (bookingData.checkoutTime) {
+                    const [hours, minutes] = bookingData.checkoutTime
+                      .split(":")
+                      .map(Number);
+                    const timeInMinutes = hours * 60 + minutes;
+                    const minTime = 8 * 60; // 8:00 AM
+                    const maxTime = 20 * 60; // 8:00 PM
+
+                    if (timeInMinutes < minTime || timeInMinutes > maxTime) {
+                      toast.error(
+                        "Giờ kết thúc phải trong khoảng 8:00 sáng đến 8:00 tối"
+                      );
+                      return;
+                    }
+                  }
+
+                  if (bookingData.time && bookingData.checkoutTime) {
+                    const [resHours, resMinutes] = bookingData.time
+                      .split(":")
+                      .map(Number);
+                    const [checkoutHours, checkoutMinutes] = bookingData.checkoutTime
+                      .split(":")
+                      .map(Number);
+                    
+                    const resTimeInMinutes = resHours * 60 + resMinutes;
+                    const checkoutTimeInMinutes = checkoutHours * 60 + checkoutMinutes;
+                    const timeDifference = checkoutTimeInMinutes - resTimeInMinutes;
+                    
+                    if (timeDifference <= 0) {
+                      toast.error("Giờ kết thúc phải sau giờ đặt bàn");
+                      return;
+                    }
+                    
+                    if (timeDifference > 3 * 60) {
+                      toast.error("Thời gian giữ bàn tối đa là 3 giờ");
+                      return;
+                    }
+                  }
+
                   const guestsValidation = validateInteger(
                     bookingData.guests,
                     "Số người"
@@ -292,7 +494,7 @@ export function BookingPage() {
 
                   setStep(2);
                 }}
-                disabled={!bookingData.date || !bookingData.time}
+                disabled={!bookingData.date || !bookingData.time || !bookingData.checkoutTime}
               >
                 Tiếp tục
               </Button>
@@ -304,7 +506,21 @@ export function BookingPage() {
             <div>
               <Card className="p-8 mb-6">
                 <h3 className="mb-6">Chọn vị trí bàn</h3>
-                {availableTables.length > 0 ? (
+                {loading ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">Đang tải danh sách bàn...</p>
+                  </div>
+                ) : error ? (
+                  <div className="text-center py-8">
+                    <p className="text-red-500">{error}</p>
+                    <Button 
+                      className="mt-4"
+                      onClick={() => window.location.reload()}
+                    >
+                      Tải lại trang
+                    </Button>
+                  </div>
+                ) : availableTables.length > 0 ? (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {availableTables.map((table) => (
                       <button
@@ -318,7 +534,7 @@ export function BookingPage() {
                       >
                         <div className="text-center">
                           <p className="mb-1">{table.table_number}</p>
-                          <p className="text-sm text-gray-600">{table.location_id}</p>
+                          <p className="text-sm text-gray-600">{getFloorName(table.location_id)}</p>
                           <p className="text-xs text-gray-500">
                             {table.capacity} chỗ ngồi
                           </p>
@@ -406,12 +622,16 @@ export function BookingPage() {
 
                 <div className="space-y-4 mb-6">
                   <div className="grid grid-cols-2 gap-4">
-                    <button className="p-4 border-2 border-[#625EE8] rounded-lg bg-blue-50 text-left">
+                    <button 
+                      className="p-4 border-2 rounded-lg text-left transition border-[#625EE8] bg-blue-50 hover:bg-blue-100 cursor-pointer"
+                    >
                       <CreditCard className="w-6 h-6 text-[#625EE8] mb-2" />
                       <p>Ví điện tử</p>
                       <p className="text-sm text-gray-600">MoMo, ZaloPay</p>
                     </button>
-                    <button className="p-4 border-2 border-gray-200 rounded-lg hover:border-gray-300 text-left">
+                    <button 
+                      className="p-4 border-2 rounded-lg text-left transition border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                    >
                       <CreditCard className="w-6 h-6 text-gray-600 mb-2" />
                       <p>Thẻ ngân hàng</p>
                       <p className="text-sm text-gray-600">ATM, Visa, Master</p>
@@ -431,7 +651,7 @@ export function BookingPage() {
                     <div className="flex justify-between">
                       <span className="text-gray-600">Bàn số:</span>
                       <span>
-                        {selectedTable?.table_number} - {selectedTable?.location_id}
+                        {selectedTable?.table_number} - {getFloorName(selectedTable?.location_id)}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -449,8 +669,10 @@ export function BookingPage() {
                 <Button variant="secondary" onClick={() => setStep(3)}>
                   Quay lại
                 </Button>
-                <Button onClick={handleConfirmBooking}>
-                  Xác nhận & Thanh toán
+                <Button 
+                  onClick={handleConfirmBooking}
+                >
+                  Xác nhận & Hoàn tất
                 </Button>
               </div>
             </div>

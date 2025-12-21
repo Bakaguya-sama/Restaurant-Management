@@ -38,7 +38,6 @@ export interface Table {
   location_id: string;
   capacity: number;
   status: TableStatus;
-  floor?: string;
   brokenReason?: string;
   created_at?: string;
 }
@@ -110,7 +109,48 @@ export interface OrderItem {
   status: "pending" | "cooking" | "served";
 }
 
-// Booking Types
+// Reservation Types
+export type ReservationStatus = "pending" | "confirmed" | "in_progress" | "cancelled" | "completed";
+
+export interface Reservation {
+  id: string;
+  customer_id: string;
+  reservation_date: string;
+  reservation_time: string;
+  reservation_checkout_time: string;
+  number_of_guests: number;
+  deposit_amount: string;
+  status: ReservationStatus;
+  special_requests?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReservationData {
+  customer_id: string;
+  reservation_date: string;
+  reservation_time: string;
+  reservation_checkout_time: string;
+  number_of_guests: number;
+  deposit_amount?: string;
+  status?: ReservationStatus;
+  special_requests?: string;
+  details: ReservationDetailData[];
+}
+
+export interface ReservationDetail {
+  id: string;
+  reservation_id: string;
+  table_id: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ReservationDetailData {
+  table_id: string;
+}
+
+// Booking Types (Legacy - kept for backward compatibility)
 export interface Booking {
   id: string;
   customerId: string;

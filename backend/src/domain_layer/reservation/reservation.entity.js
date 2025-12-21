@@ -5,7 +5,9 @@ class ReservationEntity {
     this.customer_id = data.customer_id;
     this.reservation_date = data.reservation_date;
     this.reservation_time = data.reservation_time;
+    this.reservation_checkout_time = data.reservation_checkout_time;
     this.number_of_guests = data.number_of_guests;
+    this.deposit_amount = data.deposit_amount;
     this.status = data.status;
     this.special_requests = data.special_requests;
     this.created_at = data.created_at;
@@ -23,13 +25,29 @@ class ReservationEntity {
     if (!this.reservation_time) {
       errors.push('reservation_time is required');
     }
+    if (!this.reservation_checkout_time) {
+      errors.push('reservation_checkout_time is required');
+    }
+    if (!this.deposit_amount) {
+      errors.push('deposit_amount is required');
+    }
+    if (this.reservation_time && this.reservation_checkout_time) {
+      const [resHour, resMinute] = this.reservation_time.split(':').map(Number);
+      const [checkoutHour, checkoutMinute] = this.reservation_checkout_time.split(':').map(Number);
+      const resTimeInMinutes = resHour * 60 + resMinute;
+      const checkoutTimeInMinutes = checkoutHour * 60 + checkoutMinute;
+      
+      if (checkoutTimeInMinutes <= resTimeInMinutes) {
+        errors.push('reservation_checkout_time must be after reservation_time');
+      }
+    }
     if (this.number_of_guests === undefined || this.number_of_guests === null) {
       errors.push('number_of_guests is required');
     } else if (typeof this.number_of_guests !== 'number' || this.number_of_guests <= 0) {
       errors.push('number_of_guests must be a positive number');
     }
-    if (this.status && !['pending', 'confirmed', 'cancelled', 'completed'].includes(this.status)) {
-      errors.push('status must be one of: pending, confirmed, cancelled, completed');
+    if (this.status && !['pending', 'confirmed', 'in_progress', 'cancelled', 'completed'].includes(this.status)) {
+      errors.push('status must be one of: pending, confirmed, in_progress, cancelled, completed');
     }
     return {
       isValid: errors.length === 0,
