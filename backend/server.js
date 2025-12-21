@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
 const connectDB = require('./config/database');
 
 
@@ -23,6 +24,8 @@ const ratingReplyRouter = require('./src/presentation_layer/routes/rating_reply.
 const orderRouter = require('./src/presentation_layer/routes/orders.routes');
 const reservationRouter = require('./src/presentation_layer/routes/reservation.routes');
 const reservationDetailRouter = require('./src/presentation_layer/routes/reservationdetail.routes');
+const dishesUploadsRouter = require('./src/presentation_layer/routes/dishes-uploads.routes');
+const avatarsUploadsRouter = require('./src/presentation_layer/routes/avatars-uploads.routes');
 
 // Load environment variables
 dotenv.config();
@@ -36,6 +39,9 @@ connectDB();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Health check route
 app.get('/', (req, res) => {
@@ -88,6 +94,10 @@ app.use('/api/v1/rating-replies', ratingReplyRouter);
 app.use('/api/v1/orders', orderRouter);
 app.use('/api/v1/reservations', reservationRouter);
 app.use('/api/v1/reservation-details', reservationDetailRouter);
+
+// Upload Routes - Separated by type
+app.use('/api/v1/uploads/dishes', dishesUploadsRouter);
+app.use('/api/v1/uploads/avatars', avatarsUploadsRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -1,8 +1,10 @@
 const CustomerService = require('../../../application_layer/customer/customer.service');
+const UploadRepository = require('../../../infrastructure_layer/upload/upload.repository');
 
 class CustomerController {
   constructor() {
     this.customerService = new CustomerService();
+    this.uploadRepository = new UploadRepository('avatars');
   }
 
   async getAllCustomers(req, res) {
@@ -78,7 +80,22 @@ class CustomerController {
 
   async deleteCustomer(req, res) {
     try {
+      const customerToDelete = await this.customerService.getCustomerById(req.params.id);
+      
       const result = await this.customerService.deleteCustomer(req.params.id);
+      
+      if (customerToDelete.image_url) {
+        try {
+          const imagePathParts = customerToDelete.image_url.split('/');
+          const filename = imagePathParts[imagePathParts.length - 1];
+          
+          if (filename) {
+            await this.uploadRepository.deleteImage(filename);
+          }
+        } catch (imageDeleteError) {
+          console.warn(`Warning: Failed to delete avatar for customer ${req.params.id}:`, imageDeleteError.message);
+        }
+      }
       
       res.status(200).json({
         success: true,
