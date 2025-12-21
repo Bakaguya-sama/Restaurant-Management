@@ -45,7 +45,7 @@ async function createTable(overrides = {}) {
   return await table.save();
 }
 
-async function createReservation({ customer, table, number_of_guests = 2, date = new Date(), time = '18:00', checkoutTime = '20:00' }) {
+async function createReservation({ customer, table, number_of_guests = 2, date = new Date(), time = '18:00', checkoutTime = '20:00', depositAmount = '200000' }) {
   const dateStr = date instanceof Date ? date.toISOString().split('T')[0] : date;
   const reservation = new Reservation({
     customer_id: customer._id,
@@ -53,6 +53,7 @@ async function createReservation({ customer, table, number_of_guests = 2, date =
     reservation_time: time,
     reservation_checkout_time: checkoutTime,
     number_of_guests,
+    deposit_amount: depositAmount,
     status: 'pending',
   });
   const saved = await reservation.save();

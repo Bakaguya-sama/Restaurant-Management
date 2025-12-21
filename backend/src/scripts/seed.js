@@ -293,7 +293,8 @@ async function seedDatabase() {
         reservation_date: new Date('2025-12-15'), 
         reservation_time: '19:00',
         reservation_checkout_time: '21:00',
-        number_of_guests: 6, 
+        number_of_guests: 6,
+        deposit_amount: '200000',
         status: 'confirmed', 
         special_requests: 'Trang trí bàn sinh nhật, không có cà chua' 
       },
@@ -302,7 +303,8 @@ async function seedDatabase() {
         reservation_date: new Date('2025-12-16'), 
         reservation_time: '20:00',
         reservation_checkout_time: '22:00',
-        number_of_guests: 8, 
+        number_of_guests: 8,
+        deposit_amount: '200000',
         status: 'pending',
         special_requests: 'Bàn yên tĩnh, có đèn nến'
       },
@@ -311,7 +313,8 @@ async function seedDatabase() {
         reservation_date: new Date('2025-12-14'), 
         reservation_time: '18:30',
         reservation_checkout_time: '20:30',
-        number_of_guests: 4, 
+        number_of_guests: 4,
+        deposit_amount: '200000',
         status: 'completed',
         special_requests: 'Menu vegetarian'
       },
@@ -320,7 +323,8 @@ async function seedDatabase() {
         reservation_date: new Date('2025-12-18'), 
         reservation_time: '12:00',
         reservation_checkout_time: '14:00',
-        number_of_guests: 2, 
+        number_of_guests: 2,
+        deposit_amount: '200000',
         status: 'confirmed'
       }
     ]);

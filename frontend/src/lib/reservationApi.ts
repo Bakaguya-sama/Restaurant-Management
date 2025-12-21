@@ -7,6 +7,15 @@ export const reservationApi = {
     customerId?: string;
     tableId?: string;
   }) => {
+    // Use dedicated endpoints for single filter optimization
+    if (filters?.customerId && !filters?.status && !filters?.tableId) {
+      return apiClient.get<Reservation[]>(`/reservations/customer/${filters.customerId}`);
+    }
+    if (filters?.tableId && !filters?.status && !filters?.customerId) {
+      return apiClient.get<Reservation[]>(`/reservations/table/${filters.tableId}`);
+    }
+    
+    // Fall back to query params for multiple filters
     const params = new URLSearchParams();
     if (filters?.status) params.append('status', filters.status);
     if (filters?.customerId) params.append('customerId', filters.customerId);

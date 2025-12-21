@@ -111,11 +111,32 @@ export function useReservationDetails() {
     }
   }, []);
 
+  const fetchDetailsByTableId = useCallback(async (tableId: string) => {
+    try {
+      setLoading(true);
+      const response = await reservationDetailApi.getByTableId(tableId);
+      if (response.success && response.data) {
+        setDetails(response.data);
+        setError(null);
+      } else {
+        setError('Không thể tải chi tiết đặt bàn');
+        toast.error('Không thể tải chi tiết đặt bàn');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Lỗi khi tải chi tiết';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return {
     details,
     loading,
     error,
     fetchDetailsByReservationId,
+    fetchDetailsByTableId,
     fetchDetailById,
     createDetail,
     updateDetail,

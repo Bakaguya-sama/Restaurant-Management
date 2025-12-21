@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Calendar,
   Clock,
@@ -19,86 +19,178 @@ import { Modal } from "../ui/Modal";
 import { Badge } from "../ui/badge";
 import { Input } from "../ui/Input";
 import { Textarea } from "../ui/textarea";
+import { useAuth } from "../../contexts/AuthContext";
+import { useReservations } from "../../hooks/useReservations";
+import { customerApi } from "../../lib/customerApi";
+import { reservationApi } from "../../lib/reservationApi";
+import { reservationDetailApi } from "../../lib/reservationDetailApi";
+import { tableApi } from "../../lib/tableApi";
+import { locationApi } from "../../lib/locationApi";
+import { toast } from "sonner";
 
 export function BookingManagementPage() {
+  const { userProfile } = useAuth();
+  const { reservations, fetchReservationsByCustomerId, loading } = useReservations();
+  const [customers, setCustomers] = useState<any[]>([]);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [showVoucherSection, setShowVoucherSection] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
-  // const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState("");
+  const [enrichedReservations, setEnrichedReservations] = useState<any[]>([]);
 
-  // Mock data: Bookings with optional bills
-  const bookings = [
-    {
-      id: "BK005",
-      reservation_date: "2025-12-12",
-      reservation_time: "20:00",
-      guests: 5,
-      tableNumber: "T08",
-      area: "Khu VIP",
-      floor: "Floor 1",
-      notes: "Cần không gian riêng tư",
-      depositAmount: 200000,
-      status: "confirmed",
-      createdAt: "2025-12-12 14:30",
-      // Vừa đặt bàn xong, các món ăn đều pending
-    },
-    {
-      id: "BK001",
-      reservation_date: "2025-12-09",
-      reservation_time: "19:00",
-      guests: 4,
-      tableNumber: "T05",
-      area: "Khu ngoài trời",
-      notes: "Gần cửa sổ",
-      depositAmount: 150000,
-      status: "completed",
-      createdAt: "2025-12-08",
-      // Bill information (if customer ordered food)
-    },
-    {
-      id: "BK002",
-      reservation_date: "2025-12-09",
-      reservation_time: "19:00",
-      guests: 6,
-      tableNumber: "T05",
-      area: "Khu ngoài trời",
-      notes: "Tổ chức sinh nhật, cần bánh kem",
-      depositAmount: 200000,
-      status: "completed",
-      createdAt: "2025-12-08",
-    },
-    {
-      id: "BK003",
-      reservation_date: "2025-12-05",
-      reservation_time: "18:00",
-      guests: 2,
-      tableNumber: "T03",
-      area: "Khu trong nhà",
-      notes: "",
-      depositAmount: 100000,
-      status: "completed",
-      createdAt: "2025-12-04",
-    },
-    {
-      id: "BK004",
-      reservation_date: "2025-12-03",
-      reservation_time: "12:30",
-      guests: 3,
-      tableNumber: "T12",
-      area: "Khu trong nhà",
-      notes: "Gần quầy bar",
-      depositAmount: 100000,
-      status: "completed",
-      createdAt: "2025-12-02",
-    },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const customersResponse = await customerApi.getAll({ isBanned: false });
+        if (customersResponse.success && customersResponse.data) {
+          setCustomers(customersResponse.data);
+          const firstUnbannedCustomer = customersResponse.data[0];
+          if (firstUnbannedCustomer) {
+            await fetchReservationsByCustomerId(firstUnbannedCustomer.id);
+          }
+        }
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : "Lỗi khi tải dữ liệu";
+        toast.error(errorMsg);
+        console.error("Error fetching data:", err);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    const enrichReservations = async () => {
+      try {
+        const enriched = await Promise.all(
+          reservations.map(async (reservation: any) => {
+            let tableNumber = "N/A";
+            let locationName = "N/A";
+            let formattedCreatedAt = "N/A";
+
+            if (reservation.created_at) {
+              const date = new Date(reservation.created_at);
+              formattedCreatedAt = date.toISOString().split("T")[0];
+            }
+
+            try {
+              const detailsResponse = await reservationDetailApi.getByReservationId(reservation.id);
+              
+              if (detailsResponse.success && detailsResponse.data && detailsResponse.data.length > 0) {
+                const tableId = detailsResponse.data[0].table_id;
+                
+                const tableResponse = await tableApi.getById(tableId);
+                if (tableResponse.success && tableResponse.data) {
+                  tableNumber = tableResponse.data.table_number;
+                  
+                  if (tableResponse.data.location_id) {
+                    const locationResponse = await locationApi.getById(tableResponse.data.location_id);
+                    if (locationResponse.success && locationResponse.data) {
+                      locationName = locationResponse.data.name;
+                    }
+                  }
+                }
+              }
+            } catch (err) {
+              console.error(`Error fetching details for reservation ${reservation.id}:`, err);
+            }
+
+            return {
+              ...reservation,
+              tableNumber,
+              locationName,
+              createdAtFormatted: formattedCreatedAt,
+            };
+          })
+        );
+        setEnrichedReservations(enriched);
+      } catch (err) {
+        console.error("Error enriching reservations:", err);
+      }
+    };
+
+    if (reservations.length > 0) {
+      enrichReservations();
+    } else {
+      setEnrichedReservations([]);
+    }
+  }, [reservations]);
+
+  const bookings = enrichedReservations;
+
+  // Mock data: Bookings with optional bills (fallback if no reservations)
+  // const bookings = reservations.length > 0 ? reservations : [
+  //   {
+  //     id: "BK005",
+  //     reservation_date: "2025-12-12",
+  //     reservation_time: "20:00",
+  //     number_of_guests: 5,
+  //     tableNumber: "T08",
+  //     area: "Khu VIP",
+  //     floor: "Floor 1",
+  //     special_requests: "Cần không gian riêng tư",
+  //     deposit_amount: "200000",
+  //     status: "confirmed",
+  //     createdAt: "2025-12-12 14:30",
+  //   },
+  //   {
+  //     id: "BK001",
+  //     reservation_date: "2025-12-09",
+  //     reservation_time: "19:00",
+  //     number_of_guests: 4,
+  //     tableNumber: "T05",
+  //     area: "Khu ngoài trời",
+  //     special_requests: "Gần cửa sổ",
+  //     deposit_amount: "150000",
+  //     status: "completed",
+  //     createdAt: "2025-12-08",
+  //   },
+  //   {
+  //     id: "BK002",
+  //     reservation_date: "2025-12-09",
+  //     reservation_time: "19:00",
+  //     number_of_guests: 6,
+  //     tableNumber: "T05",
+  //     area: "Khu ngoài trời",
+  //     special_requests: "Tổ chức sinh nhật, cần bánh kem",
+  //     deposit_amount: "200000",
+  //     status: "completed",
+  //     createdAt: "2025-12-08",
+  //   },
+  //   {
+  //     id: "BK003",
+  //     reservation_date: "2025-12-05",
+  //     reservation_time: "18:00",
+  //     number_of_guests: 2,
+  //     tableNumber: "T03",
+  //     area: "Khu trong nhà",
+  //     special_requests: "",
+  //     deposit_amount: "100000",
+  //     status: "completed",
+  //     createdAt: "2025-12-04",
+  //   },
+  //   {
+  //     id: "BK004",
+  //     reservation_date: "2025-12-03",
+  //     reservation_time: "12:30",
+  //     number_of_guests: 3,
+  //     tableNumber: "T12",
+  //     area: "Khu trong nhà",
+  //     special_requests: "Gần quầy bar",
+  //     deposit_amount: "100000",
+  //     status: "completed",
+  //     createdAt: "2025-12-02",
+  //   },
+  // ];
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
         return "bg-yellow-100 text-yellow-700";
+      case "in_progress":
+        return "bg-orange-100 text-orange-700";
       case "confirmed":
         return "bg-blue-100 text-blue-700";
       case "completed":
@@ -114,6 +206,8 @@ export function BookingManagementPage() {
     switch (status) {
       case "pending":
         return "Đang tiến hành";
+      case "in_progress":
+        return "Sắp đến giờ hẹn";
       case "confirmed":
         return "Đã xác nhận";
       case "completed":
@@ -161,14 +255,58 @@ export function BookingManagementPage() {
   //   setFeedback("");
   // };
 
-  const handleCancelBooking = () => {
-    // Simulate cancellation request
-    alert(
-      "Yêu cầu hủy phiếu đặt bàn đã được gửi. Tiền cọc sẽ được hoàn lại trong vòng 3-5 ngày làm việc."
-    );
-    setShowCancelModal(false);
-    setShowDetailModal(false);
-    setSelectedBooking(null);
+  const handleCancelBooking = async () => {
+    if (!selectedBooking) return;
+
+    try {
+      const response = await reservationApi.updateStatus(selectedBooking.id, 'cancelled');
+      
+      if (response.success) {
+        alert(
+          "Yêu cầu hủy phiếu đặt bàn đã được gửi. Tiền cọc sẽ được hoàn lại trong vòng 3-5 ngày làm việc."
+        );
+        
+        setShowCancelModal(false);
+        setShowDetailModal(false);
+        
+        if (selectedBooking.customer_id) {
+          await fetchReservationsByCustomerId(selectedBooking.customer_id);
+        }
+        
+        setSelectedBooking(null);
+      } else {
+        toast.error(response.message || "Lỗi khi hủy phiếu đặt bàn");
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Lỗi khi hủy phiếu đặt bàn";
+      toast.error(errorMsg);
+      console.error("Cancel booking error:", err);
+    }
+  };
+
+  const handlePaymentComplete = async () => {
+    if (!selectedBooking) return;
+
+    try {
+      const response = await reservationApi.updateStatus(selectedBooking.id, 'confirmed');
+      
+      if (response.success) {
+        toast.success("Thanh toán thành công! Phiếu đặt bàn đã được xác nhận.");
+        setShowPaymentModal(false);
+        
+        if (selectedBooking.customer_id) {
+          await fetchReservationsByCustomerId(selectedBooking.customer_id);
+        }
+        
+        setSelectedBooking(null);
+      } else {
+        toast.error(response.message || "Lỗi khi xử lý thanh toán");
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Lỗi khi xử lý thanh toán";
+      toast.error(errorMsg);
+      console.error("Payment error:", err);
+    }
   };
 
   return (
@@ -178,6 +316,16 @@ export function BookingManagementPage() {
         <p className="text-gray-600 mt-1">Xem lại thông tin đặt bàn của bạn</p>
       </div>
 
+      {loading ? (
+        <Card className="p-8 text-center">
+          <p className="text-gray-500">Đang tải dữ liệu...</p>
+        </Card>
+      ) : bookings.length === 0 ? (
+        <Card className="p-8 text-center">
+          <p className="text-gray-500">Bạn chưa có đặt bàn nào</p>
+        </Card>
+      ) : (
+        <>
       {/* Bookings List */}
       <div className="space-y-4">
         {bookings.map((booking) => (
@@ -199,25 +347,11 @@ export function BookingManagementPage() {
                     </span>
                     <span className="flex items-center gap-1">
                       <Users className="w-4 h-4" />
-                      {booking.guests} khách
+                      {booking.number_of_guests} khách
                     </span>
-                    <span>Bàn {booking.tableNumber}</span>
-                    <span>Khu vực: {booking.area}</span>
-                    <span>Tầng: {booking.area ? booking.floor : "None"}</span>
                   </div>
                 </div>
               </div>
-              {/* <div className="text-right">
-                <Badge className={getStatusColor(booking.status)}>
-                  {getStatusText(booking.status)}
-                </Badge>
-                {booking.bill && (
-                  <div className="mt-2 flex items-center gap-1 text-sm text-green-600">
-                    <Receipt className="w-4 h-4" />
-                    <span>Có hóa đơn</span>
-                  </div>
-                )}
-              </div> */}
             </div>
 
             {/* Quick Info */}
@@ -225,7 +359,7 @@ export function BookingManagementPage() {
               <div className="text-sm">
                 <span className="text-gray-600">Tiền cọc:</span>
                 <span className="ml-2 font-medium">
-                  {booking.depositAmount.toLocaleString()}đ
+                  {parseInt(booking.deposit_amount || "0").toLocaleString()}đ
                 </span>
               </div>
               {/* {booking.bill && (
@@ -249,7 +383,11 @@ export function BookingManagementPage() {
               fullWidth
               onClick={() => {
                 setSelectedBooking(booking);
-                setShowDetailModal(true);
+                if (booking.status === "pending") {
+                  setShowPaymentModal(true);
+                } else {
+                  setShowDetailModal(true);
+                }
               }}
             >
               Xem chi tiết
@@ -308,7 +446,7 @@ export function BookingManagementPage() {
                       <Calendar className="w-4 h-4" />
                       <span className="text-sm">Ngày đặt</span>
                     </div>
-                    <p className="font-medium">{selectedBooking.createdAt}</p>
+                    <p className="font-medium">{selectedBooking.createdAtFormatted}</p>
                   </div>
 
                   <div className="p-4 bg-gray-50 rounded-lg">
@@ -317,7 +455,7 @@ export function BookingManagementPage() {
                       <span className="text-sm">Số khách</span>
                     </div>
                     <p className="font-medium">
-                      {selectedBooking.guests} người
+                      {selectedBooking.number_of_guests} người
                     </p>
                   </div>
 
@@ -335,18 +473,17 @@ export function BookingManagementPage() {
                       <span className="text-sm">Khu vực</span>
                     </div>
                     <p className="font-medium">
-                      {selectedBooking.area ? selectedBooking.area : ""}{" "}
-                      {selectedBooking.floor ? selectedBooking.floor : ""}
+                      {selectedBooking.locationName}
                     </p>
                   </div>
                 </div>
               </div>
 
               {/* Notes */}
-              {selectedBooking.notes && (
+              {selectedBooking.special_requests && (
                 <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="text-sm text-gray-600 mb-1">Ghi chú:</p>
-                  <p>{selectedBooking.notes}</p>
+                  <p>{selectedBooking.special_requests}</p>
                 </div>
               )}
 
@@ -356,7 +493,7 @@ export function BookingManagementPage() {
                   <div>
                     <p className="text-sm text-gray-600 mb-1">Tiền đặt cọc</p>
                     <p className="text-xl font-medium text-green-700">
-                      {selectedBooking.depositAmount.toLocaleString()}đ
+                      {parseInt(selectedBooking.deposit_amount || "0").toLocaleString()}đ
                     </p>
                   </div>
                   <Badge className="bg-green-100 text-green-700">
@@ -623,6 +760,113 @@ export function BookingManagementPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Payment Modal - For pending status (unpaid deposit) */}
+      <Modal
+        isOpen={showPaymentModal}
+        onClose={() => {
+          setShowPaymentModal(false);
+          setSelectedBooking(null);
+        }}
+        title="Thanh toán tiền cọc"
+        size="lg"
+      >
+        {selectedBooking ? (
+          <div className="space-y-6">
+            {/* Reservation Info */}
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <p className="text-sm text-gray-600">Mã đặt bàn</p>
+                  <p className="text-lg font-medium">{selectedBooking.id}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Thời gian hẹn</p>
+                  <p className="text-lg font-medium">
+                    {selectedBooking.reservation_date} {selectedBooking.reservation_time}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600">Bàn số</p>
+                  <p className="text-lg font-medium">{selectedBooking.tableNumber}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Khu vực</p>
+                  <p className="text-lg font-medium">{selectedBooking.locationName}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Deposit Warning */}
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                <strong>Lưu ý:</strong> Bạn chưa thanh toán tiền cọc cho phiếu đặt bàn này. 
+                Vui lòng thanh toán tiền cọc để hoàn tất quá trình đặt bàn.
+              </p>
+            </div>
+
+            {/* Deposit Amount */}
+            <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Số tiền cọc cần thanh toán</p>
+                  <p className="text-2xl font-bold text-orange-700">
+                    {parseInt(selectedBooking.deposit_amount || "0").toLocaleString()}đ
+                  </p>
+                </div>
+                <Badge className="bg-orange-100 text-orange-700">
+                  Chưa thanh toán
+                </Badge>
+              </div>
+            </div>
+
+            {/* Booking Details */}
+            <div>
+              <h4 className="mb-3 font-medium">Chi tiết đặt bàn</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="text-sm">
+                  <p className="text-gray-600">Số khách:</p>
+                  <p className="font-medium">{selectedBooking.number_of_guests} người</p>
+                </div>
+                <div className="text-sm">
+                  <p className="text-gray-600">Ngày đặt:</p>
+                  <p className="font-medium">{selectedBooking.createdAtFormatted}</p>
+                </div>
+              </div>
+              {selectedBooking.special_requests && (
+                <div className="mt-3 p-3 bg-gray-50 rounded">
+                  <p className="text-sm text-gray-600 mb-1">Ghi chú:</p>
+                  <p className="text-sm">{selectedBooking.special_requests}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <Button
+                variant="secondary"
+                fullWidth
+                onClick={() => {
+                  setShowPaymentModal(false);
+                  setSelectedBooking(null);
+                }}
+              >
+                Để sau
+              </Button>
+              <Button
+                fullWidth
+                onClick={handlePaymentComplete}
+              >
+                Thanh toán ngay
+              </Button>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
+        </>
+      )}
     </div>
   );
 }

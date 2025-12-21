@@ -7,6 +7,7 @@ class ReservationEntity {
     this.reservation_time = data.reservation_time;
     this.reservation_checkout_time = data.reservation_checkout_time;
     this.number_of_guests = data.number_of_guests;
+    this.deposit_amount = data.deposit_amount;
     this.status = data.status;
     this.special_requests = data.special_requests;
     this.created_at = data.created_at;
@@ -26,6 +27,9 @@ class ReservationEntity {
     }
     if (!this.reservation_checkout_time) {
       errors.push('reservation_checkout_time is required');
+    }
+    if (!this.deposit_amount) {
+      errors.push('deposit_amount is required');
     }
     if (this.reservation_time && this.reservation_checkout_time) {
       const [resHour, resMinute] = this.reservation_time.split(':').map(Number);

@@ -72,6 +72,9 @@ class ReservationService {
     }
     
     if (this.isWithin60Minutes(reservation.reservation_date, reservation.reservation_time)) {
+      if (reservation.status === 'pending') {
+        return reservation;
+      }
       const updated = await this.reservationRepository.update(reservation._id, { status: 'in_progress' });
       return this.formatReservationResponse(updated);
     }
@@ -246,6 +249,11 @@ class ReservationService {
       throw new Error('Invalid status value');
     }
 
+
+    if (reservation.status === 'pending' && status === 'in_progress') {
+      throw new Error('Cannot change status to in_progress from pending. Customer must pay the deposit first.');
+    }
+
     if (status === 'cancelled' && !entity.canCancel()) {
       throw new Error('Only pending or confirmed reservations can be cancelled');
     }
@@ -290,6 +298,7 @@ class ReservationService {
       reservation_time: reservation.reservation_time,
       reservation_checkout_time: reservation.reservation_checkout_time,
       number_of_guests: reservation.number_of_guests,
+      deposit_amount: reservation.deposit_amount,
       status: reservation.status,
       special_requests: reservation.special_requests,
       created_at: reservation.created_at,

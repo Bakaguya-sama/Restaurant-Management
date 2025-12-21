@@ -166,6 +166,7 @@ export function BookingPage() {
         reservation_time: bookingData.time,
         reservation_checkout_time: bookingData.checkoutTime,
         number_of_guests: bookingData.guests,
+        deposit_amount: "200000",
         special_requests: bookingData.notes,
         status: "pending",
         details: [

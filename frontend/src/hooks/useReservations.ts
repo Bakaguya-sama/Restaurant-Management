@@ -50,6 +50,46 @@ export function useReservations() {
     }
   }, []);
 
+  const fetchReservationsByCustomerId = useCallback(async (customerId: string) => {
+    try {
+      setLoading(true);
+      const response = await reservationApi.getByCustomerId(customerId);
+      if (response.success && response.data) {
+        setReservations(response.data);
+        setError(null);
+      } else {
+        setError('Không thể tải danh sách đặt bàn');
+        toast.error('Không thể tải danh sách đặt bàn');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Lỗi khi tải đặt bàn';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchReservationsByTableId = useCallback(async (tableId: string) => {
+    try {
+      setLoading(true);
+      const response = await reservationApi.getByTableId(tableId);
+      if (response.success && response.data) {
+        setReservations(response.data);
+        setError(null);
+      } else {
+        setError('Không thể tải danh sách đặt bàn');
+        toast.error('Không thể tải danh sách đặt bàn');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Lỗi khi tải đặt bàn';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const createReservation = useCallback(async (data: ReservationData) => {
     try {
       setLoading(true);
@@ -179,17 +219,39 @@ export function useReservations() {
     }
   }, []);
 
+  const getStatistics = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await reservationApi.getStatistics();
+      if (response.success) {
+        return response.data;
+      } else {
+        toast.error('Không thể tải thống kê');
+        return null;
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Lỗi khi tải thống kê';
+      toast.error(errorMessage);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return {
     reservations,
     loading,
     error,
     fetchReservations,
     fetchReservationById,
+    fetchReservationsByCustomerId,
+    fetchReservationsByTableId,
     createReservation,
     updateReservation,
     updateReservationStatus,
     deleteReservation,
     addTableToReservation,
     removeTableFromReservation,
+    getStatistics,
   };
 }
