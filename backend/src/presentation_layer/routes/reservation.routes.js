@@ -10,6 +10,7 @@ router.get('/customer/:customerId', (req, res) => reservationController.getReser
 router.get('/table/:tableId', (req, res) => reservationController.getReservationsByTableId(req, res));
 router.post('/', (req, res) => reservationController.createReservation(req, res));
 router.get('/:id', (req, res) => reservationController.getReservationById(req, res));
+router.patch('/:id/status', (req, res) => reservationController.updateReservationStatus(req, res));
 router.put('/:id', (req, res) => reservationController.updateReservation(req, res));
 router.delete('/:id', (req, res) => reservationController.deleteReservation(req, res));
 // thao tác chi tiết reservation

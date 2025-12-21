@@ -32,6 +32,7 @@ Content-Type: application/json
   "customer_id": "{{customerId}}",
   "reservation_date": "2025-12-17",
   "reservation_time": "18:30",
+  "reservation_checkout_time": "20:30",
   "number_of_guests": 4,
   "details": [
     { "table_id": "{{tableId}}" }
@@ -39,6 +40,9 @@ Content-Type: application/json
   "status": "pending",
   "special_requests": ""
 }
+
+# Note: Tables are only marked as 'reserved' when reservation is within 1 hour of reservation time
+# Note: Tables are only freed when reservation is cancelled within 1 hour of reservation time
 
 # Add a table to reservation
 POST http://localhost:5001/api/v1/reservations/{{reservationId}}/add-table
@@ -65,6 +69,14 @@ Content-Type: application/json
 
 {
   "status": "cancelled"
+}
+
+# Update reservation status (PATCH - status only)
+PATCH http://localhost:5001/api/v1/reservations/{{reservationId}}/status
+Content-Type: application/json
+
+{
+  "status": "confirmed"
 }
 
 # Delete reservation

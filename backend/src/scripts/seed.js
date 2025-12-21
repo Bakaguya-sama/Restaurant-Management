@@ -291,7 +291,8 @@ async function seedDatabase() {
       { 
         customer_id: customers[0]._id, 
         reservation_date: new Date('2025-12-15'), 
-        reservation_time: '19:00', 
+        reservation_time: '19:00',
+        reservation_checkout_time: '21:00',
         number_of_guests: 6, 
         status: 'confirmed', 
         special_requests: 'Trang trí bàn sinh nhật, không có cà chua' 
@@ -299,7 +300,8 @@ async function seedDatabase() {
       { 
         customer_id: customers[2]._id, 
         reservation_date: new Date('2025-12-16'), 
-        reservation_time: '20:00', 
+        reservation_time: '20:00',
+        reservation_checkout_time: '22:00',
         number_of_guests: 8, 
         status: 'pending',
         special_requests: 'Bàn yên tĩnh, có đèn nến'
@@ -307,7 +309,8 @@ async function seedDatabase() {
       { 
         customer_id: customers[1]._id, 
         reservation_date: new Date('2025-12-14'), 
-        reservation_time: '18:30', 
+        reservation_time: '18:30',
+        reservation_checkout_time: '20:30',
         number_of_guests: 4, 
         status: 'completed',
         special_requests: 'Menu vegetarian'
@@ -315,7 +318,8 @@ async function seedDatabase() {
       { 
         customer_id: customers[4]._id, 
         reservation_date: new Date('2025-12-18'), 
-        reservation_time: '12:00', 
+        reservation_time: '12:00',
+        reservation_checkout_time: '14:00',
         number_of_guests: 2, 
         status: 'confirmed'
       }

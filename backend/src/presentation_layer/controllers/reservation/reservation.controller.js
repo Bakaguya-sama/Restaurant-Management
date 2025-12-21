@@ -42,6 +42,16 @@ class ReservationController {
     }
   }
 
+  async updateReservationStatus(req, res) {
+    try {
+      const { status } = req.body;
+      const reservation = await this.reservationService.updateReservationStatus(req.params.id, status);
+      res.json({ success: true, data: reservation, message: 'Reservation status updated successfully' });
+    } catch (error) {
+      res.status(400).json({ success: false, data: null, message: error.message });
+    }
+  }
+
   async deleteReservation(req, res) {
     try {
       await this.reservationService.deleteReservation(req.params.id);

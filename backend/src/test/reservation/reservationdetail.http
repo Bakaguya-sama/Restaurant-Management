@@ -21,6 +21,9 @@ Content-Type: application/json
   "table_id": "{{tableId}}"
 }
 
+# Note: Tables are only marked as 'reserved' when reservation is within 1 hour of reservation time
+# Note: Tables are only freed when reservation is cancelled within 1 hour of reservation time
+
 # Update reservation detail
 PUT http://localhost:5001/api/v1/reservation-details/{{detailId}}
 Content-Type: application/json

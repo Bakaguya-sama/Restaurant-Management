@@ -76,8 +76,9 @@ const ReservationSchema = new Schema({
   //staff_id: { type: Schema.Types.ObjectId, ref: 'User', required: true }, // Waiter
   reservation_date: { type: Date, required: true },
   reservation_time: { type: String, required: true }, // "18:30"
+  reservation_checkout_time: { type: String, required: true }, // "20:00"
   number_of_guests: { type: Number, required: true },
-  status: { type: String, enum: ['pending', 'confirmed', 'cancelled', 'completed'], default: 'pending' },
+  status: { type: String, enum: ['pending', 'confirmed', 'in_progress', 'cancelled', 'completed'], default: 'pending' },
   special_requests: String,
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now }

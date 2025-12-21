@@ -45,11 +45,13 @@ async function createTable(overrides = {}) {
   return await table.save();
 }
 
-async function createReservation({ customer, table, number_of_guests = 2, date = new Date(), time = '18:00' }) {
+async function createReservation({ customer, table, number_of_guests = 2, date = new Date(), time = '18:00', checkoutTime = '20:00' }) {
+  const dateStr = date instanceof Date ? date.toISOString().split('T')[0] : date;
   const reservation = new Reservation({
     customer_id: customer._id,
-    reservation_date: date,
+    reservation_date: dateStr,
     reservation_time: time,
+    reservation_checkout_time: checkoutTime,
     number_of_guests,
     status: 'pending',
   });
@@ -57,7 +59,7 @@ async function createReservation({ customer, table, number_of_guests = 2, date =
   const detail = new ReservationDetail({
     reservation_id: saved._id,
     table_id: table._id,
-    reservation_date: date,
+    reservation_date: dateStr,
     reservation_time: time,
   });
   await detail.save();

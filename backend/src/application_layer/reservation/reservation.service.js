@@ -10,6 +10,16 @@ class ReservationService {
     this.tableRepository = new TableRepository();
   }
 
+  isWithin30Minutes(reservationDate, reservationTime) {
+    const [year, month, day] = reservationDate.split('-').map(Number);
+    const [hour, minute] = reservationTime.split(':').map(Number);
+    const reservationDateTime = new Date(year, month - 1, day, hour, minute);
+    const now = new Date();
+    const timeDifference = reservationDateTime - now;
+    const oneHourMs = 60 * 60 * 1000;
+    return timeDifference <= oneHourMs && timeDifference > 0;
+  }
+
   async getAllReservations(filters = {}) {
     const reservations = await this.reservationRepository.findAll(filters);
     return reservations.map(r => this.formatReservationResponse(r));
@@ -56,7 +66,9 @@ class ReservationService {
       reservation_date,
       reservation_time
     );
-    await this.tableRepository.updateStatus(tableData.table_id, 'reserved');
+    if (this.isWithin30Minutes(reservation_date, reservation_time)) {
+      await this.tableRepository.updateStatus(tableData.table_id, 'reserved');
+    }
     return { success: true };
   }
 
@@ -101,7 +113,9 @@ class ReservationService {
         reservation_date: data.reservation_date,
         reservation_time: data.reservation_time
       });
-      await this.tableRepository.updateStatus(detail.table_id, 'reserved');
+      if (this.isWithin30Minutes(data.reservation_date, data.reservation_time)) {
+        await this.tableRepository.updateStatus(detail.table_id, 'reserved');
+      }
     }
     return this.formatReservationResponse(reservation);
   }
@@ -133,14 +147,47 @@ class ReservationService {
     }
     const updated = await this.reservationRepository.update(id, data);
     if (data.status === 'cancelled') {
-      const details = await this.reservationDetailRepository.findAll({ reservation_id: id });
-      for (const detail of details) {
-        await this.tableRepository.updateStatus(detail.table_id, 'free');
+      const reservation = await this.reservationRepository.findById(id);
+      if (this.isWithin30Minutes(reservation.reservation_date, reservation.reservation_time)) {
+        const details = await this.reservationDetailRepository.findAll({ reservation_id: id });
+        for (const detail of details) {
+          await this.tableRepository.updateStatus(detail.table_id, 'free');
+        }
       }
     }
     return this.formatReservationResponse(updated);
   }
 
+  async updateReservationStatus(id, status) {
+    const reservation = await this.reservationRepository.findById(id);
+    if (!reservation) {
+      throw new Error('Reservation not found');
+    }
+
+    const entity = new ReservationEntity(reservation);
+    const statusValidation = { isValid: true, errors: [] };
+
+    if (!['pending', 'confirmed', 'in_progress', 'cancelled', 'completed'].includes(status)) {
+      throw new Error('Invalid status value');
+    }
+
+    if (status === 'cancelled' && !entity.canCancel()) {
+      throw new Error('Only pending or confirmed reservations can be cancelled');
+    }
+
+    const updated = await this.reservationRepository.update(id, { status });
+
+    if (status === 'cancelled') {
+      if (this.isWithin30Minutes(reservation.reservation_date, reservation.reservation_time)) {
+        const details = await this.reservationDetailRepository.findAll({ reservation_id: id });
+        for (const detail of details) {
+          await this.tableRepository.updateStatus(detail.table_id, 'free');
+        }
+      }
+    }
+
+    return this.formatReservationResponse(updated);
+  }
 
   async deleteReservation(id) {
     const details = await this.reservationDetailRepository.findAll({ reservation_id: id });
@@ -157,6 +204,7 @@ class ReservationService {
       customer_id: reservation.customer_id,
       reservation_date: reservation.reservation_date,
       reservation_time: reservation.reservation_time,
+      reservation_checkout_time: reservation.reservation_checkout_time,
       number_of_guests: reservation.number_of_guests,
       status: reservation.status,
       special_requests: reservation.special_requests,

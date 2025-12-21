@@ -11,6 +11,16 @@ class ReservationDetailService {
     this.tableRepository = new TableRepository();
   }
 
+  isWithin30Minutes(reservationDate, reservationTime) {
+    const [year, month, day] = reservationDate.split('-').map(Number);
+    const [hour, minute] = reservationTime.split(':').map(Number);
+    const reservationDateTime = new Date(year, month - 1, day, hour, minute);
+    const now = new Date();
+    const timeDifference = reservationDateTime - now;
+    const oneHourMs = 60 * 60 * 1000;
+    return timeDifference <= oneHourMs && timeDifference > 0;
+  }
+
   async getAllReservationDetails(filters = {}) {
     const details = await this.reservationDetailRepository.findAll(filters);
     return details.map(d => this.formatReservationDetailResponse(d));
@@ -51,7 +61,9 @@ class ReservationDetailService {
       reservation_date: reservation.reservation_date,
       reservation_time: reservation.reservation_time
     });
-    await this.tableRepository.updateStatus(data.table_id, 'reserved');
+    if (this.isWithin30Minutes(reservation.reservation_date, reservation.reservation_time)) {
+      await this.tableRepository.updateStatus(data.table_id, 'reserved');
+    }
     return this.formatReservationDetailResponse(detail);
   }
 
