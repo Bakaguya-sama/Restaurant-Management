@@ -31,6 +31,9 @@ import { ConfirmationModal } from "../../ui/ConfirmationModal";
 import { useDishes } from "../../../hooks/useDishes";
 import { useDishIngredients } from "../../../hooks/useDishIngredients";
 import { useIngredients } from "../../../hooks/useIngredients";
+import { uploadDishImage, validateImageUrl } from "../../../lib/uploadApi";
+
+const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400";
 
 export function MenuPromotionPage() {
   const {
@@ -70,6 +73,7 @@ export function MenuPromotionPage() {
     Array<{ ingredientId: string; quantity: number }>
   >([{ ingredientId: "", quantity: 0 }]);
   const [menuForm, setMenuForm] = useState({
+    id: "",
     name: "",
     category: "Món chính",
     price: 0,
@@ -95,6 +99,30 @@ export function MenuPromotionPage() {
     "info" | "warning" | "danger"
   >("info");
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const handleImageUpload = async (file: File): Promise<string | null> => {
+    setUploadingImage(true);
+    try {
+      const dishId = menuForm.id || editingDish?.id;
+      const imageUrl = await uploadDishImage(file, dishId);
+      
+      const isValid = await validateImageUrl(imageUrl);
+      if (!isValid) {
+        toast.error("Tải ảnh lên thành công nhưng không thể truy cập được, sẽ dùng ảnh mặc định");
+        return PLACEHOLDER_IMAGE;
+      }
+      
+      toast.success("Tải ảnh lên thành công!");
+      return imageUrl;
+    } catch (error) {
+      console.error("Image upload error:", error);
+      toast.error(`Lỗi tải ảnh: ${error instanceof Error ? error.message : "Lỗi không xác định"}`);
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const addIngredientRow = () => {
     setIngredientRows([...ingredientRows, { ingredientId: "", quantity: 0 }]);
@@ -135,7 +163,7 @@ export function MenuPromotionPage() {
       description: menuForm.description,
       is_available: true,
       image_url:
-        menuForm.image || "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400",
+        menuForm.image || PLACEHOLDER_IMAGE,
     };
 
     createDish(newItem)
@@ -174,6 +202,7 @@ export function MenuPromotionPage() {
         toast.success("Thêm món ăn thành công!");
         setShowAddMenuModal(false);
         setMenuForm({
+          id: "",
           name: "",
           category: "Món chính",
           price: 0,
@@ -221,7 +250,7 @@ export function MenuPromotionPage() {
       category: categoryMapping[menuForm.category] || menuForm.category,
       price: menuForm.price,
       description: menuForm.description,
-      image_url: menuForm.image || editingDish.image_url,
+      image_url: menuForm.image || editingDish.image_url || PLACEHOLDER_IMAGE,
     };
 
     updateDish(editingDish.id, updateData)
@@ -261,6 +290,7 @@ export function MenuPromotionPage() {
         setShowEditMenuModal(false);
         setEditingDish(null);
         setMenuForm({
+          id: "",
           name: "",
           category: "Món chính",
           price: 0,
@@ -277,6 +307,7 @@ export function MenuPromotionPage() {
   const openEditModal = (dish: Dish) => {
     setEditingDish(dish);
     setMenuForm({
+      id: dish.id  || "",
       name: dish.name,
       category: reverseCategoryMapping[dish.category] || dish.category,
       price: dish.price,
@@ -677,10 +708,14 @@ export function MenuPromotionPage() {
                   <img
                     src={
                       item.image_url ||
-                      "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400"
+                      PLACEHOLDER_IMAGE
                     }
                     alt={item.name}
                     className="w-full h-48 object-cover"
+                    onError={(e) => {
+                      const img = e.target as HTMLImageElement;
+                      img.src = PLACEHOLDER_IMAGE;
+                    }}
                   />
                   {!item.is_available && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
@@ -907,6 +942,7 @@ export function MenuPromotionPage() {
         onClose={() => {
           setShowAddMenuModal(false);
           setMenuForm({
+            id: "",
             name: "",
             category: "Món chính",
             price: 0,
@@ -939,19 +975,20 @@ export function MenuPromotionPage() {
                       input.onchange = (e: any) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            setMenuForm({
-                              ...menuForm,
-                              image: reader.result as string,
-                            });
-                          };
-                          reader.readAsDataURL(file);
+                          handleImageUpload(file).then((url) => {
+                            if (url) {
+                              setMenuForm({
+                                ...menuForm,
+                                image: url,
+                              });
+                            }
+                          });
                         }
                       };
                       input.click();
                     }}
                     className="bg-blue-500 text-white hover:bg-blue-600"
+                    disabled={uploadingImage}
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
@@ -974,14 +1011,14 @@ export function MenuPromotionPage() {
                   input.onchange = (e: any) => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      const reader = new FileReader();
-                      reader.onloadend = () => {
-                        setMenuForm({
-                          ...menuForm,
-                          image: reader.result as string,
-                        });
-                      };
-                      reader.readAsDataURL(file);
+                      handleImageUpload(file).then((url) => {
+                        if (url) {
+                          setMenuForm({
+                            ...menuForm,
+                            image: url,
+                          });
+                        }
+                      });
                     }
                   };
                   input.click();
@@ -990,7 +1027,7 @@ export function MenuPromotionPage() {
               >
                 <div className="flex flex-col items-center gap-2 text-gray-500">
                   <ImageIcon className="w-12 h-12" />
-                  <p className="text-sm font-medium">Nhấn để chọn ảnh</p>
+                  <p className="text-sm font-medium">{uploadingImage ? "Đang tải..." : "Nhấn để chọn ảnh"}</p>
                   <p className="text-xs">PNG, JPG, GIF up to 10MB</p>
                 </div>
               </div>
@@ -1504,6 +1541,7 @@ export function MenuPromotionPage() {
           setShowEditMenuModal(false);
           setEditingDish(null);
           setMenuForm({
+            id: "",
             name: "",
             category: "Món chính",
             price: 0,
@@ -1524,6 +1562,10 @@ export function MenuPromotionPage() {
                   src={menuForm.image}
                   alt="Preview"
                   className="w-full h-48 object-cover rounded-lg"
+                  onError={(e) => {
+                    const img = e.target as HTMLImageElement;
+                    img.src = PLACEHOLDER_IMAGE;
+                  }}
                 />
                 <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
                   <Button
@@ -1536,19 +1578,20 @@ export function MenuPromotionPage() {
                       input.onchange = (e: any) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            setMenuForm({
-                              ...menuForm,
-                              image: reader.result as string,
-                            });
-                          };
-                          reader.readAsDataURL(file);
+                          handleImageUpload(file).then((url) => {
+                            if (url) {
+                              setMenuForm({
+                                ...menuForm,
+                                image: url,
+                              });
+                            }
+                          });
                         }
                       };
                       input.click();
                     }}
                     className="bg-blue-500 text-white hover:bg-blue-600"
+                    disabled={uploadingImage}
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
@@ -1571,14 +1614,14 @@ export function MenuPromotionPage() {
                   input.onchange = (e: any) => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      const reader = new FileReader();
-                      reader.onloadend = () => {
-                        setMenuForm({
-                          ...menuForm,
-                          image: reader.result as string,
-                        });
-                      };
-                      reader.readAsDataURL(file);
+                      handleImageUpload(file).then((url) => {
+                        if (url) {
+                          setMenuForm({
+                            ...menuForm,
+                            image: url,
+                          });
+                        }
+                      });
                     }
                   };
                   input.click();
@@ -1587,7 +1630,7 @@ export function MenuPromotionPage() {
               >
                 <div className="flex flex-col items-center gap-2 text-gray-500">
                   <ImageIcon className="w-12 h-12" />
-                  <p className="text-sm font-medium">Nhấn để chọn ảnh</p>
+                  <p className="text-sm font-medium">{uploadingImage ? "Đang tải..." : "Nhấn để chọn ảnh"}</p>
                   <p className="text-xs">PNG, JPG, GIF up to 10MB</p>
                 </div>
               </div>
