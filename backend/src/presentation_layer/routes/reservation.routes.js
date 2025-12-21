@@ -5,11 +5,12 @@ const router = express.Router();
 const reservationController = new ReservationController();
 
 router.get('/', (req, res) => reservationController.getAllReservations(req, res));
+router.post('/', (req, res) => reservationController.createReservation(req, res));
 router.get('/statistics', (req, res) => reservationController.getReservationStatistics(req, res));
 router.get('/customer/:customerId', (req, res) => reservationController.getReservationsByCustomerId(req, res));
 router.get('/table/:tableId', (req, res) => reservationController.getReservationsByTableId(req, res));
-router.post('/', (req, res) => reservationController.createReservation(req, res));
 router.get('/:id', (req, res) => reservationController.getReservationById(req, res));
+router.patch('/:id/status', (req, res) => reservationController.updateReservationStatus(req, res));
 router.put('/:id', (req, res) => reservationController.updateReservation(req, res));
 router.delete('/:id', (req, res) => reservationController.deleteReservation(req, res));
 // thao tác chi tiết reservation

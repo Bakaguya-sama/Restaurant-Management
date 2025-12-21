@@ -15,6 +15,24 @@ class ReservationDetailController {
     }
   }
 
+  async getDetailsByReservationId(req, res) {
+    try {
+      const details = await this.reservationDetailService.getAllReservationDetails({ reservation_id: req.params.reservationId });
+      res.json({ success: true, data: details, message: 'ReservationDetails by reservation retrieved successfully' });
+    } catch (error) {
+      res.status(500).json({ success: false, data: null, message: error.message });
+    }
+  }
+
+  async getDetailsByTableId(req, res) {
+    try {
+      const details = await this.reservationDetailService.getAllReservationDetails({ table_id: req.params.tableId });
+      res.json({ success: true, data: details, message: 'ReservationDetails by table retrieved successfully' });
+    } catch (error) {
+      res.status(500).json({ success: false, data: null, message: error.message });
+    }
+  }
+
   async getReservationDetailById(req, res) {
     try {
       const detail = await this.reservationDetailService.getReservationDetailById(req.params.id);

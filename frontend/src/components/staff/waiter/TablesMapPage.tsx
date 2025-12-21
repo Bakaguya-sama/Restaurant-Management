@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Search,
   AlertCircle,
@@ -19,6 +19,7 @@ import { useTables } from "../../../hooks/useTables";
 import { useLocations } from "../../../hooks/useLocations";
 import { useCustomers } from "../../../hooks/useCustomers";
 import { useStaff } from "../../../hooks/useStaff";
+import { useReservations } from "../../../hooks/useReservations";
 import { createOrder } from "../../../lib/orderingPageApi";
 
 export function TablesMapPage() {
@@ -39,6 +40,7 @@ export function TablesMapPage() {
     error: staffError,
     fetchStaff,
   } = useStaff();
+  const { updateReservationStatus, fetchReservations } = useReservations();
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [showActionModal, setShowActionModal] = useState(false);
   const [showCheckInModal, setShowCheckInModal] = useState(false);
@@ -57,6 +59,10 @@ export function TablesMapPage() {
   const [isSearching, setIsSearching] = useState(false);
 
   const firstWaiter = staff.find((s) => s.role === "waiter");
+
+  useEffect(() => {
+    fetchReservations();
+  }, [fetchReservations]);
 
   const getLocationName = (locationId: string) => {
     const location = locations.find((l) => l.id === locationId);
@@ -236,6 +242,16 @@ export function TablesMapPage() {
 
     try {
       await updateTableStatus(selectedTable.id, "occupied");
+      
+      // Use bookingCode as reservation ID
+      const reservationId = bookingCode.trim();
+      
+      try {
+        await updateReservationStatus(reservationId, "completed");
+      } catch (err) {
+        console.error("Error updating reservation status:", err);
+      }
+      
       toast.success(`Đã check-in khách cho bàn ${selectedTable.table_number}`);
     } catch (err) {
       console.error("Error checking in:", err);
