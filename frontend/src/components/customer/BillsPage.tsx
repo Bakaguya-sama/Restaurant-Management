@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Clock,
   Check,
@@ -19,6 +19,9 @@ import { Textarea } from "../ui/textarea";
 import { Input } from "../ui/Input";
 import { mockPromotions } from "../../lib/mockData";
 import { toast } from "sonner";
+import { invoiceApi } from "../../lib/invoiceApi";
+import { customerApi } from "../../lib/customerApi";
+import { ratingApi } from "../../lib/ratingApi";
 
 export function BillsPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -28,219 +31,90 @@ export function BillsPage() {
   const [paymentMethod, setPaymentMethod] = useState<
     "wallet" | "card" | "cash" | "online" | null
   >(null);
-  // const [rating, setRating] = useState(0); // Not implemented
   const [feedback, setFeedback] = useState("");
   const [voucherCode, setVoucherCode] = useState("");
   const [appliedVoucher, setAppliedVoucher] = useState<any>(null);
   const [pointsToUse, setPointsToUse] = useState(0);
   const [showVoucherSection, setShowVoucherSection] = useState(false);
+  const [allBills, setAllBills] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [customerId, setCustomerId] = useState<string | null>(null);
 
-  // Mock customer data
   const customerPoints = 1500;
 
-  // Mock all bills (current + history combined)
-  const [allBills, setAllBills] = useState([
-    {
-      id: "BILL004",
-      date: new Date().toISOString().split("T")[0],
-      time: new Date().toLocaleTimeString("vi-VN", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      items: [
-        {
-          id: "1",
-          name: "Lẩu Thái",
-          quantity: 1,
-          price: 250000,
-          status: "pending",
-        },
-        {
-          id: "2",
-          name: "Gà Nướng Muối Ớt",
-          quantity: 1,
-          price: 180000,
-          status: "pending",
-        },
-        {
-          id: "3",
-          name: "Salad Rau Trộn",
-          quantity: 2,
-          price: 55000,
-          status: "pending",
-        },
-        {
-          id: "4",
-          name: "Nước Ngọt Có Gas",
-          quantity: 3,
-          price: 25000,
-          status: "pending",
-        },
-      ],
-      subtotal: 605000,
-      tax: 60500,
-      discount: 0,
-      voucherDiscount: 0,
-      pointsDiscount: 0,
-      total: 665500,
-      status: "pending",
-      createdAt: new Date().toISOString(),
-      voucherCode: null,
-      voucherUsed: null,
-      pointsUsed: 0,
-      paymentMethod: null,
-      bookingId: "BK005",
-      booking: {
-        customerName: "Phạm Hoàng Nam",
-        phone: "0909123456",
-        guests: 5,
-        bookingDate: "2025-12-12",
-        bookingTime: "20:00",
-        notes: "Cần không gian riêng tư",
-        depositPaid: 200000,
-      },
-    },
-    {
-      id: "BILL001",
-      date: new Date().toISOString().split("T")[0],
-      time: new Date().toLocaleTimeString("vi-VN", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      items: [
-        {
-          id: "1",
-          name: "Phở Bò Đặc Biệt",
-          quantity: 2,
-          price: 85000,
-          status: "served",
-          notes: "Không hành",
-        },
-        {
-          id: "2",
-          name: "Gỏi Cuốn Tôm Thịt",
-          quantity: 1,
-          price: 45000,
-          status: "cooking",
-        },
-        {
-          id: "3",
-          name: "Trà Đá Chanh",
-          quantity: 2,
-          price: 20000,
-          status: "served",
-        },
-      ],
-      subtotal: 215000,
-      tax: 21500,
-      discount: 0,
-      voucherDiscount: 0,
-      pointsDiscount: 0,
-      total: 236500,
-      status: "pending",
-      createdAt: new Date().toISOString(),
-      voucherCode: null,
-      voucherUsed: null,
-      pointsUsed: 0,
-      paymentMethod: null,
-      bookingId: "BK001",
-      booking: {
-        customerName: "Nguyễn Văn An",
-        phone: "0912345678",
-        guests: 4,
-        bookingDate: new Date().toISOString().split("T")[0],
-        bookingTime: "19:00",
-        notes: "Gần cửa sổ",
-        depositPaid: 150000,
-      },
-    },
-    {
-      id: "BILL-H001",
-      date: "2025-12-09",
-      time: "19:30",
-      items: [
-        {
-          id: "1",
-          name: "Bò Né",
-          quantity: 2,
-          price: 120000,
-          status: "served",
-        },
-        {
-          id: "2",
-          name: "Cà phê sữa đá",
-          quantity: 2,
-          price: 30000,
-          status: "served",
-        },
-      ],
-      subtotal: 450000,
-      tax: 45000,
-      voucherUsed: "WINTER2025",
-      voucherDiscount: 67500,
-      pointsUsed: 0,
-      pointsDiscount: 0,
-      total: 382500,
-      status: "paid",
-      paymentMethod: "online",
-      feedback: "Món ăn rất ngon, phục vụ tận tình!",
-      feedbackDate: "2025-12-09",
-      feedbackReply: "Cảm ơn bạn đã đánh giá!...", // NOT IN API SPEC
-      feedbackReplyDate: "2025-12-10", // NOT IN API SPEC
-      bookingId: "BK002",
-      booking: {
-        customerName: "Trần Thị Bình",
-        phone: "0987654321",
-        guests: 6,
-        bookingDate: "2025-12-09",
-        bookingTime: "19:00",
-        notes: "Tổ chức sinh nhật, cần bành kem",
-        depositPaid: 200000,
-      },
-    },
-    {
-      id: "BILL-H002",
-      date: "2025-12-05",
-      time: "18:15",
-      items: [
-        {
-          id: "1",
-          name: "Cơm Tấm Sườn",
-          quantity: 1,
-          price: 65000,
-          status: "served",
-        },
-        {
-          id: "2",
-          name: "Trà đá",
-          quantity: 1,
-          price: 10000,
-          status: "served",
-        },
-      ],
-      subtotal: 320000,
-      tax: 32000,
-      pointsUsed: 1000,
-      pointsDiscount: 1000,
-      voucherDiscount: 0,
-      total: 319000,
-      status: "paid",
-      paymentMethod: "cash",
-      bookingId: "BK003",
-      booking: {
-        customerName: "Lê Minh Tú",
-        phone: "0901234567",
-        guests: 2,
-        bookingDate: "2025-12-05",
-        bookingTime: "18:00",
-        notes: "",
-        depositPaid: 200000,
-      },
-    },
-  ]);
+  useEffect(() => {
+    const fetchInvoices = async () => {
+      try {
+        setLoading(true);
+        
+        const customersResponse = await customerApi.getAll({ isBanned: false });
+        if (!customersResponse.success || customersResponse.data.length === 0) {
+          toast.error("Không tìm thấy khách hàng");
+          setLoading(false);
+          return;
+        }
 
-  // Mock current bill at table - kept for backward compatibility
-  const currentBill = allBills[0];
+        const firstCustomer = customersResponse.data[0];
+        const customerId = (firstCustomer as any)._id || firstCustomer.id;
+        setCustomerId(customerId);
+
+        const response = await invoiceApi.getAll({ 
+          customer_id: customerId 
+        });
+        
+        if (!response.success || !response.data) {
+          setAllBills([]);
+          setLoading(false);
+          return;
+        }
+        
+        const transformedBills = response.data.map((invoice: any) => {
+          const invoiceObj = invoice._id ? invoice : invoice;
+          const orderItems = invoiceObj.order_id?.items || [];
+          
+          return {
+            id: invoiceObj.invoice_number || invoiceObj._id,
+            date: new Date(invoiceObj.created_at).toISOString().split("T")[0],
+            time: new Date(invoiceObj.created_at).toLocaleTimeString("vi-VN", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            items: orderItems.map((item: any) => ({
+              id: item._id,
+              name: item.dish_id?.name || "Món ăn",
+              quantity: item.quantity,
+              price: item.unit_price,
+              status: item.status,
+              notes: item.special_instructions,
+            })),
+            subtotal: invoiceObj.subtotal,
+            tax: invoiceObj.tax,
+            discount: 0,
+            voucherDiscount: invoiceObj.discount_amount || 0,
+            pointsDiscount: 0,
+            total: invoiceObj.total_amount,
+            status: invoiceObj.payment_status,
+            createdAt: invoiceObj.created_at,
+            voucherCode: null,
+            voucherUsed: null,
+            pointsUsed: 0,
+            paymentMethod: invoiceObj.payment_method,
+            orderId: invoiceObj.order_id?._id,
+            invoiceId: invoiceObj._id,
+          };
+        });
+
+        setAllBills(transformedBills);
+      } catch (error: any) {
+        console.error("Error fetching invoices:", error);
+        toast.error(error.message || "Không thể tải danh sách hóa đơn");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInvoices();
+  }, []);
 
   const handleApplyVoucher = () => {
     const voucher = mockPromotions.find(
@@ -354,36 +228,77 @@ export function BillsPage() {
     );
   };
 
-  const handlePayment = () => {
+  const handlePayment = async () => {
     if (!paymentMethod) {
       toast.error("Vui lòng chọn phương thức thanh toán");
       return;
     }
 
-    // Simulate payment processing
-    setTimeout(() => {
-      setShowPaymentModal(false);
-      if (paymentMethod === "cash") {
-        toast.success(
-          "Đã gửi yêu cầu thanh toán! Vui lòng chờ nhân viên xác nhận."
-        );
+    if (!selectedBill || !selectedBill.invoiceId) {
+      toast.error("Không tìm thấy thông tin hóa đơn");
+      return;
+    }
+
+    try {
+      const paymentMethodMap: any = {
+        wallet: 'e-wallet',
+        card: 'card',
+        cash: 'cash',
+        online: 'transfer',
+      };
+
+      await invoiceApi.update(selectedBill.invoiceId, {
+        payment_method: paymentMethodMap[paymentMethod],
+      });
+
+      if (paymentMethod === 'cash') {
+        toast.success("Đã gửi yêu cầu thanh toán! Vui lòng chờ nhân viên xác nhận.");
       } else {
+        await invoiceApi.markAsPaid(selectedBill.invoiceId);
+        
+        const updatedBills = allBills.map(bill => 
+          bill.invoiceId === selectedBill.invoiceId 
+            ? { ...bill, status: 'paid', paymentMethod: paymentMethodMap[paymentMethod] }
+            : bill
+        );
+        setAllBills(updatedBills);
+        
         toast.success("Thanh toán thành công!");
       }
-    }, 1500);
+      
+      setShowPaymentModal(false);
+      setPaymentMethod(null);
+    } catch (error: any) {
+      console.error("Payment error:", error);
+      toast.error(error.message || "Thanh toán thất bại");
+    }
   };
 
-  const handleSubmitFeedback = () => {
+  const handleSubmitFeedback = async () => {
     if (feedback === "") {
       toast.error("Vui lòng nhập nhận xét");
       return;
     }
 
-    // TODO: Call API POST /invoices/:id/feedback
-    // Body: { rating: 5, comment: feedback } - rating fixed at 5 since not implemented in UI
-    toast.success("Cảm ơn bạn đã gửi đánh giá!");
-    setShowFeedbackModal(false);
-    setFeedback("");
+    if (!customerId) {
+      toast.error("Không tìm thấy thông tin khách hàng");
+      return;
+    }
+
+    try {
+      await ratingApi.create({
+        customer_id: customerId,
+        description: feedback,
+        score: 5
+      });
+
+      toast.success("Cảm ơn bạn đã gửi đánh giá!");
+      setShowFeedbackModal(false);
+      setFeedback("");
+    } catch (error: any) {
+      console.error("Rating error:", error);
+      toast.error(error.message || "Gửi đánh giá thất bại");
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -421,9 +336,27 @@ export function BillsPage() {
         </p>
       </div>
 
-      {/* All Bills List */}
-      <div className="space-y-4">
-        {allBills.map((bill) => (
+      {loading ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#625EE8]"></div>
+        </div>
+      ) : allBills.length === 0 ? (
+        <Card className="p-8 text-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
+              <Clock className="w-8 h-8 text-gray-400" />
+            </div>
+            <div>
+              <h3 className="text-lg mb-2">Chưa có hóa đơn nào</h3>
+              <p className="text-gray-600">
+                Hóa đơn của bạn sẽ hiển thị ở đây sau khi đặt món
+              </p>
+            </div>
+          </div>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {allBills.map((bill) => (
           <Card
             key={bill.id}
             className="p-4 hover:shadow-md transition-shadow cursor-pointer"
@@ -521,7 +454,8 @@ export function BillsPage() {
             )} */}
           </Card>
         ))}
-      </div>
+        </div>
+      )}
 
       {/* Bill Detail Modal */}
       <Modal
