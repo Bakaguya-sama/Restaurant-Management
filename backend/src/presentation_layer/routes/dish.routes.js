@@ -4,6 +4,7 @@ const DishController = require('../controllers/dish/dish.controller');
 const router = express.Router();
 const dishController = new DishController();
 
+router.get('/top', (req, res) => dishController.getTopDishes(req, res));
 router.get('/', (req, res) => dishController.getAllDishes(req, res));
 router.post('/', (req, res) => dishController.createDish(req, res));
 router.get('/:id', (req, res) => dishController.getDishById(req, res));

@@ -35,6 +35,29 @@ class DishController {
     }
   }
 
+  async getTopDishes(req, res) {
+    try {
+      const limit = parseInt(req.query.limit) || 3;
+      const topDishes = await this.dishService.getTopDishes(limit);
+      
+      const formattedDishes = await Promise.all(
+        topDishes.map(dish => this.dishService.formatDishResponse(dish))
+      );
+
+      res.json({
+        success: true,
+        data: formattedDishes,
+        message: 'Top dishes retrieved successfully'
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        data: null,
+        message: error.message || 'Error fetching top dishes'
+      });
+    }
+  }
+
   async getDishById(req, res) {
     try {
       const dish = await this.dishService.getDishById(req.params.id);

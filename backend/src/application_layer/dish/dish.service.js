@@ -1,7 +1,7 @@
 const DishRepository = require('../../infrastructure_layer/dish/dish.repository');
 const DishIngredientService = require('../../application_layer/dishingredient/dishingredient.service');
 const DishEntity = require('../../domain_layer/dish/dish.entity');
-const { DishIngredient, Ingredient } = require('../../models');
+const { DishIngredient, Ingredient, OrderDetail } = require('../../models');
 
 class DishService {
   constructor() {
@@ -158,6 +158,54 @@ class DishService {
 
   async removeIngredientFromDish(dishId, ingredientId) {
     return await this.dishIngredientService.removeIngredientFromDish(dishId, ingredientId);
+  }
+
+  async getTopDishes(limit = 3) {
+    try {
+      // Aggregate to count how many times each dish has been ordered
+      const topDishes = await OrderDetail.aggregate([
+        {
+          // Only count non-cancelled orders
+          $match: { status: { $ne: 'cancelled' } }
+        },
+        {
+          // Group by dish_id and sum quantities
+          $group: {
+            _id: '$dish_id',
+            totalOrdered: { $sum: '$quantity' },
+            totalRevenue: { $sum: '$line_total' }
+          }
+        },
+        {
+          // Sort by totalOrdered descending, then by totalRevenue descending (if tied)
+          $sort: { totalOrdered: -1, totalRevenue: -1 }
+        },
+        {
+          // Limit to top N
+          $limit: limit
+        }
+      ]);
+
+      // Get full dish details for each top dish
+      const dishesWithDetails = await Promise.all(
+        topDishes.map(async (item) => {
+          const dish = await this.dishRepository.findById(item._id);
+          if (!dish) return null;
+          
+          return {
+            ...dish.toObject ? dish.toObject() : dish,
+            totalOrdered: item.totalOrdered,
+            totalRevenue: item.totalRevenue
+          };
+        })
+      );
+
+      // Filter out null values (dishes that might have been deleted)
+      return dishesWithDetails.filter(d => d !== null);
+    } catch (error) {
+      console.error('Error getting top dishes:', error);
+      throw error;
+    }
   }
 
   async formatDishResponse(dish) {

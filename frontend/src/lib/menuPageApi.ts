@@ -91,3 +91,22 @@ export async function fetchDishes(
   // Return dishes directly (already in Dish format)
   return dishes;
 }
+
+/**
+ * Fetch top N most ordered dishes
+ */
+export async function fetchTopDishes(limit: number = 3): Promise<Dish[]> {
+  const url = new URL(`${API_BASE}/dishes/top`);
+  url.searchParams.set("limit", String(limit));
+
+  const response = await fetch(url.toString());
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch top dishes: ${response.status} ${response.statusText}`);
+  }
+
+  const json = await response.json();
+  const dishes = (json?.data || []) as Dish[];
+
+  return dishes;
+}
