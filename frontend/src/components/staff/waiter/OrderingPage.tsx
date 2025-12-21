@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { Plus, Minus, Utensils, X } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Card } from "../../ui/Card";
@@ -26,13 +26,16 @@ import {
   Order,
   OrderDetail,
 } from "../../../lib/orderApi";
+import { invoiceApi } from "../../../lib/invoiceApi";
+
+const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=300";
 
 interface OrderItem {
   item: Dish;
   quantity: number;
   notes: string;
   status: "pending" | "cooking" | "served";
-  orderDetailId?: string; // Backend orderDetail ID
+  orderDetailId?: string; 
 }
 
 interface TableOrder {
@@ -44,10 +47,10 @@ export function OrderingPage() {
   const [orderType, setOrderType] = useState<"table" | "takeaway">("table");
   const [selectedTable, setSelectedTable] = useState("T02");
   
-  // Backend order management - stores pending orders fetched from DB
+  
   const [tableOrdersMap, setTableOrdersMap] = useState<Record<string, TableOrder>>({});
   
-  // Takeaway orders management - now using API like table orders
+  
   const [takeawayOrdersMap, setTakeawayOrdersMap] = useState<Record<string, TableOrder>>({});
   const [selectedTakeawayOrder, setSelectedTakeawayOrder] = useState<string | null>(null);
   const [takeawayOrderCounter, setTakeawayOrderCounter] = useState(1);
@@ -70,20 +73,20 @@ export function OrderingPage() {
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [isProcessingInvoice, setIsProcessingInvoice] = useState(false);
 
-  // Fetch dishes from API
+  
   const { items: filteredItems } = useOrderingDishes(selectedCategory);
   
-  // Fetch tables from API - only show occupied tables
+  
   const { tables, loading: isLoadingTables, error: tablesError, updateTableStatus } = useTables();
   
-  // Fetch staff with role 'waiter'
+  
   const { staff } = useStaff();
   const firstWaiterId = staff.find((s) => s.role === "waiter")?.id || undefined;
 
   const categories = ["all", "Khai vị", "Món chính", "Đồ uống"];
   const quickNotes = ["Ít đá", "Không cay", "Không hành", "Ít dầu", "Thêm rau"];
 
-  // Load pending order when table is selected
+  
   useEffect(() => {
     if (orderType === "table") {
       loadPendingOrder();
@@ -97,17 +100,17 @@ export function OrderingPage() {
       );
       if (!selectedTableObj) return;
 
-      // Check if already loaded
+      
       if (tableOrdersMap[selectedTableObj.id]) {
         return;
       }
 
-      // Fetch pending order for this table
+      
       const existingOrder = await getPendingOrderByTableId(selectedTableObj.id);
       
       if (existingOrder) {
         console.log(`Pending order found for table ${selectedTable}:`, existingOrder._id || existingOrder.id);
-        // Load order details
+        
         const orderId = existingOrder._id || existingOrder.id;
         if (!orderId) {
           console.error('Order ID is undefined:', existingOrder);
@@ -126,11 +129,11 @@ export function OrderingPage() {
       }
     } catch (error) {
       console.error("Error loading pending order:", error);
-      // Don't show error toast, just continue with new order creation
+      
     }
   };
 
-  // Get current orders based on order type
+  
   const getCurrentTableOrder = (): TableOrder | null => {
     const selectedTableObj = tables.find((t) => t.table_number === selectedTable);
     if (!selectedTableObj) return null;
@@ -170,12 +173,12 @@ export function OrderingPage() {
   const [addingItem, setAddingItem] = useState<string | null>(null);
 
   const handleAddToOrder = async (item: Dish) => {
-    // Prevent spam clicking
+    
     if (addingItem === item.id) {
       return;
     }
 
-    // Validate table status for dine-in orders
+    
     if (orderType === "table") {
       const selectedTableObj = tables.find((t) => t.table_number === selectedTable);
       if (!selectedTableObj || selectedTableObj.status !== "occupied") {
@@ -187,7 +190,7 @@ export function OrderingPage() {
     setAddingItem(item.id);
     try {
       if (orderType === "table") {
-        // For table orders: find pending order, then add orderDetail
+        
         const selectedTableObj = tables.find(
           (t) => t.table_number === selectedTable
         );
@@ -198,7 +201,7 @@ export function OrderingPage() {
 
         let tableOrder = tableOrdersMap[selectedTableObj.id];
 
-        // If not in local cache, fetch pending order from backend
+        
         if (!tableOrder) {
           const pendingOrder = await getPendingOrderByTableId(selectedTableObj.id);
           if (pendingOrder) {
@@ -213,7 +216,7 @@ export function OrderingPage() {
               order: pendingOrder,
               orderDetails: orderDetails,
             };
-            // Cache it
+            
             setTableOrdersMap({
               ...tableOrdersMap,
               [selectedTableObj.id]: tableOrder,
@@ -224,7 +227,7 @@ export function OrderingPage() {
           }
         }
 
-        // Create order detail for the existing pending order
+        
         const lineTotal = item.price * 1;
         const orderId = tableOrder.order._id || tableOrder.order.id;
         if (!orderId) {
@@ -240,7 +243,7 @@ export function OrderingPage() {
           status: "pending",
         });
 
-        // Update local state
+        
         setTableOrdersMap({
           ...tableOrdersMap,
           [selectedTableObj.id]: {
@@ -251,7 +254,7 @@ export function OrderingPage() {
 
         toast.success(`Đã thêm ${item.name} vào đơn`);
       } else {
-        // For takeaway orders: use API like table orders
+        
         if (!selectedTakeawayOrder) {
           toast.error('Vui lòng chọn đơn mang về');
           return;
@@ -263,7 +266,7 @@ export function OrderingPage() {
           return;
         }
 
-        // Create order detail for the takeaway order
+        
         const lineTotal = item.price * 1;
         const orderId = takeawayOrder.order._id || takeawayOrder.order.id;
         if (!orderId) {
@@ -280,7 +283,7 @@ export function OrderingPage() {
           status: 'pending',
         });
 
-        // Update local state
+        
         setTakeawayOrdersMap({
           ...takeawayOrdersMap,
           [selectedTakeawayOrder]: {
@@ -302,15 +305,15 @@ export function OrderingPage() {
   const handleUpdateQuantity = async (index: number, delta: number) => {
     try {
       if (orderType === "table" && currentTableOrder) {
-        // For table orders: update via API
+        
         const orderDetail = currentTableOrder.orderDetails[index];
         if (!orderDetail) return;
 
         const newQuantity = orderDetail.quantity + delta;
 
         if (newQuantity <= 0) {
-          // Delete order detail by setting appropriate status or removing
-          // For now, just remove from local state
+          
+          
           const updated = currentTableOrder.orderDetails.filter((_, i) => i !== index);
           const selectedTableObj = tables.find(
             (t) => t.table_number === selectedTable
@@ -328,13 +331,13 @@ export function OrderingPage() {
           return;
         }
 
-        // Update quantity via API
+        
         const orderId = currentTableOrder.order._id || currentTableOrder.order.id as string;
         const detailId = orderDetail._id || orderDetail.id as string;
         
         await updateOrderDetailQuantity(orderId, detailId, newQuantity);
 
-        // Update local state
+        
         const updated = [...currentTableOrder.orderDetails];
         updated[index] = {
           ...updated[index],
@@ -361,7 +364,7 @@ export function OrderingPage() {
           toast.info("Đã giảm số lượng");
         }
       } else if (orderType === "takeaway" && selectedTakeawayOrder && takeawayOrdersMap[selectedTakeawayOrder]) {
-        // For takeaway orders: update via API
+        
         const takeawayOrder = takeawayOrdersMap[selectedTakeawayOrder];
         const orderDetail = takeawayOrder.orderDetails[index];
         if (!orderDetail) return;
@@ -369,7 +372,7 @@ export function OrderingPage() {
         const newQuantity = orderDetail.quantity + delta;
 
         if (newQuantity <= 0) {
-          // Delete order detail by removing from local state
+          
           const updated = takeawayOrder.orderDetails.filter((_, i) => i !== index);
           setTakeawayOrdersMap({
             ...takeawayOrdersMap,
@@ -382,13 +385,13 @@ export function OrderingPage() {
           return;
         }
 
-        // Update quantity via API
+        
         const orderId = takeawayOrder.order._id || takeawayOrder.order.id as string;
         const detailId = orderDetail._id || orderDetail.id as string;
         
         await updateOrderDetailQuantity(orderId, detailId, newQuantity);
 
-        // Update local state
+        
         const updated = [...takeawayOrder.orderDetails];
         updated[index] = {
           ...updated[index],
@@ -427,22 +430,22 @@ export function OrderingPage() {
 
     try {
       if (orderType === "table" && currentTableOrder) {
-        // Update order detail with special instructions and quantity via API
+        
         const orderDetail = currentTableOrder.orderDetails[customizingIndex];
         if (!orderDetail) return;
 
         const orderId = currentTableOrder.order._id || currentTableOrder.order.id as string;
         const detailId = orderDetail._id || orderDetail.id as string;
 
-        // Update notes via API
+        
         await updateOrderDetailNotes(orderId, detailId, customizingItem.notes);
         
-        // Update quantity via API if changed
+        
         if (customizingItem.quantity !== orderDetail.quantity) {
           await updateOrderDetailQuantity(orderId, detailId, customizingItem.quantity);
         }
 
-        // Update local state
+        
         const updated = [...currentTableOrder.orderDetails];
         updated[customizingIndex] = {
           ...updated[customizingIndex],
@@ -464,7 +467,7 @@ export function OrderingPage() {
           });
         }
       } else if (orderType === "takeaway" && selectedTakeawayOrder && takeawayOrdersMap[selectedTakeawayOrder]) {
-        // For takeaway orders: update via API
+        
         const takeawayOrder = takeawayOrdersMap[selectedTakeawayOrder];
         const orderDetail = takeawayOrder.orderDetails[customizingIndex];
         if (!orderDetail) return;
@@ -472,15 +475,15 @@ export function OrderingPage() {
         const orderId = takeawayOrder.order._id || takeawayOrder.order.id as string;
         const detailId = orderDetail._id || orderDetail.id as string;
 
-        // Update notes via API
+        
         await updateOrderDetailNotes(orderId, detailId, customizingItem.notes);
         
-        // Update quantity via API if changed
+        
         if (customizingItem.quantity !== orderDetail.quantity) {
           await updateOrderDetailQuantity(orderId, detailId, customizingItem.quantity);
         }
 
-        // Update local state
+        
         const updated = [...takeawayOrder.orderDetails];
         updated[customizingIndex] = {
           ...updated[customizingIndex],
@@ -514,11 +517,11 @@ export function OrderingPage() {
   ) => {
     try {
       if (orderType === "table" && currentTableOrder) {
-        // For table orders: update via API
+        
         const orderDetail = currentTableOrder.orderDetails[index];
         if (!orderDetail || !orderDetail._id && !orderDetail.id) return;
 
-        // Update order detail status
+        
         const orderId = currentTableOrder.order._id || currentTableOrder.order.id as string;
         const detailId = orderDetail._id || orderDetail.id as string;
         const statusMap: Record<string, "pending" | "preparing" | "ready" | "served"> = {
@@ -529,7 +532,7 @@ export function OrderingPage() {
 
         await patchOrderDetailStatus(orderId, detailId, statusMap[newStatus] || "pending");
 
-        // Update local state
+        
         const updated = [...currentTableOrder.orderDetails];
         updated[index] = {
           ...updated[index],
@@ -553,12 +556,12 @@ export function OrderingPage() {
           `Đã cập nhật: ${getStatusText(newStatus)}`
         );
       } else if (orderType === "takeaway" && selectedTakeawayOrder && takeawayOrdersMap[selectedTakeawayOrder]) {
-        // For takeaway orders: update via API
+        
         const takeawayOrder = takeawayOrdersMap[selectedTakeawayOrder];
         const orderDetail = takeawayOrder.orderDetails[index];
         if (!orderDetail || !orderDetail._id && !orderDetail.id) return;
 
-        // Update order detail status
+        
         const orderId = takeawayOrder.order._id || takeawayOrder.order.id as string;
         const detailId = orderDetail._id || orderDetail.id as string;
         const statusMap: Record<string, "pending" | "preparing" | "ready" | "served"> = {
@@ -569,7 +572,7 @@ export function OrderingPage() {
 
         await patchOrderDetailStatus(orderId, detailId, statusMap[newStatus] || "pending");
 
-        // Update local state
+        
         const updated = [...takeawayOrder.orderDetails];
         updated[index] = {
           ...updated[index],
@@ -609,7 +612,7 @@ export function OrderingPage() {
   };
 
   const handleOrderComplete = async () => {
-    // Validate that we have a staff member assigned
+    
     if (!firstWaiterId) {
       toast.error("Không tìm thấy nhân viên phục vụ. Vui lòng kiểm tra danh sách nhân viên.");
       return;
@@ -619,7 +622,7 @@ export function OrderingPage() {
 
     try {
       if (orderType === "table" && currentTableOrder) {
-        // For table orders: mark order as completed/served based on all details being served
+        
         const allServed = currentTableOrder.orderDetails.every(
           (od) => od.status === "served"
         );
@@ -630,7 +633,7 @@ export function OrderingPage() {
           return;
         }
 
-        // Create invoice with existing order
+        
         const totalAmount = currentTableOrder.orderDetails.reduce(
           (sum, od) => sum + od.line_total,
           0
@@ -651,30 +654,19 @@ export function OrderingPage() {
           notes: `Bàn ${selectedTable}`,
         };
 
-        const response = await fetch(
-          `${(import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:5000/api/v1"}/invoices`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(invoiceData),
-          }
-        );
+        await invoiceApi.create({
+          order_id: currentTableOrder.order._id || currentTableOrder.order.id as string,
+          notes: `Bàn ${selectedTable}`,
+        });
 
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || "Failed to create invoice");
-        }
-
-        // Update order status to served
+        
         const orderId = currentTableOrder.order._id || currentTableOrder.order.id as string;
         await patchOrderStatus(
           orderId,
           "served"
         );
 
-        // Update table status to dirty
+        
         const selectedTableObj = tables.find(
           (t) => t.table_number === selectedTable
         );
@@ -688,10 +680,10 @@ export function OrderingPage() {
 
         toast.success("Đã tạo hóa đơn và kết thúc đơn hàng");
       } else if (orderType === "takeaway" && selectedTakeawayOrder && takeawayOrdersMap[selectedTakeawayOrder]) {
-        // For takeaway: use new API-based approach
+        
         const takeawayOrder = takeawayOrdersMap[selectedTakeawayOrder];
 
-        // Validate all details are served
+        
         const allServed = takeawayOrder.orderDetails.every(
           (od) => od.status === "served"
         );
@@ -702,7 +694,7 @@ export function OrderingPage() {
           return;
         }
 
-        // Calculate total amount
+        
         const totalAmount = takeawayOrder.orderDetails.reduce(
           (sum, od) => sum + od.line_total,
           0
@@ -722,32 +714,21 @@ export function OrderingPage() {
           notes: `Đơn mang về ${takeawayOrder.order.order_number || selectedTakeawayOrder}`,
         };
 
-        const response = await fetch(
-          `${(import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:5000/api/v1"}/invoices`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(invoiceData),
-          }
-        );
+        await invoiceApi.create({
+          order_id: takeawayOrder.order._id || takeawayOrder.order.id as string,
+          notes: `Đơn mang về ${takeawayOrder.order.order_number || selectedTakeawayOrder}`,
+        });
 
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || "Failed to create invoice");
-        }
-
-        // Update order status to served
+        
         const orderId = takeawayOrder.order._id || takeawayOrder.order.id as string;
         await patchOrderStatus(orderId, "served");
 
-        // Clear the takeaway order from map
+        
         const newMap = { ...takeawayOrdersMap };
         delete newMap[selectedTakeawayOrder];
         setTakeawayOrdersMap(newMap);
 
-        // Clear selected takeaway order
+        
         setSelectedTakeawayOrder(null);
 
         toast.success("Đã tạo hóa đơn");
@@ -794,7 +775,7 @@ export function OrderingPage() {
 
   const handleAddTakeawayOrder = async () => {
     try {
-      // Create takeaway order via API with order_type 'takeaway-staff'
+      
       const orderNumber = await generateOrderNumber('takeaway-staff');
       const currentTime = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
       const order = await createOrder({
@@ -811,7 +792,7 @@ export function OrderingPage() {
         return;
       }
 
-      // Cache the new order
+      
       setTakeawayOrdersMap({
         ...takeawayOrdersMap,
         [orderId]: {
@@ -841,17 +822,17 @@ export function OrderingPage() {
     setPendingAction(() => async () => {
       try {
         if (orderType === "table" && currentTableOrder) {
-          // For table orders: update status to cancelled instead of deleting
+          
           const orderDetail = currentTableOrder.orderDetails[index];
           if (!orderDetail) return;
 
           const orderId = currentTableOrder.order._id || currentTableOrder.order.id as string;
           const detailId = orderDetail._id || orderDetail.id as string;
 
-          // Update status to cancelled via API
+          
           await patchOrderDetailStatus(orderId, detailId, "cancelled");
 
-          // Update local state
+          
           const updated = [...currentTableOrder.orderDetails];
           updated[index] = {
             ...updated[index],
@@ -872,7 +853,7 @@ export function OrderingPage() {
           }
           toast.success("Đã hủy món");
         } else if (orderType === "takeaway" && selectedTakeawayOrder && takeawayOrdersMap[selectedTakeawayOrder]) {
-          // For takeaway orders: update status to cancelled via API
+          
           const takeawayOrder = takeawayOrdersMap[selectedTakeawayOrder];
           const orderDetail = takeawayOrder.orderDetails[index];
           if (!orderDetail) return;
@@ -880,10 +861,10 @@ export function OrderingPage() {
           const orderId = takeawayOrder.order._id || takeawayOrder.order.id as string;
           const detailId = orderDetail._id || orderDetail.id as string;
 
-          // Update status to cancelled via API
+          
           await patchOrderDetailStatus(orderId, detailId, "cancelled");
 
-          // Update local state
+          
           const updated = [...takeawayOrder.orderDetails];
           updated[index] = {
             ...updated[index],
@@ -1117,10 +1098,13 @@ export function OrderingPage() {
                 <img
                   src={
                     item.image_url ||
-                    "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=300"
+                    PLACEHOLDER_IMAGE
                   }
                   alt={item.name}
                   className="w-full h-32 object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = PLACEHOLDER_IMAGE;
+                  }}
                 />
                 <div className="p-3">
                   <h4 className="text-sm mb-1">{item.name}</h4>

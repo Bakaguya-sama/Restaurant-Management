@@ -379,3 +379,5 @@ export function generateOrderNumber(orderType: string): string {
   const prefix = orderType === 'dine-in-waiter' ? 'DIN' : 'TO';
   return `${prefix}-${timestamp}-${random}`;
 }
+
+
