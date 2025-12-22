@@ -45,7 +45,7 @@ export function BillsPage() {
   const fetchInvoices = async () => {
     try {
       setLoading(true);
-      
+
       const customersResponse = await customerApi.getAll({ isBanned: false });
       if (!customersResponse.success || customersResponse.data.length === 0) {
         toast.error("Không tìm thấy khách hàng");
@@ -57,10 +57,10 @@ export function BillsPage() {
       const customerId = (firstCustomer as any)._id || firstCustomer.id;
       setCustomerId(customerId);
 
-      const response = await invoiceApi.getAll({ 
-        customer_id: customerId 
+      const response = await invoiceApi.getAll({
+        customer_id: customerId,
       });
-      
+
       if (!response.success || !response.data) {
         setAllBills([]);
         setLoading(false);
@@ -71,8 +71,14 @@ export function BillsPage() {
       let customerRating = null;
       let ratingReply = null;
       try {
-        const ratingsResponse = await ratingApi.getAll({ customer_id: customerId });
-        if (ratingsResponse.success && ratingsResponse.data && ratingsResponse.data.length > 0) {
+        const ratingsResponse = await ratingApi.getAll({
+          customer_id: customerId,
+        });
+        if (
+          ratingsResponse.success &&
+          ratingsResponse.data &&
+          ratingsResponse.data.length > 0
+        ) {
           // Lấy rating mới nhất
           const ratings = ratingsResponse.data;
           customerRating = ratings.sort((a: any, b: any) => {
@@ -84,18 +90,22 @@ export function BillsPage() {
           // Lấy reply của rating này (nếu có)
           const ratingId = (customerRating as any)._id || customerRating.id;
           const repliesResponse = await ratingApi.getReplies(ratingId);
-          if (repliesResponse.success && repliesResponse.data && repliesResponse.data.length > 0) {
+          if (
+            repliesResponse.success &&
+            repliesResponse.data &&
+            repliesResponse.data.length > 0
+          ) {
             ratingReply = repliesResponse.data[0];
           }
         }
       } catch (error) {
         console.error("Error fetching ratings/replies:", error);
       }
-      
+
       const transformedBills = response.data.map((invoice: any) => {
         const invoiceObj = invoice._id ? invoice : invoice;
         const orderItems = invoiceObj.order_id?.items || [];
-        
+
         return {
           id: invoiceObj.invoice_number || invoiceObj._id,
           date: new Date(invoiceObj.created_at).toISOString().split("T")[0],
@@ -126,9 +136,18 @@ export function BillsPage() {
           orderId: invoiceObj.order_id?._id,
           invoiceId: invoiceObj._id,
           // Gắn rating và reply vào tất cả hóa đơn đã thanh toán
-          feedback: invoiceObj.payment_status === 'paid' && customerRating ? customerRating.description : null,
-          feedbackReply: invoiceObj.payment_status === 'paid' && ratingReply ? ratingReply.reply_text : null,
-          feedbackReplyDate: invoiceObj.payment_status === 'paid' && ratingReply ? ratingReply.reply_date : null,
+          feedback:
+            invoiceObj.payment_status === "paid" && customerRating
+              ? customerRating.description
+              : null,
+          feedbackReply:
+            invoiceObj.payment_status === "paid" && ratingReply
+              ? ratingReply.reply_text
+              : null,
+          feedbackReplyDate:
+            invoiceObj.payment_status === "paid" && ratingReply
+              ? ratingReply.reply_date
+              : null,
         };
       });
 
@@ -238,23 +257,40 @@ export function BillsPage() {
     }
 
     const discount = pointsToUse; // 1000 points = 1000đ
-    const updatedBills = [...allBills];
-    const billIndex = updatedBills.findIndex((b) => b.id === selectedBill.id);
-    updatedBills[billIndex] = {
-      ...updatedBills[billIndex],
-      pointsDiscount: discount,
-      pointsUsed: pointsToUse,
-      total:
-        updatedBills[billIndex].subtotal +
-        updatedBills[billIndex].tax -
-        updatedBills[billIndex].voucherDiscount -
-        discount,
-    };
-    setAllBills(updatedBills);
-    setSelectedBill(updatedBills[billIndex]);
-    toast.success(
-      `Đã quy đổi ${pointsToUse} điểm = ${discount.toLocaleString()}đ`
-    );
+    (async () => {
+      try {
+        // Persist points usage on the invoice so staff view can see it
+        if (selectedBill?.invoiceId) {
+          await invoiceApi.update(selectedBill.invoiceId, {
+            customer_selected_points: pointsToUse,
+            points_discount: discount,
+          });
+        }
+
+        const updatedBills = [...allBills];
+        const billIndex = updatedBills.findIndex(
+          (b) => b.id === selectedBill.id
+        );
+        updatedBills[billIndex] = {
+          ...updatedBills[billIndex],
+          pointsDiscount: discount,
+          pointsUsed: pointsToUse,
+          total:
+            updatedBills[billIndex].subtotal +
+            updatedBills[billIndex].tax -
+            updatedBills[billIndex].voucherDiscount -
+            discount,
+        };
+        setAllBills(updatedBills);
+        setSelectedBill(updatedBills[billIndex]);
+        toast.success(
+          `Đã quy đổi ${pointsToUse} điểm = ${discount.toLocaleString()}đ`
+        );
+      } catch (err: any) {
+        console.error("Error applying points:", err);
+        toast.error(err?.message || "Không thể áp dụng điểm");
+      }
+    })();
   };
 
   const handlePayment = async () => {
@@ -270,31 +306,37 @@ export function BillsPage() {
 
     try {
       const paymentMethodMap: any = {
-        wallet: 'e-wallet',
-        card: 'card',
-        cash: 'cash',
-        online: 'transfer',
+        wallet: "e-wallet",
+        card: "card",
+        cash: "cash",
+        online: "transfer",
       };
 
       await invoiceApi.update(selectedBill.invoiceId, {
         payment_method: paymentMethodMap[paymentMethod],
       });
 
-      if (paymentMethod === 'cash') {
-        toast.success("Đã gửi yêu cầu thanh toán! Vui lòng chờ nhân viên xác nhận.");
+      if (paymentMethod === "cash") {
+        toast.success(
+          "Đã gửi yêu cầu thanh toán! Vui lòng chờ nhân viên xác nhận."
+        );
       } else {
         await invoiceApi.markAsPaid(selectedBill.invoiceId);
-        
-        const updatedBills = allBills.map(bill => 
-          bill.invoiceId === selectedBill.invoiceId 
-            ? { ...bill, status: 'paid', paymentMethod: paymentMethodMap[paymentMethod] }
+
+        const updatedBills = allBills.map((bill) =>
+          bill.invoiceId === selectedBill.invoiceId
+            ? {
+                ...bill,
+                status: "paid",
+                paymentMethod: paymentMethodMap[paymentMethod],
+              }
             : bill
         );
         setAllBills(updatedBills);
-        
+
         toast.success("Thanh toán thành công!");
       }
-      
+
       setShowPaymentModal(false);
       setPaymentMethod(null);
     } catch (error: any) {
@@ -318,13 +360,13 @@ export function BillsPage() {
       await ratingApi.create({
         customer_id: customerId,
         description: feedback,
-        score: 5
+        score: 5,
       });
 
       toast.success("Cảm ơn bạn đã gửi đánh giá!");
       setShowFeedbackModal(false);
       setFeedback("");
-      
+
       // Refresh bills để cập nhật feedback
       await fetchInvoices();
     } catch (error: any) {
@@ -389,78 +431,80 @@ export function BillsPage() {
       ) : (
         <div className="space-y-4">
           {allBills.map((bill) => (
-          <Card
-            key={bill.id}
-            className="p-4 hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => setSelectedBill(bill)}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-4">
-                <div
-                  className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                    bill.status === "paid" ? "bg-green-100" : "bg-blue-100"
-                  }`}
-                >
-                  {bill.status === "paid" ? (
-                    <Check className="w-6 h-6 text-green-600" />
-                  ) : (
-                    <Clock className="w-6 h-6 text-blue-600" />
+            <Card
+              key={bill.id}
+              className="p-4 hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => setSelectedBill(bill)}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-4">
+                  <div
+                    className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                      bill.status === "paid" ? "bg-green-100" : "bg-blue-100"
+                    }`}
+                  >
+                    {bill.status === "paid" ? (
+                      <Check className="w-6 h-6 text-green-600" />
+                    ) : (
+                      <Clock className="w-6 h-6 text-blue-600" />
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="mb-1">{bill.id}</h4>
+                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        {bill.date} {bill.time}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-xl mb-1">{bill.total.toLocaleString()}đ</p>
+                  <Badge
+                    className={
+                      bill.status === "paid"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-blue-100 text-blue-700"
+                    }
+                  >
+                    {bill.status === "paid"
+                      ? "Đã thanh toán"
+                      : "Đang tiến hành"}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Discount Info */}
+              {(bill.voucherUsed || bill.pointsUsed > 0) && (
+                <div className="mt-3 pt-3 border-t space-y-1 text-sm">
+                  {bill.voucherUsed && (
+                    <div className="flex items-center justify-between text-gray-600">
+                      <span className="flex items-center gap-1">
+                        <Tag className="w-4 h-4" />
+                        Voucher: {bill.voucherUsed}
+                      </span>
+                      <span className="text-green-600">
+                        -{bill.voucherDiscount?.toLocaleString()}đ
+                      </span>
+                    </div>
+                  )}
+                  {bill.pointsUsed > 0 && (
+                    <div className="flex items-center justify-between text-gray-600">
+                      <span className="flex items-center gap-1">
+                        <Gift className="w-4 h-4" />
+                        Điểm: {bill.pointsUsed} điểm
+                      </span>
+                      <span className="text-green-600">
+                        -{bill.pointsDiscount?.toLocaleString()}đ
+                      </span>
+                    </div>
                   )}
                 </div>
-                <div>
-                  <h4 className="mb-1">{bill.id}</h4>
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      {bill.date} {bill.time}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-xl mb-1">{bill.total.toLocaleString()}đ</p>
-                <Badge
-                  className={
-                    bill.status === "paid"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-blue-100 text-blue-700"
-                  }
-                >
-                  {bill.status === "paid" ? "Đã thanh toán" : "Đang tiến hành"}
-                </Badge>
-              </div>
-            </div>
+              )}
 
-            {/* Discount Info */}
-            {(bill.voucherUsed || bill.pointsUsed > 0) && (
-              <div className="mt-3 pt-3 border-t space-y-1 text-sm">
-                {bill.voucherUsed && (
-                  <div className="flex items-center justify-between text-gray-600">
-                    <span className="flex items-center gap-1">
-                      <Tag className="w-4 h-4" />
-                      Voucher: {bill.voucherUsed}
-                    </span>
-                    <span className="text-green-600">
-                      -{bill.voucherDiscount?.toLocaleString()}đ
-                    </span>
-                  </div>
-                )}
-                {bill.pointsUsed > 0 && (
-                  <div className="flex items-center justify-between text-gray-600">
-                    <span className="flex items-center gap-1">
-                      <Gift className="w-4 h-4" />
-                      Điểm: {bill.pointsUsed} điểm
-                    </span>
-                    <span className="text-green-600">
-                      -{bill.pointsDiscount?.toLocaleString()}đ
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Manager Reply - NOT IN API SPEC - COMMENTED OUT FOR NOW */}
-            {/* {bill.feedbackReply && (
+              {/* Manager Reply - NOT IN API SPEC - COMMENTED OUT FOR NOW */}
+              {/* {bill.feedbackReply && (
               <div className="mt-3 pt-3 border-t">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <div className="flex items-start gap-2">
@@ -484,8 +528,8 @@ export function BillsPage() {
                 </div>
               </div>
             )} */}
-          </Card>
-        ))}
+            </Card>
+          ))}
         </div>
       )}
 

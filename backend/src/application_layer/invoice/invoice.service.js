@@ -1,7 +1,7 @@
-const InvoiceRepository = require('../../infrastructure_layer/invoice/invoice.repository');
-const PromotionService = require('../promotion/promotion.service');
-const InvoiceEntity = require('../../domain_layer/invoice/invoice.entity');
-const { Order, User } = require('../../models');
+const InvoiceRepository = require("../../infrastructure_layer/invoice/invoice.repository");
+const PromotionService = require("../promotion/promotion.service");
+const InvoiceEntity = require("../../domain_layer/invoice/invoice.entity");
+const { Order, User } = require("../../models");
 
 class InvoiceService {
   constructor() {
@@ -16,15 +16,17 @@ class InvoiceService {
   async getInvoiceById(id) {
     const invoice = await this.invoiceRepository.findById(id);
     if (!invoice) {
-      throw new Error('Invoice not found');
+      throw new Error("Invoice not found");
     }
     return invoice;
   }
 
   async getInvoiceByInvoiceNumber(invoiceNumber) {
-    const invoice = await this.invoiceRepository.findByInvoiceNumber(invoiceNumber);
+    const invoice = await this.invoiceRepository.findByInvoiceNumber(
+      invoiceNumber
+    );
     if (!invoice) {
-      throw new Error('Invoice not found');
+      throw new Error("Invoice not found");
     }
     return invoice;
   }
@@ -32,7 +34,7 @@ class InvoiceService {
   async getInvoiceByOrderId(orderId) {
     const invoice = await this.invoiceRepository.findByOrderId(orderId);
     if (!invoice) {
-      throw new Error('Invoice not found for this order');
+      throw new Error("Invoice not found for this order");
     }
     return invoice;
   }
@@ -40,21 +42,23 @@ class InvoiceService {
   async createInvoice(invoiceData) {
     const order = await Order.findById(invoiceData.order_id);
     if (!order) {
-      throw new Error('Order not found');
+      throw new Error("Order not found");
     }
 
     const staff = await User.findById(invoiceData.staff_id);
     if (!staff) {
-      throw new Error('Staff not found');
+      throw new Error("Staff not found");
     }
 
-    if (!['waiter', 'cashier', 'manager'].includes(staff.role)) {
-      throw new Error('User is not a staff member');
+    if (!["waiter", "cashier", "manager"].includes(staff.role)) {
+      throw new Error("User is not a staff member");
     }
 
-    const existingInvoice = await this.invoiceRepository.findByOrderId(invoiceData.order_id);
+    const existingInvoice = await this.invoiceRepository.findByOrderId(
+      invoiceData.order_id
+    );
     if (existingInvoice) {
-      throw new Error('Invoice already exists for this order');
+      throw new Error("Invoice already exists for this order");
     }
 
     if (!invoiceData.invoice_number) {
@@ -70,11 +74,11 @@ class InvoiceService {
           promoCode,
           invoiceData.subtotal
         );
-        
+
         discountAmount += validation.discount_amount;
         promotionIds.push({
           id: validation.promotion.id,
-          discount: validation.discount_amount
+          discount: validation.discount_amount,
         });
       }
     }
@@ -96,20 +100,24 @@ class InvoiceService {
       discount_amount: totals.discount_amount,
       total_amount: totals.total_amount,
       payment_method: invoiceData.payment_method,
-      payment_status: invoiceData.payment_status || 'pending'
+      payment_status: invoiceData.payment_status || "pending",
     };
 
     const invoiceEntity = new InvoiceEntity(finalInvoiceData);
     const validation = invoiceEntity.validate();
-    
+
     if (!validation.isValid) {
-      throw new Error(validation.errors.join(', '));
+      throw new Error(validation.errors.join(", "));
     }
 
     const invoice = await this.invoiceRepository.create(finalInvoiceData);
 
     for (const promo of promotionIds) {
-      await this.invoiceRepository.addPromotion(invoice.id, promo.id, promo.discount);
+      await this.invoiceRepository.addPromotion(
+        invoice.id,
+        promo.id,
+        promo.discount
+      );
       await this.promotionService.incrementPromotionUses(promo.id);
     }
 
@@ -119,11 +127,11 @@ class InvoiceService {
   async updateInvoice(id, updateData) {
     const existingInvoice = await this.invoiceRepository.findById(id);
     if (!existingInvoice) {
-      throw new Error('Invoice not found');
+      throw new Error("Invoice not found");
     }
 
-    if (existingInvoice.payment_status === 'paid') {
-      throw new Error('Cannot update paid invoice');
+    if (existingInvoice.payment_status === "paid") {
+      throw new Error("Cannot update paid invoice");
     }
 
     return await this.invoiceRepository.update(id, updateData);
@@ -132,49 +140,81 @@ class InvoiceService {
   async deleteInvoice(id) {
     const invoice = await this.invoiceRepository.findById(id);
     if (!invoice) {
-      throw new Error('Invoice not found');
+      throw new Error("Invoice not found");
     }
 
-    if (invoice.payment_status === 'paid') {
-      throw new Error('Cannot delete paid invoice');
+    if (invoice.payment_status === "paid") {
+      throw new Error("Cannot delete paid invoice");
     }
 
     const result = await this.invoiceRepository.delete(id);
     if (!result) {
-      throw new Error('Failed to delete invoice');
+      throw new Error("Failed to delete invoice");
     }
 
-    return { message: 'Invoice deleted successfully' };
+    return { message: "Invoice deleted successfully" };
   }
 
   async markAsPaid(id) {
     const invoice = await this.invoiceRepository.findById(id);
     if (!invoice) {
-      throw new Error('Invoice not found');
+      throw new Error("Invoice not found");
     }
 
-    if (invoice.payment_status === 'paid') {
-      throw new Error('Invoice is already paid');
+    if (invoice.payment_status === "paid") {
+      throw new Error("Invoice is already paid");
     }
 
-    if (invoice.payment_status === 'cancelled') {
-      throw new Error('Cannot mark cancelled invoice as paid');
+    if (invoice.payment_status === "cancelled") {
+      throw new Error("Cannot mark cancelled invoice as paid");
     }
 
-    return await this.invoiceRepository.updatePaymentStatus(id, 'paid', new Date());
+    // Mark invoice as paid
+    const updatedInvoice = await this.invoiceRepository.updatePaymentStatus(
+      id,
+      "paid",
+      new Date()
+    );
+
+    // If customer used points on this invoice, deduct them from customer's account now
+    try {
+      const pointsToDeduct =
+        updatedInvoice.customerSelectedPoints ||
+        updatedInvoice.customer_selected_points ||
+        0;
+      const customerId =
+        updatedInvoice.customer_id ||
+        (updatedInvoice.customer && updatedInvoice.customer.id) ||
+        updatedInvoice.customer?.id;
+
+      if (pointsToDeduct > 0 && customerId) {
+        const customer = await User.findById(customerId);
+        if (customer) {
+          const current =
+            typeof customer.points === "number" ? customer.points : 0;
+          customer.points = Math.max(0, current - pointsToDeduct);
+          await customer.save();
+        }
+      }
+    } catch (err) {
+      // Log error but do not fail payment flow
+      console.error("Error deducting customer points on payment:", err);
+    }
+
+    return updatedInvoice;
   }
 
   async cancelInvoice(id) {
     const invoice = await this.invoiceRepository.findById(id);
     if (!invoice) {
-      throw new Error('Invoice not found');
+      throw new Error("Invoice not found");
     }
 
-    if (invoice.payment_status === 'paid') {
-      throw new Error('Cannot cancel paid invoice');
+    if (invoice.payment_status === "paid") {
+      throw new Error("Cannot cancel paid invoice");
     }
 
-    return await this.invoiceRepository.updatePaymentStatus(id, 'cancelled');
+    return await this.invoiceRepository.updatePaymentStatus(id, "cancelled");
   }
 
   async getInvoiceStatistics() {
@@ -183,26 +223,29 @@ class InvoiceService {
 
   async getRevenueByDateRange(startDate, endDate) {
     if (!startDate || !endDate) {
-      throw new Error('Start date and end date are required');
+      throw new Error("Start date and end date are required");
     }
 
-    return await this.invoiceRepository.getRevenueByDateRange(startDate, endDate);
+    return await this.invoiceRepository.getRevenueByDateRange(
+      startDate,
+      endDate
+    );
   }
 
   async generateInvoiceNumber() {
     const date = new Date();
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
     const prefix = `INV-${year}${month}${day}`;
-    
+
     const lastInvoice = await this.invoiceRepository.findAll({
-      search: prefix
+      search: prefix,
     });
 
     const sequence = lastInvoice.length + 1;
-    const invoiceNumber = `${prefix}-${String(sequence).padStart(4, '0')}`;
+    const invoiceNumber = `${prefix}-${String(sequence).padStart(4, "0")}`;
 
     return invoiceNumber;
   }
