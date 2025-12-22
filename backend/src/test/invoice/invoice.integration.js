@@ -37,8 +37,16 @@ describe('Invoice Integration Tests', () => {
         role: 'customer',
         username: `testcust${Date.now()}`,
         is_active: true,
-        membership_level: 'silver'
+        membership_level: 'silver',
+        points: 500
       });
+    } else if (customer.points < 500) {
+      // Ensure test customer has enough points
+      customer = await Customer.findByIdAndUpdate(
+        customer._id,
+        { points: 500 },
+        { new: true }
+      );
     }
     testCustomerId = customer._id;
 
@@ -75,7 +83,9 @@ describe('Invoice Integration Tests', () => {
         customer_id: testCustomerId,
         subtotal: 500000,
         tax_rate: 10,
-        payment_method: 'cash'
+        payment_method: 'cash',
+        points_used: 100,
+        points_earned: 50
       };
 
       const response = await request(app)
@@ -88,6 +98,8 @@ describe('Invoice Integration Tests', () => {
       expect(response.body.data).toHaveProperty('invoice_number');
       expect(response.body.data.subtotal).toBe(newInvoice.subtotal);
       expect(response.body.data.payment_status).toBe('pending');
+      expect(response.body.data.points_used).toBe(100);
+      expect(response.body.data.points_earned).toBe(50);
       
       createdInvoiceId = response.body.data.id;
     });
@@ -107,6 +119,26 @@ describe('Invoice Integration Tests', () => {
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('already exists');
+    });
+
+    it('should fail when customer lacks sufficient points to redeem', async () => {
+      const invoiceWithExcessivePoints = {
+        order_id: testOrderId,
+        staff_id: testStaffId,
+        customer_id: testCustomerId,
+        subtotal: 500000,
+        tax_rate: 10,
+        payment_method: 'cash',
+        points_used: 999999
+      };
+
+      const response = await request(app)
+        .post('/api/v1/invoices')
+        .send(invoiceWithExcessivePoints)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('points');
     });
   });
 
@@ -163,7 +195,7 @@ describe('Invoice Integration Tests', () => {
   });
 
   describe('PATCH /api/v1/invoices/:id/paid - Mark as Paid', () => {
-    it('should mark invoice as paid', async () => {
+    it('should mark invoice as paid and apply points', async () => {
       const response = await request(app)
         .patch(`/api/v1/invoices/${createdInvoiceId}/paid`)
         .expect(200);
@@ -171,6 +203,9 @@ describe('Invoice Integration Tests', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.payment_status).toBe('paid');
       expect(response.body.data).toHaveProperty('paid_at');
+      // Points should be present in the response
+      expect(response.body.data).toHaveProperty('points_used');
+      expect(response.body.data).toHaveProperty('points_earned');
     });
 
     it('should fail when invoice already paid', async () => {

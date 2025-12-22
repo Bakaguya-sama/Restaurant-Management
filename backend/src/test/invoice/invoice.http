@@ -43,7 +43,9 @@ Content-Type: application/json
   "customer_id": "PUT_CUSTOMER_ID_HERE",
   "subtotal": 500000,
   "tax_rate": 10,
-  "payment_method": "cash"
+  "payment_method": "cash",
+  "points_used": 0,
+  "points_earned": 50
 }
 
 ### Create Invoice - With Promo Code
@@ -57,7 +59,9 @@ Content-Type: application/json
   "subtotal": 500000,
   "tax_rate": 10,
   "payment_method": "card",
-  "promo_codes": ["SUMMER2024"]
+  "promo_codes": ["SUMMER2024"],
+  "points_used": 100,
+  "points_earned": 50
 }
 
 ### Create Invoice - With Multiple Promo Codes
@@ -71,7 +75,9 @@ Content-Type: application/json
   "subtotal": 800000,
   "tax_rate": 10,
   "payment_method": "e-wallet",
-  "promo_codes": ["SUMMER2024", "NEWYEAR2024"]
+  "promo_codes": ["SUMMER2024", "NEWYEAR2024"],
+  "points_used": 200,
+  "points_earned": 80
 }
 
 ### Update Invoice
@@ -79,7 +85,9 @@ PUT {{baseUrl}}/invoices/PUT_INVOICE_ID_HERE
 Content-Type: application/json
 
 {
-  "payment_method": "transfer"
+  "payment_method": "transfer",
+  "points_used": 50,
+  "points_earned": 75
 }
 
 ### Mark Invoice as Paid

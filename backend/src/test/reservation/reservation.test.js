@@ -7,6 +7,16 @@ let customer;
 let table1;
 let table2;
 
+// Helper function to generate valid reservation times (avoid midnight wraparound)
+function getValidReservationTimes() {
+  let hour = 10; // Use fixed time to avoid midnight issues
+  let minute = 0;
+  const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  const checkoutHour = hour + 2;
+  const checkoutTimeStr = `${String(checkoutHour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  return { timeStr, checkoutTimeStr };
+}
+
 beforeAll(async () => {
   await connectTestDB();
   await clearCollections();
@@ -25,11 +35,9 @@ describe('Reservation API', () => {
   describe('POST /api/v1/reservations - Create Reservation', () => {
     it('creates a reservation with initial table within 1 hour window', async () => {
       const futureDate = new Date();
-      futureDate.setMinutes(futureDate.getMinutes() + 30);
+      futureDate.setDate(futureDate.getDate() + 1); // Use tomorrow to avoid timezone issues
       const dateStr = futureDate.toISOString().split('T')[0];
-      const timeStr = `${String(futureDate.getHours()).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
-      const checkoutHour = (futureDate.getHours() + 2) % 24;
-      const checkoutTimeStr = `${String(checkoutHour).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
+      const { timeStr, checkoutTimeStr } = getValidReservationTimes();
       
       const res = await request(app)
         .post('/api/v1/reservations')
@@ -42,6 +50,7 @@ describe('Reservation API', () => {
           number_of_guests: 2,
           deposit_amount: 200000
         });
+      
       expect(res.statusCode).toBe(201);
       expect(res.body.success).toBe(true);
       expect(res.body.data.status).toBe('pending');
@@ -69,9 +78,9 @@ describe('Reservation API', () => {
 
     it('returns 400 when checkout time is not after reservation time', async () => {
       const futureDate = new Date();
-      futureDate.setMinutes(futureDate.getMinutes() + 30);
+      futureDate.setDate(futureDate.getDate() + 1);
       const dateStr = futureDate.toISOString().split('T')[0];
-      const timeStr = `${String(futureDate.getHours()).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
+      const timeStr = '10:00';
       
       const res = await request(app)
         .post('/api/v1/reservations')
@@ -91,11 +100,9 @@ describe('Reservation API', () => {
 
     it('creates reservation outside 1 hour window without marking table reserved', async () => {
       const futureDate = new Date();
-      futureDate.setHours(futureDate.getHours() + 2);
+      futureDate.setDate(futureDate.getDate() + 1);
       const dateStr = futureDate.toISOString().split('T')[0];
-      const timeStr = `${String(futureDate.getHours()).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
-      const checkoutHour = (futureDate.getHours() + 2) % 24;
-      const checkoutTimeStr = `${String(checkoutHour).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
+      const { timeStr, checkoutTimeStr } = getValidReservationTimes();
       
       const res = await request(app)
         .post('/api/v1/reservations')
@@ -131,11 +138,9 @@ describe('Reservation API', () => {
   describe('GET /api/v1/reservations/:id', () => {
     it('gets reservation by id', async () => {
       const futureDate = new Date();
-      futureDate.setMinutes(futureDate.getMinutes() + 30);
+      futureDate.setDate(futureDate.getDate() + 1);
       const dateStr = futureDate.toISOString().split('T')[0];
-      const timeStr = `${String(futureDate.getHours()).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
-      const checkoutHour = (futureDate.getHours() + 2) % 24;
-      const checkoutTimeStr = `${String(checkoutHour).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
+      const { timeStr, checkoutTimeStr } = getValidReservationTimes();
       
       const createRes = await request(app)
         .post('/api/v1/reservations')
@@ -167,11 +172,9 @@ describe('Reservation API', () => {
   describe('PUT /api/v1/reservations/:id - Update Reservation', () => {
     it('updates number_of_guests', async () => {
       const futureDate = new Date();
-      futureDate.setMinutes(futureDate.getMinutes() + 30);
+      futureDate.setDate(futureDate.getDate() + 1);
       const dateStr = futureDate.toISOString().split('T')[0];
-      const timeStr = `${String(futureDate.getHours()).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
-      const checkoutHour = (futureDate.getHours() + 2) % 24;
-      const checkoutTimeStr = `${String(checkoutHour).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
+      const { timeStr, checkoutTimeStr } = getValidReservationTimes();
       
       const createRes = await request(app)
         .post('/api/v1/reservations')
@@ -197,11 +200,9 @@ describe('Reservation API', () => {
   describe('PATCH /api/v1/reservations/:id/status - Update Status', () => {
     it('prevents status change from pending to in_progress without payment', async () => {
       const futureDate = new Date();
-      futureDate.setMinutes(futureDate.getMinutes() + 30);
+      futureDate.setDate(futureDate.getDate() + 1);
       const dateStr = futureDate.toISOString().split('T')[0];
-      const timeStr = `${String(futureDate.getHours()).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
-      const checkoutHour = (futureDate.getHours() + 2) % 24;
-      const checkoutTimeStr = `${String(checkoutHour).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
+      const { timeStr, checkoutTimeStr } = getValidReservationTimes();
       
       const createRes = await request(app)
         .post('/api/v1/reservations')
@@ -226,11 +227,9 @@ describe('Reservation API', () => {
 
     it('allows status change from pending to confirmed', async () => {
       const futureDate = new Date();
-      futureDate.setMinutes(futureDate.getMinutes() + 30);
+      futureDate.setDate(futureDate.getDate() + 1);
       const dateStr = futureDate.toISOString().split('T')[0];
-      const timeStr = `${String(futureDate.getHours()).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
-      const checkoutHour = (futureDate.getHours() + 2) % 24;
-      const checkoutTimeStr = `${String(checkoutHour).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
+      const { timeStr, checkoutTimeStr } = getValidReservationTimes();
       
       const createRes = await request(app)
         .post('/api/v1/reservations')
@@ -255,11 +254,9 @@ describe('Reservation API', () => {
 
     it('allows status change from confirmed to cancelled', async () => {
       const futureDate = new Date();
-      futureDate.setMinutes(futureDate.getMinutes() + 30);
+      futureDate.setDate(futureDate.getDate() + 1);
       const dateStr = futureDate.toISOString().split('T')[0];
-      const timeStr = `${String(futureDate.getHours()).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
-      const checkoutHour = (futureDate.getHours() + 2) % 24;
-      const checkoutTimeStr = `${String(checkoutHour).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
+      const { timeStr, checkoutTimeStr } = getValidReservationTimes();
       
       const createRes = await request(app)
         .post('/api/v1/reservations')
@@ -290,11 +287,9 @@ describe('Reservation API', () => {
 
     it('allows confirmed status to auto-transition to in_progress within 1 hour window', async () => {
       const futureDate = new Date();
-      futureDate.setMinutes(futureDate.getMinutes() + 30);
+      futureDate.setDate(futureDate.getDate() + 1);
       const dateStr = futureDate.toISOString().split('T')[0];
-      const timeStr = `${String(futureDate.getHours()).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
-      const checkoutHour = (futureDate.getHours() + 2) % 24;
-      const checkoutTimeStr = `${String(checkoutHour).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
+      const { timeStr, checkoutTimeStr } = getValidReservationTimes();
       
       const createRes = await request(app)
         .post('/api/v1/reservations')
@@ -325,11 +320,9 @@ describe('Reservation API', () => {
   describe('DELETE /api/v1/reservations/:id', () => {
     it('deletes a reservation', async () => {
       const futureDate = new Date();
-      futureDate.setMinutes(futureDate.getMinutes() + 30);
+      futureDate.setDate(futureDate.getDate() + 1);
       const dateStr = futureDate.toISOString().split('T')[0];
-      const timeStr = `${String(futureDate.getHours()).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
-      const checkoutHour = (futureDate.getHours() + 2) % 24;
-      const checkoutTimeStr = `${String(checkoutHour).padStart(2, '0')}:${String(futureDate.getMinutes()).padStart(2, '0')}`;
+      const { timeStr, checkoutTimeStr } = getValidReservationTimes();
       
       const createRes = await request(app)
         .post('/api/v1/reservations')
