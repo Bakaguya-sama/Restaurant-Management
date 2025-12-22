@@ -1,10 +1,12 @@
 const DishService = require('../../../application_layer/dish/dish.service');
 const DishIngredientController = require('../dishingredient/dishingredient.controller');
+const UploadRepository = require('../../../infrastructure_layer/upload/upload.repository');
 
 class DishController {
   constructor() {
     this.dishService = new DishService();
     this.dishIngredientController = new DishIngredientController();
+    this.uploadRepository = new UploadRepository('dishes');
   }
 
   async getAllDishes(req, res) {
@@ -90,13 +92,50 @@ class DishController {
         });
       }
 
-      const dish = await this.dishService.createDish({
-        name,
-        description,
-        category,
-        price,
-        image_url
-      });
+      let uploadedImageFilename = null;
+      if (image_url) {
+        const imagePathParts = image_url.split('/');
+        uploadedImageFilename = imagePathParts[imagePathParts.length - 1];
+      }
+
+      let dish;
+      try {
+        dish = await this.dishService.createDish({
+          name,
+          description,
+          category,
+          price,
+          image_url
+        });
+      } catch (createError) {
+        if (uploadedImageFilename) {
+          try {
+            await this.uploadRepository.deleteImage(uploadedImageFilename);
+          } catch (deleteError) {
+            console.warn(`Warning: Failed to delete uploaded image ${uploadedImageFilename}:`, deleteError.message);
+          }
+        }
+        throw createError;
+      }
+
+      if (image_url && dish.id) {
+        try {
+          const imagePathParts = image_url.split('/');
+          const oldFilename = imagePathParts[imagePathParts.length - 1];
+          const ext = oldFilename.substring(oldFilename.lastIndexOf('.'));
+          const newFilename = `${dish.id}${ext}`;
+
+          const renamed = await this.uploadRepository.renameImage(oldFilename, newFilename);
+          
+          if (renamed) {
+            const newImageUrl = `/uploads/dishes/${newFilename}`;
+            await this.dishService.updateDish(dish.id, { image_url: newImageUrl });
+            dish.image_url = newImageUrl;
+          }
+        } catch (imageError) {
+          console.warn(`Warning: Failed to rename image for dish ${dish.id}:`, imageError.message);
+        }
+      }
 
       const formatted = await this.dishService.formatDishResponse(dish);
 
@@ -191,7 +230,23 @@ class DishController {
 
   async deleteDish(req, res) {
     try {
+      const dishToDelete = await this.dishService.getDishById(req.params.id);
+      
       const dish = await this.dishService.deleteDish(req.params.id);
+      
+      if (dishToDelete.image_url) {
+        try {
+          const imagePathParts = dishToDelete.image_url.split('/');
+          const filename = imagePathParts[imagePathParts.length - 1];
+          
+          if (filename) {
+            await this.uploadRepository.deleteImage(filename);
+          }
+        } catch (imageDeleteError) {
+          console.warn(`Warning: Failed to delete image for dish ${req.params.id}:`, imageDeleteError.message);
+        }
+      }
+      
       const formatted = await this.dishService.formatDishResponse(dish);
 
       res.json({

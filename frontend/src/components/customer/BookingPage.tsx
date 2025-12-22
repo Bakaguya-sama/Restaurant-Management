@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar, Clock, Users, CreditCard, CheckCircle } from "lucide-react";
-import { QRCodeSVG } from 'qrcode.react';;
+import { QRCodeSVG } from 'qrcode.react';
 import { Button } from "../ui/Button";
 import { Input, Textarea } from "../ui/Input";
 import { Card } from "../ui/Card";

@@ -1,6 +1,7 @@
 import { apiClient } from './apiClient';
 import { Dish } from '../types';
 
+
 export interface DishData {
   id?: string;
   name: string;
@@ -10,6 +11,7 @@ export interface DishData {
   image_url?: string;
   is_available: boolean;
 }
+
 
 export const dishApi = {
   getAll: () => apiClient.get<Dish[]>('/dishes'),

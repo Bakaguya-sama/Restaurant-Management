@@ -1,8 +1,10 @@
 const StaffService = require('../../../application_layer/staff/staff.service');
+const UploadRepository = require('../../../infrastructure_layer/upload/upload.repository');
 
 class StaffController {
   constructor() {
     this.staffService = new StaffService();
+    this.uploadRepository = new UploadRepository('avatars');
   }
 
   async getAllStaff(req, res) {
@@ -78,7 +80,22 @@ class StaffController {
 
   async deleteStaff(req, res) {
     try {
+      const staffToDelete = await this.staffService.getStaffById(req.params.id);
+      
       const result = await this.staffService.deleteStaff(req.params.id);
+      
+      if (staffToDelete.image_url) {
+        try {
+          const imagePathParts = staffToDelete.image_url.split('/');
+          const filename = imagePathParts[imagePathParts.length - 1];
+          
+          if (filename) {
+            await this.uploadRepository.deleteImage(filename);
+          }
+        } catch (imageDeleteError) {
+          console.warn(`Warning: Failed to delete avatar for staff ${req.params.id}:`, imageDeleteError.message);
+        }
+      }
       
       res.status(200).json({
         success: true,
