@@ -42,7 +42,9 @@ export function useOrderingDishes(selectedCategory: string) {
         const dishes = await fetchDishes(params);
 
         if (!cancelled) {
-          setItems(dishes);
+          // Filter to only show dishes that are available (have enough ingredients)
+          const availableDishes = dishes.filter((dish: any) => dish.is_available !== false);
+          setItems(availableDishes);
         }
       } catch (err: any) {
         if (!cancelled) {

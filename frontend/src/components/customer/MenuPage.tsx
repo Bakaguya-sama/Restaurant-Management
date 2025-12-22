@@ -16,15 +16,8 @@ export function MenuPage() {
   // Fetch dishes from API
   const { items } = useMenuDishes(searchQuery, selectedCategory);
 
-  // Client-side filter (for additional refinement if needed)
-  const filteredItems = items.filter((item) => {
-    const matchesSearch = item.name
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const matchesCategory =
-      selectedCategory === "all" || item.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  // Items already filtered by API, no need for additional client-side filtering
+  const filteredItems = items;
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">

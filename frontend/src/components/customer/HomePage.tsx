@@ -1,20 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { Modal } from "../ui/Modal";
-import { mockDishes } from "../../lib/mockData";
 import { Dish } from "../../types";
 // import { PromotionCard } from "./PromotionCard";
 import { useNavigate } from "react-router-dom";
+import { fetchTopDishes } from "../../lib/menuPageApi";
 
 export function HomePage() {
   const navigate = useNavigate();
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
+  const [featuredDishes, setFeaturedDishes] = useState<Dish[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Get first 3 available dishes
-  const featuredDishes = mockDishes
-    .filter((item) => item.is_available)
-    .slice(0, 3);
+  // Load top 3 most ordered dishes
+  useEffect(() => {
+    async function loadTopDishes() {
+      try {
+        setLoading(true);
+        const dishes = await fetchTopDishes(3);
+        setFeaturedDishes(dishes);
+      } catch (error) {
+        console.error("Error loading top dishes:", error);
+        setFeaturedDishes([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadTopDishes();
+  }, []);
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
@@ -106,32 +121,42 @@ export function HomePage() {
             Xem tất cả
           </Button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {featuredDishes.map((item) => (
-            <Card key={item.id} hover className="overflow-hidden">
-              <img
-                src={
-                  item.image_url ||
-                  "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400"
-                }
-                alt={item.name}
-                className="w-full h-48 object-cover"
-              />
-              <div className="p-4">
-                <h4 className="mb-2">{item.name}</h4>
-                <p className="text-sm text-gray-600 mb-3">{item.description}</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-[#625EE8]">
-                    {item.price.toLocaleString()}đ
-                  </span>
-                  <Button size="sm" onClick={() => setSelectedDish(item)}>
-                    Xem chi tiết
-                  </Button>
+        {loading ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500">Đang tải món ăn nổi bật...</p>
+          </div>
+        ) : featuredDishes.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500">Chưa có món ăn nổi bật</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {featuredDishes.map((item) => (
+              <Card key={item.id} hover className="overflow-hidden">
+                <img
+                  src={
+                    item.image_url ||
+                    "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400"
+                  }
+                  alt={item.name}
+                  className="w-full h-48 object-cover"
+                />
+                <div className="p-4">
+                  <h4 className="mb-2">{item.name}</h4>
+                  <p className="text-sm text-gray-600 mb-3">{item.description}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#625EE8]">
+                      {item.price.toLocaleString()}đ
+                    </span>
+                    <Button size="sm" onClick={() => setSelectedDish(item)}>
+                      Xem chi tiết
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Promotions */}
