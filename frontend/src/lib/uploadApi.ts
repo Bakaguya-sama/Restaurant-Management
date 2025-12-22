@@ -38,6 +38,25 @@ const BASE_URL =
   (import.meta as any).env?.VITE_BASE_URL ||
   "http://localhost:5000";
 
+/**
+ * Build complete URL for uploaded images
+ * Ensures proper handling of relative vs absolute URLs
+ */
+export function buildImageUrl(imagePath: string): string {
+  // Already a complete URL
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
+  
+  // Relative path - prepend BASE_URL
+  if (imagePath.startsWith('/')) {
+    return `${BASE_URL}${imagePath}`;
+  }
+  
+  // No leading slash - add it
+  return `${BASE_URL}/${imagePath}`;
+}
+
 
 
 /**
@@ -106,7 +125,9 @@ export async function uploadDishImage(file: File, dishId?: string): Promise<stri
   }
 
   const imagePath = data.data.url;
-  const fullUrl = imagePath.startsWith('http') ? imagePath : `${BASE_URL}${imagePath}`;
+  console.log('[uploadDishImage] Server returned path:', imagePath);
+  const fullUrl = buildImageUrl(imagePath);
+  console.log('[uploadDishImage] Built full URL:', fullUrl);
   return fullUrl;
 }
 
@@ -143,7 +164,9 @@ export async function uploadAvatarImage(file: File, userId?: string): Promise<st
   }
 
   const imagePath = data.data.url;
-  const fullUrl = imagePath.startsWith('http') ? imagePath : `${BASE_URL}${imagePath}`;
+  console.log('[uploadAvatarImage] Server returned path:', imagePath);
+  const fullUrl = buildImageUrl(imagePath);
+  console.log('[uploadAvatarImage] Built full URL:', fullUrl);
   return fullUrl;
 }
 
@@ -187,7 +210,9 @@ export async function uploadImage(
   }
 
   const imagePath = data.data.url;
-  const fullUrl = imagePath.startsWith('http') ? imagePath : `${BASE_URL}${imagePath}`;
+  console.log(`[uploadImage] Server returned path (${uploadType}):`, imagePath);
+  const fullUrl = buildImageUrl(imagePath);
+  console.log(`[uploadImage] Built full URL (${uploadType}):`, fullUrl);
   return fullUrl;
 }
 
@@ -267,7 +292,9 @@ export function extractFilenameFromUrl(url: string): string {
  */
 export async function validateImageUrl(url: string): Promise<boolean> {
   try {
-    const response = await fetch(url, { method: 'HEAD' });
+    const fullUrl = buildImageUrl(url);
+    console.log('[validateImageUrl] Checking URL:', fullUrl);
+    const response = await fetch(fullUrl, { method: 'HEAD' });
     return response.ok;
   } catch {
     return false;

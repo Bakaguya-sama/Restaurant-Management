@@ -31,7 +31,7 @@ import { ConfirmationModal } from "../../ui/ConfirmationModal";
 import { useDishes } from "../../../hooks/useDishes";
 import { useDishIngredients } from "../../../hooks/useDishIngredients";
 import { useIngredients } from "../../../hooks/useIngredients";
-import { uploadDishImage, validateImageUrl } from "../../../lib/uploadApi";
+import { uploadDishImage, validateImageUrl, buildImageUrl } from "../../../lib/uploadApi";
 
 const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400";
 
@@ -100,6 +100,19 @@ export function MenuPromotionPage() {
   >("info");
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());
+
+  const setImageLoading = (src: string, isLoading: boolean) => {
+    setLoadingImages(prev => {
+      const newSet = new Set(prev);
+      if (isLoading) {
+        newSet.add(src);
+      } else {
+        newSet.delete(src);
+      }
+      return newSet;
+    });
+  };
 
   const handleImageUpload = async (file: File): Promise<string | null> => {
     setUploadingImage(true);
@@ -138,7 +151,7 @@ export function MenuPromotionPage() {
     setIngredientRows(newRows);
   };
 
-  const handleAddMenuItem = () => {
+  const handleAddMenuItem = async () => {
     
     const nameValidation = validateRequired(menuForm.name, "Tên món ăn");
     if (!nameValidation.isValid) {
@@ -156,64 +169,73 @@ export function MenuPromotionPage() {
       return;
     }
 
+    let imageUrl = menuForm.image || PLACEHOLDER_IMAGE;
+    if (menuForm.image && menuForm.image !== PLACEHOLDER_IMAGE) {
+      try {
+        const isValid = await validateImageUrl(menuForm.image);
+        if (!isValid) {
+          console.warn("Uploaded image URL is not accessible, using placeholder");
+          imageUrl = PLACEHOLDER_IMAGE;
+        }
+      } catch (error) {
+        console.warn("Failed to validate image URL:", error);
+        imageUrl = PLACEHOLDER_IMAGE;
+      }
+    }
+
     const newItem = {
       name: menuForm.name,
       category: categoryMapping[menuForm.category] || menuForm.category,
       price: menuForm.price,
       description: menuForm.description,
       is_available: true,
-      image_url:
-        menuForm.image || PLACEHOLDER_IMAGE,
+      image_url: imageUrl,
     };
 
-    createDish(newItem)
-      .then(async (response: any) => {
-        
-        const dishId = response?.id || response?.data?.id;
-        
-        if (dishId && ingredientRows.length > 0) {
-          
-          const validIngredients = ingredientRows.filter(
-            (row) => row.ingredientId !== ""
-          );
+    try {
+      const response = await createDish(newItem);
+      const dishId = response?.id;
+      
+      if (dishId && ingredientRows.length > 0) {
+        const validIngredients = ingredientRows.filter(
+          (row) => row.ingredientId !== ""
+        );
 
-          if (validIngredients.length > 0) {
-            try {
-              for (const row of validIngredients) {
-                const ingredient = ingredients.find(
-                  (inv) => inv.id === row.ingredientId
-                );
-                if (ingredient) {
-                  await createDishIngredient({
-                    dishId: dishId,
-                    ingredientId: String(row.ingredientId),
-                    quantity_required: row.quantity.toString(),
-                    unit: ingredient.unit,
-                  });
-                }
+        if (validIngredients.length > 0) {
+          try {
+            for (const row of validIngredients) {
+              const ingredient = ingredients.find(
+                (inv) => inv.id === row.ingredientId
+              );
+              if (ingredient) {
+                await createDishIngredient({
+                  dishId: dishId,
+                  ingredientId: String(row.ingredientId),
+                  quantity_required: row.quantity.toString(),
+                  unit: ingredient.unit,
+                });
               }
-            } catch (err) {
-              console.warn("Lỗi khi thêm nguyên liệu:", err);
-              
             }
+          } catch (err) {
+            console.warn("Lỗi khi thêm nguyên liệu:", err);
           }
         }
+      }
 
-        toast.success("Thêm món ăn thành công!");
-        setShowAddMenuModal(false);
-        setMenuForm({
-          id: "",
-          name: "",
-          category: "Món chính",
-          price: 0,
-          description: "",
-          image: "",
-        });
-        setIngredientRows([{ ingredientId: "", quantity: 0 }]);
-      })
-      .catch((err) => {
-        toast.error(err instanceof Error ? err.message : "Lỗi khi thêm món ăn");
+      toast.success("Thêm món ăn thành công!");
+      setShowAddMenuModal(false);
+      setMenuForm({
+        id: "",
+        name: "",
+        category: "Món chính",
+        price: 0,
+        description: "",
+        image: "",
       });
+      setIngredientRows([{ ingredientId: "", quantity: 0 }]);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Lỗi khi thêm món ăn");
+    }
   };
 
   const handleToggleAvailability = (id: string) => {
@@ -225,7 +247,7 @@ export function MenuPromotionPage() {
       });
   };
 
-  const handleEditMenuItem = () => {
+  const handleEditMenuItem = async () => {
     if (!editingDish) return;
 
     
@@ -244,64 +266,77 @@ export function MenuPromotionPage() {
       return;
     }
 
-    
+    let imageUrl = menuForm.image || (editingDish.image_url ? buildImageUrl(editingDish.image_url) : PLACEHOLDER_IMAGE);
+    if (menuForm.image && menuForm.image !== (editingDish.image_url ? buildImageUrl(editingDish.image_url) : PLACEHOLDER_IMAGE) && menuForm.image !== PLACEHOLDER_IMAGE) {
+      try {
+        const fullUrl = buildImageUrl(menuForm.image);
+        const isValid = await validateImageUrl(fullUrl);
+        if (!isValid) {
+          console.warn("Uploaded image URL is not accessible, using existing image");
+          imageUrl = editingDish.image_url ? buildImageUrl(editingDish.image_url) : PLACEHOLDER_IMAGE;
+        }
+      } catch (error) {
+        console.warn("Failed to validate image URL:", error);
+        imageUrl = editingDish.image_url ? buildImageUrl(editingDish.image_url) : PLACEHOLDER_IMAGE;
+      }
+    }
+
     const updateData = {
       name: menuForm.name,
       category: categoryMapping[menuForm.category] || menuForm.category,
       price: menuForm.price,
       description: menuForm.description,
-      image_url: menuForm.image || editingDish.image_url || PLACEHOLDER_IMAGE,
+      image_url: imageUrl,
     };
 
-    updateDish(editingDish.id, updateData)
-      .then(async () => {
+    try {
+      await updateDish(editingDish.id, updateData);
         
-        if (ingredientRows.length > 0) {
-          const validIngredients = ingredientRows.filter(
-            (row) => row.ingredientId !== ""
-          );
+      if (ingredientRows.length > 0) {
+        const validIngredients = ingredientRows.filter(
+          (row) => row.ingredientId !== ""
+        );
 
-          try {
-            const ingredientData = validIngredients.map(row => {
-              const ingredient = ingredients.find(
-                (inv) => inv.id === row.ingredientId
-              );
-              return {
-                ingredientId: String(row.ingredientId),
-                quantity_required: row.quantity.toString(),
-                unit: ingredient?.unit || "pcs",
-              };
-            });
+        try {
+          const ingredientData = validIngredients.map(row => {
+            const ingredient = ingredients.find(
+              (inv) => inv.id === row.ingredientId
+            );
+            return {
+              ingredientId: String(row.ingredientId),
+              quantity_required: row.quantity.toString(),
+              unit: ingredient?.unit || "pcs",
+            };
+          });
 
-            await bulkReplaceDishIngredients(editingDish.id, ingredientData);
-          } catch (err) {
-            console.warn("Lỗi khi thay thế nguyên liệu:", err);
-          }
-        } else {
-          
-          try {
-            await deleteDishIngredientsByDish(editingDish.id);
-          } catch (err) {
-            console.warn("Lỗi khi xóa nguyên liệu:", err);
-          }
+          await bulkReplaceDishIngredients(editingDish.id, ingredientData);
+        } catch (err) {
+          console.warn("Lỗi khi thay thế nguyên liệu:", err);
         }
+      } else {
+        
+        try {
+          await deleteDishIngredientsByDish(editingDish.id);
+        } catch (err) {
+          console.warn("Lỗi khi xóa nguyên liệu:", err);
+        }
+      }
 
-        toast.success("Cập nhật món ăn thành công!");
-        setShowEditMenuModal(false);
-        setEditingDish(null);
-        setMenuForm({
-          id: "",
-          name: "",
-          category: "Món chính",
-          price: 0,
-          description: "",
-          image: "",
-        });
-        setIngredientRows([{ ingredientId: "", quantity: 0 }]);
-      })
-      .catch((err) => {
-        toast.error(err instanceof Error ? err.message : "Lỗi khi cập nhật món ăn");
+      toast.success("Cập nhật món ăn thành công!");
+      setShowEditMenuModal(false);
+      setEditingDish(null);
+      setMenuForm({
+        id: "",
+        name: "",
+        category: "Món chính",
+        price: 0,
+        description: "",
+        image: "",
       });
+      setIngredientRows([{ ingredientId: "", quantity: 0 }]);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Lỗi khi cập nhật món ăn");
+    }
   };
 
   const openEditModal = (dish: Dish) => {
@@ -459,21 +494,18 @@ export function MenuPromotionPage() {
   const handleEditPromotion = () => {
     if (!editingPromo) return;
 
-    // Validate name
     const nameValidation = validateRequired(promoForm.name, "Tên chương trình");
     if (!nameValidation.isValid) {
       toast.error(nameValidation.error);
       return;
     }
 
-    // Validate code
     const codeValidation = validateRequired(promoForm.code, "Mã khuyến mãi");
     if (!codeValidation.isValid) {
       toast.error(codeValidation.error);
       return;
     }
 
-    // Validate discount value
     const discountValidation = validatePositiveNumber(
       promoForm.discountValue,
       "Giá trị giảm giá"
@@ -483,7 +515,6 @@ export function MenuPromotionPage() {
       return;
     }
 
-    // If percentage, check range 0-100
     if (promoForm.discountType === "percentage") {
       const rangeValidation = validateNumberRange(
         promoForm.discountValue,
@@ -497,7 +528,6 @@ export function MenuPromotionPage() {
       }
     }
 
-    // Update promotion
     setPromotions(
       promotions.map((promo) =>
         promo.id === editingPromo.id
@@ -579,7 +609,12 @@ export function MenuPromotionPage() {
     }
   }, [apiDishes]);
 
-  const filteredMenuItems = apiDishes.filter((item) => {
+  const filteredMenuItems = apiDishes
+    .map((item) => ({
+      ...item,
+      image_url: item.image_url ? buildImageUrl(item.image_url) : PLACEHOLDER_IMAGE,
+    }))
+    .filter((item) => {
     const matchesSearch = item.name
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
@@ -705,6 +740,9 @@ export function MenuPromotionPage() {
                 className="overflow-hidden cursor-pointer"
               >
                 <div className="relative">
+                  {loadingImages.has(item.image_url || PLACEHOLDER_IMAGE) && (
+                    <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-lg" />
+                  )}
                   <img
                     src={
                       item.image_url ||
@@ -712,9 +750,33 @@ export function MenuPromotionPage() {
                     }
                     alt={item.name}
                     className="w-full h-48 object-cover"
+                    onLoad={() => {
+                      console.log('[GRID] Image loaded successfully:', item.image_url);
+                      setImageLoading(item.image_url || PLACEHOLDER_IMAGE, false);
+                    }}
                     onError={(e) => {
                       const img = e.target as HTMLImageElement;
-                      img.src = PLACEHOLDER_IMAGE;
+                      const originalSrc = item.image_url;
+                      const retryCount = parseInt(img.dataset.retryCount || '0');
+                      console.log('[GRID] Image load error:', { originalSrc, retryCount, currentSrc: img.src });
+                      
+                      if (retryCount < 3 && originalSrc && originalSrc !== PLACEHOLDER_IMAGE) {
+                        img.dataset.retryCount = String(retryCount + 1);
+                        console.log(`[GRID] Retrying image load (attempt ${retryCount + 1}):`, originalSrc);
+                        setTimeout(() => {
+                          const newSrc = `${originalSrc}?t=${Date.now()}`;
+                          console.log('[GRID] Setting image src with cache buster:', newSrc);
+                          img.src = newSrc;
+                        }, 1000 * (retryCount + 1));
+                      } else {
+                        console.log('[GRID] Fallback to placeholder after retries');
+                        img.src = PLACEHOLDER_IMAGE;
+                        setImageLoading(item.image_url || PLACEHOLDER_IMAGE, false);
+                      }
+                    }}
+                    onLoadStart={() => {
+                      console.log('[GRID] Image loading started:', item.image_url);
+                      setImageLoading(item.image_url || PLACEHOLDER_IMAGE, true);
                     }}
                   />
                   {!item.is_available && (
@@ -959,10 +1021,41 @@ export function MenuPromotionPage() {
             <label className="block mb-2 text-sm font-medium">Ảnh món ăn</label>
             {menuForm.image ? (
               <div className="relative group">
+                {loadingImages.has(menuForm.image) && (
+                  <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-lg z-10" />
+                )}
                 <img
                   src={menuForm.image}
                   alt="Preview"
                   className="w-full h-48 object-cover rounded-lg"
+                  onLoad={() => {
+                    console.log('[ADD MODAL] Image loaded successfully:', menuForm.image);
+                    setImageLoading(menuForm.image, false);
+                  }}
+                  onError={(e) => {
+                    const img = e.target as HTMLImageElement;
+                    const originalSrc = menuForm.image;
+                    const retryCount = parseInt(img.dataset.retryCount || '0');
+                    console.log('[ADD MODAL] Image load error:', { originalSrc, retryCount, currentSrc: img.src });
+                    
+                    if (retryCount < 3 && originalSrc !== PLACEHOLDER_IMAGE) {
+                      img.dataset.retryCount = String(retryCount + 1);
+                      console.log(`[ADD MODAL] Retrying image load (attempt ${retryCount + 1}):`, originalSrc);
+                      setTimeout(() => {
+                        const newSrc = `${originalSrc}?t=${Date.now()}`;
+                        console.log('[ADD MODAL] Setting image src with cache buster:', newSrc);
+                        img.src = newSrc;
+                      }, 1000 * (retryCount + 1));
+                    } else {
+                      console.log('[ADD MODAL] Fallback to placeholder after retries');
+                      img.src = PLACEHOLDER_IMAGE;
+                      setImageLoading(menuForm.image, false);
+                    }
+                  }}
+                  onLoadStart={() => {
+                    console.log('[ADD MODAL] Image loading started:', menuForm.image);
+                    setImageLoading(menuForm.image, true);
+                  }}
                 />
                 <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
                   <Button
@@ -1171,11 +1264,16 @@ export function MenuPromotionPage() {
               variant="secondary"
               fullWidth
               onClick={() => setShowAddMenuModal(false)}
+              disabled={uploadingImage}
             >
               Hủy
             </Button>
-            <Button fullWidth onClick={handleAddMenuItem}>
-              Thêm món
+            <Button 
+              fullWidth 
+              onClick={handleAddMenuItem}
+              disabled={uploadingImage}
+            >
+              {uploadingImage ? "Đang tải ảnh..." : "Thêm món"}
             </Button>
           </div>
         </div>
@@ -1558,13 +1656,40 @@ export function MenuPromotionPage() {
             <label className="block mb-2 text-sm font-medium">Ảnh món ăn</label>
             {menuForm.image ? (
               <div className="relative group">
+                {loadingImages.has(menuForm.image) && (
+                  <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-lg z-10" />
+                )}
                 <img
                   src={menuForm.image}
                   alt="Preview"
                   className="w-full h-48 object-cover rounded-lg"
+                  onLoad={() => {
+                    console.log('[EDIT MODAL] Image loaded successfully:', menuForm.image);
+                    setImageLoading(menuForm.image, false);
+                  }}
                   onError={(e) => {
                     const img = e.target as HTMLImageElement;
-                    img.src = PLACEHOLDER_IMAGE;
+                    const originalSrc = menuForm.image;
+                    const retryCount = parseInt(img.dataset.retryCount || '0');
+                    console.log('[EDIT MODAL] Image load error:', { originalSrc, retryCount, currentSrc: img.src });
+                    
+                    if (retryCount < 3 && originalSrc !== PLACEHOLDER_IMAGE) {
+                      img.dataset.retryCount = String(retryCount + 1);
+                      console.log(`[EDIT MODAL] Retrying image load (attempt ${retryCount + 1}):`, originalSrc);
+                      setTimeout(() => {
+                        const newSrc = `${originalSrc}?t=${Date.now()}`;
+                        console.log('[EDIT MODAL] Setting image src with cache buster:', newSrc);
+                        img.src = newSrc;
+                      }, 1000 * (retryCount + 1));
+                    } else {
+                      console.log('[EDIT MODAL] Fallback to placeholder after retries');
+                      img.src = PLACEHOLDER_IMAGE;
+                      setImageLoading(menuForm.image, false);
+                    }
+                  }}
+                  onLoadStart={() => {
+                    console.log('[EDIT MODAL] Image loading started:', menuForm.image);
+                    setImageLoading(menuForm.image, true);
                   }}
                 />
                 <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
@@ -1773,11 +1898,16 @@ export function MenuPromotionPage() {
                 variant="secondary"
                 fullWidth
                 onClick={() => setShowEditMenuModal(false)}
+                disabled={uploadingImage}
               >
                 Hủy
               </Button>
-              <Button fullWidth onClick={handleEditMenuItem}>
-                Lưu thay đổi
+              <Button 
+                fullWidth 
+                onClick={handleEditMenuItem}
+                disabled={uploadingImage}
+              >
+                {uploadingImage ? "Đang tải ảnh..." : "Lưu thay đổi"}
               </Button>
             </div>
           </div>
