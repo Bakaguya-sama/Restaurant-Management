@@ -951,7 +951,7 @@ export function MenuPromotionPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left p-4">Mã KM</th>
+                    <th className="text-left p-4 hidden">Mã KM</th>
                     <th className="text-left p-4">Tên chương trình</th>
                     <th className="text-left p-4">Mã</th>
                     <th className="text-left p-4">Giảm giá</th>
@@ -964,7 +964,7 @@ export function MenuPromotionPage() {
                 <tbody>
                   {filteredPromotions.map((promo) => (
                     <tr key={(promo as any)._id || promo.id} className="border-b hover:bg-gray-50">
-                      <td className="p-4 text-gray-600">{promo.promo_code}</td>
+                      <td className="p-4 text-gray-600 hidden">{((promo as any)._id || promo.id).toString()}</td>
                       <td className="p-4">{promo.name}</td>
                       <td className="p-4">
                         <code className="bg-gray-100 px-2 py-1 rounded">
