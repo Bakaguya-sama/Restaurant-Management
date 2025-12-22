@@ -18,7 +18,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
 import { Switch } from "../../ui/switch";
 import {
   mockDishes,
-  mockPromotions,
 } from "../../../lib/mockData";
 import { Dish, Promotion } from "../../../types";
 import { toast } from "sonner";
@@ -31,7 +30,8 @@ import { ConfirmationModal } from "../../ui/ConfirmationModal";
 import { useDishes } from "../../../hooks/useDishes";
 import { useDishIngredients } from "../../../hooks/useDishIngredients";
 import { useIngredients } from "../../../hooks/useIngredients";
-import { uploadDishImage, validateImageUrl } from "../../../lib/uploadApi";
+import { usePromotions } from "../../../hooks/usePromotions";
+import { uploadDishImage, validateImageUrl, buildImageUrl } from "../../../lib/uploadApi";
 
 const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400";
 
@@ -57,7 +57,7 @@ export function MenuPromotionPage() {
 
   const { ingredients, loading: ingredientsLoading, error: ingredientsError, fetchIngredients, getIngredientById } = useIngredients();
 
-  const [promotions, setPromotions] = useState<Promotion[]>(mockPromotions);
+  const { promotions, loading: promotionsLoading, error: promotionsError, fetchPromotions, createPromotion, updatePromotion, deletePromotion, activatePromotion, deactivatePromotion } = usePromotions();
   const [showAddMenuModal, setShowAddMenuModal] = useState(false);
   const [showEditMenuModal, setShowEditMenuModal] = useState(false);
   const [showAddPromoModal, setShowAddPromoModal] = useState(false);
@@ -82,12 +82,13 @@ export function MenuPromotionPage() {
   });
   const [promoForm, setPromoForm] = useState({
     name: "",
-    code: "",
-    discountType: "percentage" as "percentage" | "fixed",
-    discountValue: 0,
-    promotionQuantity: 0,
-    startDate: "",
-    endDate: "",
+    promo_code: "",
+    promotion_type: "percentage" as "percentage" | "fixed_amount",
+    discount_value: 0,
+    minimum_order_amount: 0,
+    start_date: "",
+    end_date: "",
+    max_uses: 0,
   });
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -100,6 +101,19 @@ export function MenuPromotionPage() {
   >("info");
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());
+
+  const setImageLoading = (src: string, isLoading: boolean) => {
+    setLoadingImages(prev => {
+      const newSet = new Set(prev);
+      if (isLoading) {
+        newSet.add(src);
+      } else {
+        newSet.delete(src);
+      }
+      return newSet;
+    });
+  };
 
   const handleImageUpload = async (file: File): Promise<string | null> => {
     setUploadingImage(true);
@@ -138,7 +152,7 @@ export function MenuPromotionPage() {
     setIngredientRows(newRows);
   };
 
-  const handleAddMenuItem = () => {
+  const handleAddMenuItem = async () => {
     
     const nameValidation = validateRequired(menuForm.name, "Tên món ăn");
     if (!nameValidation.isValid) {
@@ -156,64 +170,73 @@ export function MenuPromotionPage() {
       return;
     }
 
+    let imageUrl = menuForm.image || PLACEHOLDER_IMAGE;
+    if (menuForm.image && menuForm.image !== PLACEHOLDER_IMAGE) {
+      try {
+        const isValid = await validateImageUrl(menuForm.image);
+        if (!isValid) {
+          console.warn("Uploaded image URL is not accessible, using placeholder");
+          imageUrl = PLACEHOLDER_IMAGE;
+        }
+      } catch (error) {
+        console.warn("Failed to validate image URL:", error);
+        imageUrl = PLACEHOLDER_IMAGE;
+      }
+    }
+
     const newItem = {
       name: menuForm.name,
       category: categoryMapping[menuForm.category] || menuForm.category,
       price: menuForm.price,
       description: menuForm.description,
       is_available: true,
-      image_url:
-        menuForm.image || PLACEHOLDER_IMAGE,
+      image_url: imageUrl,
     };
 
-    createDish(newItem)
-      .then(async (response: any) => {
-        
-        const dishId = response?.id || response?.data?.id;
-        
-        if (dishId && ingredientRows.length > 0) {
-          
-          const validIngredients = ingredientRows.filter(
-            (row) => row.ingredientId !== ""
-          );
+    try {
+      const response = await createDish(newItem);
+      const dishId = response?.id;
+      
+      if (dishId && ingredientRows.length > 0) {
+        const validIngredients = ingredientRows.filter(
+          (row) => row.ingredientId !== ""
+        );
 
-          if (validIngredients.length > 0) {
-            try {
-              for (const row of validIngredients) {
-                const ingredient = ingredients.find(
-                  (inv) => inv.id === row.ingredientId
-                );
-                if (ingredient) {
-                  await createDishIngredient({
-                    dishId: dishId,
-                    ingredientId: String(row.ingredientId),
-                    quantity_required: row.quantity.toString(),
-                    unit: ingredient.unit,
-                  });
-                }
+        if (validIngredients.length > 0) {
+          try {
+            for (const row of validIngredients) {
+              const ingredient = ingredients.find(
+                (inv) => inv.id === row.ingredientId
+              );
+              if (ingredient) {
+                await createDishIngredient({
+                  dishId: dishId,
+                  ingredientId: String(row.ingredientId),
+                  quantity_required: row.quantity.toString(),
+                  unit: ingredient.unit,
+                });
               }
-            } catch (err) {
-              console.warn("Lỗi khi thêm nguyên liệu:", err);
-              
             }
+          } catch (err) {
+            console.warn("Lỗi khi thêm nguyên liệu:", err);
           }
         }
+      }
 
-        toast.success("Thêm món ăn thành công!");
-        setShowAddMenuModal(false);
-        setMenuForm({
-          id: "",
-          name: "",
-          category: "Món chính",
-          price: 0,
-          description: "",
-          image: "",
-        });
-        setIngredientRows([{ ingredientId: "", quantity: 0 }]);
-      })
-      .catch((err) => {
-        toast.error(err instanceof Error ? err.message : "Lỗi khi thêm món ăn");
+      toast.success("Thêm món ăn thành công!");
+      setShowAddMenuModal(false);
+      setMenuForm({
+        id: "",
+        name: "",
+        category: "Món chính",
+        price: 0,
+        description: "",
+        image: "",
       });
+      setIngredientRows([{ ingredientId: "", quantity: 0 }]);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Lỗi khi thêm món ăn");
+    }
   };
 
   const handleToggleAvailability = (id: string) => {
@@ -225,7 +248,7 @@ export function MenuPromotionPage() {
       });
   };
 
-  const handleEditMenuItem = () => {
+  const handleEditMenuItem = async () => {
     if (!editingDish) return;
 
     
@@ -244,64 +267,77 @@ export function MenuPromotionPage() {
       return;
     }
 
-    
+    let imageUrl = menuForm.image || (editingDish.image_url ? buildImageUrl(editingDish.image_url) : PLACEHOLDER_IMAGE);
+    if (menuForm.image && menuForm.image !== (editingDish.image_url ? buildImageUrl(editingDish.image_url) : PLACEHOLDER_IMAGE) && menuForm.image !== PLACEHOLDER_IMAGE) {
+      try {
+        const fullUrl = buildImageUrl(menuForm.image);
+        const isValid = await validateImageUrl(fullUrl);
+        if (!isValid) {
+          console.warn("Uploaded image URL is not accessible, using existing image");
+          imageUrl = editingDish.image_url ? buildImageUrl(editingDish.image_url) : PLACEHOLDER_IMAGE;
+        }
+      } catch (error) {
+        console.warn("Failed to validate image URL:", error);
+        imageUrl = editingDish.image_url ? buildImageUrl(editingDish.image_url) : PLACEHOLDER_IMAGE;
+      }
+    }
+
     const updateData = {
       name: menuForm.name,
       category: categoryMapping[menuForm.category] || menuForm.category,
       price: menuForm.price,
       description: menuForm.description,
-      image_url: menuForm.image || editingDish.image_url || PLACEHOLDER_IMAGE,
+      image_url: imageUrl,
     };
 
-    updateDish(editingDish.id, updateData)
-      .then(async () => {
+    try {
+      await updateDish(editingDish.id, updateData);
         
-        if (ingredientRows.length > 0) {
-          const validIngredients = ingredientRows.filter(
-            (row) => row.ingredientId !== ""
-          );
+      if (ingredientRows.length > 0) {
+        const validIngredients = ingredientRows.filter(
+          (row) => row.ingredientId !== ""
+        );
 
-          try {
-            const ingredientData = validIngredients.map(row => {
-              const ingredient = ingredients.find(
-                (inv) => inv.id === row.ingredientId
-              );
-              return {
-                ingredientId: String(row.ingredientId),
-                quantity_required: row.quantity.toString(),
-                unit: ingredient?.unit || "pcs",
-              };
-            });
+        try {
+          const ingredientData = validIngredients.map(row => {
+            const ingredient = ingredients.find(
+              (inv) => inv.id === row.ingredientId
+            );
+            return {
+              ingredientId: String(row.ingredientId),
+              quantity_required: row.quantity.toString(),
+              unit: ingredient?.unit || "pcs",
+            };
+          });
 
-            await bulkReplaceDishIngredients(editingDish.id, ingredientData);
-          } catch (err) {
-            console.warn("Lỗi khi thay thế nguyên liệu:", err);
-          }
-        } else {
-          
-          try {
-            await deleteDishIngredientsByDish(editingDish.id);
-          } catch (err) {
-            console.warn("Lỗi khi xóa nguyên liệu:", err);
-          }
+          await bulkReplaceDishIngredients(editingDish.id, ingredientData);
+        } catch (err) {
+          console.warn("Lỗi khi thay thế nguyên liệu:", err);
         }
+      } else {
+        
+        try {
+          await deleteDishIngredientsByDish(editingDish.id);
+        } catch (err) {
+          console.warn("Lỗi khi xóa nguyên liệu:", err);
+        }
+      }
 
-        toast.success("Cập nhật món ăn thành công!");
-        setShowEditMenuModal(false);
-        setEditingDish(null);
-        setMenuForm({
-          id: "",
-          name: "",
-          category: "Món chính",
-          price: 0,
-          description: "",
-          image: "",
-        });
-        setIngredientRows([{ ingredientId: "", quantity: 0 }]);
-      })
-      .catch((err) => {
-        toast.error(err instanceof Error ? err.message : "Lỗi khi cập nhật món ăn");
+      toast.success("Cập nhật món ăn thành công!");
+      setShowEditMenuModal(false);
+      setEditingDish(null);
+      setMenuForm({
+        id: "",
+        name: "",
+        category: "Món chính",
+        price: 0,
+        description: "",
+        image: "",
       });
+      setIngredientRows([{ ingredientId: "", quantity: 0 }]);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Lỗi khi cập nhật món ăn");
+    }
   };
 
   const openEditModal = (dish: Dish) => {
@@ -370,23 +406,21 @@ export function MenuPromotionPage() {
     setShowConfirmModal(true);
   };
 
-  const handleAddPromotion = () => {
+  const handleAddPromotion = async () => {
     const nameValidation = validateRequired(promoForm.name, "Tên chương trình");
     if (!nameValidation.isValid) {
       toast.error(nameValidation.error);
       return;
     }
 
-    
-    const codeValidation = validateRequired(promoForm.code, "Mã khuyến mãi");
+    const codeValidation = validateRequired(promoForm.promo_code, "Mã khuyến mãi");
     if (!codeValidation.isValid) {
       toast.error(codeValidation.error);
       return;
     }
 
-    
     const discountValidation = validatePositiveNumber(
-      promoForm.discountValue,
+      promoForm.discount_value,
       "Giá trị giảm giá"
     );
     if (!discountValidation.isValid) {
@@ -394,10 +428,9 @@ export function MenuPromotionPage() {
       return;
     }
 
-    
-    if (promoForm.discountType === "percentage") {
+    if (promoForm.promotion_type === "percentage") {
       const rangeValidation = validateNumberRange(
-        promoForm.discountValue,
+        promoForm.discount_value,
         0.01,
         100,
         "Phần trăm giảm giá"
@@ -408,74 +441,85 @@ export function MenuPromotionPage() {
       }
     }
 
-    const newPromo: Promotion = {
-      id: `PROMO${String(promotions.length + 1).padStart(3, "0")}`,
-      name: promoForm.name,
-      code: promoForm.code,
-      discountType: promoForm.discountType,
-      discountValue: promoForm.discountValue,
-      promotionQuantity: promoForm.promotionQuantity || undefined,
-      startDate: promoForm.startDate,
-      endDate: promoForm.endDate,
-      active: true,
-    };
-
-    setPromotions([...promotions, newPromo]);
-    toast.success("Thêm khuyến mãi thành công!");
-    setShowAddPromoModal(false);
-    setPromoForm({
-      name: "",
-      code: "",
-      discountType: "percentage",
-      discountValue: 0,
-      promotionQuantity: 0,
-      startDate: "",
-      endDate: "",
-    });
+    try {
+      await createPromotion({
+        name: promoForm.name,
+        promo_code: promoForm.promo_code,
+        promotion_type: promoForm.promotion_type,
+        discount_value: promoForm.discount_value,
+        minimum_order_amount: promoForm.minimum_order_amount || 0,
+        start_date: promoForm.start_date,
+        end_date: promoForm.end_date,
+        max_uses: promoForm.max_uses || 0,
+      });
+      toast.success("Thêm khuyến mãi thành công!");
+      setShowAddPromoModal(false);
+      setPromoForm({
+        name: "",
+        promo_code: "",
+        promotion_type: "percentage",
+        discount_value: 0,
+        minimum_order_amount: 0,
+        start_date: "",
+        end_date: "",
+        max_uses: 0,
+      });
+    } catch (error) {
+      toast.error("Không thể thêm khuyến mãi");
+      console.error(error);
+    }
   };
 
-  const handleTogglePromotion = (id: string) => {
-    setPromotions(
-      promotions.map((promo) =>
-        promo.id === id ? { ...promo, active: !promo.active } : promo
-      )
-    );
+  const handleTogglePromotion = async (id: string) => {
+    try {
+      const promo = promotions.find(p => p.id === id || (p as any)._id === id);
+      if (!promo) return;
+
+      const promoId = (promo as any)._id || promo.id;
+      if (promo.is_active) {
+        await deactivatePromotion(promoId);
+      } else {
+        await activatePromotion(promoId);
+      }
+      toast.success("Cập nhật trạng thái khuyến mãi thành công!");
+    } catch (error) {
+      toast.error("Không thể cập nhật khuyến mãi");
+      console.error(error);
+    }
   };
 
   const openEditPromoModal = (promo: Promotion) => {
     setEditingPromo(promo);
     setPromoForm({
       name: promo.name,
-      code: promo.code,
-      discountType: promo.discountType,
-      discountValue: promo.discountValue,
-      promotionQuantity: promo.promotionQuantity || 0,
-      startDate: promo.startDate,
-      endDate: promo.endDate,
+      promo_code: promo.promo_code || "",
+      promotion_type: promo.promotion_type,
+      discount_value: promo.discount_value,
+      minimum_order_amount: promo.minimum_order_amount || 0,
+      start_date: formatDateToInput(promo.start_date),
+      end_date: formatDateToInput(promo.end_date),
+      max_uses: promo.max_uses || 0,
     });
     setShowEditPromoModal(true);
   };
 
-  const handleEditPromotion = () => {
+  const handleEditPromotion = async () => {
     if (!editingPromo) return;
 
-    // Validate name
     const nameValidation = validateRequired(promoForm.name, "Tên chương trình");
     if (!nameValidation.isValid) {
       toast.error(nameValidation.error);
       return;
     }
 
-    // Validate code
-    const codeValidation = validateRequired(promoForm.code, "Mã khuyến mãi");
+    const codeValidation = validateRequired(promoForm.promo_code, "Mã khuyến mãi");
     if (!codeValidation.isValid) {
       toast.error(codeValidation.error);
       return;
     }
 
-    // Validate discount value
     const discountValidation = validatePositiveNumber(
-      promoForm.discountValue,
+      promoForm.discount_value,
       "Giá trị giảm giá"
     );
     if (!discountValidation.isValid) {
@@ -483,10 +527,9 @@ export function MenuPromotionPage() {
       return;
     }
 
-    // If percentage, check range 0-100
-    if (promoForm.discountType === "percentage") {
+    if (promoForm.promotion_type === "percentage") {
       const rangeValidation = validateNumberRange(
-        promoForm.discountValue,
+        promoForm.discount_value,
         0.01,
         100,
         "Phần trăm giảm giá"
@@ -497,51 +540,91 @@ export function MenuPromotionPage() {
       }
     }
 
-    // Update promotion
-    setPromotions(
-      promotions.map((promo) =>
-        promo.id === editingPromo.id
-          ? {
-              ...promo,
-              name: promoForm.name,
-              code: promoForm.code,
-              discountType: promoForm.discountType,
-              discountValue: promoForm.discountValue,
-              promotionQuantity: promoForm.promotionQuantity || undefined,
-              startDate: promoForm.startDate,
-              endDate: promoForm.endDate,
-            }
-          : promo
-      )
-    );
-
-    toast.success("Cập nhật khuyến mãi thành công!");
-    setShowEditPromoModal(false);
-    setEditingPromo(null);
-    setPromoForm({
-      name: "",
-      code: "",
-      discountType: "percentage",
-      discountValue: 0,
-      promotionQuantity: 0,
-      startDate: "",
-      endDate: "",
-    });
+    try {
+      const promoId = (editingPromo as any)._id || editingPromo.id;
+      await updatePromotion(promoId, {
+        name: promoForm.name,
+        promo_code: promoForm.promo_code,
+        promotion_type: promoForm.promotion_type,
+        discount_value: promoForm.discount_value,
+        minimum_order_amount: promoForm.minimum_order_amount || 0,
+        start_date: promoForm.start_date,
+        end_date: promoForm.end_date,
+        max_uses: promoForm.max_uses || 0,
+      });
+      toast.success("Cập nhật khuyến mãi thành công!");
+      setShowEditPromoModal(false);
+      setEditingPromo(null);
+      setPromoForm({
+        name: "",
+        promo_code: "",
+        promotion_type: "percentage",
+        discount_value: 0,
+        minimum_order_amount: 0,
+        start_date: "",
+        end_date: "",
+        max_uses: 0,
+      });
+    } catch (error) {
+      toast.error("Không thể cập nhật khuyến mãi");
+      console.error(error);
+    }
   };
 
   const handleDeletePromotion = (id: string) => {
-    const promo = promotions.find((p) => p.id === id);
+    const promo = promotions.find((p) => p.id === id || (p as any)._id === id);
     setConfirmTitle(`Xóa khuyến mãi`);
     setConfirmMessage(`Bạn có chắc muốn xóa khuyến mãi "${promo?.name}"?`);
     setConfirmText("Xóa");
     setConfirmCancelText("Hủy");
     setConfirmVariant(`warning`);
-    setPendingAction(() => () => {
-      //TODO: Api xóa khuyến mãi
-      setPromotions(promotions.filter((promo) => promo.id !== id));
-      toast.success("Đã xóa khuyến mãi");
+    setPendingAction(() => async () => {
+      try {
+        const promoId = (promo as any)?._id || promo?.id;
+        if (promoId) {
+          await deletePromotion(promoId);
+          toast.success("Đã xóa khuyến mãi");
+        }
+      } catch (error) {
+        toast.error("Không thể xóa khuyến mãi");
+        console.error(error);
+      }
     });
     setShowConfirmModal(true);
+  };
+
+  const isPromoFormValid = () => {
+    return (
+      promoForm.name.trim() !== "" &&
+      promoForm.promo_code.trim() !== "" &&
+      promoForm.discount_value > 0 &&
+      promoForm.start_date !== "" &&
+      promoForm.end_date !== ""
+    );
+  };
+
+  const formatDateToInput = (dateString: string): string => {
+    if (!dateString) return "";
+    try {
+      // Try parsing as ISO format (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SSZ)
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        // If that fails, try DD/MM/YYYY format
+        const parts = dateString.split("/");
+        if (parts.length === 3) {
+          const [day, month, year] = parts;
+          return `${year}-${month}-${day}`;
+        }
+        return "";
+      }
+      // Format as YYYY-MM-DD for date input
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    } catch {
+      return "";
+    }
   };
 
   const categories = ["all", "Khai vị", "Món chính", "Đồ uống", "Tráng miệng"];
@@ -579,7 +662,12 @@ export function MenuPromotionPage() {
     }
   }, [apiDishes]);
 
-  const filteredMenuItems = apiDishes.filter((item) => {
+  const filteredMenuItems = apiDishes
+    .map((item) => ({
+      ...item,
+      image_url: item.image_url ? buildImageUrl(item.image_url) : PLACEHOLDER_IMAGE,
+    }))
+    .filter((item) => {
     const matchesSearch = item.name
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
@@ -595,12 +683,12 @@ export function MenuPromotionPage() {
 
   const filteredPromotions = promotions.filter((promo) => {
     const matchesSearch =
-      promo.id.toLowerCase().includes(promoSearchQuery.toLowerCase()) ||
+      ((promo as any)._id || promo.id).toString().toLowerCase().includes(promoSearchQuery.toLowerCase()) ||
       promo.name.toLowerCase().includes(promoSearchQuery.toLowerCase());
     const matchesStatus =
       selectedPromoStatus === "all" ||
-      (selectedPromoStatus === "active" && promo.active) ||
-      (selectedPromoStatus === "inactive" && !promo.active);
+      (selectedPromoStatus === "active" && promo.is_active) ||
+      (selectedPromoStatus === "inactive" && !promo.is_active);
     return matchesSearch && matchesStatus;
   });
 
@@ -705,6 +793,9 @@ export function MenuPromotionPage() {
                 className="overflow-hidden cursor-pointer"
               >
                 <div className="relative">
+                  {loadingImages.has(item.image_url || PLACEHOLDER_IMAGE) && (
+                    <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-lg" />
+                  )}
                   <img
                     src={
                       item.image_url ||
@@ -712,9 +803,33 @@ export function MenuPromotionPage() {
                     }
                     alt={item.name}
                     className="w-full h-48 object-cover"
+                    onLoad={() => {
+                      console.log('[GRID] Image loaded successfully:', item.image_url);
+                      setImageLoading(item.image_url || PLACEHOLDER_IMAGE, false);
+                    }}
                     onError={(e) => {
                       const img = e.target as HTMLImageElement;
-                      img.src = PLACEHOLDER_IMAGE;
+                      const originalSrc = item.image_url;
+                      const retryCount = parseInt(img.dataset.retryCount || '0');
+                      console.log('[GRID] Image load error:', { originalSrc, retryCount, currentSrc: img.src });
+                      
+                      if (retryCount < 3 && originalSrc && originalSrc !== PLACEHOLDER_IMAGE) {
+                        img.dataset.retryCount = String(retryCount + 1);
+                        console.log(`[GRID] Retrying image load (attempt ${retryCount + 1}):`, originalSrc);
+                        setTimeout(() => {
+                          const newSrc = `${originalSrc}?t=${Date.now()}`;
+                          console.log('[GRID] Setting image src with cache buster:', newSrc);
+                          img.src = newSrc;
+                        }, 1000 * (retryCount + 1));
+                      } else {
+                        console.log('[GRID] Fallback to placeholder after retries');
+                        img.src = PLACEHOLDER_IMAGE;
+                        setImageLoading(item.image_url || PLACEHOLDER_IMAGE, false);
+                      }
+                    }}
+                    onLoadStart={() => {
+                      console.log('[GRID] Image loading started:', item.image_url);
+                      setImageLoading(item.image_url || PLACEHOLDER_IMAGE, true);
                     }}
                   />
                   {!item.is_available && (
@@ -836,7 +951,7 @@ export function MenuPromotionPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left p-4">Mã KM</th>
+                    <th className="text-left p-4 hidden">Mã KM</th>
                     <th className="text-left p-4">Tên chương trình</th>
                     <th className="text-left p-4">Mã</th>
                     <th className="text-left p-4">Giảm giá</th>
@@ -848,43 +963,43 @@ export function MenuPromotionPage() {
                 </thead>
                 <tbody>
                   {filteredPromotions.map((promo) => (
-                    <tr key={promo.id} className="border-b hover:bg-gray-50">
-                      <td className="p-4 text-gray-600">{promo.id}</td>
+                    <tr key={(promo as any)._id || promo.id} className="border-b hover:bg-gray-50">
+                      <td className="p-4 text-gray-600 hidden">{((promo as any)._id || promo.id).toString()}</td>
                       <td className="p-4">{promo.name}</td>
                       <td className="p-4">
                         <code className="bg-gray-100 px-2 py-1 rounded">
-                          {promo.code}
+                          {promo.promo_code}
                         </code>
                       </td>
                       <td className="p-4">
-                        {promo.discountType === "percentage"
-                          ? `${promo.discountValue}%`
-                          : `${promo.discountValue.toLocaleString()}đ`}
+                        {promo.promotion_type === "percentage"
+                          ? `${promo.discount_value}%`
+                          : `${promo.discount_value.toLocaleString()}đ`}
                       </td>
                       <td className="p-4">
                         <span
                           className={
-                            promo.promotionQuantity !== undefined &&
-                            promo.promotionQuantity <= 0
+                            promo.current_uses !== undefined &&
+                            promo.current_uses >= (promo.max_uses || 0) && promo.max_uses > 0
                               ? "text-red-600"
                               : ""
                           }
                         >
-                          {promo.promotionQuantity !== undefined
-                            ? promo.promotionQuantity
+                          {promo.max_uses && promo.max_uses > 0
+                            ? `${promo.current_uses || 0}/${promo.max_uses}`
                             : "Không giới hạn"}
                         </span>
                       </td>
                       <td className="p-4 text-sm">
                         <div>
                           <p>
-                            {new Date(promo.startDate).toLocaleDateString(
+                            {new Date(promo.start_date).toLocaleDateString(
                               "vi-VN"
                             )}
                           </p>
                           <p className="text-gray-600">
                             đến{" "}
-                            {new Date(promo.endDate).toLocaleDateString(
+                            {new Date(promo.end_date).toLocaleDateString(
                               "vi-VN"
                             )}
                           </p>
@@ -893,12 +1008,12 @@ export function MenuPromotionPage() {
                       <td className="p-4">
                         <Badge
                           className={
-                            promo.active
+                            promo.is_active
                               ? "bg-green-100 text-green-700"
                               : "bg-gray-100 text-gray-700"
                           }
                         >
-                          {promo.active ? "Đang diễn ra" : "Tạm dừng"}
+                          {promo.is_active ? "Đang diễn ra" : "Tạm dừng"}
                         </Badge>
                       </td>
                       <td className="p-4">
@@ -914,7 +1029,7 @@ export function MenuPromotionPage() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => handleDeletePromotion(promo.id)}
+                            onClick={() => handleDeletePromotion(((promo as any)._id || promo.id).toString())}
                             className="text-red-600 hover:bg-red-50"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -959,10 +1074,41 @@ export function MenuPromotionPage() {
             <label className="block mb-2 text-sm font-medium">Ảnh món ăn</label>
             {menuForm.image ? (
               <div className="relative group">
+                {loadingImages.has(menuForm.image) && (
+                  <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-lg z-10" />
+                )}
                 <img
                   src={menuForm.image}
                   alt="Preview"
                   className="w-full h-48 object-cover rounded-lg"
+                  onLoad={() => {
+                    console.log('[ADD MODAL] Image loaded successfully:', menuForm.image);
+                    setImageLoading(menuForm.image, false);
+                  }}
+                  onError={(e) => {
+                    const img = e.target as HTMLImageElement;
+                    const originalSrc = menuForm.image;
+                    const retryCount = parseInt(img.dataset.retryCount || '0');
+                    console.log('[ADD MODAL] Image load error:', { originalSrc, retryCount, currentSrc: img.src });
+                    
+                    if (retryCount < 3 && originalSrc !== PLACEHOLDER_IMAGE) {
+                      img.dataset.retryCount = String(retryCount + 1);
+                      console.log(`[ADD MODAL] Retrying image load (attempt ${retryCount + 1}):`, originalSrc);
+                      setTimeout(() => {
+                        const newSrc = `${originalSrc}?t=${Date.now()}`;
+                        console.log('[ADD MODAL] Setting image src with cache buster:', newSrc);
+                        img.src = newSrc;
+                      }, 1000 * (retryCount + 1));
+                    } else {
+                      console.log('[ADD MODAL] Fallback to placeholder after retries');
+                      img.src = PLACEHOLDER_IMAGE;
+                      setImageLoading(menuForm.image, false);
+                    }
+                  }}
+                  onLoadStart={() => {
+                    console.log('[ADD MODAL] Image loading started:', menuForm.image);
+                    setImageLoading(menuForm.image, true);
+                  }}
                 />
                 <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
                   <Button
@@ -1171,11 +1317,16 @@ export function MenuPromotionPage() {
               variant="secondary"
               fullWidth
               onClick={() => setShowAddMenuModal(false)}
+              disabled={uploadingImage}
             >
               Hủy
             </Button>
-            <Button fullWidth onClick={handleAddMenuItem}>
-              Thêm món
+            <Button 
+              fullWidth 
+              onClick={handleAddMenuItem}
+              disabled={uploadingImage}
+            >
+              {uploadingImage ? "Đang tải ảnh..." : "Thêm món"}
             </Button>
           </div>
         </div>
@@ -1198,9 +1349,9 @@ export function MenuPromotionPage() {
           />
           <Input
             label="Mã khuyến mãi"
-            value={promoForm.code}
+            value={promoForm.promo_code}
             onChange={(e) =>
-              setPromoForm({ ...promoForm, code: e.target.value.toUpperCase() })
+              setPromoForm({ ...promoForm, promo_code: e.target.value.toUpperCase() })
             }
             placeholder="VD: WINTER2025"
           />
@@ -1208,68 +1359,82 @@ export function MenuPromotionPage() {
             <div>
               <label className="block mb-2">Loại giảm giá</label>
               <select
-                value={promoForm.discountType}
+                value={promoForm.promotion_type}
                 onChange={(e) =>
                   setPromoForm({
                     ...promoForm,
-                    discountType: e.target.value as "percentage" | "fixed",
+                    promotion_type: e.target.value as "percentage" | "fixed_amount",
                   })
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg"
               >
                 <option value="percentage">Phần trăm (%)</option>
-                <option value="fixed">Số tiền cố định (VNĐ)</option>
+                <option value="fixed_amount">Số tiền cố định (VNĐ)</option>
               </select>
             </div>
             <Input
               label={
-                promoForm.discountType === "percentage"
+                promoForm.promotion_type === "percentage"
                   ? "Giá trị (%)"
                   : "Giá trị (VNĐ)"
               }
               type="number"
-              value={promoForm.discountValue || ""}
+              value={promoForm.discount_value || ""}
               onChange={(e) =>
                 setPromoForm({
                   ...promoForm,
-                  discountValue: parseFloat(e.target.value) || 0,
+                  discount_value: parseFloat(e.target.value) || 0,
                 })
               }
               placeholder="Nhập giá trị"
               min="0"
-              max={promoForm.discountType === "percentage" ? "100" : undefined}
-              step={promoForm.discountType === "percentage" ? "0.1" : "1000"}
+              max={promoForm.promotion_type === "percentage" ? "100" : undefined}
+              step={promoForm.promotion_type === "percentage" ? "1" : "1000"}
             />
           </div>
           <Input
-            label="Số lượng lượt dùng"
+            label="Số lượng lượt dùng tối đa"
             type="number"
-            value={promoForm.promotionQuantity || ""}
+            value={promoForm.max_uses || ""}
             onChange={(e) =>
               setPromoForm({
                 ...promoForm,
-                promotionQuantity: parseInt(e.target.value) || 0,
+                max_uses: parseInt(e.target.value) || 0,
               })
             }
             placeholder="Nhập số lượng (để trống = không giới hạn)"
             min="0"
             step="1"
           />
+          <Input
+            label="Số tiền đơn hàng tối thiểu"
+            type="number"
+            value={promoForm.minimum_order_amount || ""}
+            onChange={(e) =>
+              setPromoForm({
+                ...promoForm,
+                minimum_order_amount: parseFloat(e.target.value) || 0,
+              })
+            }
+            placeholder="Nhập số tiền (để trống = không yêu cầu)"
+            min="0"
+            step="1000"
+          />
           <div className="grid grid-cols-2 gap-4">
             <Input
               label="Ngày bắt đầu"
               type="date"
-              value={promoForm.startDate}
+              value={promoForm.start_date}
               onChange={(e) =>
-                setPromoForm({ ...promoForm, startDate: e.target.value })
+                setPromoForm({ ...promoForm, start_date: e.target.value })
               }
             />
             <Input
               label="Ngày kết thúc"
               type="date"
-              value={promoForm.endDate}
+              value={promoForm.end_date}
               onChange={(e) =>
-                setPromoForm({ ...promoForm, endDate: e.target.value })
+                setPromoForm({ ...promoForm, end_date: e.target.value })
               }
             />
           </div>
@@ -1281,7 +1446,11 @@ export function MenuPromotionPage() {
             >
               Hủy
             </Button>
-            <Button fullWidth onClick={handleAddPromotion}>
+            <Button 
+              fullWidth 
+              onClick={handleAddPromotion}
+              disabled={!isPromoFormValid()}
+            >
               Thêm khuyến mãi
             </Button>
           </div>
@@ -1296,12 +1465,13 @@ export function MenuPromotionPage() {
           setEditingPromo(null);
           setPromoForm({
             name: "",
-            code: "",
-            discountType: "percentage",
-            discountValue: 0,
-            promotionQuantity: 0,
-            startDate: "",
-            endDate: "",
+            promo_code: "",
+            promotion_type: "percentage",
+            discount_value: 0,
+            minimum_order_amount: 0,
+            start_date: "",
+            end_date: "",
+            max_uses: 0,
           });
         }}
         title="Chỉnh sửa khuyến mãi"
@@ -1317,9 +1487,9 @@ export function MenuPromotionPage() {
           />
           <Input
             label="Mã khuyến mãi"
-            value={promoForm.code}
+            value={promoForm.promo_code}
             onChange={(e) =>
-              setPromoForm({ ...promoForm, code: e.target.value.toUpperCase() })
+              setPromoForm({ ...promoForm, promo_code: e.target.value.toUpperCase() })
             }
             placeholder="VD: WINTER2025"
           />
@@ -1327,68 +1497,82 @@ export function MenuPromotionPage() {
             <div>
               <label className="block mb-2">Loại giảm giá</label>
               <select
-                value={promoForm.discountType}
+                value={promoForm.promotion_type}
                 onChange={(e) =>
                   setPromoForm({
                     ...promoForm,
-                    discountType: e.target.value as "percentage" | "fixed",
+                    promotion_type: e.target.value as "percentage" | "fixed_amount",
                   })
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg"
               >
                 <option value="percentage">Phần trăm (%)</option>
-                <option value="fixed">Số tiền cố định (VNĐ)</option>
+                <option value="fixed_amount">Số tiền cố định (VNĐ)</option>
               </select>
             </div>
             <Input
               label={
-                promoForm.discountType === "percentage"
+                promoForm.promotion_type === "percentage"
                   ? "Giá trị (%)"
                   : "Giá trị (VNĐ)"
               }
               type="number"
-              value={promoForm.discountValue || ""}
+              value={promoForm.discount_value || ""}
               onChange={(e) =>
                 setPromoForm({
                   ...promoForm,
-                  discountValue: parseFloat(e.target.value) || 0,
+                  discount_value: parseFloat(e.target.value) || 0,
                 })
               }
               placeholder="Nhập giá trị"
               min="0"
-              max={promoForm.discountType === "percentage" ? "100" : undefined}
-              step={promoForm.discountType === "percentage" ? "0.1" : "1000"}
+              max={promoForm.promotion_type === "percentage" ? "100" : undefined}
+              step={promoForm.promotion_type === "percentage" ? "1" : "1000"}
             />
           </div>
           <Input
-            label="Số lượng lượt dùng"
+            label="Số lượng lượt dùng tối đa"
             type="number"
-            value={promoForm.promotionQuantity || ""}
+            value={promoForm.max_uses || ""}
             onChange={(e) =>
               setPromoForm({
                 ...promoForm,
-                promotionQuantity: parseInt(e.target.value) || 0,
+                max_uses: parseInt(e.target.value) || 0,
               })
             }
             placeholder="Nhập số lượng (để trống = không giới hạn)"
             min="0"
             step="1"
           />
+          <Input
+            label="Số tiền đơn hàng tối thiểu"
+            type="number"
+            value={promoForm.minimum_order_amount || ""}
+            onChange={(e) =>
+              setPromoForm({
+                ...promoForm,
+                minimum_order_amount: parseFloat(e.target.value) || 0,
+              })
+            }
+            placeholder="Nhập số tiền (để trống = không yêu cầu)"
+            min="0"
+            step="1000"
+          />
           <div className="grid grid-cols-2 gap-4">
             <Input
               label="Ngày bắt đầu"
               type="date"
-              value={promoForm.startDate}
+              value={promoForm.start_date}
               onChange={(e) =>
-                setPromoForm({ ...promoForm, startDate: e.target.value })
+                setPromoForm({ ...promoForm, start_date: e.target.value })
               }
             />
             <Input
               label="Ngày kết thúc"
               type="date"
-              value={promoForm.endDate}
+              value={promoForm.end_date}
               onChange={(e) =>
-                setPromoForm({ ...promoForm, endDate: e.target.value })
+                setPromoForm({ ...promoForm, end_date: e.target.value })
               }
             />
           </div>
@@ -1401,17 +1585,17 @@ export function MenuPromotionPage() {
                   Trạng thái khuyến mãi
                 </label>
                 <p className="text-sm text-gray-600">
-                  {editingPromo.active ? "Đang hoạt động" : "Tạm dừng"}
+                  {editingPromo.is_active ? "Đang hoạt động" : "Tạm dừng"}
                 </p>
               </div>
               <Switch
-                checked={editingPromo.active}
+                checked={editingPromo.is_active}
                 onCheckedChange={() => {
                   setEditingPromo({
                     ...editingPromo,
-                    active: !editingPromo.active,
+                    is_active: !editingPromo.is_active,
                   });
-                  handleTogglePromotion(editingPromo.id);
+                  handleTogglePromotion(((editingPromo as any)._id || editingPromo.id).toString());
                 }}
               />
             </div>
@@ -1428,7 +1612,11 @@ export function MenuPromotionPage() {
             >
               Hủy
             </Button>
-            <Button fullWidth onClick={handleEditPromotion}>
+            <Button 
+              fullWidth 
+              onClick={handleEditPromotion}
+              disabled={!isPromoFormValid()}
+            >
               Lưu thay đổi
             </Button>
           </div>
@@ -1558,13 +1746,40 @@ export function MenuPromotionPage() {
             <label className="block mb-2 text-sm font-medium">Ảnh món ăn</label>
             {menuForm.image ? (
               <div className="relative group">
+                {loadingImages.has(menuForm.image) && (
+                  <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-lg z-10" />
+                )}
                 <img
                   src={menuForm.image}
                   alt="Preview"
                   className="w-full h-48 object-cover rounded-lg"
+                  onLoad={() => {
+                    console.log('[EDIT MODAL] Image loaded successfully:', menuForm.image);
+                    setImageLoading(menuForm.image, false);
+                  }}
                   onError={(e) => {
                     const img = e.target as HTMLImageElement;
-                    img.src = PLACEHOLDER_IMAGE;
+                    const originalSrc = menuForm.image;
+                    const retryCount = parseInt(img.dataset.retryCount || '0');
+                    console.log('[EDIT MODAL] Image load error:', { originalSrc, retryCount, currentSrc: img.src });
+                    
+                    if (retryCount < 3 && originalSrc !== PLACEHOLDER_IMAGE) {
+                      img.dataset.retryCount = String(retryCount + 1);
+                      console.log(`[EDIT MODAL] Retrying image load (attempt ${retryCount + 1}):`, originalSrc);
+                      setTimeout(() => {
+                        const newSrc = `${originalSrc}?t=${Date.now()}`;
+                        console.log('[EDIT MODAL] Setting image src with cache buster:', newSrc);
+                        img.src = newSrc;
+                      }, 1000 * (retryCount + 1));
+                    } else {
+                      console.log('[EDIT MODAL] Fallback to placeholder after retries');
+                      img.src = PLACEHOLDER_IMAGE;
+                      setImageLoading(menuForm.image, false);
+                    }
+                  }}
+                  onLoadStart={() => {
+                    console.log('[EDIT MODAL] Image loading started:', menuForm.image);
+                    setImageLoading(menuForm.image, true);
                   }}
                 />
                 <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
@@ -1773,11 +1988,16 @@ export function MenuPromotionPage() {
                 variant="secondary"
                 fullWidth
                 onClick={() => setShowEditMenuModal(false)}
+                disabled={uploadingImage}
               >
                 Hủy
               </Button>
-              <Button fullWidth onClick={handleEditMenuItem}>
-                Lưu thay đổi
+              <Button 
+                fullWidth 
+                onClick={handleEditMenuItem}
+                disabled={uploadingImage}
+              >
+                {uploadingImage ? "Đang tải ảnh..." : "Lưu thay đổi"}
               </Button>
             </div>
           </div>
