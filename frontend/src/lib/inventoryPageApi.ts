@@ -43,8 +43,7 @@ export interface ExportItemsParams {
 // ==================== API CONFIGURATION ====================
 
 const API_BASE =
-  (import.meta as any).env?.VITE_API_BASE_URL ||
-  "http://localhost:5000/api/v1";
+  (import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:5000/api/v1";
 
 // ==================== UTILITY FUNCTIONS ====================
 
@@ -157,7 +156,12 @@ export async function exportInventoryItems(
  */
 export async function updateInventoryItem(
   id: string,
-  updates: { name?: string; unit?: string; expiryDate?: string; supplierId?: string }
+  updates: {
+    name?: string;
+    unit?: string;
+    expiryDate?: string;
+    supplierId?: string;
+  }
 ): Promise<void> {
   const response = await fetch(`${API_BASE}/inventory/${id}`, {
     method: "PUT",
@@ -239,4 +243,29 @@ export async function deleteSupplier(id: string): Promise<void> {
     const error = await response.json();
     throw new Error(error?.message || "Failed to delete supplier");
   }
+}
+
+/**
+ * Fetch export/dispose records (stock exports)
+ */
+export async function fetchExports(params?: {
+  start_date?: string;
+  end_date?: string;
+  search?: string;
+}) {
+  const query = new URLSearchParams();
+  if (params?.start_date) query.append("start_date", params.start_date);
+  if (params?.end_date) query.append("end_date", params.end_date);
+  if (params?.search) query.append("search", params.search);
+
+  const response = await fetch(
+    `${API_BASE}/inventory/exports?${query.toString()}`
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch exports: ${response.status}`);
+  }
+
+  const json = await response.json();
+  return json.data || [];
 }

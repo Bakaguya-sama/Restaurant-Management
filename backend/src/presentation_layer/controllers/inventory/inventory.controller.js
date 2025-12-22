@@ -1,24 +1,31 @@
-const inventoryService = require('../../../application_layer/inventory/inventory.service');
+const inventoryService = require("../../../application_layer/inventory/inventory.service");
 
 function formatSuccess(res, data, message) {
   return res.json({ success: true, data, message });
 }
 
-function formatError(res, status = 400, message = 'Bad Request') {
+function formatError(res, status = 400, message = "Bad Request") {
   return res.status(status).json({ success: false, data: null, message });
 }
 
 exports.listInventory = async (req, res) => {
   try {
     const { lowStock, expiring } = req.query;
-    const low = lowStock === 'true' || lowStock === true;
-    const exp = expiring === 'true' || expiring === true;
+    const low = lowStock === "true" || lowStock === true;
+    const exp = expiring === "true" || expiring === true;
 
-    const result = await inventoryService.listInventory({ lowStock: low, expiring: exp });
-    return formatSuccess(res, result, 'Inventory batches retrieved');
+    const result = await inventoryService.listInventory({
+      lowStock: low,
+      expiring: exp,
+    });
+    return formatSuccess(res, result, "Inventory batches retrieved");
   } catch (err) {
-    console.error('listInventory error', err);
-    return res.status(err.status || 500).json({ success: false, data: null, message: err.message || 'Internal Server Error' });
+    console.error("listInventory error", err);
+    return res.status(err.status || 500).json({
+      success: false,
+      data: null,
+      message: err.message || "Internal Server Error",
+    });
   }
 };
 
@@ -26,30 +33,70 @@ exports.importItems = async (req, res) => {
   try {
     const { items } = req.body;
     const result = await inventoryService.importItems(items);
-    return res.status(201).json({ success: true, data: result, message: 'Import recorded' });
+    return res
+      .status(201)
+      .json({ success: true, data: result, message: "Import recorded" });
   } catch (err) {
-    console.error('importItems error', err);
-    return res.status(err.status || 500).json({ success: false, data: null, message: err.message || 'Internal Server Error' });
+    console.error("importItems error", err);
+    return res.status(err.status || 500).json({
+      success: false,
+      data: null,
+      message: err.message || "Internal Server Error",
+    });
   }
 };
 
 exports.exportItems = async (req, res) => {
   try {
     const { items } = req.body;
-    const result = await inventoryService.exportItems(items);
-    return res.status(201).json({ success: true, data: result, message: 'Export recorded' });
+    const staffId = req.user ? req.user.id || req.user._id : null;
+    const result = await inventoryService.exportItems(items, staffId);
+    return res
+      .status(201)
+      .json({ success: true, data: result, message: "Export recorded" });
   } catch (err) {
-    console.error('exportItems error', err);
-    return res.status(err.status || 500).json({ success: false, data: null, message: err.message || 'Internal Server Error' });
+    console.error("exportItems error", err);
+    return res.status(err.status || 500).json({
+      success: false,
+      data: null,
+      message: err.message || "Internal Server Error",
+    });
+  }
+};
+
+exports.listExports = async (req, res) => {
+  try {
+    const { start_date, end_date, search } = req.query;
+    const filters = { start_date, end_date, search };
+    const result = await inventoryService.listExports(filters);
+    return res.status(200).json({
+      success: true,
+      data: result,
+      message: "Stock exports retrieved",
+    });
+  } catch (err) {
+    console.error("listExports error", err);
+    return res.status(err.status || 500).json({
+      success: false,
+      data: null,
+      message: err.message || "Internal Server Error",
+    });
   }
 };
 
 exports.updateIngredient = async (req, res) => {
   try {
-    const result = await inventoryService.updateIngredient(req.params.id, req.body);
-    return formatSuccess(res, result, 'Ingredient updated');
+    const result = await inventoryService.updateIngredient(
+      req.params.id,
+      req.body
+    );
+    return formatSuccess(res, result, "Ingredient updated");
   } catch (err) {
-    console.error('updateIngredient error', err);
-    return res.status(err.status || 500).json({ success: false, data: null, message: err.message || 'Internal Server Error' });
+    console.error("updateIngredient error", err);
+    return res.status(err.status || 500).json({
+      success: false,
+      data: null,
+      message: err.message || "Internal Server Error",
+    });
   }
 };

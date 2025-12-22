@@ -31,7 +31,9 @@ import {
   createSupplier,
   updateSupplier,
   deleteSupplier,
+  fetchExports as fetchExportsApi,
 } from "../../../lib/inventoryPageApi";
+import { useEffect } from "react";
 
 export function InventoryPage() {
   // Fetch data from API
@@ -56,6 +58,39 @@ export function InventoryPage() {
   const [showEditSupplierModal, setShowEditSupplierModal] = useState(false);
   const [showDeleteSupplierModal, setShowDeleteSupplierModal] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [exportsList, setExportsList] = useState<any[]>([]);
+  const [exportsLoading, setExportsLoading] = useState(false);
+  const [exportsSearch, setExportsSearch] = useState("");
+  const [exportsStartDate, setExportsStartDate] = useState("");
+  const [exportsEndDate, setExportsEndDate] = useState("");
+  const [selectedExport, setSelectedExport] = useState<any | null>(null);
+  const [showExportDetailModal, setShowExportDetailModal] = useState(false);
+
+  const fetchExports = async () => {
+    try {
+      setExportsLoading(true);
+      const data = await fetchExportsFromApi();
+      setExportsList(data);
+    } catch (err: any) {
+      toast.error(err.message || "Không thể tải lịch sử xuất kho");
+    } finally {
+      setExportsLoading(false);
+    }
+  };
+
+  // wrapper to call API with filters
+  const fetchExportsFromApi = async () => {
+    const params: any = {};
+    if (exportsStartDate) params.start_date = exportsStartDate;
+    if (exportsEndDate) params.end_date = exportsEndDate;
+    if (exportsSearch) params.search = exportsSearch;
+    return await fetchExportsApi(params);
+  };
+
+  useEffect(() => {
+    // initial load of exports
+    fetchExports().catch(() => {});
+  }, []);
   const [importItems, setImportItems] = useState<
     Array<{
       type: "new" | "existing";
@@ -259,6 +294,10 @@ export function InventoryPage() {
         `Đã xuất hủy ${disposeData.quantity} ${item.unit} ${item.name} (${reasonText})`
       );
       await refreshInventory();
+      // refresh export history UI
+      try {
+        await fetchExports();
+      } catch {}
       setShowDisposeModal(false);
       setDisposeData({ itemId: "", quantity: 0, reason: "expired" });
     } catch (error: any) {
@@ -407,6 +446,9 @@ export function InventoryPage() {
           </TabsTrigger>
           <TabsTrigger value="suppliers" className="px-6 py-2 text-base">
             Nhà cung cấp
+          </TabsTrigger>
+          <TabsTrigger value="exports" className="px-6 py-2 text-base">
+            Lịch sử xuất kho
           </TabsTrigger>
         </TabsList>
 
@@ -631,6 +673,97 @@ export function InventoryPage() {
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </TabsContent>
+
+        {/* Exports Tab */}
+        <TabsContent value="exports" className="space-y-6">
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <Input
+                placeholder="Tìm kiếm phiếu xuất..."
+                icon={<Search className="w-4 h-4" />}
+                value={exportsSearch}
+                onChange={(e) => setExportsSearch(e.target.value)}
+                className="h-10"
+              />
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="date"
+                value={exportsStartDate}
+                onChange={(e) => setExportsStartDate(e.target.value)}
+                className="px-3 py-2 border rounded-lg"
+              />
+              <input
+                type="date"
+                value={exportsEndDate}
+                onChange={(e) => setExportsEndDate(e.target.value)}
+                className="px-3 py-2 border rounded-lg"
+              />
+              <Button
+                variant="secondary"
+                onClick={async () => {
+                  await fetchExports();
+                }}
+              >
+                Lọc
+              </Button>
+            </div>
+          </div>
+
+          <Card>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-4">Mã phiếu</th>
+                    <th className="text-left p-4">Nhân viên</th>
+                    <th className="text-left p-4">Ngày</th>
+                    <th className="text-left p-4">Tổng giá trị</th>
+                    <th className="text-left p-4">Lý do</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {exportsList.map((exp) => (
+                    <tr
+                      key={exp.id || exp._id}
+                      className="border-b hover:bg-gray-50 cursor-pointer"
+                      onClick={() => {
+                        setSelectedExport(exp);
+                        setShowExportDetailModal(true);
+                      }}
+                    >
+                      <td className="p-4">
+                        {exp.exportNumber || exp.id || exp._id}
+                      </td>
+                      <td className="p-4">
+                        {exp.staffName || exp.staff?.full_name || "-"}
+                      </td>
+                      <td className="p-4 text-gray-600">
+                        {exp.date
+                          ? new Date(exp.date).toLocaleDateString("vi-VN")
+                          : new Date(
+                              exp.created_at ||
+                                exp.export_date ||
+                                exp.exported_at
+                            ).toLocaleDateString("vi-VN")}
+                      </td>
+                      <td className="p-4">
+                        {exp.totalValue
+                          ? exp.totalValue.toLocaleString()
+                          : exp.total_amount
+                          ? exp.total_amount.toLocaleString()
+                          : "-"}
+                      </td>
+                      <td className="p-4 text-gray-600">
+                        {exp.reason || exp.export_reason || "-"}
                       </td>
                     </tr>
                   ))}
@@ -1137,6 +1270,114 @@ export function InventoryPage() {
       </Modal>
 
       {/* Delete Supplier Confirmation Modal */}
+      {/* Export Detail Modal */}
+      <Modal
+        isOpen={showExportDetailModal}
+        onClose={() => {
+          setShowExportDetailModal(false);
+          setSelectedExport(null);
+        }}
+        title="Chi tiết phiếu xuất"
+        size="lg"
+      >
+        {selectedExport ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Nhân viên xuất kho</p>
+                <p>
+                  {selectedExport.staffName ||
+                    selectedExport.staff?.full_name ||
+                    "-"}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Ngày xuất</p>
+                <p>
+                  {selectedExport.date ||
+                  selectedExport.created_at ||
+                  selectedExport.export_date
+                    ? new Date(
+                        selectedExport.date ||
+                          selectedExport.created_at ||
+                          selectedExport.export_date
+                      ).toLocaleDateString("vi-VN")
+                    : "-"}
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="mb-2">Hàng xuất</h4>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-2">Tên</th>
+                      <th className="text-left p-2">Số lượng</th>
+                      <th className="text-left p-2">Đơn giá</th>
+                      <th className="text-left p-2">Thành tiền</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(selectedExport.items || selectedExport.details || []).map(
+                      (d: any, idx: number) => (
+                        <tr key={d.id || d._id || idx} className="border-b">
+                          <td className="p-2">
+                            {d.name ||
+                              d.ingredientName ||
+                              d.ingredient?.name ||
+                              "-"}
+                          </td>
+                          <td className="p-2">{d.quantity}</td>
+                          <td className="p-2">
+                            {d.unit_price
+                              ? d.unit_price.toLocaleString()
+                              : d.unitPrice
+                              ? d.unitPrice.toLocaleString()
+                              : "-"}
+                          </td>
+                          <td className="p-2">
+                            {d.line_total ||
+                            (d.quantity && (d.unit_price || d.unitPrice))
+                              ? (
+                                  d.line_total ||
+                                  d.quantity * (d.unit_price || d.unitPrice)
+                                ).toLocaleString()
+                              : "-"}
+                          </td>
+                        </tr>
+                      )
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="flex justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Lý do</p>
+                <p>
+                  {selectedExport.reason || selectedExport.export_reason || "-"}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Tổng giá trị</p>
+                <p className="text-xl text-[#625EE8]">
+                  {selectedExport.totalValue
+                    ? selectedExport.totalValue.toLocaleString()
+                    : selectedExport.total_amount
+                    ? selectedExport.total_amount.toLocaleString()
+                    : "-"}{" "}
+                  đ
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-gray-500">Chưa chọn phiếu xuất</p>
+        )}
+      </Modal>
       <ConfirmationModal
         isOpen={showDeleteSupplierModal}
         onClose={() => {
