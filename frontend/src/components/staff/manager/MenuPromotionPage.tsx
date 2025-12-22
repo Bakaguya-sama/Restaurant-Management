@@ -16,10 +16,7 @@ import { Input, Textarea } from "../../ui/Input";
 import { Badge } from "../../ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
 import { Switch } from "../../ui/switch";
-import {
-  mockDishes,
-  mockPromotions,
-} from "../../../lib/mockData";
+import { mockDishes, mockPromotions } from "../../../lib/mockData";
 import { Dish, Promotion } from "../../../types";
 import { toast } from "sonner";
 import {
@@ -33,7 +30,8 @@ import { useDishIngredients } from "../../../hooks/useDishIngredients";
 import { useIngredients } from "../../../hooks/useIngredients";
 import { uploadDishImage, validateImageUrl } from "../../../lib/uploadApi";
 
-const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400";
+const PLACEHOLDER_IMAGE =
+  "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400";
 
 export function MenuPromotionPage() {
   const {
@@ -55,7 +53,13 @@ export function MenuPromotionPage() {
     bulkReplaceDishIngredients,
   } = useDishIngredients();
 
-  const { ingredients, loading: ingredientsLoading, error: ingredientsError, fetchIngredients, getIngredientById } = useIngredients();
+  const {
+    ingredients,
+    loading: ingredientsLoading,
+    error: ingredientsError,
+    fetchIngredients,
+    getIngredientById,
+  } = useIngredients();
 
   const [promotions, setPromotions] = useState<Promotion[]>(mockPromotions);
   const [showAddMenuModal, setShowAddMenuModal] = useState(false);
@@ -106,18 +110,24 @@ export function MenuPromotionPage() {
     try {
       const dishId = menuForm.id || editingDish?.id;
       const imageUrl = await uploadDishImage(file, dishId);
-      
+
       const isValid = await validateImageUrl(imageUrl);
       if (!isValid) {
-        toast.error("Tải ảnh lên thành công nhưng không thể truy cập được, sẽ dùng ảnh mặc định");
+        toast.error(
+          "Tải ảnh lên thành công nhưng không thể truy cập được, sẽ dùng ảnh mặc định"
+        );
         return PLACEHOLDER_IMAGE;
       }
-      
+
       toast.success("Tải ảnh lên thành công!");
       return imageUrl;
     } catch (error) {
       console.error("Image upload error:", error);
-      toast.error(`Lỗi tải ảnh: ${error instanceof Error ? error.message : "Lỗi không xác định"}`);
+      toast.error(
+        `Lỗi tải ảnh: ${
+          error instanceof Error ? error.message : "Lỗi không xác định"
+        }`
+      );
       return null;
     } finally {
       setUploadingImage(false);
@@ -139,14 +149,12 @@ export function MenuPromotionPage() {
   };
 
   const handleAddMenuItem = () => {
-    
     const nameValidation = validateRequired(menuForm.name, "Tên món ăn");
     if (!nameValidation.isValid) {
       toast.error(nameValidation.error);
       return;
     }
 
-    
     const priceValidation = validatePositiveNumber(
       menuForm.price,
       "Giá món ăn"
@@ -162,17 +170,14 @@ export function MenuPromotionPage() {
       price: menuForm.price,
       description: menuForm.description,
       is_available: true,
-      image_url:
-        menuForm.image || PLACEHOLDER_IMAGE,
+      image_url: menuForm.image || PLACEHOLDER_IMAGE,
     };
 
     createDish(newItem)
       .then(async (response: any) => {
-        
         const dishId = response?.id || response?.data?.id;
-        
+
         if (dishId && ingredientRows.length > 0) {
-          
           const validIngredients = ingredientRows.filter(
             (row) => row.ingredientId !== ""
           );
@@ -194,7 +199,6 @@ export function MenuPromotionPage() {
               }
             } catch (err) {
               console.warn("Lỗi khi thêm nguyên liệu:", err);
-              
             }
           }
         }
@@ -219,16 +223,16 @@ export function MenuPromotionPage() {
   const handleToggleAvailability = (id: string) => {
     const dish = apiDishes.find((d) => d.id === id);
     if (!dish) return;
-    toggleDishAvailability(id, !dish.is_available)
-      .catch((err) => {
-        toast.error(err instanceof Error ? err.message : "Lỗi khi cập nhật trạng thái");
-      });
+    toggleDishAvailability(id, !dish.is_available).catch((err) => {
+      toast.error(
+        err instanceof Error ? err.message : "Lỗi khi cập nhật trạng thái"
+      );
+    });
   };
 
   const handleEditMenuItem = () => {
     if (!editingDish) return;
 
-    
     const nameValidation = validateRequired(menuForm.name, "Tên món ăn");
     if (!nameValidation.isValid) {
       toast.error(nameValidation.error);
@@ -244,7 +248,6 @@ export function MenuPromotionPage() {
       return;
     }
 
-    
     const updateData = {
       name: menuForm.name,
       category: categoryMapping[menuForm.category] || menuForm.category,
@@ -255,14 +258,13 @@ export function MenuPromotionPage() {
 
     updateDish(editingDish.id, updateData)
       .then(async () => {
-        
         if (ingredientRows.length > 0) {
           const validIngredients = ingredientRows.filter(
             (row) => row.ingredientId !== ""
           );
 
           try {
-            const ingredientData = validIngredients.map(row => {
+            const ingredientData = validIngredients.map((row) => {
               const ingredient = ingredients.find(
                 (inv) => inv.id === row.ingredientId
               );
@@ -278,7 +280,6 @@ export function MenuPromotionPage() {
             console.warn("Lỗi khi thay thế nguyên liệu:", err);
           }
         } else {
-          
           try {
             await deleteDishIngredientsByDish(editingDish.id);
           } catch (err) {
@@ -300,14 +301,16 @@ export function MenuPromotionPage() {
         setIngredientRows([{ ingredientId: "", quantity: 0 }]);
       })
       .catch((err) => {
-        toast.error(err instanceof Error ? err.message : "Lỗi khi cập nhật món ăn");
+        toast.error(
+          err instanceof Error ? err.message : "Lỗi khi cập nhật món ăn"
+        );
       });
   };
 
   const openEditModal = (dish: Dish) => {
     setEditingDish(dish);
     setMenuForm({
-      id: dish.id  || "",
+      id: dish.id || "",
       name: dish.name,
       category: reverseCategoryMapping[dish.category] || dish.category,
       price: dish.price,
@@ -315,7 +318,6 @@ export function MenuPromotionPage() {
       image: dish.image_url || "",
     });
 
-    
     const loadDishIngredients = async () => {
       try {
         await fetchIngredientsByDish(dish.id);
@@ -336,7 +338,6 @@ export function MenuPromotionPage() {
       }
     };
 
-    
     const loadIngredientsData = async () => {
       return fetchIngredients();
     };
@@ -377,14 +378,12 @@ export function MenuPromotionPage() {
       return;
     }
 
-    
     const codeValidation = validateRequired(promoForm.code, "Mã khuyến mãi");
     if (!codeValidation.isValid) {
       toast.error(codeValidation.error);
       return;
     }
 
-    
     const discountValidation = validatePositiveNumber(
       promoForm.discountValue,
       "Giá trị giảm giá"
@@ -394,7 +393,6 @@ export function MenuPromotionPage() {
       return;
     }
 
-    
     if (promoForm.discountType === "percentage") {
       const rangeValidation = validateNumberRange(
         promoForm.discountValue,
@@ -545,20 +543,19 @@ export function MenuPromotionPage() {
   };
 
   const categories = ["all", "Khai vị", "Món chính", "Đồ uống", "Tráng miệng"];
-  
-  
+
   const categoryMapping: Record<string, string> = {
     "Khai vị": "appetizer",
     "Món chính": "main_course",
     "Đồ uống": "beverage",
-    "Tráng miệng": "dessert"
+    "Tráng miệng": "dessert",
   };
 
   const reverseCategoryMapping: Record<string, string> = {
-    "appetizer": "Khai vị",
-    "main_course": "Món chính",
-    "beverage": "Đồ uống",
-    "dessert": "Tráng miệng"
+    appetizer: "Khai vị",
+    main_course: "Món chính",
+    beverage: "Đồ uống",
+    dessert: "Tráng miệng",
   };
 
   useEffect(() => {
@@ -572,7 +569,10 @@ export function MenuPromotionPage() {
       Promise.all(
         apiDishes.map((dish) =>
           fetchIngredientsByDish(dish.id).catch((err) => {
-            console.warn(`Failed to fetch ingredients for dish ${dish.id}:`, err);
+            console.warn(
+              `Failed to fetch ingredients for dish ${dish.id}:`,
+              err
+            );
           })
         )
       );
@@ -583,13 +583,15 @@ export function MenuPromotionPage() {
     const matchesSearch = item.name
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
-    
-    const selectedCategoryInEnglish = selectedCategory === "all" 
-      ? "all" 
-      : categoryMapping[selectedCategory] || selectedCategory;
-    
+
+    const selectedCategoryInEnglish =
+      selectedCategory === "all"
+        ? "all"
+        : categoryMapping[selectedCategory] || selectedCategory;
+
     const matchesCategory =
-      selectedCategoryInEnglish === "all" || item.category === selectedCategoryInEnglish;
+      selectedCategoryInEnglish === "all" ||
+      item.category === selectedCategoryInEnglish;
     return matchesSearch && matchesCategory;
   });
 
@@ -642,7 +644,7 @@ export function MenuPromotionPage() {
 
         {/* Menu Tab */}
         <TabsContent value="menu" className="space-y-6">
-          <Button 
+          <Button
             onClick={() => {
               if (ingredients.length === 0) {
                 fetchIngredients();
@@ -695,107 +697,132 @@ export function MenuPromotionPage() {
             </Card>
           ) : (
             <>
-          {/* Menu Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredMenuItems.map((item) => (
-              <Card
-                key={item.id}
-                hover
-                onClick={() => openEditModal(item)}
-                className="overflow-hidden cursor-pointer"
-              >
-                <div className="relative">
-                  <img
-                    src={
-                      item.image_url ||
-                      PLACEHOLDER_IMAGE
-                    }
-                    alt={item.name}
-                    className="w-full h-48 object-cover"
-                    onError={(e) => {
-                      const img = e.target as HTMLImageElement;
-                      img.src = PLACEHOLDER_IMAGE;
-                    }}
-                  />
-                  {!item.is_available && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <span className="text-white px-4 py-2 bg-red-500 rounded-lg">
-                        Tạm hết
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <h4>{item.name}</h4>
-                    <div
-                      className="flex gap-2"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Switch
-                        checked={item.is_available}
-                        onCheckedChange={() =>
-                          handleToggleAvailability(item.id)
-                        }
+              {/* Menu Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredMenuItems.map((item) => (
+                  <Card
+                    key={item.id}
+                    hover
+                    onClick={() => openEditModal(item)}
+                    className="overflow-hidden cursor-pointer"
+                  >
+                    <div className="relative">
+                      <img
+                        src={item.image_url || PLACEHOLDER_IMAGE}
+                        alt={item.name}
+                        className="w-full h-48 object-cover"
+                        onError={(e) => {
+                          const img = e.target as HTMLImageElement;
+                          img.src = PLACEHOLDER_IMAGE;
+                        }}
                       />
+                      {!item.is_available && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                          <span className="text-white px-4 py-2 bg-red-500 rounded-lg">
+                            Tạm hết
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                    {item.description || "Món ăn ngon tuyệt vời"}
-                  </p>
+                    <div className="p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <h4>{item.name}</h4>
+                        <div
+                          className="flex gap-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Switch
+                            checked={item.is_available}
+                            onCheckedChange={() =>
+                              handleToggleAvailability(item.id)
+                            }
+                          />
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                        {item.description || "Món ăn ngon tuyệt vời"}
+                      </p>
 
-                  {/* Ingredients Section */}
-                  {getIngredientsByDish(item.id).length > 0 && (
-                    <div className="mb-3 pb-3 border-b border-gray-200">
-                      <p className="text-xs font-semibold text-gray-700 mb-2">Nguyên liệu:</p>
-                      <div className="space-y-1">
-                        {getIngredientsByDish(item.id).map((ingredient) => {
-                          let ingredientId = ingredient.ingredient_id;
-                          if (typeof ingredientId === 'object' && ingredientId !== null) {
-                            ingredientId = (ingredientId as any)?.id || String(ingredientId);
-                          }
-                          ingredientId = String(ingredientId);
-                          console.log("Dish ingredient object:", ingredient);
-                          console.log("All ingredients array:", ingredients);
-                          console.log("Looking for ingredient_id:", ingredientId);
-                          const ingredientData = ingredients.find((ing) => String(ing.id) === ingredientId);
-                          console.log(`Ingredient lookup - ID: ${ingredientId}, Found:`, ingredientData);
-                          return (
-                            <div key={ingredient.id} className="text-xs text-gray-600">
-                              • {ingredientData?.name || `Unknown (${ingredientId})`}: {ingredient.quantity_required} {ingredient.unit}
-                            </div>
-                          );
-                        })}
+                      {/* Ingredients Section */}
+                      {getIngredientsByDish(item.id).length > 0 && (
+                        <div className="mb-3 pb-3 border-b border-gray-200">
+                          <p className="text-xs font-semibold text-gray-700 mb-2">
+                            Nguyên liệu:
+                          </p>
+                          <div className="space-y-1">
+                            {getIngredientsByDish(item.id).map((ingredient) => {
+                              let ingredientId = ingredient.ingredient_id;
+                              if (
+                                typeof ingredientId === "object" &&
+                                ingredientId !== null
+                              ) {
+                                ingredientId =
+                                  (ingredientId as any)?.id ||
+                                  String(ingredientId);
+                              }
+                              ingredientId = String(ingredientId);
+                              console.log(
+                                "Dish ingredient object:",
+                                ingredient
+                              );
+                              console.log(
+                                "All ingredients array:",
+                                ingredients
+                              );
+                              console.log(
+                                "Looking for ingredient_id:",
+                                ingredientId
+                              );
+                              const ingredientData = ingredients.find(
+                                (ing) => String(ing.id) === ingredientId
+                              );
+                              console.log(
+                                `Ingredient lookup - ID: ${ingredientId}, Found:`,
+                                ingredientData
+                              );
+                              return (
+                                <div
+                                  key={ingredient.id}
+                                  className="text-xs text-gray-600"
+                                >
+                                  •{" "}
+                                  {ingredientData?.name ||
+                                    `Unknown (${ingredientId})`}
+                                  : {ingredient.quantity_required}{" "}
+                                  {ingredient.unit}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-[#625EE8]">
+                          {item.price.toLocaleString()}đ
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteMenuItem(item.id);
+                          }}
+                          className="text-red-600 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
-                  )}
+                  </Card>
+                ))}
+              </div>
 
-                  <div className="flex items-center justify-between">
-                    <span className="text-[#625EE8]">
-                      {item.price.toLocaleString()}đ
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteMenuItem(item.id);
-                      }}
-                      className="text-red-600 hover:bg-red-50"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+              {filteredMenuItems.length === 0 && (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">Không tìm thấy món ăn phù hợp</p>
                 </div>
-              </Card>
-            ))}
-          </div>
-
-          {filteredMenuItems.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500">Không tìm thấy món ăn phù hợp</p>
-            </div>
-          )}
+              )}
             </>
           )}
         </TabsContent>
@@ -1027,7 +1054,9 @@ export function MenuPromotionPage() {
               >
                 <div className="flex flex-col items-center gap-2 text-gray-500">
                   <ImageIcon className="w-12 h-12" />
-                  <p className="text-sm font-medium">{uploadingImage ? "Đang tải..." : "Nhấn để chọn ảnh"}</p>
+                  <p className="text-sm font-medium">
+                    {uploadingImage ? "Đang tải..." : "Nhấn để chọn ảnh"}
+                  </p>
                   <p className="text-xs">PNG, JPG, GIF up to 10MB</p>
                 </div>
               </div>
@@ -1111,23 +1140,27 @@ export function MenuPromotionPage() {
                       disabled={ingredientsLoading}
                     >
                       <option value="">
-                        {ingredientsLoading ? "Đang tải..." : "-- Chọn nguyên liệu --"}
+                        {ingredientsLoading
+                          ? "Đang tải..."
+                          : "-- Chọn nguyên liệu --"}
                       </option>
                       {ingredientsError && (
-                        <option value="" disabled>Lỗi tải nguyên liệu</option>
+                        <option value="" disabled>
+                          Lỗi tải nguyên liệu
+                        </option>
                       )}
-                      {ingredients.length > 0 ? (
-                        ingredients.map((ingredient) => (
-                          <option key={ingredient.id} value={ingredient.id}>
-                            {ingredient.name} ({ingredient.quantity_in_stock}{" "}
-                            {ingredient.unit} trong kho)
-                          </option>
-                        ))
-                      ) : (
-                        !ingredientsLoading && (
-                          <option value="" disabled>Không có nguyên liệu</option>
-                        )
-                      )}
+                      {ingredients.length > 0
+                        ? ingredients.map((ingredient) => (
+                            <option key={ingredient.id} value={ingredient.id}>
+                              {ingredient.name} ({ingredient.quantity_in_stock}{" "}
+                              {ingredient.unit} trong kho)
+                            </option>
+                          ))
+                        : !ingredientsLoading && (
+                            <option value="" disabled>
+                              Không có nguyên liệu
+                            </option>
+                          )}
                     </select>
                   </div>
                   <input
@@ -1143,7 +1176,7 @@ export function MenuPromotionPage() {
                     }
                     className="w-16 px-2 py-2 border border-gray-300 rounded-lg text-sm"
                     min="0.01"
-                    step="0.1"
+                    step="1"
                   />
                   {row.ingredientId && (
                     <div className="flex items-center px-2 py-2 bg-gray-100 rounded-lg text-sm text-gray-600 whitespace-nowrap min-w-[50px] justify-center">
@@ -1630,7 +1663,9 @@ export function MenuPromotionPage() {
               >
                 <div className="flex flex-col items-center gap-2 text-gray-500">
                   <ImageIcon className="w-12 h-12" />
-                  <p className="text-sm font-medium">{uploadingImage ? "Đang tải..." : "Nhấn để chọn ảnh"}</p>
+                  <p className="text-sm font-medium">
+                    {uploadingImage ? "Đang tải..." : "Nhấn để chọn ảnh"}
+                  </p>
                   <p className="text-xs">PNG, JPG, GIF up to 10MB</p>
                 </div>
               </div>
@@ -1714,23 +1749,27 @@ export function MenuPromotionPage() {
                       disabled={ingredientsLoading}
                     >
                       <option value="">
-                        {ingredientsLoading ? "Đang tải..." : "-- Chọn nguyên liệu --"}
+                        {ingredientsLoading
+                          ? "Đang tải..."
+                          : "-- Chọn nguyên liệu --"}
                       </option>
                       {ingredientsError && (
-                        <option value="" disabled>Lỗi tải nguyên liệu</option>
+                        <option value="" disabled>
+                          Lỗi tải nguyên liệu
+                        </option>
                       )}
-                      {ingredients.length > 0 ? (
-                        ingredients.map((ingredient) => (
-                          <option key={ingredient.id} value={ingredient.id}>
-                            {ingredient.name} ({ingredient.quantity_in_stock}{" "}
-                            {ingredient.unit} trong kho)
-                          </option>
-                        ))
-                      ) : (
-                        !ingredientsLoading && (
-                          <option value="" disabled>Không có nguyên liệu</option>
-                        )
-                      )}
+                      {ingredients.length > 0
+                        ? ingredients.map((ingredient) => (
+                            <option key={ingredient.id} value={ingredient.id}>
+                              {ingredient.name} ({ingredient.quantity_in_stock}{" "}
+                              {ingredient.unit} trong kho)
+                            </option>
+                          ))
+                        : !ingredientsLoading && (
+                            <option value="" disabled>
+                              Không có nguyên liệu
+                            </option>
+                          )}
                     </select>
                   </div>
                   <input
@@ -1746,7 +1785,7 @@ export function MenuPromotionPage() {
                     }
                     className="w-16 px-2 py-2 border border-gray-300 rounded-lg text-sm"
                     min="0"
-                    step="0.1"
+                    step="1"
                   />
                   {row.ingredientId && (
                     <div className="flex items-center px-2 py-2 bg-gray-100 rounded-lg text-sm text-gray-600 whitespace-nowrap min-w-[50px] justify-center">
