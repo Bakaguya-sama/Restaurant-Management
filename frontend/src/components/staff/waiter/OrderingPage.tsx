@@ -685,6 +685,13 @@ export function OrderingPage() {
         const latestOrder = orderData.data;
 
         // Create invoice using order's calculated totals
+        // Kiểm tra staff_id
+        if (!firstWaiterId) {
+          toast.error("Không tìm thấy nhân viên. Vui lòng thử lại.");
+          setIsProcessingInvoice(false);
+          return;
+        }
+
         const invoiceData = {
           invoice_number: `INV-${Date.now()}`,
           order_id: orderId,
@@ -700,17 +707,7 @@ export function OrderingPage() {
           notes: latestOrder.notes || `Bàn ${selectedTable}`,
         };
 
-        await invoiceApi.create({
-          order_id: currentTableOrder.order._id || currentTableOrder.order.id as string,
-          notes: `Bàn ${selectedTable}`,
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || "Failed to create invoice");
-        }
-
-        const invoiceResult = await response.json();
+        const invoiceResult = await invoiceApi.create(invoiceData);
         console.log("Invoice created successfully:", invoiceResult);
 
         // Update order status to served
@@ -731,7 +728,7 @@ export function OrderingPage() {
           setTableOrdersMap(newMap);
         }
 
-        toast.success(`Đã tạo hóa đơn thành công! Mã hóa đơn: ${invoiceResult.data.invoice_number || 'N/A'}`);
+        toast.success(`Đã tạo hóa đơn thành công! Mã hóa đơn: ${invoiceResult?.invoice_number || invoiceResult?.data?.invoice_number || 'N/A'}`);
       } else if (orderType === "takeaway") {
         // For takeaway: use existing logic
         const orders = takeawayOrders;
@@ -801,8 +798,7 @@ export function OrderingPage() {
         });
 
         
-        const orderId = takeawayOrder.order._id || takeawayOrder.order.id as string;
-        await patchOrderStatus(orderId, "served");
+        await patchOrderStatus(orderDatabaseId, "served");
 
         
         const newMap = { ...takeawayOrdersMap };
@@ -812,7 +808,7 @@ export function OrderingPage() {
         
         setSelectedTakeawayOrder(null);
 
-        toast.success(`Đã tạo hóa đơn thành công! Mã hóa đơn: ${invoiceResult.data.invoice_number || 'N/A'}`);
+        toast.success(`Đã tạo hóa đơn thành công! Mã hóa đơn: ${invoiceResult?.invoice_number || invoiceResult?.data?.invoice_number || 'N/A'}`);
       }
     } catch (error: any) {
       console.error("Error completing order:", error);
