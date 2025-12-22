@@ -401,15 +401,10 @@ const InvoiceSchema = new Schema({
   // Monetary value discounted because of points
   points_discount: { type: Number, default: 0 },
   total_amount: { type: Number, required: true },
-  payment_method: {
-    type: String,
-    enum: ["cash", "card", "transfer", "e-wallet"],
-  }, // Optional - set by cashier at payment time
-  payment_status: {
-    type: String,
-    enum: ["pending", "paid", "cancelled"],
-    default: "pending",
-  },
+  payment_method: { type: String, enum: ['cash', 'card', 'transfer', 'e-wallet'] }, // Optional - set by cashier at payment time
+  payment_status: { type: String, enum: ['pending', 'paid', 'cancelled'], default: 'pending' },
+  points_used: { type: Number, default: 0 },
+  points_earned: { type: Number, default: 0 },
   paid_at: Date,
   created_at: { type: Date, default: Date.now },
 });

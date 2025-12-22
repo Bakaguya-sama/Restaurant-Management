@@ -14,6 +14,8 @@ class InvoiceEntity {
     this.total_amount = data.total_amount;
     this.payment_method = data.payment_method;
     this.payment_status = data.payment_status;
+    this.points_used = data.points_used || 0;
+    this.points_earned = data.points_earned || 0;
     this.paid_at = data.paid_at;
     this.created_at = data.created_at;
     this.order = data.order;
@@ -61,12 +63,17 @@ class InvoiceEntity {
       errors.push("Valid total amount is required");
     }
 
-    const validPaymentMethods = ["cash", "card", "transfer", "e-wallet"];
-    if (
-      !this.payment_method ||
-      !validPaymentMethods.includes(this.payment_method)
-    ) {
-      errors.push("Invalid payment method");
+    if (this.points_used !== undefined && this.points_used < 0) {
+      errors.push('Points used must be non-negative');
+    }
+
+    if (this.points_earned !== undefined && this.points_earned < 0) {
+      errors.push('Points earned must be non-negative');
+    }
+
+    const validPaymentMethods = ['cash', 'card', 'transfer', 'e-wallet'];
+    if (!this.payment_method || !validPaymentMethods.includes(this.payment_method)) {
+      errors.push('Invalid payment method');
     }
 
     const validPaymentStatuses = ["pending", "paid", "cancelled"];
@@ -123,6 +130,8 @@ class InvoiceEntity {
       total_amount: this.total_amount,
       payment_method: this.payment_method,
       payment_status: this.payment_status,
+      points_used: this.points_used,
+      points_earned: this.points_earned,
       paid_at: this.paid_at,
       created_at: this.created_at,
       order: this.order,

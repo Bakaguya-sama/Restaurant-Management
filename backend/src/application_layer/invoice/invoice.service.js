@@ -1,12 +1,14 @@
-const InvoiceRepository = require("../../infrastructure_layer/invoice/invoice.repository");
-const PromotionService = require("../promotion/promotion.service");
-const InvoiceEntity = require("../../domain_layer/invoice/invoice.entity");
-const { Order, User } = require("../../models");
+const InvoiceRepository = require('../../infrastructure_layer/invoice/invoice.repository');
+const PromotionService = require('../promotion/promotion.service');
+const InvoicePointsService = require('./invoice-points.service');
+const InvoiceEntity = require('../../domain_layer/invoice/invoice.entity');
+const { Order, User } = require('../../models');
 
 class InvoiceService {
   constructor() {
     this.invoiceRepository = new InvoiceRepository();
     this.promotionService = new PromotionService();
+    this.pointsService = new InvoicePointsService();
   }
 
   async getAllInvoices(filters) {
@@ -90,6 +92,28 @@ class InvoiceService {
       discountAmount
     );
 
+    // Handle points (Dependency Inversion: service is injected)
+    let pointsUsed = invoiceData.points_used || 0;
+    let pointsEarned = invoiceData.points_earned || 0;
+
+    // Validate and apply points if customer exists
+    if (invoiceData.customer_id) {
+      if (pointsUsed > 0) {
+        const pointsValidation = await this.pointsService.validatePointsForRedeeming(
+          invoiceData.customer_id,
+          pointsUsed
+        );
+        if (!pointsValidation.isValid) {
+          throw new Error(pointsValidation.message);
+        }
+      }
+
+      // Calculate points earned if not explicitly provided
+      if (!invoiceData.points_earned) {
+        pointsEarned = this.pointsService.calculatePointsEarned(totals.total_amount);
+      }
+    }
+
     const finalInvoiceData = {
       invoice_number: invoiceData.invoice_number,
       order_id: invoiceData.order_id,
@@ -100,7 +124,9 @@ class InvoiceService {
       discount_amount: totals.discount_amount,
       total_amount: totals.total_amount,
       payment_method: invoiceData.payment_method,
-      payment_status: invoiceData.payment_status || "pending",
+      payment_status: invoiceData.payment_status || 'pending',
+      points_used: pointsUsed,
+      points_earned: pointsEarned
     };
 
     const invoiceEntity = new InvoiceEntity(finalInvoiceData);
@@ -165,43 +191,35 @@ class InvoiceService {
       throw new Error("Invoice is already paid");
     }
 
-    if (invoice.payment_status === "cancelled") {
-      throw new Error("Cannot mark cancelled invoice as paid");
+    if (invoice.isPaid()) {
+      throw new Error('Invoice is already paid');
     }
 
-    // Mark invoice as paid
-    const updatedInvoice = await this.invoiceRepository.updatePaymentStatus(
-      id,
-      "paid",
-      new Date()
-    );
+    if (invoice.isCancelled()) {
+      throw new Error('Cannot mark cancelled invoice as paid');
+    }
 
-    // If customer used points on this invoice, deduct them from customer's account now
-    try {
-      const pointsToDeduct =
-        updatedInvoice.customerSelectedPoints ||
-        updatedInvoice.customer_selected_points ||
-        0;
-      const customerId =
-        updatedInvoice.customer_id ||
-        (updatedInvoice.customer && updatedInvoice.customer.id) ||
-        updatedInvoice.customer?.id;
-
-      if (pointsToDeduct > 0 && customerId) {
-        const customer = await User.findById(customerId);
-        if (customer) {
-          const current =
-            typeof customer.points === "number" ? customer.points : 0;
-          customer.points = Math.max(0, current - pointsToDeduct);
-          await customer.save();
-        }
+    // Apply points to customer when invoice is paid
+    if (invoice.customer_id && invoice.points_earned > 0) {
+      try {
+        await this.pointsService.awardCustomerPoints(invoice.customer_id, invoice.points_earned);
+      } catch (error) {
+        console.error('Failed to award points:', error);
+        // Don't fail invoice payment if points award fails
       }
-    } catch (err) {
-      // Log error but do not fail payment flow
-      console.error("Error deducting customer points on payment:", err);
     }
 
-    return updatedInvoice;
+    // Redeem points if used
+    if (invoice.customer_id && invoice.points_used > 0) {
+      try {
+        await this.pointsService.redeemCustomerPoints(invoice.customer_id, invoice.points_used);
+      } catch (error) {
+        console.error('Failed to redeem points:', error);
+        // Don't fail invoice payment if points redemption fails
+      }
+    }
+
+    return await this.invoiceRepository.updatePaymentStatus(id, 'paid', new Date());
   }
 
   async cancelInvoice(id) {

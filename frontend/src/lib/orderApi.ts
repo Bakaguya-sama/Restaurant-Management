@@ -85,9 +85,7 @@ const API_BASE =
 
 // ==================== API FUNCTIONS ====================
 
-/**
- * Fetch pending order for a table with status 'pending'
- */
+
 export async function getPendingOrderByTableId(tableId: string): Promise<Order | null> {
   try {
     const response = await fetch(
@@ -105,7 +103,6 @@ export async function getPendingOrderByTableId(tableId: string): Promise<Order |
     }
 
     const data = await response.json();
-    // Return first pending order if exists
     if (data.data && Array.isArray(data.data) && data.data.length > 0) {
       return data.data[0];
     }
@@ -116,9 +113,63 @@ export async function getPendingOrderByTableId(tableId: string): Promise<Order |
   }
 }
 
-/**
- * Create a new order with automatic inventory deduction
- */
+
+export async function getOrderById(orderId: string): Promise<Order> {
+  try {
+    const response = await fetch(
+      `${API_BASE}/orders/${orderId}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch order: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    if (data.data) {
+      return data.data;
+    }
+    throw new Error("Order not found");
+  } catch (error) {
+    console.error("Error fetching order:", error);
+    throw error;
+  }
+}
+
+
+export async function getPendingTakeawayOrders(): Promise<Order[]> {
+  try {
+    const response = await fetch(
+      `${API_BASE}/orders?order_type=takeaway-staff&status=pending`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch pending takeaway orders: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    if (data.data && Array.isArray(data.data)) {
+      return data.data;
+    }
+    return [];
+  } catch (error) {
+    console.error("Error fetching pending takeaway orders:", error);
+    throw error;
+  }
+}
+
+
 export async function createOrder(params: CreateOrderParams): Promise<Order> {
   const response = await fetch(`${API_BASE}/orders`, {
     method: "POST",
@@ -142,9 +193,7 @@ export async function createOrder(params: CreateOrderParams): Promise<Order> {
   return data.data;
 }
 
-/**
- * Create order detail for an existing order
- */
+
 export async function createOrderDetail(
   params: OrderDetailParams
 ): Promise<OrderDetail> {
@@ -170,9 +219,7 @@ export async function createOrderDetail(
   return data.data;
 }
 
-/**
- * Update order detail status
- */
+
 export async function updateOrderDetailStatus(
   orderId: string,
   detailId: string,
@@ -201,9 +248,7 @@ export async function updateOrderDetailStatus(
   return data.data;
 }
 
-/**
- * Update order detail quantity
- */
+
 export async function updateOrderDetailQuantity(
   orderId: string,
   detailId: string,
@@ -232,14 +277,18 @@ export async function updateOrderDetailQuantity(
   return data.data;
 }
 
-/**
- * Update order detail special instructions
- */
+
 export async function updateOrderDetailNotes(
   orderId: string,
   detailId: string,
-  special_instructions: string
+  special_instructions: string,
+  quantity?: number
 ): Promise<OrderDetail> {
+  const body: any = { special_instructions };
+  if (quantity !== undefined) {
+    body.quantity = quantity;
+  }
+  
   const response = await fetch(
     `${API_BASE}/orders/${orderId}/details/${detailId}`,
     {
@@ -247,7 +296,7 @@ export async function updateOrderDetailNotes(
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ special_instructions }),
+      body: JSON.stringify(body),
     }
   );
 
@@ -263,9 +312,7 @@ export async function updateOrderDetailNotes(
   return data.data;
 }
 
-/**
- * Patch order detail status (status-only update)
- */
+
 export async function patchOrderDetailStatus(
   orderId: string,
   detailId: string,
@@ -294,9 +341,7 @@ export async function patchOrderDetailStatus(
   return data.data;
 }
 
-/**
- * Update order status
- */
+
 export async function updateOrderStatus(
   orderId: string,
   status: 'pending' | 'preparing' | 'ready' | 'served' | 'completed' | 'cancelled'
@@ -321,9 +366,7 @@ export async function updateOrderStatus(
   return data.data;
 }
 
-/**
- * Patch order status (status-only update)
- */
+
 export async function patchOrderStatus(
   orderId: string,
   status: 'pending' | 'preparing' | 'ready' | 'served' | 'completed' | 'cancelled'
@@ -348,9 +391,7 @@ export async function patchOrderStatus(
   return data.data;
 }
 
-/**
- * Get order details for an order
- */
+
 export async function getOrderDetails(orderId: string): Promise<OrderDetail[]> {
   const response = await fetch(
     `${API_BASE}/orders/${orderId}/details`,
@@ -375,7 +416,7 @@ export async function getOrderDetails(orderId: string): Promise<OrderDetail[]> {
 }
 export function generateOrderNumber(orderType: string): string {
   const timestamp = Date.now();
-  const random = Math.floor(Math.random() * 10000); // Add 4-digit random number
+  const random = Math.floor(Math.random() * 10000); 
   const prefix = orderType === 'dine-in-waiter' ? 'DIN' : 'TO';
   return `${prefix}-${timestamp}-${random}`;
 }
