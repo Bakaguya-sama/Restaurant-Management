@@ -1,5 +1,6 @@
 const InvoiceRepository = require('../../infrastructure_layer/invoice/invoice.repository');
 const PromotionService = require('../promotion/promotion.service');
+const InvoicePointsService = require('./invoice-points.service');
 const InvoiceEntity = require('../../domain_layer/invoice/invoice.entity');
 const { Order, User } = require('../../models');
 
@@ -7,6 +8,7 @@ class InvoiceService {
   constructor() {
     this.invoiceRepository = new InvoiceRepository();
     this.promotionService = new PromotionService();
+    this.pointsService = new InvoicePointsService();
   }
 
   async getAllInvoices(filters) {
@@ -86,6 +88,28 @@ class InvoiceService {
       discountAmount
     );
 
+    // Handle points (Dependency Inversion: service is injected)
+    let pointsUsed = invoiceData.points_used || 0;
+    let pointsEarned = invoiceData.points_earned || 0;
+
+    // Validate and apply points if customer exists
+    if (invoiceData.customer_id) {
+      if (pointsUsed > 0) {
+        const pointsValidation = await this.pointsService.validatePointsForRedeeming(
+          invoiceData.customer_id,
+          pointsUsed
+        );
+        if (!pointsValidation.isValid) {
+          throw new Error(pointsValidation.message);
+        }
+      }
+
+      // Calculate points earned if not explicitly provided
+      if (!invoiceData.points_earned) {
+        pointsEarned = this.pointsService.calculatePointsEarned(totals.total_amount);
+      }
+    }
+
     const finalInvoiceData = {
       invoice_number: invoiceData.invoice_number,
       order_id: invoiceData.order_id,
@@ -96,7 +120,9 @@ class InvoiceService {
       discount_amount: totals.discount_amount,
       total_amount: totals.total_amount,
       payment_method: invoiceData.payment_method,
-      payment_status: invoiceData.payment_status || 'pending'
+      payment_status: invoiceData.payment_status || 'pending',
+      points_used: pointsUsed,
+      points_earned: pointsEarned
     };
 
     const invoiceEntity = new InvoiceEntity(finalInvoiceData);
@@ -153,12 +179,32 @@ class InvoiceService {
       throw new Error('Invoice not found');
     }
 
-    if (invoice.payment_status === 'paid') {
+    if (invoice.isPaid()) {
       throw new Error('Invoice is already paid');
     }
 
-    if (invoice.payment_status === 'cancelled') {
+    if (invoice.isCancelled()) {
       throw new Error('Cannot mark cancelled invoice as paid');
+    }
+
+    // Apply points to customer when invoice is paid
+    if (invoice.customer_id && invoice.points_earned > 0) {
+      try {
+        await this.pointsService.awardCustomerPoints(invoice.customer_id, invoice.points_earned);
+      } catch (error) {
+        console.error('Failed to award points:', error);
+        // Don't fail invoice payment if points award fails
+      }
+    }
+
+    // Redeem points if used
+    if (invoice.customer_id && invoice.points_used > 0) {
+      try {
+        await this.pointsService.redeemCustomerPoints(invoice.customer_id, invoice.points_used);
+      } catch (error) {
+        console.error('Failed to redeem points:', error);
+        // Don't fail invoice payment if points redemption fails
+      }
     }
 
     return await this.invoiceRepository.updatePaymentStatus(id, 'paid', new Date());
