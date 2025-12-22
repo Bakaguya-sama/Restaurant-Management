@@ -10,7 +10,7 @@ class OrderDetailRepository {
   }
 
   async findByOrderIdAndDishId(orderId, dishId) {
-    return await OrderDetail.findOne({ order_id: orderId, dish_id: dishId });
+    return await OrderDetail.findOne({ order_id: orderId, dish_id: dishId, status: { $ne: 'cancelled' } });
   }
 
   async create(data) {
