@@ -60,6 +60,30 @@ class PromotionEntity {
     };
   }
 
+  isExpired() {
+    const now = new Date();
+    return new Date(this.end_date) < now;
+  }
+
+  getExpiredStatus() {
+    if (this.isExpired()) {
+      return {
+        isExpired: true,
+        shouldBeActive: false
+      };
+    }
+    return {
+      isExpired: false,
+      shouldBeActive: true
+    };
+  }
+
+  validateIsActiveTransition(newIsActiveValue) {
+    if (newIsActiveValue === true && this.isExpired()) {
+      throw new Error('Promotion expired and user should change end date first');
+    }
+  }
+
   isValidNow() {
     const now = new Date();
     return this.is_active && 

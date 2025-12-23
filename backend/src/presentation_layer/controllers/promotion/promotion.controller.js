@@ -143,6 +143,12 @@ class PromotionController {
         data: promotion
       });
     } catch (error) {
+      if (error.message === 'Promotion expired and user should change end date first') {
+        return res.status(400).json({
+          success: false,
+          message: error.message
+        });
+      }
       res.status(404).json({
         success: false,
         message: error.message

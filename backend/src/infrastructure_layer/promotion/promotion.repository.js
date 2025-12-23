@@ -2,6 +2,19 @@ const { Promotion } = require('../../models');
 const PromotionEntity = require('../../domain_layer/promotion/promotion.entity');
 
 class PromotionRepository {
+  async syncPromotionState(promotionDoc) {
+    const entity = new PromotionEntity(promotionDoc.toObject());
+    if (entity.isExpired() && promotionDoc.is_active) {
+      await Promotion.findByIdAndUpdate(
+        promotionDoc._id,
+        { is_active: false },
+        { new: false }
+      );
+      promotionDoc.is_active = false;
+    }
+    return entity;
+  }
+
   async findAll(filters = {}) {
     const query = {};
     
@@ -28,19 +41,24 @@ class PromotionRepository {
     }
 
     const promotions = await Promotion.find(query).sort({ created_at: -1 });
-    return promotions.map(promotion => new PromotionEntity(promotion.toObject()));
+    const syncedPromotions = [];
+    for (const promotion of promotions) {
+      const synced = await this.syncPromotionState(promotion);
+      syncedPromotions.push(synced);
+    }
+    return syncedPromotions;
   }
 
   async findById(id) {
     const promotion = await Promotion.findById(id);
     if (!promotion) return null;
-    return new PromotionEntity(promotion.toObject());
+    return await this.syncPromotionState(promotion);
   }
 
   async findByPromoCode(promoCode) {
     const promotion = await Promotion.findOne({ promo_code: promoCode });
     if (!promotion) return null;
-    return new PromotionEntity(promotion.toObject());
+    return await this.syncPromotionState(promotion);
   }
 
   async create(promotionData) {
@@ -57,7 +75,7 @@ class PromotionRepository {
     );
     
     if (!promotion) return null;
-    return new PromotionEntity(promotion.toObject());
+    return await this.syncPromotionState(promotion);
   }
 
   async delete(id) {
@@ -66,14 +84,20 @@ class PromotionRepository {
   }
 
   async activate(id) {
-    const promotion = await Promotion.findByIdAndUpdate(
+    const promotion = await Promotion.findById(id);
+    if (!promotion) return null;
+    
+    const entity = new PromotionEntity(promotion.toObject());
+    entity.validateIsActiveTransition(true);
+    
+    const updated = await Promotion.findByIdAndUpdate(
       id,
       { is_active: true },
       { new: true }
     );
     
-    if (!promotion) return null;
-    return new PromotionEntity(promotion.toObject());
+    if (!updated) return null;
+    return await this.syncPromotionState(updated);
   }
 
   async deactivate(id) {
@@ -84,7 +108,7 @@ class PromotionRepository {
     );
     
     if (!promotion) return null;
-    return new PromotionEntity(promotion.toObject());
+    return await this.syncPromotionState(promotion);
   }
 
   async incrementUses(id) {
@@ -95,7 +119,7 @@ class PromotionRepository {
     );
     
     if (!promotion) return null;
-    return new PromotionEntity(promotion.toObject());
+    return await this.syncPromotionState(promotion);
   }
 
   async getStatistics() {
