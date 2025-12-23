@@ -173,7 +173,52 @@ class InvoiceService {
     return { message: 'Invoice deleted successfully' };
   }
 
-  async markAsPaid(id) {
+  async applyPromotionToInvoice(id, promotionId) {
+    const invoice = await this.invoiceRepository.findById(id);
+    if (!invoice) {
+      throw new Error('Invoice not found');
+    }
+
+    if (invoice.payment_status === 'paid') {
+      throw new Error('Cannot apply promotion to paid invoice');
+    }
+
+    if (invoice.payment_status === 'cancelled') {
+      throw new Error('Cannot apply promotion to cancelled invoice');
+    }
+
+    // Validate promotion
+    const promotion = await this.promotionService.getPromotionById(promotionId);
+    if (!promotion) {
+      throw new Error('Promotion not found');
+    }
+
+    const validation = await this.promotionService.validatePromoCode(
+      promotion.promo_code,
+      invoice.subtotal
+    );
+
+    // Calculate new discount and total
+    let discountAmount = validation.discount_amount;
+    const newTotal = invoice.subtotal + invoice.tax - discountAmount;
+
+    // Update invoice
+    const updateData = {
+      discount_amount: discountAmount,
+      total_amount: newTotal
+    };
+
+    const updatedInvoice = await this.invoiceRepository.update(id, updateData);
+
+    // Clear old promotions and add new one
+    await this.invoiceRepository.clearPromotions(id);
+    await this.invoiceRepository.addPromotion(id, promotionId, discountAmount);
+    await this.promotionService.incrementPromotionUses(promotionId);
+
+    return await this.invoiceRepository.findById(id);
+  }
+
+  async markAsPaid(id, paymentMethod, promotionId = null) {
     const invoice = await this.invoiceRepository.findById(id);
     if (!invoice) {
       throw new Error('Invoice not found');
