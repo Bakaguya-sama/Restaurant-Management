@@ -126,10 +126,13 @@ class InvoiceRepository {
     return invoice !== null;
   }
 
-  async updatePaymentStatus(id, status, paidAt = null) {
+  async updatePaymentStatus(id, status, paidAt = null, paymentMethod = null) {
     const updateData = { payment_status: status };
     if (paidAt) {
       updateData.paid_at = paidAt;
+    }
+    if (paymentMethod) {
+      updateData.payment_method = paymentMethod;
     }
 
     const invoice = await Invoice.findByIdAndUpdate(
@@ -151,6 +154,11 @@ class InvoiceRepository {
 
     await invoicePromotion.save();
     return invoicePromotion;
+  }
+
+  async clearPromotions(invoiceId) {
+    await InvoicePromotion.deleteMany({ invoice_id: invoiceId });
+    return true;
   }
 
   async getStatistics() {

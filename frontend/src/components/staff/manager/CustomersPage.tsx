@@ -6,6 +6,7 @@ import {
   MessageSquare,
   Star,
   User,
+  History,
 } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Card } from "../../ui/Card";
@@ -24,7 +25,12 @@ import { mockCustomers } from "../../../lib/mockData";
 import { Customer, Violation } from "../../../types";
 import { toast } from "sonner";
 import { ConfirmationModal } from "../../ui/ConfirmationModal";
-import { customerApi, violationApi, ratingApi, staffApi } from "../../../lib/api";
+import {
+  customerApi,
+  violationApi,
+  ratingApi,
+  staffApi,
+} from "../../../lib/api";
 
 export function CustomersPage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -46,6 +52,9 @@ export function CustomersPage() {
   );
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showViolationModal, setShowViolationModal] = useState(false);
+  const [showViolationsHistoryModal, setShowViolationsHistoryModal] =
+    useState(false);
+  const [violationsList, setViolationsList] = useState<any[]>([]);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [violationForm, setViolationForm] = useState({
     type: "no_show" as Violation["type"],
@@ -69,7 +78,7 @@ export function CustomersPage() {
         name: customer.full_name,
         email: customer.email,
         phone: customer.phone,
-        membershipTier: customer.membership_level || 'bronze',
+        membershipTier: customer.membership_level || "bronze",
         points: customer.points || 0,
         totalSpent: customer.total_spent || 0,
         isBlacklisted: customer.isBanned || customer.is_banned || false,
@@ -77,7 +86,7 @@ export function CustomersPage() {
       }));
       setCustomers(transformedData);
     } catch (error: any) {
-      toast.error(error.message || 'Không thể tải danh sách khách hàng');
+      toast.error(error.message || "Không thể tải danh sách khách hàng");
     } finally {
       setLoading(false);
     }
@@ -86,24 +95,26 @@ export function CustomersPage() {
   const fetchFeedbacks = async () => {
     try {
       const data = await ratingApi.getAll();
-      const transformedData = await Promise.all(data.map(async (rating: any) => {
-        const ratingId = rating._id || rating.id;
-        const replies = await ratingApi.getReplies(ratingId).catch(() => []);
-        const customer = customers.find(c => c.id === rating.customer_id);
-        return {
-          id: ratingId,
-          customerId: rating.customer_id,
-          customerName: customer?.name || 'Khách hàng',
-          comment: rating.description || '',
-          rating: rating.score,
-          date: rating.rating_date || rating.created_at || rating.date,
-          response: replies.length > 0 ? replies[0].reply_text : '',
-          replyId: replies.length > 0 ? replies[0].id : null,
-        };
-      }));
+      const transformedData = await Promise.all(
+        data.map(async (rating: any) => {
+          const ratingId = rating._id || rating.id;
+          const replies = await ratingApi.getReplies(ratingId).catch(() => []);
+          const customer = customers.find((c) => c.id === rating.customer_id);
+          return {
+            id: ratingId,
+            customerId: rating.customer_id,
+            customerName: customer?.name || "Khách hàng",
+            comment: rating.description || "",
+            rating: rating.score,
+            date: rating.rating_date || rating.created_at || rating.date,
+            response: replies.length > 0 ? replies[0].reply_text : "",
+            replyId: replies.length > 0 ? replies[0].id : null,
+          };
+        })
+      );
       setFeedbacks(transformedData);
     } catch (error: any) {
-      toast.error(error.message || 'Không thể tải danh sách phản hồi');
+      toast.error(error.message || "Không thể tải danh sách phản hồi");
     }
   };
 
@@ -145,7 +156,7 @@ export function CustomersPage() {
       setShowViolationModal(false);
       setViolationForm({ type: "no_show", description: "" });
     } catch (error: any) {
-      toast.error(error.message || 'Không thể ghi nhận vi phạm');
+      toast.error(error.message || "Không thể ghi nhận vi phạm");
     }
   };
 
@@ -214,15 +225,29 @@ export function CustomersPage() {
   };
 
   const getViolationTypeText = (type: string) => {
-    switch (type) {
+    const t = String(type || "").toLowerCase();
+    switch (t) {
       case "no-show":
+      case "no_show":
+      case "noshow":
+      case "no show":
         return "Không đến";
       case "late-cancel":
+      case "late_cancel":
+      case "latecancel":
+      case "late cancel":
         return "Hủy muộn";
+      case "property_damage":
+      case "property-damage":
+      case "propertydamage":
       case "damage":
         return "Làm hỏng tài sản";
+      case "other":
+      case "khac":
+        return "Khác";
       default:
-        return type;
+        // Fallback: capitalize words
+        return t.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
     }
   };
 
@@ -324,67 +349,94 @@ export function CustomersPage() {
                   </thead>
                   <tbody>
                     {filteredCustomers.map((customer) => (
-                    <tr key={customer.id} className="border-b hover:bg-gray-50">
-                      <td className="p-4">
-                        <button
-                          onClick={() => handleViewDetail(customer)}
-                          className="text-[#625EE8] hover:underline"
-                        >
-                          {customer.name}
-                        </button>
-                      </td>
-                      <td className="p-4">
-                        <div className="text-sm">
-                          <p>{customer.phone}</p>
-                          <p className="text-gray-600">{customer.email}</p>
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <Badge
-                          className={getTierColor(customer.membershipTier)}
-                        >
-                          {getTierText(customer.membershipTier)}
-                        </Badge>
-                      </td>
-                      <td className="p-4">{customer.points}</td>
-                      <td className="p-4">
-                        {customer.isBlacklisted ? (
-                          <Badge className="bg-red-100 text-red-700">
-                            Bị chặn
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-green-100 text-green-700">
-                            Bình thường
-                          </Badge>
-                        )}
-                      </td>
-                      <td className="p-4">
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => {
-                              setSelectedCustomer(customer);
-                              setShowViolationModal(true);
-                            }}
+                      <tr
+                        key={customer.id}
+                        className="border-b hover:bg-gray-50"
+                      >
+                        <td className="p-4">
+                          <button
+                            onClick={() => handleViewDetail(customer)}
+                            className="text-[#625EE8] hover:underline"
                           >
-                            <AlertTriangle className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => handleBlacklist(customer.id)}
-                            className={
-                              customer.isBlacklisted
-                                ? "bg-green-100"
-                                : "bg-red-100"
-                            }
+                            {customer.name}
+                          </button>
+                        </td>
+                        <td className="p-4">
+                          <div className="text-sm">
+                            <p>{customer.phone}</p>
+                            <p className="text-gray-600">{customer.email}</p>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <Badge
+                            className={getTierColor(customer.membershipTier)}
                           >
-                            <Ban className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
+                            {getTierText(customer.membershipTier)}
+                          </Badge>
+                        </td>
+                        <td className="p-4">{customer.points}</td>
+                        <td className="p-4">
+                          {customer.isBlacklisted ? (
+                            <Badge className="bg-red-100 text-red-700">
+                              Bị chặn
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-green-100 text-green-700">
+                              Bình thường
+                            </Badge>
+                          )}
+                        </td>
+                        <td className="p-4">
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => {
+                                setSelectedCustomer(customer);
+                                setShowViolationModal(true);
+                              }}
+                            >
+                              <AlertTriangle className="w-4 h-4" />
+                            </Button>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                setSelectedCustomer(customer);
+                                try {
+                                  const v = await violationApi.getByCustomerId(
+                                    customer.id
+                                  );
+                                  setViolationsList(v || []);
+                                } catch (err) {
+                                  console.warn(
+                                    "Failed to fetch violations for customer",
+                                    err
+                                  );
+                                  setViolationsList([]);
+                                }
+                                setShowViolationsHistoryModal(true);
+                              }}
+                              className="ml-1 rounded-full p-2 bg-gray-100 text-gray-700 hover:bg-[#625EE8] hover:text-white transition-colors focus:outline-none"
+                              title="Lịch sử vi phạm"
+                              aria-label="Lịch sử vi phạm"
+                            >
+                              <History className="w-4 h-4" />
+                            </button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => handleBlacklist(customer.id)}
+                              className={
+                                customer.isBlacklisted
+                                  ? "bg-green-100"
+                                  : "bg-red-100"
+                              }
+                            >
+                              <Ban className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
                     ))}
                   </tbody>
                 </table>
@@ -584,6 +636,56 @@ export function CustomersPage() {
         </div>
       </Modal>
 
+      {/* Violations History Modal */}
+      <Modal
+        isOpen={showViolationsHistoryModal}
+        onClose={() => setShowViolationsHistoryModal(false)}
+        title="Lịch sử vi phạm"
+        size="lg"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Khách hàng: <strong>{selectedCustomer?.name}</strong>
+          </p>
+
+          {violationsList && violationsList.length > 0 ? (
+            <div className="space-y-3">
+              {violationsList.map((v: any) => {
+                const typeField =
+                  v.violation_type ?? v.type ?? v.violationType ?? "other";
+                const descField =
+                  v.description ?? v.desc ?? v.detail ?? "(Không có mô tả)";
+                const dateField =
+                  v.violation_date ?? v.date ?? v.violationDate ?? null;
+                const key =
+                  v.id || v._id || `${typeField}-${dateField || Math.random()}`;
+
+                return (
+                  <div
+                    key={key}
+                    className="p-3 border rounded-lg flex items-start justify-between"
+                  >
+                    <div>
+                      <p className="font-medium mb-1">
+                        {getViolationTypeText(typeField)}
+                      </p>
+                      <p className="text-sm text-gray-600">{descField}</p>
+                    </div>
+                    <span className="text-sm text-gray-500">
+                      {dateField
+                        ? new Date(dateField).toLocaleDateString("vi-VN")
+                        : "-"}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-gray-500">Chưa có vi phạm</p>
+          )}
+        </div>
+      </Modal>
+
       {/* Feedback Response Modal */}
       <Modal
         isOpen={showFeedbackModal}
@@ -611,15 +713,15 @@ export function CustomersPage() {
               fullWidth
               onClick={async () => {
                 if (!selectedRating || !feedbackResponse) {
-                  toast.error('Vui lòng nhập nội dung phản hồi');
+                  toast.error("Vui lòng nhập nội dung phản hồi");
                   return;
                 }
 
                 try {
                   // Lấy staff manager đầu tiên để gửi reply
-                  const staffList = await staffApi.getAll({ role: 'manager' });
+                  const staffList = await staffApi.getAll({ role: "manager" });
                   if (!staffList || staffList.length === 0) {
-                    toast.error('Không tìm thấy manager để gửi phản hồi');
+                    toast.error("Không tìm thấy manager để gửi phản hồi");
                     return;
                   }
                   const staffId = staffList[0].id;
@@ -627,7 +729,7 @@ export function CustomersPage() {
                   // Gọi API với object RatingReplyData đúng signature
                   await ratingApi.createReply(selectedRating.id, {
                     staff_id: staffId,
-                    reply_text: feedbackResponse
+                    reply_text: feedbackResponse,
                   });
 
                   await fetchFeedbacks();
@@ -636,7 +738,7 @@ export function CustomersPage() {
                   setFeedbackResponse("");
                   setSelectedRating(null);
                 } catch (error: any) {
-                  toast.error(error.message || 'Không thể gửi phản hồi');
+                  toast.error(error.message || "Không thể gửi phản hồi");
                 }
               }}
             >

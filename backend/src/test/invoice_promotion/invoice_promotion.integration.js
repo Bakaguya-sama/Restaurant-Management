@@ -63,7 +63,9 @@ describe('Invoice Promotion Integration Tests', () => {
         tax: 10000,
         total_amount: 100000,
         payment_method: 'cash',
-        payment_status: 'pending'
+        payment_status: 'pending',
+        points_used: 0,
+        points_earned: 10
       });
     }
     testInvoiceId = invoice._id;

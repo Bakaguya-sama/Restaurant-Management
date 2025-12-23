@@ -217,18 +217,19 @@ export interface Supplier {
 
 // Promotion Types
 export interface Promotion {
-  id: string;
+  id?: string;
+  _id?: string;
   name: string;
-  code: string;
-  discountType: "percentage" | "fixed";
-  discountValue: number;
-  description?: string;
-  minOrderAmount?: number;
-  maxDiscountAmount?: number;
-  promotionQuantity?: number;
-  startDate: string;
-  endDate: string;
-  active: boolean;
+  promotion_type: 'percentage' | 'fixed_amount';
+  discount_value: number;
+  minimum_order_amount: number;
+  promo_code?: string;
+  start_date: string;
+  end_date: string;
+  is_active: boolean;
+  max_uses: number;
+  current_uses: number;
+  created_at?: string;
 }
 
 // Violation Types

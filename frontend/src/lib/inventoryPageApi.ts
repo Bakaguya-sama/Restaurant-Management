@@ -43,8 +43,7 @@ export interface ExportItemsParams {
 // ==================== API CONFIGURATION ====================
 
 const API_BASE =
-  (import.meta as any).env?.VITE_API_BASE_URL ||
-  "http://localhost:5000/api/v1";
+  (import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:5000/api/v1";
 
 // ==================== UTILITY FUNCTIONS ====================
 
@@ -153,11 +152,45 @@ export async function exportInventoryItems(
 }
 
 /**
+ * Fetch export history (disposals/exports)
+ */
+export interface ExportItemDTO {
+  name: string;
+  quantity: number;
+  unit?: string | null;
+  unitPrice?: number | null;
+}
+
+export interface ExportOrderDTO {
+  id: string;
+  code?: string | null;
+  staffName?: string | null;
+  items: ExportItemDTO[];
+  date: string;
+  total?: number | null;
+  reason?: string | null;
+}
+
+export async function fetchExportHistory(): Promise<ExportOrderDTO[]> {
+  const response = await fetch(`${API_BASE}/inventory/exports`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch export history: ${response.status}`);
+  }
+  const json = await response.json();
+  return (json?.data || []) as ExportOrderDTO[];
+}
+
+/**
  * Update inventory item
  */
 export async function updateInventoryItem(
   id: string,
-  updates: { name?: string; unit?: string; expiryDate?: string; supplierId?: string }
+  updates: {
+    name?: string;
+    unit?: string;
+    expiryDate?: string;
+    supplierId?: string;
+  }
 ): Promise<void> {
   const response = await fetch(`${API_BASE}/inventory/${id}`, {
     method: "PUT",

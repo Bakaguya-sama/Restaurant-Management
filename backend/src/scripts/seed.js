@@ -762,6 +762,8 @@ async function seedDatabase() {
         total_amount: 677000, 
         payment_method: 'card', 
         payment_status: 'paid', 
+        points_used: 500,
+        points_earned: 67,
         paid_at: new Date('2025-12-11')
       },
       { 
@@ -775,6 +777,8 @@ async function seedDatabase() {
         total_amount: 165000, 
         payment_method: 'cash', 
         payment_status: 'paid', 
+        points_used: 0,
+        points_earned: 16,
         paid_at: new Date('2025-12-11')
       },
       { 
@@ -788,6 +792,8 @@ async function seedDatabase() {
         total_amount: 396000, 
         payment_method: 'e-wallet', 
         payment_status: 'paid',
+        points_used: 0,
+        points_earned: 39,
         paid_at: new Date('2025-12-11')
       },
       { 
@@ -801,7 +807,9 @@ async function seedDatabase() {
         discount_amount: 0, 
         total_amount: 572000, 
         payment_method: 'cash', 
-        payment_status: 'pending'
+        payment_status: 'pending',
+        points_used: 200,
+        points_earned: 57
       },
       { 
         invoice_number: 'INV-005', 
@@ -814,7 +822,9 @@ async function seedDatabase() {
         discount_amount: 0, 
         total_amount: 269500, 
         payment_method: 'cash', 
-        payment_status: 'pending'
+        payment_status: 'pending',
+        points_used: 150,
+        points_earned: 26
       },
       { 
         invoice_number: 'INV-006', 
@@ -827,7 +837,9 @@ async function seedDatabase() {
         discount_amount: 0, 
         total_amount: 979000, 
         payment_method: 'card', 
-        payment_status: 'pending'
+        payment_status: 'pending',
+        points_used: 0,
+        points_earned: 97
       }
     ]);
     console.log(`   OK ${invoices.length} invoices\n`);

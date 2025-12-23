@@ -17,9 +17,19 @@ jobs:
       - name: Install Vercel CLI
         run: npm install -g vercel
 
+      - name: Debug Vercel access
+        run: |
+          echo "Checking Vercel CLI and accessible projects..."
+          vercel --version
+          vercel whoami --token $VERCEL_TOKEN
+          vercel projects ls --token $VERCEL_TOKEN || true
+          if [ -z "$VERCEL_PROJECT_ID" ]; then echo "VERCEL_PROJECT_ID secret is not set" && exit 1; fi
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
       - name: Deploy to Vercel
-        working-directory: ./frontend
-        run: vercel --token $VERCEL_TOKEN --prod --yes
+        run: vercel --token $VERCEL_TOKEN --prod --yes --project $VERCEL_PROJECT_ID
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
