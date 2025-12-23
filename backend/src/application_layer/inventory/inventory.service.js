@@ -1,12 +1,17 @@
-const inventoryRepo = require('../../infrastructure_layer/inventory/inventory.repository');
-const { InventoryBatch } = require('../../domain_layer/inventory/inventory.entity');
+const inventoryRepo = require("../../infrastructure_layer/inventory/inventory.repository");
+const {
+  InventoryBatch,
+} = require("../../domain_layer/inventory/inventory.entity");
 
 function mapBatch(b) {
-  const supplierName = b.import && b.import.supplier_name
-    ? b.import.supplier_name
-    : (Array.isArray(b.supplier) && b.supplier.length && b.supplier[0].name)
+  const supplierName =
+    b.import && b.import.supplier_name
+      ? b.import.supplier_name
+      : Array.isArray(b.supplier) && b.supplier.length && b.supplier[0].name
       ? b.supplier[0].name
-      : (b.import && b.import.supplier_id ? b.import.supplier_id.toString() : null);
+      : b.import && b.import.supplier_id
+      ? b.import.supplier_id.toString()
+      : null;
 
   return new InventoryBatch({
     id: b._id ? b._id.toString() : null,
@@ -14,9 +19,11 @@ function mapBatch(b) {
     name: b.name || null,
     quantity: b.quantity || 0,
     unit: b.unit || null,
-    expiryDate: b.expiryDate ? new Date(b.expiryDate).toISOString().split('T')[0] : null,
+    expiryDate: b.expiryDate
+      ? new Date(b.expiryDate).toISOString().split("T")[0]
+      : null,
     supplierName: supplierName || null,
-    lastUpdated: b.lastUpdated ? new Date(b.lastUpdated).toISOString() : null
+    lastUpdated: b.lastUpdated ? new Date(b.lastUpdated).toISOString() : null,
   });
 }
 
@@ -27,15 +34,27 @@ async function listInventory({ lowStock = false, expiring = false }) {
 
 async function importItems(items) {
   // validations same as previous controller
-  if (!Array.isArray(items) || items.length === 0) throw { status: 400, message: 'items must be a non-empty array' };
+  if (!Array.isArray(items) || items.length === 0)
+    throw { status: 400, message: "items must be a non-empty array" };
 
   for (const it of items) {
     // Either itemId (existing) or name (new) is required
-    if (!it.itemId && !it.name) throw { status: 400, message: 'itemId or name is required for each item' };
-    if (it.name && !it.unit) throw { status: 400, message: 'unit is required for new ingredients' };
-    if (!it.quantity || typeof it.quantity !== 'number' || it.quantity <= 0) throw { status: 400, message: 'quantity must be > 0' };
-    if (!it.supplierId) throw { status: 400, message: 'supplierId is required' };
-    if (!it.expiryDate || isNaN(Date.parse(it.expiryDate))) throw { status: 400, message: 'expiryDate is required and must be a valid date' };
+    if (!it.itemId && !it.name)
+      throw {
+        status: 400,
+        message: "itemId or name is required for each item",
+      };
+    if (it.name && !it.unit)
+      throw { status: 400, message: "unit is required for new ingredients" };
+    if (!it.quantity || typeof it.quantity !== "number" || it.quantity <= 0)
+      throw { status: 400, message: "quantity must be > 0" };
+    if (!it.supplierId)
+      throw { status: 400, message: "supplierId is required" };
+    if (!it.expiryDate || isNaN(Date.parse(it.expiryDate)))
+      throw {
+        status: 400,
+        message: "expiryDate is required and must be a valid date",
+      };
   }
 
   const result = await inventoryRepo.createStockImport(items);
@@ -43,12 +62,19 @@ async function importItems(items) {
 }
 
 async function exportItems(items) {
-  if (!Array.isArray(items) || items.length === 0) throw { status: 400, message: 'items must be a non-empty array' };
+  if (!Array.isArray(items) || items.length === 0)
+    throw { status: 400, message: "items must be a non-empty array" };
 
   for (const it of items) {
-    if (!it.itemId) throw { status: 400, message: 'itemId is required for each item' };
-    if (!it.quantity || typeof it.quantity !== 'number' || it.quantity <= 0) throw { status: 400, message: 'quantity must be > 0' };
-    if (!it.reason) throw { status: 400, message: 'reason is required for each exported item' };
+    if (!it.itemId)
+      throw { status: 400, message: "itemId is required for each item" };
+    if (!it.quantity || typeof it.quantity !== "number" || it.quantity <= 0)
+      throw { status: 400, message: "quantity must be > 0" };
+    if (!it.reason)
+      throw {
+        status: 400,
+        message: "reason is required for each exported item",
+      };
   }
 
   const result = await inventoryRepo.createStockExport(items);
@@ -56,37 +82,68 @@ async function exportItems(items) {
 }
 
 async function updateIngredient(id, body) {
-  const allowed = ['name', 'unit', 'expiryDate', 'expiry_date', 'supplierId'];
+  const allowed = ["name", "unit", "expiryDate", "expiry_date", "supplierId"];
   const updates = {};
 
   for (const key of allowed) {
-    if (key === 'supplierId' && body.supplierId) {
+    if (key === "supplierId" && body.supplierId) {
       updates.supplier_name = undefined;
       updates.supplier_id = body.supplierId;
     }
 
-    if ((key === 'expiryDate' || key === 'expiry_date') && body.expiryDate) {
+    if ((key === "expiryDate" || key === "expiry_date") && body.expiryDate) {
       updates.expiry_date = body.expiryDate;
     }
 
-    if (key !== 'supplierId' && key !== 'expiryDate' && key !== 'expiry_date' && body[key] !== undefined) {
+    if (
+      key !== "supplierId" &&
+      key !== "expiryDate" &&
+      key !== "expiry_date" &&
+      body[key] !== undefined
+    ) {
       updates[key] = body[key];
     }
   }
 
   if (body.quantity_in_stock !== undefined || body.quantity !== undefined) {
-    throw { status: 400, message: 'Direct quantity update is not allowed' };
+    throw { status: 400, message: "Direct quantity update is not allowed" };
   }
 
   const updated = await inventoryRepo.updateIngredient(id, updates);
-  if (!updated) throw { status: 404, message: 'Ingredient not found' };
+  if (!updated) throw { status: 404, message: "Ingredient not found" };
 
-  return { id: updated._id, name: updated.name, unit: updated.unit, expiry_date: updated.expiry_date, supplier_id: updated.supplier_id };
+  return {
+    id: updated._id,
+    name: updated.name,
+    unit: updated.unit,
+    expiry_date: updated.expiry_date,
+    supplier_id: updated.supplier_id,
+  };
+}
+
+async function listExports() {
+  const exports = await inventoryRepo.getExports();
+  // map to a simple DTO
+  return exports.map((e) => ({
+    id: e.id,
+    code: e.code,
+    staffName: e.staffId || null,
+    items: (e.items || []).map((it) => ({
+      name: it.name,
+      quantity: it.quantity,
+      unit: it.unit,
+      unitPrice: it.unit_price,
+    })),
+    date: e.date,
+    total: e.total,
+    reason: e.reason,
+  }));
 }
 
 module.exports = {
   listInventory,
   importItems,
   exportItems,
-  updateIngredient
+  updateIngredient,
+  listExports,
 };
