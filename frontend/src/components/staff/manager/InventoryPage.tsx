@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Plus,
   AlertTriangle,
@@ -47,6 +47,51 @@ export function InventoryPage() {
     error: suppliersError,
     refresh: refreshSuppliers,
   } = useSuppliers();
+
+  // History of exports (xử lý hàng hỏng)
+  type ExportOrder = {
+    id: string;
+    code?: string;
+    staffName?: string;
+    items: Array<{
+      name: string;
+      quantity: number;
+      unit?: string;
+      unitPrice?: number;
+    }>;
+    date: string;
+    total?: number;
+    reason?: string;
+  };
+
+  const [activeTab, setActiveTab] = useState<string>("inventory");
+  const [history, setHistory] = useState<ExportOrder[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [selectedExportOrder, setSelectedExportOrder] =
+    useState<ExportOrder | null>(null);
+
+  const refreshHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const res = await fetch(`/api/inventory/exports`);
+      if (!res.ok) throw new Error("Không thể tải lịch sử xuất kho");
+      const data = await res.json();
+      setHistory(data || []);
+    } catch (e) {
+      console.error(e);
+      setHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    if (value === "history") {
+      refreshHistory();
+    }
+  };
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -400,13 +445,20 @@ export function InventoryPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="inventory" className="space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={handleTabChange}
+        className="space-y-6"
+      >
         <TabsList className="h-14 p-1">
           <TabsTrigger value="inventory" className="px-6 py-2 text-base">
             Tồn kho
           </TabsTrigger>
           <TabsTrigger value="suppliers" className="px-6 py-2 text-base">
             Nhà cung cấp
+          </TabsTrigger>
+          <TabsTrigger value="history" className="px-6 py-2 text-base">
+            Lịch sử xuất kho
           </TabsTrigger>
         </TabsList>
 
@@ -639,7 +691,136 @@ export function InventoryPage() {
             </div>
           </Card>
         </TabsContent>
+        {/* History Tab */}
+        <TabsContent value="history" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium">Lịch sử xuất kho</h3>
+            <div>
+              <Button size="sm" variant="secondary" onClick={refreshHistory}>
+                Làm mới
+              </Button>
+            </div>
+          </div>
+
+          <Card>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-4">Mã phiếu</th>
+                    <th className="text-left p-4">Nhân viên</th>
+                    <th className="text-left p-4">Ngày xuất</th>
+                    <th className="text-left p-4">Tổng tiền</th>
+                    <th className="text-left p-4">Lý do</th>
+                    <th className="text-left p-4">Chi tiết</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {historyLoading ? (
+                    <tr>
+                      <td colSpan={6} className="p-4 text-center">
+                        Đang tải...
+                      </td>
+                    </tr>
+                  ) : history.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="p-4 text-center">
+                        Chưa có lịch sử
+                      </td>
+                    </tr>
+                  ) : (
+                    history.map((h) => (
+                      <tr
+                        key={h.id}
+                        className="border-b hover:bg-gray-50 cursor-pointer"
+                        onClick={() => {
+                          setSelectedExportOrder(h);
+                          setShowHistoryModal(true);
+                        }}
+                      >
+                        <td className="p-4">{h.code || h.id}</td>
+                        <td className="p-4">{h.staffName || "-"}</td>
+                        <td className="p-4">
+                          {new Date(h.date).toLocaleString("vi-VN")}
+                        </td>
+                        <td className="p-4">
+                          {(h.total || 0).toLocaleString()} đ
+                        </td>
+                        <td className="p-4">{h.reason || "-"}</td>
+                        <td className="p-4 text-blue-600">Xem</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      {/* History Detail Modal */}
+      <Modal
+        isOpen={showHistoryModal}
+        onClose={() => {
+          setShowHistoryModal(false);
+          setSelectedExportOrder(null);
+        }}
+        title="Chi tiết phiếu xuất kho"
+        size="lg"
+      >
+        <div className="space-y-4">
+          {selectedExportOrder ? (
+            <div>
+              <div className="mb-2">
+                <strong>Số phiếu:</strong>{" "}
+                {selectedExportOrder.code || selectedExportOrder.id}
+              </div>
+              <div className="mb-2">
+                <strong>Nhân viên:</strong>{" "}
+                {selectedExportOrder.staffName || "-"}
+              </div>
+              <div className="mb-2">
+                <strong>Ngày xuất:</strong>{" "}
+                {new Date(selectedExportOrder.date).toLocaleString("vi-VN")}
+              </div>
+              <div className="mb-2">
+                <strong>Lý do:</strong> {selectedExportOrder.reason || "-"}
+              </div>
+              <div className="mb-2">
+                <strong>Nguyên liệu:</strong>
+                <ul className="list-disc ml-6 mt-2">
+                  {selectedExportOrder.items.map((it, idx) => (
+                    <li key={idx}>
+                      {it.name} — {it.quantity} {it.unit || ""}{" "}
+                      {it.unitPrice
+                        ? `@ ${it.unitPrice.toLocaleString()} đ`
+                        : ""}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="mt-3">
+                <strong>Tổng giá trị:</strong>{" "}
+                {(selectedExportOrder.total || 0).toLocaleString()} đ
+              </div>
+            </div>
+          ) : (
+            <div>Không có dữ liệu</div>
+          )}
+          <div className="flex gap-4 pt-4">
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={() => {
+                setShowHistoryModal(false);
+                setSelectedExportOrder(null);
+              }}
+            >
+              Đóng
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Import Modal */}
       <Modal
