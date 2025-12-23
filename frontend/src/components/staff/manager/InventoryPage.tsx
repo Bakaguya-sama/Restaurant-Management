@@ -65,12 +65,35 @@ export function InventoryPage() {
     reason?: string;
   };
 
+  // History of imports (nhập kho)
+  type ImportOrder = {
+    id: string;
+    code?: string;
+    supplierName?: string;
+    items: Array<{
+      name: string;
+      quantity: number;
+      unit?: string;
+      unitPrice?: number;
+      expiryDate?: string;
+    }>;
+    date: string;
+    total?: number;
+    notes?: string;
+  };
+
   const [activeTab, setActiveTab] = useState<string>("inventory");
   const [history, setHistory] = useState<ExportOrder[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [selectedExportOrder, setSelectedExportOrder] =
     useState<ExportOrder | null>(null);
+
+  const [importHistory, setImportHistory] = useState<ImportOrder[]>([]);
+  const [importHistoryLoading, setImportHistoryLoading] = useState(false);
+  const [showImportHistoryModal, setShowImportHistoryModal] = useState(false);
+  const [selectedImportOrder, setSelectedImportOrder] =
+    useState<ImportOrder | null>(null);
 
   const refreshHistory = async () => {
     setHistoryLoading(true);
@@ -101,10 +124,44 @@ export function InventoryPage() {
     }
   };
 
+  const refreshImportHistory = async () => {
+    setImportHistoryLoading(true);
+    try {
+      const response = await fetch(`http://localhost:5000/api/v1/inventory/imports`);
+      const result = await response.json();
+      if (result.success && result.data) {
+        setImportHistory(
+          (result.data || []).map((d: any) => ({
+            id: d.id,
+            code: d.code || undefined,
+            supplierName: d.supplierName || undefined,
+            items: (d.items || []).map((it: any) => ({
+              name: it.name,
+              quantity: it.quantity,
+              unit: it.unit || undefined,
+              unitPrice: it.unitPrice || undefined,
+              expiryDate: it.expiryDate || undefined,
+            })),
+            date: d.date,
+            total: d.total || 0,
+            notes: d.notes || undefined,
+          }))
+        );
+      }
+    } catch (e) {
+      console.error(e);
+      setImportHistory([]);
+    } finally {
+      setImportHistoryLoading(false);
+    }
+  };
+
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     if (value === "history") {
       refreshHistory();
+    } else if (value === "import-history") {
+      refreshImportHistory();
     }
   };
 
@@ -492,6 +549,9 @@ export function InventoryPage() {
           <TabsTrigger value="suppliers" className="px-6 py-2 text-base">
             Nhà cung cấp
           </TabsTrigger>
+          <TabsTrigger value="import-history" className="px-6 py-2 text-base">
+            Lịch sử nhập kho
+          </TabsTrigger>
           <TabsTrigger value="history" className="px-6 py-2 text-base">
             Lịch sử xuất kho
           </TabsTrigger>
@@ -791,7 +851,160 @@ export function InventoryPage() {
             </div>
           </Card>
         </TabsContent>
+
+        {/* Import History Tab */}
+        <TabsContent value="import-history" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium">Lịch sử nhập kho</h3>
+            <div>
+              <Button size="sm" variant="secondary" onClick={refreshImportHistory}>
+                Làm mới
+              </Button>
+            </div>
+          </div>
+
+          <Card>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-4">Mã phiếu</th>
+                    <th className="text-left p-4">Nhà cung cấp</th>
+                    <th className="text-left p-4">Ngày nhập</th>
+                    <th className="text-left p-4">Tổng tiền</th>
+                    <th className="text-left p-4">Ghi chú</th>
+                    <th className="text-left p-4">Chi tiết</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {importHistoryLoading ? (
+                    <tr>
+                      <td colSpan={6} className="p-4 text-center">
+                        Đang tải...
+                      </td>
+                    </tr>
+                  ) : importHistory.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="p-4 text-center">
+                        Chưa có lịch sử nhập kho
+                      </td>
+                    </tr>
+                  ) : (
+                    importHistory.map((h) => (
+                      <tr
+                        key={h.id}
+                        className="border-b hover:bg-gray-50 cursor-pointer"
+                        onClick={() => {
+                          setSelectedImportOrder(h);
+                          setShowImportHistoryModal(true);
+                        }}
+                      >
+                        <td className="p-4">{h.code || h.id}</td>
+                        <td className="p-4">{h.supplierName || "-"}</td>
+                        <td className="p-4">
+                          {new Date(h.date).toLocaleString("vi-VN")}
+                        </td>
+                        <td className="p-4">
+                          {(h.total || 0).toLocaleString()} đ
+                        </td>
+                        <td className="p-4">{h.notes || "-"}</td>
+                        <td className="p-4 text-blue-600">Xem</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      {/* Import History Detail Modal */}
+      <Modal
+        isOpen={showImportHistoryModal}
+        onClose={() => {
+          setShowImportHistoryModal(false);
+          setSelectedImportOrder(null);
+        }}
+        title="Chi tiết phiếu nhập kho"
+        size="lg"
+      >
+        <div className="space-y-4">
+          {selectedImportOrder ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="text-sm text-gray-700">
+                  <strong>Mã phiếu:</strong> {selectedImportOrder.code || selectedImportOrder.id}
+                </div>
+                <div className="text-sm text-gray-700">
+                  <strong>Nhà cung cấp:</strong> {selectedImportOrder.supplierName || "-"}
+                </div>
+                <div className="text-sm text-gray-700">
+                  <strong>Ngày nhập:</strong>{" "}
+                  {new Date(selectedImportOrder.date).toLocaleString("vi-VN")}
+                </div>
+                <div className="text-sm text-gray-700">
+                  <strong>Tổng tiền:</strong>{" "}
+                  {(selectedImportOrder.total || 0).toLocaleString()} đ
+                </div>
+              </div>
+
+              {selectedImportOrder.notes && (
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <strong className="text-sm">Ghi chú:</strong>
+                  <p className="text-sm text-gray-700 mt-1">{selectedImportOrder.notes}</p>
+                </div>
+              )}
+
+              <div>
+                <h4 className="text-sm font-medium mb-2">Danh sách nguyên liệu:</h4>
+                <div className="overflow-x-auto border rounded-lg">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="text-left p-3">Tên</th>
+                        <th className="text-right p-3">Số lượng</th>
+                        <th className="text-right p-3">Đơn giá</th>
+                        <th className="text-right p-3">Thành tiền</th>
+                        <th className="text-right p-3">Hạn sử dụng</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedImportOrder.items.map((item, idx) => (
+                        <tr key={idx} className="border-t">
+                          <td className="p-3">{item.name}</td>
+                          <td className="text-right p-3">
+                            {item.quantity} {item.unit || ""}
+                          </td>
+                          <td className="text-right p-3">
+                            {(item.unitPrice || 0).toLocaleString()} đ
+                          </td>
+                          <td className="text-right p-3">
+                            {((item.quantity || 0) * (item.unitPrice || 0)).toLocaleString()} đ
+                          </td>
+                          <td className="text-right p-3">
+                            {item.expiryDate 
+                              ? new Date(item.expiryDate).toLocaleDateString("vi-VN")
+                              : "-"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-4 border-t">
+                <div className="text-lg font-semibold">
+                  Tổng cộng: {(selectedImportOrder.total || 0).toLocaleString()} đ
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-center text-gray-500">Không có dữ liệu</p>
+          )}
+        </div>
+      </Modal>
 
       {/* History Detail Modal */}
       <Modal
@@ -1058,6 +1271,20 @@ export function InventoryPage() {
                             <X className="w-4 h-4" />
                           </Button>
                         )}
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-1">
+                          Hạn sử dụng
+                        </label>
+                        <Input
+                          type="date"
+                          value={item.expiryDate || ""}
+                          onChange={(e) =>
+                            updateImportRow(index, "expiryDate", e.target.value)
+                          }
+                          className="w-full"
+                          min={new Date().toISOString().split("T")[0]}
+                        />
                       </div>
                     </div>
                   ) : (
