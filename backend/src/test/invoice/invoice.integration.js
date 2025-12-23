@@ -2,7 +2,7 @@ const request = require('supertest');
 const app = require('../../../server');
 const connectDB = require('../../../config/database');
 const mongoose = require('mongoose');
-const { Invoice, Order, User, StaffCashier, Customer } = require('../../models');
+const { Invoice, Order, User, StaffCashier, Customer, Promotion } = require('../../models');
 
 describe('Invoice Integration Tests', () => {
   let createdInvoiceId;
@@ -163,19 +163,347 @@ describe('Invoice Integration Tests', () => {
   });
 
   describe('PATCH /api/v1/invoices/:id/paid - Mark as Paid', () => {
-    it('should mark invoice as paid', async () => {
+    it('should fail when payment method is missing', async () => {
+      // Create a new invoice first
+      const newInvoice = {
+        order_id: testOrderId,
+        staff_id: testStaffId,
+        customer_id: testCustomerId,
+        subtotal: 300000,
+        tax_rate: 10,
+        payment_method: 'cash'
+      };
+
+      // Delete existing invoice for this order
+      await Invoice.deleteMany({ order_id: testOrderId });
+
+      const createResponse = await request(app)
+        .post('/api/v1/invoices')
+        .send(newInvoice)
+        .expect(201);
+
+      const newInvoiceId = createResponse.body.data.id;
+
+      const response = await request(app)
+        .patch(`/api/v1/invoices/${newInvoiceId}/paid`)
+        .send({})
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Payment method is required');
+
+      // Cleanup
+      await Invoice.findByIdAndDelete(newInvoiceId);
+    });
+
+    it('should fail with invalid payment method', async () => {
+      // Create another invoice for this test
+      await Invoice.deleteMany({ order_id: testOrderId });
+
+      const newInvoice = {
+        order_id: testOrderId,
+        staff_id: testStaffId,
+        customer_id: testCustomerId,
+        subtotal: 400000,
+        tax_rate: 10,
+        payment_method: 'cash'
+      };
+
+      const createResponse = await request(app)
+        .post('/api/v1/invoices')
+        .send(newInvoice)
+        .expect(201);
+
+      const newInvoiceId = createResponse.body.data.id;
+
+      const response = await request(app)
+        .patch(`/api/v1/invoices/${newInvoiceId}/paid`)
+        .send({ payment_method: 'invalid_method' })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Invalid payment method');
+
+      // Cleanup
+      await Invoice.findByIdAndDelete(newInvoiceId);
+    });
+
+    it('should mark invoice as paid with payment method', async () => {
+      // Recreate invoice for this test
+      await Invoice.deleteMany({ order_id: testOrderId });
+
+      const newInvoice = {
+        order_id: testOrderId,
+        staff_id: testStaffId,
+        customer_id: testCustomerId,
+        subtotal: 500000,
+        tax_rate: 10,
+        payment_method: 'cash'
+      };
+
+      const createResponse = await request(app)
+        .post('/api/v1/invoices')
+        .send(newInvoice)
+        .expect(201);
+
+      createdInvoiceId = createResponse.body.data.id;
+
       const response = await request(app)
         .patch(`/api/v1/invoices/${createdInvoiceId}/paid`)
+        .send({ payment_method: 'card' })
         .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.payment_status).toBe('paid');
+      expect(response.body.data.payment_method).toBe('card');
       expect(response.body.data).toHaveProperty('paid_at');
+    });
+
+    it('should mark invoice as paid with promotion', async () => {
+      // Create new invoice using different order  
+      const tempOrder = await Order.create({
+        customer_id: testCustomerId,
+        staff_id: testStaffId,
+        order_number: `PROMO${Date.now()}`,
+        order_date: new Date(),
+        order_time: '14:00',
+        status: 'completed',
+        total_amount: 500000
+      });
+
+      const newInvoice = {
+        order_id: tempOrder._id,
+        staff_id: testStaffId,
+        customer_id: testCustomerId,
+        subtotal: 500000,
+        tax_rate: 10,
+        payment_method: 'cash'
+      };
+
+      const createResponse = await request(app)
+        .post('/api/v1/invoices')
+        .send(newInvoice)
+        .expect(201);
+
+      const invoiceId = createResponse.body.data.id;
+
+      // Get available promotions
+      const promotionsResponse = await request(app)
+        .get('/api/v1/promotions?is_active=true')
+        .expect(200);
+
+      if (promotionsResponse.body.data && promotionsResponse.body.data.length > 0) {
+        const promotion = promotionsResponse.body.data[0];
+        
+        const response = await request(app)
+          .patch(`/api/v1/invoices/${invoiceId}/paid`)
+          .send({ 
+            payment_method: 'card',
+            promotion_id: promotion.id 
+          })
+          .expect(200);
+
+        expect(response.body.success).toBe(true);
+        expect(response.body.data.payment_status).toBe('paid');
+        expect(response.body.data.discount_amount).toBeGreaterThan(0);
+      }
+
+      // Cleanup
+      await Invoice.findByIdAndDelete(invoiceId);
+      await Order.findByIdAndDelete(tempOrder._id);
+    });
+
+    it('should increment promotion usage count when applied', async () => {
+      // Create a limited promotion
+      const limitedPromotion = await Promotion.create({
+        promo_code: `LIMITED${Date.now()}`,
+        name: 'Limited Test Promotion',
+        promotion_type: 'percentage',
+        discount_value: 10,
+        start_date: new Date(Date.now() - 24 * 60 * 60 * 1000),
+        end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        minimum_order_amount: 100000,
+        max_uses: 5,
+        current_uses: 0,
+        is_active: true
+      });
+
+      const initialUses = limitedPromotion.current_uses;
+
+      // Create invoice and order
+      const tempOrder = await Order.create({
+        customer_id: testCustomerId,
+        staff_id: testStaffId,
+        order_number: `LIMIT${Date.now()}`,
+        order_date: new Date(),
+        order_time: '15:00',
+        status: 'completed',
+        total_amount: 500000
+      });
+
+      const newInvoice = {
+        order_id: tempOrder._id,
+        staff_id: testStaffId,
+        customer_id: testCustomerId,
+        subtotal: 500000,
+        tax_rate: 10,
+        payment_method: 'cash'
+      };
+
+      const createResponse = await request(app)
+        .post('/api/v1/invoices')
+        .send(newInvoice)
+        .expect(201);
+
+      const invoiceId = createResponse.body.data.id;
+
+      // Apply promotion and mark as paid
+      await request(app)
+        .patch(`/api/v1/invoices/${invoiceId}/paid`)
+        .send({ 
+          payment_method: 'card',
+          promotion_id: limitedPromotion._id.toString()
+        })
+        .expect(200);
+
+      // Check promotion usage count increased
+      const updatedPromotion = await Promotion.findById(limitedPromotion._id);
+      expect(updatedPromotion.current_uses).toBe(initialUses + 1);
+
+      // Cleanup
+      await Invoice.findByIdAndDelete(invoiceId);
+      await Order.findByIdAndDelete(tempOrder._id);
+      await Promotion.findByIdAndDelete(limitedPromotion._id);
+    });
+
+    it('should fail when promotion reaches max uses', async () => {
+      // Create a promotion with max uses reached
+      const maxedPromotion = await Promotion.create({
+        promo_code: `MAXED${Date.now()}`,
+        name: 'Maxed Test Promotion',
+        promotion_type: 'fixed_amount',
+        discount_value: 50000,
+        start_date: new Date(Date.now() - 24 * 60 * 60 * 1000),
+        end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        minimum_order_amount: 100000,
+        max_uses: 3,
+        current_uses: 3, // Already at max
+        is_active: true
+      });
+
+      // Create invoice and order
+      const tempOrder = await Order.create({
+        customer_id: testCustomerId,
+        staff_id: testStaffId,
+        order_number: `MAXTEST${Date.now()}`,
+        order_date: new Date(),
+        order_time: '16:00',
+        status: 'completed',
+        total_amount: 500000
+      });
+
+      const newInvoice = {
+        order_id: tempOrder._id,
+        staff_id: testStaffId,
+        customer_id: testCustomerId,
+        subtotal: 500000,
+        tax_rate: 10,
+        payment_method: 'cash'
+      };
+
+      const createResponse = await request(app)
+        .post('/api/v1/invoices')
+        .send(newInvoice)
+        .expect(201);
+
+      const invoiceId = createResponse.body.data.id;
+
+      // Try to apply maxed out promotion
+      const response = await request(app)
+        .patch(`/api/v1/invoices/${invoiceId}/paid`)
+        .send({ 
+          payment_method: 'card',
+          promotion_id: maxedPromotion._id.toString()
+        })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('maximum uses');
+
+      // Cleanup
+      await Invoice.findByIdAndDelete(invoiceId);
+      await Order.findByIdAndDelete(tempOrder._id);
+      await Promotion.findByIdAndDelete(maxedPromotion._id);
+    });
+
+    it('should allow unlimited promotions (max_uses = -1)', async () => {
+      // Create unlimited promotion
+      const unlimitedPromotion = await Promotion.create({
+        promo_code: `UNLIMITED${Date.now()}`,
+        name: 'Unlimited Test Promotion',
+        promotion_type: 'percentage',
+        discount_value: 5,
+        start_date: new Date(Date.now() - 24 * 60 * 60 * 1000),
+        end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        minimum_order_amount: 100000,
+        max_uses: -1, // Unlimited
+        current_uses: 999, // High usage count
+        is_active: true
+      });
+
+      // Create invoice and order
+      const tempOrder = await Order.create({
+        customer_id: testCustomerId,
+        staff_id: testStaffId,
+        order_number: `UNLIM${Date.now()}`,
+        order_date: new Date(),
+        order_time: '17:00',
+        status: 'completed',
+        total_amount: 500000
+      });
+
+      const newInvoice = {
+        order_id: tempOrder._id,
+        staff_id: testStaffId,
+        customer_id: testCustomerId,
+        subtotal: 500000,
+        tax_rate: 10,
+        payment_method: 'cash'
+      };
+
+      const createResponse = await request(app)
+        .post('/api/v1/invoices')
+        .send(newInvoice)
+        .expect(201);
+
+      const invoiceId = createResponse.body.data.id;
+
+      // Apply unlimited promotion - should succeed
+      const response = await request(app)
+        .patch(`/api/v1/invoices/${invoiceId}/paid`)
+        .send({ 
+          payment_method: 'card',
+          promotion_id: unlimitedPromotion._id.toString()
+        })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.payment_status).toBe('paid');
+
+      // Verify usage count still incremented
+      const updatedPromotion = await Promotion.findById(unlimitedPromotion._id);
+      expect(updatedPromotion.current_uses).toBe(1000);
+
+      // Cleanup
+      await Invoice.findByIdAndDelete(invoiceId);
+      await Order.findByIdAndDelete(tempOrder._id);
+      await Promotion.findByIdAndDelete(unlimitedPromotion._id);
     });
 
     it('should fail when invoice already paid', async () => {
       const response = await request(app)
         .patch(`/api/v1/invoices/${createdInvoiceId}/paid`)
+        .send({ payment_method: 'cash' })
         .expect(400);
 
       expect(response.body.success).toBe(false);
