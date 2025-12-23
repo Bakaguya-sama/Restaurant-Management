@@ -274,10 +274,21 @@ export function InvoicesPage() {
 
     const pointsEarned = Math.floor(totalAmount / 10000) * 10;
 
-    try {
-      await invoiceApi.markAsPaid(selectedInvoice.id);
+    // Map payment method to backend format
+    const paymentMethodMap: { [key: string]: string } = {
+      cash: 'cash',
+      card: 'card',
+      wallet: 'e-wallet'
+    };
 
-      // Refresh from server, then patch the paid invoice locally to reflect discounts/points applied
+    try {
+      // Send promotion_id if cashier selected one
+      const promotionId = cashierSelectedPromotion?.id || null;
+      await invoiceApi.markAsPaid(
+        selectedInvoice.id, 
+        paymentMethodMap[paymentMethod] || 'cash',
+        promotionId
+      );
       await fetchInvoices();
 
       setInvoices((prev) =>

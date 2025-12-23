@@ -283,7 +283,7 @@ export function BillsPage() {
       if (paymentMethod === 'cash') {
         toast.success("Đã gửi yêu cầu thanh toán! Vui lòng chờ nhân viên xác nhận.");
       } else {
-        await invoiceApi.markAsPaid(selectedBill.invoiceId);
+        await invoiceApi.markAsPaid(selectedBill.invoiceId, paymentMethodMap[paymentMethod], null);
         
         const updatedBills = allBills.map(bill => 
           bill.invoiceId === selectedBill.invoiceId 

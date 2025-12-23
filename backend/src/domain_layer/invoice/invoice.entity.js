@@ -62,8 +62,13 @@ class InvoiceEntity {
     }
 
     const validPaymentMethods = ['cash', 'card', 'transfer', 'e-wallet'];
-    if (!this.payment_method || !validPaymentMethods.includes(this.payment_method)) {
+    if (this.payment_method && !validPaymentMethods.includes(this.payment_method)) {
       errors.push('Invalid payment method');
+    }
+    
+    // Payment method is required only when payment_status is 'paid'
+    if (this.payment_status === 'paid' && !this.payment_method) {
+      errors.push('Payment method is required when invoice is paid');
     }
 
     const validPaymentStatuses = ['pending', 'paid', 'cancelled'];

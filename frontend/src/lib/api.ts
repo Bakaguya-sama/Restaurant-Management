@@ -343,9 +343,15 @@ export const invoiceApi = {
     return handleResponse<any>(response);
   },
 
-  markAsPaid: async (id: string) => {
+  markAsPaid: async (id: string, paymentMethod: string, promotionId?: string | null) => {
+    const body: any = { payment_method: paymentMethod };
+    if (promotionId) {
+      body.promotion_id = promotionId;
+    }
     const response = await fetch(`${API_BASE_URL}/invoices/${id}/paid`, {
       method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
     });
     return handleResponse<any>(response);
   },
