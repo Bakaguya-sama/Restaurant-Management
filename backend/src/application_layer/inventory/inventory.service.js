@@ -140,10 +140,32 @@ async function listExports() {
   }));
 }
 
+async function listImports() {
+  const imports = await inventoryRepo.getImports();
+  // map to a simple DTO
+  return imports.map((i) => ({
+    id: i.id,
+    code: i.code,
+    supplierId: i.supplierId,
+    supplierName: i.supplierName,
+    items: (i.items || []).map((it) => ({
+      name: it.name,
+      quantity: it.quantity,
+      unit: it.unit,
+      unitPrice: it.unit_price,
+      expiryDate: it.expiry_date,
+    })),
+    date: i.date,
+    total: i.total,
+    notes: i.notes,
+  }));
+}
+
 module.exports = {
   listInventory,
   importItems,
   exportItems,
   updateIngredient,
   listExports,
+  listImports,
 };

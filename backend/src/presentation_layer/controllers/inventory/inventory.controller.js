@@ -85,6 +85,22 @@ exports.listExports = async (req, res) => {
   }
 };
 
+exports.listImports = async (req, res) => {
+  try {
+    const result = await inventoryService.listImports();
+    return formatSuccess(res, result, "Import history retrieved");
+  } catch (err) {
+    console.error("listImports error", err);
+    return res
+      .status(err.status || 500)
+      .json({
+        success: false,
+        data: null,
+        message: err.message || "Internal Server Error",
+      });
+  }
+};
+
 exports.updateIngredient = async (req, res) => {
   try {
     const result = await inventoryService.updateIngredient(

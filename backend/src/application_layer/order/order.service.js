@@ -12,6 +12,53 @@ class OrderService {
     this.orderDetailService = new OrderDetailService();
   }
 
+  /**
+   * Calculate remaining quantity for a batch
+   * @param {ObjectId} batchId - Batch ID
+   * @returns {Promise<number>} - Remaining quantity
+   */
+  async getBatchRemainingQuantity(batchId) {
+    const batch = await StockImportDetail.findById(batchId);
+    if (!batch) return 0;
+
+    // Calculate total exported from this batch
+    const exports = await StockExportDetail.find({ batch_id: batchId });
+    const totalExported = exports.reduce((sum, e) => sum + (e.quantity || 0), 0);
+    
+    return batch.quantity - totalExported;
+  }
+
+  /**
+   * Get batches with remaining quantity calculated dynamically
+   * @param {ObjectId} ingredientId
+   * @param {Date} today
+   * @returns {Promise<Array>} - Batches with remaining quantity
+   */
+  async getBatchesWithRemaining(ingredientId, today) {
+    const batches = await StockImportDetail.find({
+      ingredient_id: ingredientId,
+      $or: [
+        { expiry_date: { $exists: false } },
+        { expiry_date: null },
+        { expiry_date: { $gte: today } }
+      ]
+    }).sort({ expiry_date: 1, _id: 1 });
+
+    // Calculate remaining for each batch
+    const batchesWithRemaining = [];
+    for (const batch of batches) {
+      const remaining = await this.getBatchRemainingQuantity(batch._id);
+      if (remaining > 0) {
+        batchesWithRemaining.push({
+          ...batch.toObject(),
+          remainingQuantity: remaining
+        });
+      }
+    }
+
+    return batchesWithRemaining;
+  }
+
   async getAllOrders(filters = {}) {
     return await this.orderRepository.findAll(filters);
   }
@@ -32,6 +79,9 @@ class OrderService {
   async validateAndPrepareInventoryDeduction(orderItems) {
     const insufficientItems = [];
     const deductionPlan = []; // Store what to deduct
+    // So sánh với đầu ngày hôm nay để lô hết hạn trong ngày vẫn dùng được
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     for (const item of orderItems) {
       // Get dish ingredients
@@ -47,7 +97,7 @@ class OrderService {
           throw { status: 404, message: `Ingredient ${ingredient.name} not found` };
         }
 
-        // Check if sufficient stock
+        // Check if sufficient total stock
         if (ing.quantity_in_stock < requiredQty) {
           insufficientItems.push({
             ingredientName: ing.name,
@@ -55,16 +105,31 @@ class OrderService {
             available: ing.quantity_in_stock,
             unit: ing.unit
           });
-        } else {
-          // Add to deduction plan
-          deductionPlan.push({
-            ingredient_id: ing._id,
-            ingredientName: ing.name,
-            quantity: requiredQty,
-            unit: ing.unit,
-            unit_price: ing.unit_price
-          });
+          continue; // Skip to next ingredient
         }
+
+        // ========== KIỂM TRA THÊM: Có đủ trong các lô chưa hết hạn không? ==========
+        const availableBatches = await this.getBatchesWithRemaining(ing._id, today);
+        const totalAvailableInBatches = availableBatches.reduce((sum, batch) => sum + batch.remainingQuantity, 0);
+        
+        if (totalAvailableInBatches < requiredQty) {
+          insufficientItems.push({
+            ingredientName: ing.name,
+            required: requiredQty,
+            available: totalAvailableInBatches,
+            unit: ing.unit
+          });
+          continue; // Skip to next ingredient
+        }
+
+        // All checks passed - add to deduction plan
+        deductionPlan.push({
+          ingredient_id: ing._id,
+          ingredientName: ing.name,
+          quantity: requiredQty,
+          unit: ing.unit,
+          unit_price: ing.unit_price
+        });
       }
     }
 
@@ -101,33 +166,39 @@ class OrderService {
     let totalCost = 0;
 
     for (const plan of deductionPlan) {
-      // Deduct from batches using FIFO
+      // Deduct from batches using FIFO (First Expired First Out)
       let remainingQty = plan.quantity;
+      // So sánh với đầu ngày hôm nay
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
       
-      let batchesQuery = StockImportDetail.find({ 
-        ingredient_id: plan.ingredient_id, 
-        quantity: { $gt: 0 } 
-      }).sort({ expiry_date: 1, _id: 1 });
-      
-      // Add session if available
-      if (session) {
-        batchesQuery = batchesQuery.session(session);
-      }
-      
-      const batches = await batchesQuery;
+      // Lấy các lô còn số lượng (tính động), chưa hết hạn
+      const batches = await this.getBatchesWithRemaining(plan.ingredient_id, today);
 
       for (const batch of batches) {
         if (remainingQty <= 0) break;
         
-        const deductQty = Math.min(batch.quantity, remainingQty);
-        batch.quantity -= deductQty;
+        const deductQty = Math.min(batch.remainingQuantity, remainingQty);
         remainingQty -= deductQty;
         
+        // ⭐ THAY ĐỔI: KHÔNG trừ batch.quantity nữa
+        // Chỉ tạo StockExportDetail để ghi lại đã xuất
+        const exportDetail = new StockExportDetail({
+          export_id: stockExport._id,
+          ingredient_id: plan.ingredient_id,
+          batch_id: batch._id, // ⭐ Link to batch
+          quantity: deductQty,
+          unit_price: batch.unit_price,
+          line_total: deductQty * batch.unit_price
+        });
+        
         if (session) {
-          await batch.save({ session });
+          await exportDetail.save({ session });
         } else {
-          await batch.save();
+          await exportDetail.save();
         }
+        
+        totalCost += deductQty * batch.unit_price;
       }
 
       if (remainingQty > 0) {
@@ -150,24 +221,6 @@ class OrderService {
         await ingredient.save({ session });
       } else {
         await ingredient.save();
-      }
-
-      // Create export detail record
-      const lineCost = plan.quantity * plan.unit_price;
-      totalCost += lineCost;
-
-      const exportDetail = new StockExportDetail({
-        export_id: stockExport._id,
-        ingredient_id: plan.ingredient_id,
-        quantity: plan.quantity,
-        unit_price: plan.unit_price,
-        line_total: lineCost
-      });
-      
-      if (session) {
-        await exportDetail.save({ session });
-      } else {
-        await exportDetail.save();
       }
     }
 

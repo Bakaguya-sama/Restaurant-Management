@@ -8,7 +8,7 @@ const {
 const mongoose = require("mongoose");
 
 async function getBatches({ low = false, expiring = false }) {
-  const match = { quantity: { $gt: 0 } };
+  const match = {};
 
   if (expiring) {
     const now = new Date();
@@ -44,7 +44,34 @@ async function getBatches({ low = false, expiring = false }) {
         as: "supplier",
       },
     },
+    // Lookup exports for this batch to calculate remaining
+    {
+      $lookup: {
+        from: "stockexportdetails",
+        localField: "_id",
+        foreignField: "batch_id",
+        as: "exports",
+      },
+    },
+    // Calculate remaining quantity
+    {
+      $addFields: {
+        totalExported: {
+          $sum: "$exports.quantity",
+        },
+        remainingQuantity: {
+          $subtract: ["$quantity", { $sum: "$exports.quantity" }],
+        },
+      },
+    },
   ];
+
+  // Filter by remaining > 0
+  pipeline.push({
+    $match: {
+      remainingQuantity: { $gt: 0 },
+    },
+  });
 
   if (low) {
     pipeline.push({
@@ -67,7 +94,8 @@ async function getBatches({ low = false, expiring = false }) {
       ingredient_id: "$ingredient._id",
       name: "$ingredient.name",
       lastUpdated: "$ingredient.updated_at",
-      quantity: "$quantity",
+      quantity: "$remainingQuantity", // Use remaining, not original
+      originalQuantity: "$quantity", // Keep original for reference
       unit: "$ingredient.unit",
       expiryDate: "$expiry_date",
     },
@@ -181,29 +209,40 @@ async function createStockExport(items, staffId = null) {
     const unitPrice = ing.unit_price || 0;
     const lineTotal = unitPrice * it.quantity;
 
-    const detail = new StockExportDetail({
-      export_id: stockExport._id,
-      ingredient_id: ing._id,
-      quantity: it.quantity,
-      unit_price: unitPrice,
-      line_total: lineTotal,
-    });
-    await detail.save();
-
     // Deduct quantity from batches using FIFO (oldest first)
     let remainingQty = it.quantity;
     const batches = await StockImportDetail.find({
       ingredient_id: ing._id,
-      quantity: { $gt: 0 },
     }).sort({ expiry_date: 1, _id: 1 }); // Sort by expiry date then by ID (FIFO)
 
+    // Calculate remaining for each batch and filter > 0
+    const batchesWithRemaining = [];
     for (const batch of batches) {
+      const exports = await StockExportDetail.find({ batch_id: batch._id });
+      const totalExported = exports.reduce((sum, e) => sum + (e.quantity || 0), 0);
+      const remaining = batch.quantity - totalExported;
+      if (remaining > 0) {
+        batchesWithRemaining.push({ batch, remaining });
+      }
+    }
+
+    for (const { batch, remaining } of batchesWithRemaining) {
       if (remainingQty <= 0) break;
 
-      const deductQty = Math.min(batch.quantity, remainingQty);
-      batch.quantity -= deductQty;
+      const deductQty = Math.min(remaining, remainingQty);
+      
+      // Create export detail with batch_id link
+      const detail = new StockExportDetail({
+        export_id: stockExport._id,
+        ingredient_id: ing._id,
+        batch_id: batch._id,
+        quantity: deductQty,
+        unit_price: batch.unit_price || unitPrice,
+        line_total: deductQty * (batch.unit_price || unitPrice),
+      });
+      await detail.save();
+
       remainingQty -= deductQty;
-      await batch.save();
     }
 
     // Update ingredient total stock
@@ -213,7 +252,7 @@ async function createStockExport(items, staffId = null) {
     await ing.save();
 
     details.push({
-      id: detail._id,
+      id: stockExport._id,
       ingredientId: ing._id,
       quantity: it.quantity,
     });
@@ -265,10 +304,56 @@ async function getExports() {
   return results;
 }
 
+async function getImports() {
+  // Return list of stock imports with their details and ingredient info
+  const imports = await StockImport.find().sort({ created_at: -1 }).lean();
+  const Supplier = mongoose.model("Supplier");
+
+  const results = [];
+  for (const imp of imports) {
+    const details = await StockImportDetail.find({ import_id: imp._id }).lean();
+    const items = [];
+    let total = 0;
+    for (const d of details) {
+      const ing = await Ingredient.findById(d.ingredient_id).lean();
+      items.push({
+        name: ing ? ing.name : "Unknown",
+        quantity: d.quantity,
+        unit: ing ? ing.unit : undefined,
+        unit_price: d.unit_price,
+        line_total: d.line_total,
+        expiry_date: d.expiry_date,
+      });
+      total += d.line_total || 0;
+    }
+
+    // Get supplier name if exists
+    let supplierName = imp.supplier_name || null;
+    if (!supplierName && imp.supplier_id) {
+      const supplier = await Supplier.findById(imp.supplier_id).lean();
+      supplierName = supplier ? supplier.name : null;
+    }
+
+    results.push({
+      id: imp._id.toString(),
+      code: imp.import_number,
+      supplierId: imp.supplier_id ? imp.supplier_id.toString() : null,
+      supplierName,
+      items,
+      date: imp.import_date || imp.created_at,
+      total,
+      notes: imp.notes || null,
+    });
+  }
+
+  return results;
+}
+
 module.exports = {
   getBatches,
   createStockImport,
   createStockExport,
   updateIngredient,
   getExports,
+  getImports,
 };

@@ -1,10 +1,57 @@
 const OrderDetailRepository = require('../../infrastructure_layer/orderdetail/orderdetail.repository');
 const OrderDetailEntity = require('../../domain_layer/orderdetail/orderdetail.entity');
-const { Dish, DishIngredient, Ingredient, Order } = require('../../models');
+const { Dish, DishIngredient, Ingredient, Order, StockImportDetail, StockExport, StockExportDetail } = require('../../models');
 
 class OrderDetailService {
   constructor() {
     this.orderDetailRepository = new OrderDetailRepository();
+  }
+
+  /**
+   * Calculate remaining quantity for a batch
+   * @param {ObjectId} batchId - Batch ID
+   * @returns {Promise<number>} - Remaining quantity
+   */
+  async getBatchRemainingQuantity(batchId) {
+    const batch = await StockImportDetail.findById(batchId);
+    if (!batch) return 0;
+
+    // Calculate total exported from this batch
+    const exports = await StockExportDetail.find({ batch_id: batchId });
+    const totalExported = exports.reduce((sum, e) => sum + (e.quantity || 0), 0);
+    
+    return batch.quantity - totalExported;
+  }
+
+  /**
+   * Get batches with remaining quantity calculated dynamically
+   * @param {ObjectId} ingredientId
+   * @param {Date} today
+   * @returns {Promise<Array>} - Batches with remaining quantity
+   */
+  async getBatchesWithRemaining(ingredientId, today) {
+    const batches = await StockImportDetail.find({
+      ingredient_id: ingredientId,
+      $or: [
+        { expiry_date: { $exists: false } },
+        { expiry_date: null },
+        { expiry_date: { $gte: today } }
+      ]
+    }).sort({ expiry_date: 1, _id: 1 });
+
+    // Calculate remaining for each batch
+    const batchesWithRemaining = [];
+    for (const batch of batches) {
+      const remaining = await this.getBatchRemainingQuantity(batch._id);
+      if (remaining > 0) {
+        batchesWithRemaining.push({
+          ...batch.toObject(),
+          remainingQuantity: remaining
+        });
+      }
+    }
+
+    return batchesWithRemaining;
   }
 
   async updateOrderTotalsAndNotes(orderId) {
@@ -60,7 +107,7 @@ class OrderDetailService {
     }
   }
 
-  async deductIngredientsForDish(dishId, quantity) {
+  async deductIngredientsForDish(dishId, quantity, orderId = null) {
     try {
       // Get all ingredients required for this dish
       const dishIngredients = await DishIngredient.find({ dish_id: dishId });
@@ -70,34 +117,130 @@ class OrderDetailService {
         return;
       }
 
-      // Deduct each ingredient
+      // ========== BƯỚC 1: KIỂM TRA ĐỦ TẤT CẢ NGUYÊN LIỆU TRƯỚC KHI TRỪ ==========
+      // So sánh với đầu ngày hôm nay (00:00:00) để lô hết hạn trong ngày vẫn dùng được
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const insufficientIngredients = [];
+      
       for (const dishIngredient of dishIngredients) {
         const requiredQuantity = dishIngredient.quantity_required * quantity;
         
-        // Find the ingredient and reduce its stock
+        // Find the ingredient
         const ingredient = await Ingredient.findById(dishIngredient.ingredient_id);
         if (!ingredient) {
           console.warn(`Ingredient ${dishIngredient.ingredient_id} not found`);
           continue;
         }
 
-        const newQuantity = ingredient.quantity_in_stock - requiredQuantity;
+        // Check if total stock is sufficient
+        if (ingredient.quantity_in_stock < requiredQuantity) {
+          insufficientIngredients.push({
+            name: ingredient.name,
+            required: requiredQuantity,
+            available: ingredient.quantity_in_stock,
+            unit: ingredient.unit
+          });
+          continue;
+        }
+
+        // Check if available batches (not expired) are sufficient
+        const availableBatches = await this.getBatchesWithRemaining(dishIngredient.ingredient_id, today);
+        const totalAvailableInBatches = availableBatches.reduce((sum, batch) => sum + batch.remainingQuantity, 0);
         
-        if (newQuantity < 0) {
-          throw new Error(`Không đủ nguyên liệu ${ingredient.name}. Còn lại: ${ingredient.quantity_in_stock}, cần: ${requiredQuantity}`);
+        if (totalAvailableInBatches < requiredQuantity) {
+          insufficientIngredients.push({
+            name: ingredient.name,
+            required: requiredQuantity,
+            available: totalAvailableInBatches,
+            unit: ingredient.unit
+          });
+        }
+      }
+
+      // Nếu có bất kỳ nguyên liệu nào không đủ, báo lỗi và KHÔNG TRỪ gì cả
+      if (insufficientIngredients.length > 0) {
+        const errorMsg = insufficientIngredients.map(item => 
+          `${item.name}: cần ${item.required}${item.unit}, chỉ còn ${item.available}${item.unit}`
+        ).join('; ');
+        throw new Error(`Không đủ nguyên liệu để làm món. ${errorMsg}`);
+      }
+
+      // ========== BƯỚC 2: TẤT CẢ ĐỦ → BẮT ĐẦU TRỪ NGUYÊN LIỆU ==========
+      // Create a stock export record for tracking
+      const exportNumber = `EXP-COOKING-${Date.now()}`;
+      const stockExport = new StockExport({
+        export_number: exportNumber,
+        staff_id: null,
+        export_date: new Date(),
+        total_cost: 0,
+        notes: `Xuất nguyên liệu cho món ăn (Order: ${orderId || 'N/A'})`,
+        status: 'completed'
+      });
+      await stockExport.save();
+
+      let totalCost = 0;
+
+      // Deduct each ingredient
+      for (const dishIngredient of dishIngredients) {
+        const requiredQuantity = dishIngredient.quantity_required * quantity;
+        
+        // Find the ingredient
+        const ingredient = await Ingredient.findById(dishIngredient.ingredient_id);
+        if (!ingredient) {
+          console.warn(`Ingredient ${dishIngredient.ingredient_id} not found`);
+          continue;
+        }
+
+        // Trừ từ StockImportDetail theo FIFO (sắp hết hạn trước)
+        let remainingQty = requiredQuantity;
+        
+        // Lấy các lô nhập kho còn số lượng (tính động), chưa hết hạn
+        const batches = await this.getBatchesWithRemaining(dishIngredient.ingredient_id, today);
+
+        // Trừ từng lô cho đến khi đủ số lượng
+        for (const batch of batches) {
+          if (remainingQty <= 0) break;
+          
+          const deductQty = Math.min(batch.remainingQuantity, remainingQty);
+          remainingQty -= deductQty;
+          
+          // ⭐ THAY ĐỔI: KHÔNG trừ batch.quantity nữa
+          // Chỉ tạo StockExportDetail để ghi lại đã xuất
+          const exportDetail = new StockExportDetail({
+            export_id: stockExport._id,
+            ingredient_id: dishIngredient.ingredient_id,
+            batch_id: batch._id, // ⭐ Link to batch
+            quantity: deductQty,
+            unit_price: batch.unit_price,
+            line_total: deductQty * batch.unit_price
+          });
+          await exportDetail.save();
+          
+          totalCost += deductQty * batch.unit_price;
+          
+          console.log(`  Trừ ${deductQty} ${ingredient.unit} từ lô ${batch._id} (còn lại: ${batch.remainingQuantity - deductQty})`);
         }
 
         // Update ingredient stock
+        const newQuantity = ingredient.quantity_in_stock - requiredQuantity;
         await Ingredient.findByIdAndUpdate(
           dishIngredient.ingredient_id,
           { 
             quantity_in_stock: newQuantity,
-            stock_status: newQuantity === 0 ? 'out_of_stock' : newQuantity < 10 ? 'low_stock' : 'available'
+            stock_status: newQuantity === 0 ? 'out_of_stock' : newQuantity < ingredient.minimum_quantity ? 'low_stock' : 'available'
           }
         );
 
-        console.log(`Deducted ${requiredQuantity} ${ingredient.unit} of ${ingredient.name} for dish ${dishId}`);
+        console.log(`✓ Đã trừ ${requiredQuantity} ${ingredient.unit} của ${ingredient.name} cho món ${dishId}`);
       }
+
+      // Cập nhật tổng chi phí xuất kho
+      stockExport.total_cost = totalCost;
+      await stockExport.save();
+
+      console.log(`✓ Hoàn tất trừ nguyên liệu. Mã xuất kho: ${exportNumber}, Tổng chi phí: ${totalCost}`);
+      
     } catch (error) {
       console.error('Error deducting ingredients:', error);
       throw error;
@@ -160,7 +303,7 @@ class OrderDetailService {
     // Check if status is changing to 'preparing' - deduct ingredients
     if (newStatus && newStatus === 'preparing' && oldStatus !== 'preparing') {
       console.log(`Order detail ${detailId} status changing from ${oldStatus} to ${newStatus}. Deducting ingredients...`);
-      await this.deductIngredientsForDish(detail.dish_id, detail.quantity);
+      await this.deductIngredientsForDish(detail.dish_id, detail.quantity, orderId);
     }
 
     const updated = await this.orderDetailRepository.update(detailId, {

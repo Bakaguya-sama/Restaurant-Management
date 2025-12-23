@@ -152,6 +152,9 @@ const StockImportDetailSchema = new Schema({
   expiry_date: Date
 });
 
+// Add indexes for performance
+StockImportDetailSchema.index({ ingredient_id: 1, expiry_date: 1 }); // For FIFO queries
+
 // ==================== STOCK EXPORT ====================
 
 const StockExportSchema = new Schema({
@@ -167,10 +170,14 @@ const StockExportSchema = new Schema({
 const StockExportDetailSchema = new Schema({
   export_id: { type: Schema.Types.ObjectId, ref: 'StockExport', required: true },
   ingredient_id: { type: Schema.Types.ObjectId, ref: 'Ingredient', required: true },
+  batch_id: { type: Schema.Types.ObjectId, ref: 'StockImportDetail' }, // Link to specific batch
   quantity: { type: Number, required: true },
   unit_price: { type: Number, required: true },
   line_total: { type: Number, required: true }
 });
+
+// Add index on batch_id for performance (frequently queried to calculate remaining)
+StockExportDetailSchema.index({ batch_id: 1 });
 
 // ==================== DISH ====================
 
