@@ -1,8 +1,10 @@
 const InvoiceService = require('../../../application_layer/invoice/invoice.service');
+const InvoicePointsService = require('../../../application_layer/invoice/invoice-points.service');
 
 class InvoiceController {
   constructor() {
     this.invoiceService = new InvoiceService();
+    this.pointsService = new InvoicePointsService();
   }
 
   async getAllInvoices(req, res) {
@@ -82,6 +84,20 @@ class InvoiceController {
 
   async createInvoice(req, res) {
     try {
+      if (req.body.customer_id && req.body.points_used > 0) {
+        const pointsValidation = await this.pointsService.validatePointsForRedeeming(
+          req.body.customer_id,
+          req.body.points_used
+        );
+        
+        if (!pointsValidation.isValid) {
+          return res.status(400).json({
+            success: false,
+            message: pointsValidation.message
+          });
+        }
+      }
+
       const invoice = await this.invoiceService.createInvoice(req.body);
       
       res.status(201).json({

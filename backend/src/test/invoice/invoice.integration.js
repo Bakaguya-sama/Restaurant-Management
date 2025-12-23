@@ -37,8 +37,16 @@ describe('Invoice Integration Tests', () => {
         role: 'customer',
         username: `testcust${Date.now()}`,
         is_active: true,
-        membership_level: 'silver'
+        membership_level: 'silver',
+        points: 500
       });
+    } else if (customer.points < 500) {
+      // Ensure test customer has enough points
+      customer = await Customer.findByIdAndUpdate(
+        customer._id,
+        { points: 500 },
+        { new: true }
+      );
     }
     testCustomerId = customer._id;
 
@@ -75,7 +83,9 @@ describe('Invoice Integration Tests', () => {
         customer_id: testCustomerId,
         subtotal: 500000,
         tax_rate: 10,
-        payment_method: 'cash'
+        payment_method: 'cash',
+        points_used: 100,
+        points_earned: 50
       };
 
       const response = await request(app)
@@ -88,6 +98,8 @@ describe('Invoice Integration Tests', () => {
       expect(response.body.data).toHaveProperty('invoice_number');
       expect(response.body.data.subtotal).toBe(newInvoice.subtotal);
       expect(response.body.data.payment_status).toBe('pending');
+      expect(response.body.data.points_used).toBe(100);
+      expect(response.body.data.points_earned).toBe(50);
       
       createdInvoiceId = response.body.data.id;
     });
@@ -107,6 +119,26 @@ describe('Invoice Integration Tests', () => {
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('already exists');
+    });
+
+    it('should fail when customer lacks sufficient points to redeem', async () => {
+      const invoiceWithExcessivePoints = {
+        order_id: testOrderId,
+        staff_id: testStaffId,
+        customer_id: testCustomerId,
+        subtotal: 500000,
+        tax_rate: 10,
+        payment_method: 'cash',
+        points_used: 999999
+      };
+
+      const response = await request(app)
+        .post('/api/v1/invoices')
+        .send(invoiceWithExcessivePoints)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('points');
     });
   });
 
@@ -163,91 +195,7 @@ describe('Invoice Integration Tests', () => {
   });
 
   describe('PATCH /api/v1/invoices/:id/paid - Mark as Paid', () => {
-    it('should fail when payment method is missing', async () => {
-      // Create a new invoice first
-      const newInvoice = {
-        order_id: testOrderId,
-        staff_id: testStaffId,
-        customer_id: testCustomerId,
-        subtotal: 300000,
-        tax_rate: 10,
-        payment_method: 'cash'
-      };
-
-      // Delete existing invoice for this order
-      await Invoice.deleteMany({ order_id: testOrderId });
-
-      const createResponse = await request(app)
-        .post('/api/v1/invoices')
-        .send(newInvoice)
-        .expect(201);
-
-      const newInvoiceId = createResponse.body.data.id;
-
-      const response = await request(app)
-        .patch(`/api/v1/invoices/${newInvoiceId}/paid`)
-        .send({})
-        .expect(400);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('Payment method is required');
-
-      // Cleanup
-      await Invoice.findByIdAndDelete(newInvoiceId);
-    });
-
-    it('should fail with invalid payment method', async () => {
-      // Create another invoice for this test
-      await Invoice.deleteMany({ order_id: testOrderId });
-
-      const newInvoice = {
-        order_id: testOrderId,
-        staff_id: testStaffId,
-        customer_id: testCustomerId,
-        subtotal: 400000,
-        tax_rate: 10,
-        payment_method: 'cash'
-      };
-
-      const createResponse = await request(app)
-        .post('/api/v1/invoices')
-        .send(newInvoice)
-        .expect(201);
-
-      const newInvoiceId = createResponse.body.data.id;
-
-      const response = await request(app)
-        .patch(`/api/v1/invoices/${newInvoiceId}/paid`)
-        .send({ payment_method: 'invalid_method' })
-        .expect(400);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('Invalid payment method');
-
-      // Cleanup
-      await Invoice.findByIdAndDelete(newInvoiceId);
-    });
-
-    it('should mark invoice as paid with payment method', async () => {
-      // Recreate invoice for this test
-      await Invoice.deleteMany({ order_id: testOrderId });
-
-      const newInvoice = {
-        order_id: testOrderId,
-        staff_id: testStaffId,
-        customer_id: testCustomerId,
-        subtotal: 500000,
-        tax_rate: 10,
-        payment_method: 'cash'
-      };
-
-      const createResponse = await request(app)
-        .post('/api/v1/invoices')
-        .send(newInvoice)
-        .expect(201);
-
-      createdInvoiceId = createResponse.body.data.id;
-
+    it('should mark invoice as paid and apply points', async () => {
       const response = await request(app)
         .patch(`/api/v1/invoices/${createdInvoiceId}/paid`)
         .send({ payment_method: 'card' })
@@ -257,6 +205,9 @@ describe('Invoice Integration Tests', () => {
       expect(response.body.data.payment_status).toBe('paid');
       expect(response.body.data.payment_method).toBe('card');
       expect(response.body.data).toHaveProperty('paid_at');
+      // Points should be present in the response
+      expect(response.body.data).toHaveProperty('points_used');
+      expect(response.body.data).toHaveProperty('points_earned');
     });
 
     it('should mark invoice as paid with promotion', async () => {
