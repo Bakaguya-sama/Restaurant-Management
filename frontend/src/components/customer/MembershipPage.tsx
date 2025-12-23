@@ -46,13 +46,15 @@ export function MembershipPage() {
     const fetchCustomerData = async () => {
       try {
         setIsLoading(true);
-        const apiBaseUrl = (import.meta as any).env?.VITE_API_URL || "http://localhost:5000/api/v1";
-        
+        const apiBaseUrl =
+          (import.meta as any).env?.VITE_API_URL ||
+          "http://localhost:5000/api/v1";
+
         // Lấy danh sách customers
         const response = await fetch(`${apiBaseUrl}/customers`);
-        
+
         if (!response.ok) {
-          throw new Error('Không thể tải danh sách khách hàng');
+          throw new Error("Không thể tải danh sách khách hàng");
         }
 
         const result = await response.json();
@@ -60,13 +62,13 @@ export function MembershipPage() {
           // Lấy customer đầu tiên (hoặc có thể filter theo điều kiện)
           const firstCustomer = result.data[0];
           setCurrentCustomer(firstCustomer);
-          console.log('Customer loaded:', firstCustomer);
+          console.log("Customer loaded:", firstCustomer);
         } else {
-          throw new Error('Không tìm thấy khách hàng nào');
+          throw new Error("Không tìm thấy khách hàng nào");
         }
       } catch (error: any) {
-        console.error('Error fetching customer:', error);
-        toast.error(error.message || 'Không thể tải thông tin thành viên');
+        console.error("Error fetching customer:", error);
+        toast.error(error.message || "Không thể tải thông tin thành viên");
       } finally {
         setIsLoading(false);
       }
@@ -80,23 +82,25 @@ export function MembershipPage() {
     const fetchPromotions = async () => {
       try {
         setIsLoadingPromotions(true);
-        const apiBaseUrl = (import.meta as any).env?.VITE_API_URL || "http://localhost:5000/api/v1";
-        
+        const apiBaseUrl =
+          (import.meta as any).env?.VITE_API_URL ||
+          "http://localhost:5000/api/v1";
+
         const response = await fetch(`${apiBaseUrl}/promotions`);
-        
+
         if (!response.ok) {
-          throw new Error('Không thể tải danh sách khuyến mãi');
+          throw new Error("Không thể tải danh sách khuyến mãi");
         }
 
         const result = await response.json();
         if (result.success && result.data) {
           // Tạm thời hiển thị tất cả promotions để debug
-          console.log('All promotions from API:', result.data);
+          console.log("All promotions from API:", result.data);
           setPromotions(result.data);
         }
       } catch (error: any) {
-        console.error('Error fetching promotions:', error);
-        toast.error(error.message || 'Không thể tải danh sách khuyến mãi');
+        console.error("Error fetching promotions:", error);
+        toast.error(error.message || "Không thể tải danh sách khuyến mãi");
       } finally {
         setIsLoadingPromotions(false);
       }
@@ -109,38 +113,62 @@ export function MembershipPage() {
   useEffect(() => {
     const fetchVoucherHistory = async () => {
       if (!currentCustomer) return;
-      
+
       try {
         setIsLoadingHistory(true);
-        const apiBaseUrl = (import.meta as any).env?.VITE_API_URL || "http://localhost:5000/api/v1";
-        
+        const apiBaseUrl =
+          (import.meta as any).env?.VITE_API_URL ||
+          "http://localhost:5000/api/v1";
+
         // Fetch tất cả invoices
         const invoicesResponse = await fetch(`${apiBaseUrl}/invoices`);
-        if (!invoicesResponse.ok) throw new Error('Không thể tải hóa đơn');
-        
+        if (!invoicesResponse.ok) throw new Error("Không thể tải hóa đơn");
+
         const invoicesResult = await invoicesResponse.json();
-        
+
         if (invoicesResult.success && invoicesResult.data) {
           // Lọc invoices của customer hiện tại
-          const customerInvoices = invoicesResult.data.filter((inv: any) => 
-            inv.order_id?.customer_id === currentCustomer._id
+          const customerInvoices = invoicesResult.data.filter(
+            (inv: any) => inv.order_id?.customer_id === currentCustomer._id
           );
-          
+
           // Fetch invoice_promotions cho mỗi invoice
           const historyPromises = customerInvoices.map(async (invoice: any) => {
             try {
-              const ipResponse = await fetch(`${apiBaseUrl}/invoice-promotions/invoice/${invoice._id}`);
+              const ipResponse = await fetch(
+                `${apiBaseUrl}/invoice-promotions/invoice/${invoice._id}`
+              );
               if (!ipResponse.ok) return null;
-              
+
               const ipResult = await ipResponse.json();
-              if (ipResult.success && ipResult.data && ipResult.data.length > 0) {
+              if (
+                ipResult.success &&
+                ipResult.data &&
+                ipResult.data.length > 0
+              ) {
                 return ipResult.data.map((ip: any) => ({
                   id: ip._id,
                   invoiceId: invoice.invoice_number,
-                  voucherCode: ip.promotion_id?.promo_code || 'N/A',
-                  voucherName: ip.promotion_id?.promotion_name || 'Khuyến mãi',
+                  voucherCode:
+                    ip.promotion_id?.promo_code ||
+                    ip.promotion_id?.promoCode ||
+                    "N/A",
+                  voucherName:
+                    ip.promotion_id?.promotion_name ||
+                    ip.promotion_id?.name ||
+                    "Khuyến mãi",
+                  // promotion_type may be 'percentage' or 'fixed_amount'
+                  promoType:
+                    ip.promotion_id?.promotion_type ||
+                    ip.promotion_id?.discount_type ||
+                    "fixed_amount",
+                  promoValue:
+                    ip.promotion_id?.discount_value ??
+                    ip.promotion_id?.discountValue ??
+                    ip.discount_applied ??
+                    0,
                   discountAmount: ip.discount_applied || 0,
-                  usedAt: invoice.invoice_time || invoice.createdAt
+                  usedAt: invoice.invoice_time || invoice.createdAt,
                 }));
               }
               return null;
@@ -148,14 +176,14 @@ export function MembershipPage() {
               return null;
             }
           });
-          
+
           const historyResults = await Promise.all(historyPromises);
-          const flatHistory = historyResults.filter(h => h !== null).flat();
+          const flatHistory = historyResults.filter((h) => h !== null).flat();
           setVoucherHistory(flatHistory);
-          console.log('Voucher history loaded:', flatHistory);
+          console.log("Voucher history loaded:", flatHistory);
         }
       } catch (error: any) {
-        console.error('Error fetching voucher history:', error);
+        console.error("Error fetching voucher history:", error);
       } finally {
         setIsLoadingHistory(false);
       }
@@ -187,20 +215,26 @@ export function MembershipPage() {
   // Tính toán next tier points dựa trên membership level
   const getNextTierPoints = (level: string) => {
     const tierMap: Record<string, number> = {
-      'bronze': 1000,
-      'silver': 2000,
-      'gold': 5000,
-      'platinum': 10000,
-      'diamond': 0 // Max tier
+      bronze: 1000,
+      silver: 2000,
+      gold: 5000,
+      platinum: 10000,
+      diamond: 0, // Max tier
     };
     return tierMap[level] || 1000;
   };
 
   const memberData = {
-    name: currentCustomer?.full_name || currentCustomer?.name || userProfile?.name || "Khách hàng",
+    name:
+      currentCustomer?.full_name ||
+      currentCustomer?.name ||
+      userProfile?.name ||
+      "Khách hàng",
     tier: currentCustomer?.membership_level || "bronze",
     points: currentCustomer?.points || 0,
-    nextTierPoints: getNextTierPoints(currentCustomer?.membership_level || "bronze"),
+    nextTierPoints: getNextTierPoints(
+      currentCustomer?.membership_level || "bronze"
+    ),
     totalSpent: currentCustomer?.total_spent || 0,
   };
 
@@ -273,7 +307,9 @@ export function MembershipPage() {
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <p className="text-gray-600 mb-4">Không tìm thấy thông tin thành viên</p>
+            <p className="text-gray-600 mb-4">
+              Không tìm thấy thông tin thành viên
+            </p>
             <Button onClick={() => window.location.reload()}>Thử lại</Button>
           </div>
         </div>
@@ -425,7 +461,7 @@ export function MembershipPage() {
               Các ưu đãi và khuyến mãi đang diễn ra dành cho bạn
             </p>
           </div>
-          
+
           {isLoadingPromotions ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
@@ -436,7 +472,9 @@ export function MembershipPage() {
           ) : promotions.length === 0 ? (
             <div className="text-center py-12">
               <Gift className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-600">Hiện tại chưa có chương trình khuyến mãi nào</p>
+              <p className="text-gray-600">
+                Hiện tại chưa có chương trình khuyến mãi nào
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -446,16 +484,29 @@ export function MembershipPage() {
                   promotion={{
                     id: promotion._id || promotion.id,
                     title: promotion.promotion_name || promotion.title,
-                    description: promotion.description || '',
+                    description: promotion.description || "",
                     code: promotion.promo_code || promotion.code,
-                    discountType: promotion.discount_type || 'percentage',
-                    discountValue: promotion.discount_value || 0,
-                    validUntil: promotion.end_date ? new Date(promotion.end_date).toLocaleDateString('vi-VN') : '',
+                    // prefer `promotion_type` (backend uses this); fallback to discount_type
+                    discountType:
+                      promotion.promotion_type ||
+                      promotion.discount_type ||
+                      "fixed_amount",
+                    discountValue:
+                      promotion.discount_value ?? promotion.discountValue ?? 0,
+                    validUntil: promotion.end_date
+                      ? new Date(promotion.end_date).toLocaleDateString("vi-VN")
+                      : "",
                     minOrderAmount: promotion.min_order_value || 0,
                     maxDiscountAmount: promotion.max_discount_amount,
                     promotionQuantity: promotion.promotion_quantity,
-                    startDate: promotion.start_date ? new Date(promotion.start_date).toLocaleDateString('vi-VN') : '',
-                    endDate: promotion.end_date ? new Date(promotion.end_date).toLocaleDateString('vi-VN') : ''
+                    startDate: promotion.start_date
+                      ? new Date(promotion.start_date).toLocaleDateString(
+                          "vi-VN"
+                        )
+                      : "",
+                    endDate: promotion.end_date
+                      ? new Date(promotion.end_date).toLocaleDateString("vi-VN")
+                      : "",
                   }}
                   variant="list"
                 />
@@ -542,7 +593,7 @@ export function MembershipPage() {
               <Ticket className="w-5 h-5 text-[#625EE8]" />
               Lịch sử sử dụng voucher
             </h4>
-            
+
             {isLoadingHistory ? (
               <div className="flex items-center justify-center py-8">
                 <div className="text-center">
@@ -574,7 +625,22 @@ export function MembershipPage() {
                           </p>
                         </div>
                         <div className="text-lg text-green-600">
-                          -{history.discountAmount.toLocaleString()}đ
+                          {(() => {
+                            const type = String(
+                              history.promoType || ""
+                            ).toLowerCase();
+                            if (
+                              type.includes("percent") ||
+                              type.includes("percentage")
+                            ) {
+                              return `-${Number(
+                                history.promoValue
+                              ).toLocaleString()}%`;
+                            }
+                            const amount =
+                              history.discountAmount || history.promoValue || 0;
+                            return `-${Number(amount).toLocaleString()}đ`;
+                          })()}
                         </div>
                       </div>
                     </Card>
