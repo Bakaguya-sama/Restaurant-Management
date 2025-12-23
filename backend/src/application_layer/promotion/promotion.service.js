@@ -80,6 +80,10 @@ class PromotionService {
       throw new Error('Promotion not found');
     }
 
+    if (updateData.is_active === true) {
+      existingPromotion.validateIsActiveTransition(true);
+    }
+
     if (updateData.promo_code && updateData.promo_code !== existingPromotion.promo_code) {
       const existingPromo = await this.promotionRepository.findByPromoCode(updateData.promo_code);
       if (existingPromo) {
@@ -87,7 +91,7 @@ class PromotionService {
       }
     }
 
-    const updatedData = { ...existingPromotion, ...updateData };
+    const updatedData = { ...existingPromotion.toJSON(), ...updateData };
     const promotionEntity = new PromotionEntity(updatedData);
     const validation = promotionEntity.validate();
     
