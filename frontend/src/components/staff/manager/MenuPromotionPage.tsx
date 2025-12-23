@@ -108,6 +108,7 @@ export function MenuPromotionPage() {
     start_date: "",
     end_date: "",
     max_uses: 0,
+    is_active: false,
   });
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -485,8 +486,10 @@ export function MenuPromotionPage() {
       }
     }
 
+    const finalIsActive = isToggleDisabled() ? false : promoForm.is_active;
+
     try {
-      await createPromotion({
+      const createdPromo = await createPromotion({
         name: promoForm.name,
         promo_code: promoForm.promo_code,
         promotion_type: promoForm.promotion_type,
@@ -495,7 +498,16 @@ export function MenuPromotionPage() {
         start_date: promoForm.start_date,
         end_date: promoForm.end_date,
         max_uses: promoForm.max_uses || 0,
+        is_active: false,
       });
+
+      if (finalIsActive) {
+        const promoId = (createdPromo as any)._id || createdPromo.id;
+        await updatePromotion(promoId, {
+          is_active: true,
+        });
+      }
+
       toast.success("Thêm khuyến mãi thành công!");
       setShowAddPromoModal(false);
       setPromoForm({
@@ -507,6 +519,7 @@ export function MenuPromotionPage() {
         start_date: "",
         end_date: "",
         max_uses: 0,
+        is_active: false,
       });
     } catch (error) {
       toast.error("Không thể thêm khuyến mãi");
@@ -514,24 +527,11 @@ export function MenuPromotionPage() {
     }
   };
 
-  const handleTogglePromotion = async (id: string) => {
-    try {
-      const promo = promotions.find(
-        (p) => p.id === id || (p as any)._id === id
-      );
-      if (!promo) return;
-
-      const promoId = (promo as any)._id || promo.id;
-      if (promo.is_active) {
-        await deactivatePromotion(promoId);
-      } else {
-        await activatePromotion(promoId);
-      }
-      toast.success("Cập nhật trạng thái khuyến mãi thành công!");
-    } catch (error) {
-      toast.error("Không thể cập nhật khuyến mãi");
-      console.error(error);
-    }
+  const handleTogglePromotion = (id: string) => {
+    setEditingPromo({
+      ...editingPromo!,
+      is_active: !editingPromo!.is_active,
+    });
   };
 
   const openEditPromoModal = (promo: Promotion) => {
@@ -545,6 +545,7 @@ export function MenuPromotionPage() {
       start_date: formatDateToInput(promo.start_date),
       end_date: formatDateToInput(promo.end_date),
       max_uses: promo.max_uses || 0,
+      is_active: promo.is_active,
     });
     setShowEditPromoModal(true);
   };
@@ -589,6 +590,8 @@ export function MenuPromotionPage() {
       }
     }
 
+    const finalIsActive = isToggleDisabled() ? false : promoForm.is_active;
+
     try {
       const promoId = (editingPromo as any)._id || editingPromo.id;
       await updatePromotion(promoId, {
@@ -600,7 +603,15 @@ export function MenuPromotionPage() {
         start_date: promoForm.start_date,
         end_date: promoForm.end_date,
         max_uses: promoForm.max_uses || 0,
+        is_active: false,
       });
+
+      if (finalIsActive) {
+        await updatePromotion(promoId, {
+          is_active: true,
+        });
+      }
+
       toast.success("Cập nhật khuyến mãi thành công!");
       setShowEditPromoModal(false);
       setEditingPromo(null);
@@ -613,6 +624,7 @@ export function MenuPromotionPage() {
         start_date: "",
         end_date: "",
         max_uses: 0,
+        is_active: false,
       });
     } catch (error) {
       toast.error("Không thể cập nhật khuyến mãi");
@@ -655,10 +667,8 @@ export function MenuPromotionPage() {
   const formatDateToInput = (dateString: string): string => {
     if (!dateString) return "";
     try {
-      // Try parsing as ISO format (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SSZ)
       const date = new Date(dateString);
       if (isNaN(date.getTime())) {
-        // If that fails, try DD/MM/YYYY format
         const parts = dateString.split("/");
         if (parts.length === 3) {
           const [day, month, year] = parts;
@@ -666,7 +676,6 @@ export function MenuPromotionPage() {
         }
         return "";
       }
-      // Format as YYYY-MM-DD for date input
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, "0");
       const day = String(date.getDate()).padStart(2, "0");
@@ -674,6 +683,18 @@ export function MenuPromotionPage() {
     } catch {
       return "";
     }
+  };
+
+  const isToggleDisabled = (): boolean => {
+    if (!promoForm.start_date || !promoForm.end_date) {
+      return true;
+    }
+
+    const now = new Date();
+    const startDate = new Date(promoForm.start_date);
+    const endDate = new Date(promoForm.end_date);
+
+    return now < startDate || now > endDate;
   };
 
   const categories = ["all", "Khai vị", "Món chính", "Đồ uống", "Tráng miệng"];
@@ -1601,6 +1622,28 @@ export function MenuPromotionPage() {
               }
             />
           </div>
+
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div>
+              <label className="block font-medium mb-1">
+                Trạng thái khuyến mãi
+              </label>
+              <p className="text-sm text-gray-600">
+                {isToggleDisabled() ? "Tạm dừng" : promoForm.is_active ? "Đang hoạt động" : "Tạm dừng"}
+              </p>
+            </div>
+            <Switch
+              checked={isToggleDisabled() ? false : promoForm.is_active}
+              onCheckedChange={() => {
+                setPromoForm({
+                  ...promoForm,
+                  is_active: !promoForm.is_active,
+                });
+              }}
+              disabled={isToggleDisabled()}
+            />
+          </div>
+
           <div className="flex gap-4 pt-4">
             <Button
               variant="secondary"
@@ -1635,6 +1678,7 @@ export function MenuPromotionPage() {
             start_date: "",
             end_date: "",
             max_uses: 0,
+            is_active: false,
           });
         }}
         title="Chỉnh sửa khuyến mãi"
@@ -1755,20 +1799,18 @@ export function MenuPromotionPage() {
                   Trạng thái khuyến mãi
                 </label>
                 <p className="text-sm text-gray-600">
-                  {editingPromo.is_active ? "Đang hoạt động" : "Tạm dừng"}
+                  {isToggleDisabled() ? "Tạm dừng" : promoForm.is_active ? "Đang hoạt động" : "Tạm dừng"}
                 </p>
               </div>
               <Switch
-                checked={editingPromo.is_active}
+                checked={isToggleDisabled() ? false : promoForm.is_active}
                 onCheckedChange={() => {
-                  setEditingPromo({
-                    ...editingPromo,
-                    is_active: !editingPromo.is_active,
+                  setPromoForm({
+                    ...promoForm,
+                    is_active: !promoForm.is_active,
                   });
-                  handleTogglePromotion(
-                    ((editingPromo as any)._id || editingPromo.id).toString()
-                  );
                 }}
+                disabled={isToggleDisabled()}
               />
             </div>
           )}
