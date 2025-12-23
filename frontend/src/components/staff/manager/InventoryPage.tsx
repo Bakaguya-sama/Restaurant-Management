@@ -171,7 +171,7 @@ export function InventoryPage() {
       if (item.type === "new") return !!item.itemName && !!item.unit;
       return false;
     });
-    
+
     if (validItems.length === 0) {
       toast.error("Vui lòng nhập đầy đủ thông tin nguyên liệu và số lượng");
       return;
@@ -185,7 +185,8 @@ export function InventoryPage() {
             itemId: importItem.existingItemId!,
             quantity: importItem.quantity,
             supplierId: selectedSupplier,
-            expiryDate: importItem.expiryDate || new Date().toISOString().split('T')[0],
+            expiryDate:
+              importItem.expiryDate || new Date().toISOString().split("T")[0],
           };
         } else {
           // New ingredient
@@ -195,7 +196,8 @@ export function InventoryPage() {
             unitPrice: importItem.price,
             quantity: importItem.quantity,
             supplierId: selectedSupplier,
-            expiryDate: importItem.expiryDate || new Date().toISOString().split('T')[0],
+            expiryDate:
+              importItem.expiryDate || new Date().toISOString().split("T")[0],
           };
         }
       });
@@ -652,15 +654,15 @@ export function InventoryPage() {
             <select
               value={selectedSupplier}
               onChange={(e) => {
-                console.log('Selected supplier ID:', e.target.value);
-                console.log('All suppliers:', suppliers);
+                console.log("Selected supplier ID:", e.target.value);
+                console.log("All suppliers:", suppliers);
                 setSelectedSupplier(e.target.value);
               }}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg"
             >
               <option value="">Chọn nhà cung cấp</option>
               {suppliers.map((supplier) => {
-                console.log('Supplier:', supplier);
+                console.log("Supplier:", supplier);
                 return (
                   <option key={supplier.id} value={supplier.id}>
                     {supplier.name}
@@ -737,7 +739,10 @@ export function InventoryPage() {
                         >
                           <option value="">Chọn nguyên liệu</option>
                           {inventory.map((invItem) => (
-                            <option key={invItem.id} value={invItem.ingredientId}>
+                            <option
+                              key={invItem.id}
+                              value={invItem.ingredientId}
+                            >
                               {invItem.name} (Tồn: {invItem.quantity}{" "}
                               {invItem.unit})
                             </option>
@@ -758,7 +763,7 @@ export function InventoryPage() {
                           }
                           className="flex-1"
                           min="1"
-                          step="0.01"
+                          step="1"
                           required
                         />
                         <Input
@@ -816,7 +821,7 @@ export function InventoryPage() {
                           }
                           className="w-24"
                           min="1"
-                          step="0.01"
+                          step="1"
                           required
                         />
                         <Input
@@ -960,7 +965,7 @@ export function InventoryPage() {
             }
             placeholder="Nhập số lượng"
             min="1"
-            step="0.01"
+            step="1"
             required
           />
 
