@@ -232,27 +232,54 @@ class InvoiceService {
       throw new Error('Cannot mark cancelled invoice as paid');
     }
 
-    // Apply points to customer when invoice is paid
+    paymentMethod = paymentMethod || 'cash';
+
+    let discountAmount = invoice.discount_amount || 0;
+    if (promotionId) {
+      const promotion = await this.promotionService.getPromotionById(promotionId);
+      if (!promotion) {
+        throw new Error('Promotion not found');
+      }
+
+      if (promotion.max_uses !== -1 && promotion.current_uses >= promotion.max_uses) {
+        throw new Error('Promotion has reached maximum uses');
+      }
+
+      const validation = await this.promotionService.validatePromoCode(
+        promotion.promo_code,
+        invoice.subtotal
+      );
+
+      discountAmount = validation.discount_amount;
+
+      const newTotal = invoice.subtotal + invoice.tax - discountAmount;
+      await this.invoiceRepository.update(id, {
+        discount_amount: discountAmount,
+        total_amount: newTotal
+      });
+
+      await this.invoiceRepository.addPromotion(id, promotionId, discountAmount);
+
+      await this.promotionService.incrementPromotionUses(promotionId);
+    }
+
     if (invoice.customer_id && invoice.points_earned > 0) {
       try {
         await this.pointsService.awardCustomerPoints(invoice.customer_id, invoice.points_earned);
       } catch (error) {
         console.error('Failed to award points:', error);
-        // Don't fail invoice payment if points award fails
       }
     }
 
-    // Redeem points if used
     if (invoice.customer_id && invoice.points_used > 0) {
       try {
         await this.pointsService.redeemCustomerPoints(invoice.customer_id, invoice.points_used);
       } catch (error) {
         console.error('Failed to redeem points:', error);
-        // Don't fail invoice payment if points redemption fails
       }
     }
 
-    return await this.invoiceRepository.updatePaymentStatus(id, 'paid', new Date());
+    return await this.invoiceRepository.updatePaymentStatus(id, 'paid', new Date(), paymentMethod);
   }
 
   async cancelInvoice(id) {

@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
 const {
@@ -24,6 +26,23 @@ async function seedDatabase() {
   try {
     await connectDB();
     console.log('\nBẮT ĐẦU SEED DATABASE...\n');
+    
+    // XÓA UPLOADS FOLDER
+    console.log('Xóa thư mục uploads...');
+    const uploadsDir = path.join(__dirname, '../../uploads');
+    if (fs.existsSync(uploadsDir)) {
+      fs.rmSync(uploadsDir, { recursive: true, force: true });
+      console.log('Đã xóa thư mục uploads');
+    }
+    // Tạo lại thư mục uploads và các thư mục con
+    const subdirs = ['avatars', 'dishes'];
+    subdirs.forEach(subdir => {
+      const dirPath = path.join(uploadsDir, subdir);
+      if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, { recursive: true });
+      }
+    });
+    console.log('Đã tạo lại thư mục uploads\n');
     
     // XÓA DỮ LIỆU CŨ
     console.log('Xóa dữ liệu cũ...');
