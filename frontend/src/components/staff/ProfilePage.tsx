@@ -21,6 +21,8 @@ interface ProfilePageProps {
   role: UserRole;
 }
 
+const PLACEHOLDER_AVATAR = "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png";
+
 export function ProfilePage({ role }: ProfilePageProps) {
   const { staff, loading } = useStaff();
   const [currentStaff, setCurrentStaff] = useState<Staff | null>(null);
@@ -29,6 +31,7 @@ export function ProfilePage({ role }: ProfilePageProps) {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [avatarLoading, setAvatarLoading] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [profileData, setProfileData] = useState({
     fullName: "",
@@ -294,6 +297,54 @@ export function ProfilePage({ role }: ProfilePageProps) {
                         src={avatarUrl}
                         alt="Avatar"
                         className="w-full h-full object-cover"
+                        onLoad={() => {
+                          console.log("[PROFILE] Avatar loaded successfully");
+                          setAvatarLoading(false);
+                        }}
+                        onError={(e) => {
+                          const img = e.target as HTMLImageElement;
+                          const originalSrc = avatarUrl;
+                          const retryCount = parseInt(
+                            img.dataset.retryCount || "0"
+                          );
+                          console.log("[PROFILE] Avatar load error:", {
+                            originalSrc,
+                            retryCount,
+                            currentSrc: img.src,
+                          });
+
+                          if (
+                            retryCount < 3 &&
+                            originalSrc &&
+                            originalSrc !== PLACEHOLDER_AVATAR
+                          ) {
+                            img.dataset.retryCount = String(retryCount + 1);
+                            console.log(
+                              `[PROFILE] Retrying avatar load (attempt ${
+                                retryCount + 1
+                              }):`,
+                              originalSrc
+                            );
+                            setTimeout(() => {
+                              const newSrc = `${originalSrc}?t=${Date.now()}`;
+                              console.log(
+                                "[PROFILE] Setting avatar src with cache buster:",
+                                newSrc
+                              );
+                              img.src = newSrc;
+                            }, 1000);
+                          } else {
+                            console.log(
+                              "[PROFILE] Fallback to placeholder after retries"
+                            );
+                            img.src = PLACEHOLDER_AVATAR;
+                            setAvatarLoading(false);
+                          }
+                        }}
+                        onLoadStart={() => {
+                          console.log("[PROFILE] Avatar loading started");
+                          setAvatarLoading(true);
+                        }}
                       />
                     ) : (
                       <span className="text-white text-4xl">
