@@ -359,14 +359,15 @@ export function ProfilePage({ role }: ProfilePageProps) {
                     onChange={handleAvatarChange}
                     className="hidden"
                   />
-                  <button
-                    onClick={handleAvatarClick}
-                    disabled={!isEditing}
-                    className="absolute bottom-0 right-0 w-10 h-10 bg-white rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    title={isEditing ? "Chọn ảnh đại diện" : "Vào chế độ chỉnh sửa để đổi ảnh"}
-                  >
-                    <Camera className="w-5 h-5 text-gray-600" />
-                  </button>
+                  {isEditing && (
+                    <button
+                      onClick={handleAvatarClick}
+                      className="absolute bottom-0 right-0 w-10 h-10 bg-white rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-50"
+                      title="Chọn ảnh đại diện"
+                    >
+                      <Camera className="w-5 h-5 text-gray-600" />
+                    </button>
+                  )}
                 </div>
                 <h3 className="mb-2">{profileData.fullName}</h3>
                 <p className="text-gray-600 mb-1">{profileData.position}</p>
