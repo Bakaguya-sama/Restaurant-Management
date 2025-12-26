@@ -8,7 +8,7 @@ import { UserRole } from "../../types";
 import { useStaff } from "../../hooks/useStaff";
 import { Staff } from "../../lib/staffApi";
 import { formatDateDisplay, convertDisplayDateToISO } from "../../lib/utils";
-import { uploadAvatarImage } from "../../lib/uploadApi";
+import { uploadAvatarImage, buildImageUrl, extractRelativePath } from "../../lib/uploadApi";
 import {
   validateEmail,
   validateVietnamesePhone,
@@ -68,7 +68,7 @@ export function ProfilePage({ role }: ProfilePageProps) {
         department: getRoleDepartment(firstStaff.role),
       });
       if (firstStaff.image_url) {
-        setAvatarUrl(firstStaff.image_url);
+        setAvatarUrl(buildImageUrl(firstStaff.image_url));
       }
     }
   }, [staff, currentStaff]);
@@ -179,8 +179,9 @@ export function ProfilePage({ role }: ProfilePageProps) {
       if (avatarFile) {
         try {
           const imageUrl = await uploadAvatarImage(avatarFile, currentStaff.id);
+          const relativePath = extractRelativePath(imageUrl);
           await updateStaff(currentStaff.id, {
-            image_url: imageUrl,
+            image_url: relativePath,
           });
           setAvatarFile(null);
         } catch (uploadError) {
@@ -219,7 +220,7 @@ export function ProfilePage({ role }: ProfilePageProps) {
         department: getRoleDepartment(currentStaff.role),
       });
       if (currentStaff.image_url) {
-        setAvatarUrl(currentStaff.image_url);
+        setAvatarUrl(buildImageUrl(currentStaff.image_url));
       }
     }
   };

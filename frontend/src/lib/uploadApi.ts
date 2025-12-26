@@ -57,6 +57,25 @@ export function buildImageUrl(imagePath: string): string {
   return `${BASE_URL}/${imagePath}`;
 }
 
+/**
+ * Extract relative path from full URL for database storage
+ * Converts full URL to relative path like "/uploads/avatars/..."
+ */
+export function extractRelativePath(fullUrl: string): string {
+  if (!fullUrl) return "";
+  
+  if (fullUrl.startsWith('http://') || fullUrl.startsWith('https://')) {
+    try {
+      const url = new URL(fullUrl);
+      return url.pathname;
+    } catch {
+      return fullUrl;
+    }
+  }
+  
+  return fullUrl;
+}
+
 
 
 /**
