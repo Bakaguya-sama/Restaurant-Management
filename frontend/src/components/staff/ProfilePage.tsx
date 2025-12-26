@@ -8,6 +8,7 @@ import { UserRole } from "../../types";
 import { useStaff } from "../../hooks/useStaff";
 import { Staff } from "../../lib/staffApi";
 import { formatDateDisplay, convertDisplayDateToISO } from "../../lib/utils";
+import { uploadAvatarImage } from "../../lib/uploadApi";
 import {
   validateEmail,
   validateVietnamesePhone,
@@ -25,6 +26,7 @@ export function ProfilePage({ role }: ProfilePageProps) {
   const [currentStaff, setCurrentStaff] = useState<Staff | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -114,10 +116,11 @@ export function ProfilePage({ role }: ProfilePageProps) {
       return;
     }
 
+    setAvatarFile(file);
     const reader = new FileReader();
     reader.onloadend = () => {
       setAvatarUrl(reader.result as string);
-      toast.success("Ảnh đại diện đã được cập nhật");
+      toast.success("Ảnh đại diện sẽ được cập nhật khi lưu");
     };
     reader.readAsDataURL(file);
   };
@@ -172,6 +175,20 @@ export function ProfilePage({ role }: ProfilePageProps) {
         address: profileData.address,
         date_of_birth: profileData.dateOfBirth,
       });
+
+      if (avatarFile) {
+        try {
+          const imageUrl = await uploadAvatarImage(avatarFile, currentStaff.id);
+          await updateStaff(currentStaff.id, {
+            image_url: imageUrl,
+          });
+          setAvatarFile(null);
+        } catch (uploadError) {
+          console.error("Avatar upload failed:", uploadError);
+          toast.error("Ảnh đại diện cập nhật thất bại, nhưng thông tin cá nhân đã lưu");
+        }
+      }
+
       setProfileData(prev => ({
         ...prev,
         dateOfBirth: formatDateDisplay(profileData.dateOfBirth),
@@ -188,6 +205,7 @@ export function ProfilePage({ role }: ProfilePageProps) {
 
   const handleCancelEdit = () => {
     setIsEditing(false);
+    setAvatarFile(null);
     if (currentStaff) {
       setProfileData({
         fullName: currentStaff.full_name || "",
@@ -200,6 +218,9 @@ export function ProfilePage({ role }: ProfilePageProps) {
         joinDate: formatDateDisplay(currentStaff.hire_date) || "",
         department: getRoleDepartment(currentStaff.role),
       });
+      if (currentStaff.image_url) {
+        setAvatarUrl(currentStaff.image_url);
+      }
     }
   };
 
@@ -288,8 +309,9 @@ export function ProfilePage({ role }: ProfilePageProps) {
                   />
                   <button
                     onClick={handleAvatarClick}
-                    className="absolute bottom-0 right-0 w-10 h-10 bg-white rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-50"
-                    title="Chọn ảnh đại diện"
+                    disabled={!isEditing}
+                    className="absolute bottom-0 right-0 w-10 h-10 bg-white rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={isEditing ? "Chọn ảnh đại diện" : "Vào chế độ chỉnh sửa để đổi ảnh"}
                   >
                     <Camera className="w-5 h-5 text-gray-600" />
                   </button>
