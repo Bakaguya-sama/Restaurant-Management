@@ -1,5 +1,7 @@
 // ==================== TYPE DEFINITIONS ====================
 
+import { getApiBaseUrl } from "./apiConfig";
+
 export interface OrderItemDTO {
   dish_id: string;
   quantity: number;
@@ -79,9 +81,8 @@ export interface OrderDetail {
 
 // ==================== API CONFIGURATION ====================
 
-const API_BASE =
-  (import.meta as any).env?.VITE_API_BASE_URL ||
-  "http://localhost:5000/api/v1";
+// API base URL is now dynamically determined from apiConfig
+// Falls back to localhost:5000 if not configured
 
 // ==================== API FUNCTIONS ====================
 
@@ -89,7 +90,7 @@ const API_BASE =
 export async function getPendingOrderByTableId(tableId: string): Promise<Order | null> {
   try {
     const response = await fetch(
-      `${API_BASE}/orders?table_id=${tableId}&status=pending`,
+      `${getApiBaseUrl()}/orders?table_id=${tableId}&status=pending`,
       {
         method: "GET",
         headers: {
@@ -117,7 +118,7 @@ export async function getPendingOrderByTableId(tableId: string): Promise<Order |
 export async function getOrderById(orderId: string): Promise<Order> {
   try {
     const response = await fetch(
-      `${API_BASE}/orders/${orderId}`,
+      `${getApiBaseUrl()}/orders/${orderId}`,
       {
         method: "GET",
         headers: {
@@ -145,7 +146,7 @@ export async function getOrderById(orderId: string): Promise<Order> {
 export async function getPendingTakeawayOrders(): Promise<Order[]> {
   try {
     const response = await fetch(
-      `${API_BASE}/orders?order_type=takeaway-staff&status=pending`,
+      `${getApiBaseUrl()}/orders?order_type=takeaway-staff&status=pending`,
       {
         method: "GET",
         headers: {
@@ -171,7 +172,7 @@ export async function getPendingTakeawayOrders(): Promise<Order[]> {
 
 
 export async function createOrder(params: CreateOrderParams): Promise<Order> {
-  const response = await fetch(`${API_BASE}/orders`, {
+  const response = await fetch(`${getApiBaseUrl()}/orders`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -198,7 +199,7 @@ export async function createOrderDetail(
   params: OrderDetailParams
 ): Promise<OrderDetail> {
   const orderId = params.order_id;
-  const response = await fetch(`${API_BASE}/orders/${orderId}/details`, {
+  const response = await fetch(`${getApiBaseUrl()}/orders/${orderId}/details`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -226,7 +227,7 @@ export async function updateOrderDetailStatus(
   params: UpdateOrderDetailStatusParams
 ): Promise<OrderDetail> {
   const response = await fetch(
-    `${API_BASE}/orders/${orderId}/details/${detailId}`,
+    `${getApiBaseUrl()}/orders/${orderId}/details/${detailId}`,
     {
       method: "PUT",
       headers: {
@@ -255,7 +256,7 @@ export async function updateOrderDetailQuantity(
   quantity: number
 ): Promise<OrderDetail> {
   const response = await fetch(
-    `${API_BASE}/orders/${orderId}/details/${detailId}`,
+    `${getApiBaseUrl()}/orders/${orderId}/details/${detailId}`,
     {
       method: "PUT",
       headers: {
@@ -290,7 +291,7 @@ export async function updateOrderDetailNotes(
   }
   
   const response = await fetch(
-    `${API_BASE}/orders/${orderId}/details/${detailId}`,
+    `${getApiBaseUrl()}/orders/${orderId}/details/${detailId}`,
     {
       method: "PUT",
       headers: {
@@ -319,7 +320,7 @@ export async function patchOrderDetailStatus(
   status: 'pending' | 'preparing' | 'ready' | 'served' | 'cancelled'
 ): Promise<OrderDetail> {
   const response = await fetch(
-    `${API_BASE}/orders/${orderId}/details/${detailId}/status`,
+    `${getApiBaseUrl()}/orders/${orderId}/details/${detailId}/status`,
     {
       method: "PATCH",
       headers: {
@@ -346,7 +347,7 @@ export async function updateOrderStatus(
   orderId: string,
   status: 'pending' | 'preparing' | 'ready' | 'served' | 'completed' | 'cancelled'
 ): Promise<Order> {
-  const response = await fetch(`${API_BASE}/orders/${orderId}`, {
+  const response = await fetch(`${getApiBaseUrl()}/orders/${orderId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -371,7 +372,7 @@ export async function patchOrderStatus(
   orderId: string,
   status: 'pending' | 'preparing' | 'ready' | 'served' | 'completed' | 'cancelled'
 ): Promise<Order> {
-  const response = await fetch(`${API_BASE}/orders/${orderId}/status`, {
+  const response = await fetch(`${getApiBaseUrl()}/orders/${orderId}/status`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -394,7 +395,7 @@ export async function patchOrderStatus(
 
 export async function getOrderDetails(orderId: string): Promise<OrderDetail[]> {
   const response = await fetch(
-    `${API_BASE}/orders/${orderId}/details`,
+    `${getApiBaseUrl()}/orders/${orderId}/details`,
     {
       method: "GET",
       headers: {

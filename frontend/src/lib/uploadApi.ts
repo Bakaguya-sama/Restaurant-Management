@@ -1,5 +1,7 @@
 
 
+import { getApiBaseUrl, getBaseUrl } from './apiConfig';
+
 /**
  * Upload response from backend
  */
@@ -30,14 +32,6 @@ const UPLOAD_CONSTRAINTS = {
   }
 };
 
-const API_BASE =
-  (import.meta as any).env?.VITE_API_BASE_URL ||
-  "http://localhost:5000/api/v1";
-
-const BASE_URL =
-  (import.meta as any).env?.VITE_BASE_URL ||
-  "http://localhost:5000";
-
 /**
  * Build complete URL for uploaded images
  * Ensures proper handling of relative vs absolute URLs
@@ -50,11 +44,11 @@ export function buildImageUrl(imagePath: string): string {
   
   // Relative path - prepend BASE_URL
   if (imagePath.startsWith('/')) {
-    return `${BASE_URL}${imagePath}`;
+    return `${getBaseUrl()}${imagePath}`;
   }
   
   // No leading slash - add it
-  return `${BASE_URL}/${imagePath}`;
+  return `${getBaseUrl()}/${imagePath}`;
 }
 
 /**
@@ -132,7 +126,7 @@ export async function uploadDishImage(file: File, dishId?: string): Promise<stri
     formData.append('entityId', dishId);
   }
 
-  const response = await fetch(`${API_BASE}/uploads/dishes`, {
+  const response = await fetch(`${getApiBaseUrl()}/uploads/dishes`, {
     method: 'POST',
     body: formData,
   });
@@ -171,7 +165,7 @@ export async function uploadAvatarImage(file: File, userId?: string): Promise<st
     formData.append('entityId', userId);
   }
 
-  const response = await fetch(`${API_BASE}/uploads/avatars`, {
+  const response = await fetch(`${getApiBaseUrl()}/uploads/avatars`, {
     method: 'POST',
     body: formData,
   });
@@ -198,6 +192,15 @@ export async function uploadAvatarImage(file: File, userId?: string): Promise<st
  * @param {string} entityId - Entity ID for filename (dish_id or user_id, optional)
  * @returns {Promise<string>} Image URL
  */
+/**
+ * Upload an image file to the server with specified type
+ * Route: POST /api/v1/uploads/{uploadType}
+ *
+ * @param {File} file - Image file to upload
+ * @param {string} uploadType - Type of upload ('dishes' or 'avatars')
+ * @param {string} entityId - Entity ID for filename (dish_id or user_id, optional)
+ * @returns {Promise<string>} Image URL
+ */
 export async function uploadImage(
   file: File,
   uploadType: 'dishes' | 'avatars',
@@ -214,7 +217,7 @@ export async function uploadImage(
     formData.append('entityId', entityId);
   }
 
-  const response = await fetch(`${API_BASE}/uploads/${uploadType}`, {
+  const response = await fetch(`${getApiBaseUrl()}/uploads/${uploadType}`, {
     method: 'POST',
     body: formData,
   });
@@ -249,7 +252,7 @@ export async function deleteImage(
   filename: string,
   uploadType: 'dishes' | 'avatars'
 ): Promise<void> {
-  const response = await fetch(`${API_BASE}/uploads/${uploadType}/${filename}`, {
+  const response = await fetch(`${getApiBaseUrl()}/uploads/${uploadType}/${filename}`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',

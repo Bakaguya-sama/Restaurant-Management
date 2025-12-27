@@ -1,4 +1,5 @@
 import { Dish } from "../types";
+import { getApiBaseUrl } from "./apiConfig";
 
 // ==================== TYPE DEFINITIONS ====================
 
@@ -20,9 +21,8 @@ export interface GetDishesParams {
 
 // ==================== API CONFIGURATION ====================
 
-const API_BASE =
-  (import.meta as any).env?.VITE_API_BASE_URL ||
-  "http://localhost:5000/api/v1";
+// API base URL is now dynamically determined from apiConfig
+// Falls back to localhost:5000 if not configured
 
 // ==================== CATEGORY MAPPING ====================
 
@@ -66,7 +66,7 @@ export function mapUiCategoryToApi(
 export async function fetchDishes(
   params: GetDishesParams = {}
 ): Promise<Dish[]> {
-  const url = new URL(`${API_BASE}/dishes`);
+  const url = new URL(`${getApiBaseUrl()}/dishes`);
 
   // Add query parameters
   if (params.search) {
@@ -96,7 +96,7 @@ export async function fetchDishes(
  * Fetch top N most ordered dishes
  */
 export async function fetchTopDishes(limit: number = 3): Promise<Dish[]> {
-  const url = new URL(`${API_BASE}/dishes/top`);
+  const url = new URL(`${getApiBaseUrl()}/dishes/top`);
   url.searchParams.set("limit", String(limit));
 
   const response = await fetch(url.toString());
