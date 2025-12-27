@@ -155,6 +155,15 @@ export const staffApi = {
     return handleResponse<any>(response);
   },
 
+  updateRole: async (id: string, role: string) => {
+    const response = await fetch(`${API_BASE_URL}/staff/${id}/role`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role }),
+    });
+    return handleResponse<any>(response);
+  },
+
   getStatistics: async () => {
     const response = await fetch(`${API_BASE_URL}/staff/statistics`);
     return handleResponse<any>(response);
@@ -343,10 +352,13 @@ export const invoiceApi = {
     return handleResponse<any>(response);
   },
 
-  markAsPaid: async (id: string, paymentMethod: string, promotionId?: string | null) => {
+  markAsPaid: async (id: string, paymentMethod: string, promotionId?: string | null, pointsUsed?: number) => {
     const body: any = { payment_method: paymentMethod };
     if (promotionId) {
       body.promotion_id = promotionId;
+    }
+    if (pointsUsed && pointsUsed > 0) {
+      body.points_used = pointsUsed;
     }
     const response = await fetch(`${API_BASE_URL}/invoices/${id}/paid`, {
       method: 'PATCH',

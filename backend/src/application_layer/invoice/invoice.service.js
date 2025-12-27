@@ -218,7 +218,7 @@ class InvoiceService {
     return await this.invoiceRepository.findById(id);
   }
 
-  async markAsPaid(id, paymentMethod, promotionId = null) {
+  async markAsPaid(id, paymentMethod, promotionId = null, pointsUsed = 0) {
     const invoice = await this.invoiceRepository.findById(id);
     if (!invoice) {
       throw new Error('Invoice not found');
@@ -265,7 +265,7 @@ class InvoiceService {
 
     if (invoice.customer_id && invoice.points_earned > 0) {
       try {
-        await this.pointsService.awardCustomerPoints(invoice.customer_id, invoice.points_earned);
+        await this.pointsService.awardCustomerPoints(invoice.customer_id, pointsEarned);
       } catch (error) {
         console.error('Failed to award points:', error);
       }
@@ -273,7 +273,7 @@ class InvoiceService {
 
     if (invoice.customer_id && invoice.points_used > 0) {
       try {
-        await this.pointsService.redeemCustomerPoints(invoice.customer_id, invoice.points_used);
+        await this.pointsService.redeemCustomerPoints(invoice.customer_id, pointsUsed);
       } catch (error) {
         console.error('Failed to redeem points:', error);
       }
