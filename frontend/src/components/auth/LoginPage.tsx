@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, Phone, Lock, User } from "lucide-react";
+import { Mail, Phone, Lock, User, AlertCircle } from "lucide-react";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { UserRole } from "../../types";
@@ -14,34 +14,51 @@ export function LoginPage() {
     identifier: "",
     password: "",
   });
-  const [staffForm, setStaffForm] = useState({ employeeId: "", password: "" });
+  const [staffForm, setStaffForm] = useState({ 
+    employeeId: "", 
+    password: ""
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string>("");
 
-  const handleCustomerLogin = (e: React.FormEvent) => {
+  const handleCustomerLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock login - in real app, validate credentials
-    login("customer");
-    navigate("/customer/home");
+    setIsLoading(true);
+    setError("");
+
+    try {
+      await login(customerForm.identifier, customerForm.password, "customer");
+      navigate("/customer/home");
+    } catch (err: any) {
+      setError(err.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleStaffLogin = (e: React.FormEvent) => {
+  const handleStaffLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock login - simulate different roles based on employee ID
-    let role: UserRole;
-    let redirectPath: string;
+    setIsLoading(true);
+    setError("");
 
-    if (staffForm.employeeId.startsWith("MGR")) {
-      role = "manager";
-      redirectPath = "/staff/manager/dashboard";
-    } else if (staffForm.employeeId.startsWith("CSH")) {
-      role = "cashier";
-      redirectPath = "/staff/cashier/invoices";
-    } else {
-      role = "waiter";
-      redirectPath = "/staff/waiter/tables";
+    try {
+      const userProfile = await login(staffForm.employeeId, staffForm.password);
+      
+      let redirectPath: string;
+      if (userProfile.role === "manager") {
+        redirectPath = "/staff/manager/dashboard";
+      } else if (userProfile.role === "cashier") {
+        redirectPath = "/staff/cashier/invoices";
+      } else {
+        redirectPath = "/staff/waiter/tables";
+      }
+      
+      navigate(redirectPath);
+    } catch (err: any) {
+      setError(err.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.");
+    } finally {
+      setIsLoading(false);
     }
-
-    login(role);
-    navigate(redirectPath);
   };
 
   return (
@@ -95,18 +112,26 @@ export function LoginPage() {
           {/* Customer Login Form */}
           {activeTab === "customer" && (
             <form onSubmit={handleCustomerLogin} className="space-y-4">
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">{error}</span>
+                </div>
+              )}
+              
               <Input
                 label="Số điện thoại hoặc Email"
                 type="text"
                 placeholder="Nhập số điện thoại hoặc email"
                 icon={<Phone className="w-4 h-4" />}
                 value={customerForm.identifier}
-                onChange={(e) =>
+                onChange={(e) => {
+                  setError("");
                   setCustomerForm({
                     ...customerForm,
                     identifier: e.target.value,
-                  })
-                }
+                  });
+                }}
                 required
               />
               <Input
@@ -115,9 +140,10 @@ export function LoginPage() {
                 placeholder="Nhập mật khẩu"
                 icon={<Lock className="w-4 h-4" />}
                 value={customerForm.password}
-                onChange={(e) =>
-                  setCustomerForm({ ...customerForm, password: e.target.value })
-                }
+                onChange={(e) => {
+                  setError("");
+                  setCustomerForm({ ...customerForm, password: e.target.value });
+                }}
                 required
               />
 
@@ -134,8 +160,8 @@ export function LoginPage() {
                 </a>
               </div>
 
-              <Button type="submit" fullWidth size="lg">
-                Đăng nhập
+              <Button type="submit" fullWidth size="lg" disabled={isLoading}>
+                {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
               </Button>
 
               <div className="text-center pt-4">
@@ -150,21 +176,42 @@ export function LoginPage() {
                   </button>
                 </p>
               </div>
+
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h4 className="text-sm font-semibold text-blue-900 mb-3">📝 Tài khoản mẫu (Customer):</h4>
+                <div className="space-y-2 text-xs text-blue-800">
+                  <div><span className="font-semibold">🔷 Diamond:</span> <code className="bg-blue-100 px-2 py-1 rounded">tuan.nguyen@gmail.com</code></div>
+                  <div><span className="font-semibold">🔶 Platinum:</span> <code className="bg-blue-100 px-2 py-1 rounded">huong.tran@gmail.com</code></div>
+                  <div><span className="font-semibold">🟡 Gold:</span> <code className="bg-blue-100 px-2 py-1 rounded">huy.le@gmail.com</code></div>
+                  <div><span className="font-semibold">⚪ Silver:</span> <code className="bg-blue-100 px-2 py-1 rounded">nga.pham@gmail.com</code></div>
+                  <div><span className="font-semibold">🟤 Bronze:</span> <code className="bg-blue-100 px-2 py-1 rounded">khoa.vo@gmail.com</code></div>
+                  <div><span className="font-semibold">⚫ Regular:</span> <code className="bg-blue-100 px-2 py-1 rounded">son.hoang@gmail.com</code></div>
+                  <div className="pt-2 border-t border-blue-300 text-center text-blue-700">Tất cả: <strong>password123</strong></div>
+                </div>
+              </div>
             </form>
           )}
 
           {/* Staff Login Form */}
           {activeTab === "staff" && (
             <form onSubmit={handleStaffLogin} className="space-y-4">
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">{error}</span>
+                </div>
+              )}
+              
               <Input
-                label="Mã nhân viên"
+                label="Tên đăng nhập"
                 type="text"
-                placeholder="Nhập mã nhân viên (VD: MGR001, CSH001, WTR001)"
+                placeholder="Nhập tên đăng nhập"
                 icon={<User className="w-4 h-4" />}
                 value={staffForm.employeeId}
-                onChange={(e) =>
-                  setStaffForm({ ...staffForm, employeeId: e.target.value })
-                }
+                onChange={(e) => {
+                  setError("");
+                  setStaffForm({ ...staffForm, employeeId: e.target.value });
+                }}
                 required
               />
               <Input
@@ -173,9 +220,10 @@ export function LoginPage() {
                 placeholder="Nhập mật khẩu"
                 icon={<Lock className="w-4 h-4" />}
                 value={staffForm.password}
-                onChange={(e) =>
-                  setStaffForm({ ...staffForm, password: e.target.value })
-                }
+                onChange={(e) => {
+                  setError("");
+                  setStaffForm({ ...staffForm, password: e.target.value });
+                }}
                 required
               />
 
@@ -186,14 +234,24 @@ export function LoginPage() {
                 </label>
               </div>
 
-              <Button type="submit" fullWidth size="lg">
-                Đăng nhập
+              <Button type="submit" fullWidth size="lg" disabled={isLoading}>
+                {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
               </Button>
 
               <div className="text-center pt-4">
                 <p className="text-sm text-gray-500">
                   Tài khoản nhân viên được cấp bởi quản lý
                 </p>
+              </div>
+
+              <div className="mt-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <h4 className="text-sm font-semibold text-purple-900 mb-3">📝 Tài khoản mẫu (Staff):</h4>
+                <div className="space-y-2 text-xs text-purple-800">
+                  <div><span className="font-semibold">👨‍💼 Manager:</span> <code className="bg-purple-100 px-2 py-1 rounded">minh.manager</code> hoặc <code className="bg-purple-100 px-2 py-1 rounded">hoa.manager</code></div>
+                  <div><span className="font-semibold">💰 Cashier:</span> <code className="bg-purple-100 px-2 py-1 rounded">nam.cashier</code> hoặc <code className="bg-purple-100 px-2 py-1 rounded">lan.cashier</code></div>
+                  <div><span className="font-semibold">🍽️ Waiter:</span> <code className="bg-purple-100 px-2 py-1 rounded">hung.waiter</code> hoặc <code className="bg-purple-100 px-2 py-1 rounded">mai.waiter</code></div>
+                  <div className="pt-2 border-t border-purple-300 text-center text-purple-700">Tất cả: <strong>password123</strong></div>
+                </div>
               </div>
             </form>
           )}

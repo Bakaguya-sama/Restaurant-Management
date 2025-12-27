@@ -118,7 +118,7 @@ export function HRPage() {
         role: staff.role,
         phone: staff.phone || '',
         email: staff.email || '',
-        status: staff.status === 'active' ? 'active' : 'inactive',
+        status: staff.is_active ? 'active' : 'inactive',
       }));
       setEmployees(transformedData);
     } catch (error: any) {
@@ -220,22 +220,63 @@ export function HRPage() {
     setShowConfirmModal(true);
   };
 
+  const handleToggleStatus = async (employee: Employee) => {
+    const newStatus = employee.status === "active" ? "inactive" : "active";
+    const action = newStatus === "inactive" ? "tạm ngừng" : "kích hoạt";
+    
+    setConfirmTitle(`${action.charAt(0).toUpperCase() + action.slice(1)} nhân viên`);
+    setConfirmMessage(`Bạn có chắc muốn ${action} nhân viên ${employee.name}?`);
+    setConfirmText(action.charAt(0).toUpperCase() + action.slice(1));
+    setConfirmCancelText("Hủy");
+    setConfirmVariant(newStatus === "inactive" ? "warning" : "info");
+    setPendingAction(() => async () => {
+      try {
+        if (newStatus === "inactive") {
+          await staffApi.deactivate(employee.id);
+        } else {
+          await staffApi.activate(employee.id);
+        }
+        await fetchEmployees();
+        toast.success(`Đã ${action} nhân viên thành công`);
+      } catch (error: any) {
+        toast.error(error.message || `Không thể ${action} nhân viên`);
+      }
+    });
+    setShowConfirmModal(true);
+  };
+
   const handleOpenRole = (employee: Employee) => {
+    console.log('Opening role modal for:', employee.name, 'current role:', employee.role);
     setSelectedEmployee(employee);
     setSelectedRole(employee.role);
     setShowRoleModal(true);
+    toast.info(`Mở modal đổi vai trò cho ${employee.name}`);
   };
 
   const handleUpdateRole = async () => {
-    if (!selectedEmployee) return;
+    if (!selectedEmployee) {
+      console.error('No employee selected');
+      return;
+    }
+
+    console.log('Updating role from', selectedEmployee.role, 'to', selectedRole);
+
+    if (selectedRole === selectedEmployee.role) {
+      toast.info("Vai trò không thay đổi");
+      setShowRoleModal(false);
+      return;
+    }
 
     try {
-      await staffApi.update(selectedEmployee.id, { role: selectedRole });
+      console.log('Calling API to update role for staff ID:', selectedEmployee.id);
+      const result = await staffApi.updateRole(selectedEmployee.id, selectedRole);
+      console.log('API response:', result);
       await fetchEmployees();
-      toast.success("Cập nhật vai trò thành công!");
+      toast.success(`Đã cập nhật vai trò thành ${getRoleText(selectedRole)}`);
       setShowRoleModal(false);
       setSelectedEmployee(null);
     } catch (error: any) {
+      console.error('Error updating role:', error);
       toast.error(error.message || 'Không thể cập nhật vai trò');
     }
   };
@@ -417,6 +458,14 @@ export function HRPage() {
                   </td>
                   <td className="p-4">
                     <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant={employee.status === "active" ? "outline" : "default"}
+                        onClick={() => handleToggleStatus(employee)}
+                        title={employee.status === "active" ? "Tạm ngừng" : "Kích hoạt"}
+                      >
+                        {employee.status === "active" ? "Tạm ngừng" : "Kích hoạt"}
+                      </Button>
                       <Button
                         size="sm"
                         variant="secondary"

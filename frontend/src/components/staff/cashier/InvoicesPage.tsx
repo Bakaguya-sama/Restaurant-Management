@@ -48,15 +48,20 @@ export function InvoicesPage() {
   useEffect(() => {
     const loadCustomerPoints = async () => {
       if (!selectedInvoice || !selectedInvoice.customerId) {
+        console.log('No selected invoice or customer ID:', selectedInvoice);
         setCustomerPoints(null);
         setCashierPointsToUse("");
         return;
       }
 
+      console.log('Loading points for customer ID:', selectedInvoice.customerId);
+
       try {
         const res: any = await customerApi.getById(selectedInvoice.customerId);
+        console.log('Customer data received:', res);
         if (res && res.data) {
           setCustomerPoints(res.data.points || 0);
+          console.log('Customer points set to:', res.data.points || 0);
         } else {
           setCustomerPoints(0);
         }
@@ -83,12 +88,19 @@ export function InvoicesPage() {
             price: item.unit_price || item.dish_id?.price || 0,
           })) || [];
 
+        // Extract customer ID từ populated object hoặc string
+        const getCustomerId = () => {
+          if (!invoice.customer_id) return null;
+          if (typeof invoice.customer_id === 'string') return invoice.customer_id;
+          return invoice.customer_id._id || invoice.customer_id.id || null;
+        };
+
         return {
           id: invoice.id,
           tableId: invoice.order_id?.table_id || "",
           tableNumber: invoice.order_id?.table?.table_number || "N/A",
-          customerId: invoice.customer_id,
-          customerName: invoice.customer?.full_name || "Khách hàng",
+          customerId: getCustomerId(),
+          customerName: invoice.customer_id?.full_name || invoice.customer?.full_name || "Khách hàng",
           items,
           subtotal: invoice.subtotal || 0,
           tax: invoice.tax || 0,
@@ -274,6 +286,9 @@ export function InvoicesPage() {
 
     const pointsEarned = Math.floor(totalAmount / 10000) * 10;
 
+    // Get points used from selectedInvoice
+    const pointsUsed = selectedInvoice.customerSelectedPoints || 0;
+
     // Map payment method to backend format
     const paymentMethodMap: { [key: string]: string } = {
       cash: 'cash',
@@ -287,7 +302,8 @@ export function InvoicesPage() {
       await invoiceApi.markAsPaid(
         selectedInvoice.id, 
         paymentMethodMap[paymentMethod] || 'cash',
-        promotionId
+        promotionId,
+        pointsUsed
       );
       await fetchInvoices();
 

@@ -147,8 +147,13 @@ class InvoiceController {
 
   async markAsPaid(req, res) {
     try {
-      const { payment_method, promotion_id } = req.body;
-      const invoice = await this.invoiceService.markAsPaid(req.params.id, payment_method, promotion_id);
+      const { payment_method, promotion_id, points_used } = req.body;
+      const invoice = await this.invoiceService.markAsPaid(
+        req.params.id, 
+        payment_method, 
+        promotion_id, 
+        points_used
+      );
       
       res.status(200).json({
         success: true,
