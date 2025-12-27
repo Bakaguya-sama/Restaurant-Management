@@ -10,6 +10,8 @@ import {
   X,
   Star,
   Award,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Card } from "../ui/Card";
 import { Button } from "../ui/Button";
@@ -17,6 +19,7 @@ import { Input } from "../ui/Input";
 import { toast } from "sonner";
 import { useCustomers } from "../../hooks/useCustomers";
 import { Customer } from "../../lib/customerApi";
+import { authService } from "../../lib/authService";
 import { formatDateDisplay, convertDisplayDateToISO } from "../../lib/utils";
 import { uploadAvatarImage, buildImageUrl, extractRelativePath } from "../../lib/uploadApi";
 import {
@@ -30,7 +33,7 @@ import {
 const PLACEHOLDER_AVATAR = "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png";
 
 export function CustomerProfilePage() {
-  const { customers, loading: customersLoading, fetchCustomers, updateCustomer, changePassword } = useCustomers();
+  const { getCustomerById, updateCustomer } = useCustomers();
   const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -38,7 +41,7 @@ export function CustomerProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [profileData, setProfileData] = useState({
     fullName: "",
@@ -55,41 +58,48 @@ export function CustomerProfilePage() {
     confirmPassword: "",
   });
 
+  const [showPasswordFields, setShowPasswordFields] = useState({
+    current: false,
+    new: false,
+    confirm: false,
+  });
+
   const [showPasswordChange, setShowPasswordChange] = useState(false);
 
   useEffect(() => {
-    const loadCustomerData = async () => {
+    const loadCurrentCustomerProfile = async () => {
       try {
-        setLoading(true);
-        await fetchCustomers({ isBanned: false });
+        setIsLoadingProfile(true);
+        const response = await authService.getCurrentUser();
+        const currentUserId = response.data.id || response.data._id;
+        
+        if (currentUserId) {
+          const customer = await getCustomerById(currentUserId);
+          if (customer) {
+            setCurrentCustomer(customer);
+            setProfileData({
+              fullName: customer.full_name || "",
+              email: customer.email || "",
+              phone: customer.phone || "",
+              address: customer.address || "",
+              dateOfBirth: formatDateDisplay(customer.date_of_birth) || "",
+              memberSince: customer.created_at ? new Date(customer.created_at).toISOString().split('T')[0] : "",
+            });
+            if (customer.image_url) {
+              setAvatarUrl(buildImageUrl(customer.image_url));
+            }
+          }
+        }
       } catch (error) {
-        console.error("[CUSTOMER_PROFILE] Error fetching customers:", error);
+        console.error("[CUSTOMER_PROFILE] Error loading current customer profile:", error);
         toast.error("Không thể tải thông tin cá nhân");
       } finally {
-        setLoading(false);
+        setIsLoadingProfile(false);
       }
     };
 
-    loadCustomerData();
-  }, [fetchCustomers]);
-
-  useEffect(() => {
-    if (customers.length > 0 && !currentCustomer) {
-      const firstCustomer = customers[0];
-      setCurrentCustomer(firstCustomer);
-      setProfileData({
-        fullName: firstCustomer.full_name || "",
-        email: firstCustomer.email || "",
-        phone: firstCustomer.phone || "",
-        address: firstCustomer.address || "",
-        dateOfBirth: formatDateDisplay(firstCustomer.date_of_birth) || "",
-        memberSince: firstCustomer.created_at ? new Date(firstCustomer.created_at).toISOString().split('T')[0] : "",
-      });
-      if (firstCustomer.image_url) {
-        setAvatarUrl(buildImageUrl(firstCustomer.image_url));
-      }
-    }
-  }, [customers, currentCustomer]);
+    loadCurrentCustomerProfile();
+  }, []);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -264,7 +274,7 @@ export function CustomerProfilePage() {
 
     try {
       setIsChangingPassword(true);
-      await changePassword(currentCustomer.id, passwordData.currentPassword, passwordData.newPassword);
+      await authService.changePassword({ currentPassword: passwordData.currentPassword, newPassword: passwordData.newPassword });
       toast.success("Đổi mật khẩu thành công!");
       setShowPasswordChange(false);
       setPasswordData({
@@ -289,7 +299,7 @@ export function CustomerProfilePage() {
         </p>
       </div>
 
-      {loading ? (
+      {isLoadingProfile ? (
         <div className="flex items-center justify-center min-h-96">
           <p className="text-gray-600">Đang tải thông tin...</p>
         </div>
@@ -467,42 +477,99 @@ export function CustomerProfilePage() {
 
               {showPasswordChange ? (
                 <div className="space-y-4">
-                  <Input
-                    label="Mật khẩu hiện tại"
-                    type="password"
-                    value={passwordData.currentPassword}
-                    onChange={(e) =>
-                      setPasswordData({
-                        ...passwordData,
-                        currentPassword: e.target.value,
-                      })
-                    }
-                    placeholder="Nhập mật khẩu hiện tại"
-                  />
-                  <Input
-                    label="Mật khẩu mới"
-                    type="password"
-                    value={passwordData.newPassword}
-                    onChange={(e) =>
-                      setPasswordData({
-                        ...passwordData,
-                        newPassword: e.target.value,
-                      })
-                    }
-                    placeholder="Nhập mật khẩu mới"
-                  />
-                  <Input
-                    label="Xác nhận mật khẩu mới"
-                    type="password"
-                    value={passwordData.confirmPassword}
-                    onChange={(e) =>
-                      setPasswordData({
-                        ...passwordData,
-                        confirmPassword: e.target.value,
-                      })
-                    }
-                    placeholder="Nhập lại mật khẩu mới"
-                  />
+                  <div className="relative">
+                    <Input
+                      label="Mật khẩu hiện tại"
+                      type={showPasswordFields.current ? "text" : "password"}
+                      value={passwordData.currentPassword}
+                      onChange={(e) =>
+                        setPasswordData({
+                          ...passwordData,
+                          currentPassword: e.target.value,
+                        })
+                      }
+                      placeholder="Nhập mật khẩu hiện tại"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowPasswordFields({
+                          ...showPasswordFields,
+                          current: !showPasswordFields.current,
+                        })
+                      }
+                      className="absolute right-3 top-8 text-gray-600 hover:text-gray-800"
+                      title={showPasswordFields.current ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"}
+                    >
+                      {showPasswordFields.current ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <Input
+                      label="Mật khẩu mới"
+                      type={showPasswordFields.new ? "text" : "password"}
+                      value={passwordData.newPassword}
+                      onChange={(e) =>
+                        setPasswordData({
+                          ...passwordData,
+                          newPassword: e.target.value,
+                        })
+                      }
+                      placeholder="Nhập mật khẩu mới"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowPasswordFields({
+                          ...showPasswordFields,
+                          new: !showPasswordFields.new,
+                        })
+                      }
+                      className="absolute right-3 top-8 text-gray-600 hover:text-gray-800"
+                      title={showPasswordFields.new ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"}
+                    >
+                      {showPasswordFields.new ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <Input
+                      label="Xác nhận mật khẩu mới"
+                      type={showPasswordFields.confirm ? "text" : "password"}
+                      value={passwordData.confirmPassword}
+                      onChange={(e) =>
+                        setPasswordData({
+                          ...passwordData,
+                          confirmPassword: e.target.value,
+                        })
+                      }
+                      placeholder="Nhập lại mật khẩu mới"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowPasswordFields({
+                          ...showPasswordFields,
+                          confirm: !showPasswordFields.confirm,
+                        })
+                      }
+                      className="absolute right-3 top-8 text-gray-600 hover:text-gray-800"
+                      title={showPasswordFields.confirm ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"}
+                    >
+                      {showPasswordFields.confirm ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
                   <div className="flex gap-3">
                     <Button
                       variant="secondary"

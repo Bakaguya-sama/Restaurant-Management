@@ -130,17 +130,6 @@ export function useStaff() {
     }
   };
 
-  const changePassword = async (id: string, currentPassword: string, newPassword: string): Promise<void> => {
-    try {
-      setError(null);
-      await staffApi.changePassword(id, currentPassword, newPassword);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to change password';
-      setError(message);
-      throw err;
-    }
-  };
-
   return {
     staff,
     loading,
@@ -153,7 +142,6 @@ export function useStaff() {
     deactivateStaff,
     activateStaff,
     getStatistics,
-    loginStaff,
-    changePassword
+    loginStaff
   };
 }
