@@ -194,7 +194,7 @@ class DishController {
 
   async updateDishAvailability(req, res) {
     try {
-      const { is_available, reason } = req.body;
+      const { is_available, reason, manual_unavailable_by } = req.body;
 
       if (is_available === undefined) {
         return res.status(400).json({
@@ -204,11 +204,13 @@ class DishController {
         });
       }
 
+      const staffId = manual_unavailable_by || (req.user ? req.user.id : null);
+
       const dish = await this.dishService.updateDishAvailability(
         req.params.id,
         is_available,
         reason,
-        req.user ? req.user.id : null
+        staffId
       );
 
       const formatted = await this.dishService.formatDishResponse(dish);
