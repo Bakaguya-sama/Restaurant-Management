@@ -13,6 +13,11 @@ describe('Invoice Integration Tests', () => {
   beforeAll(async () => {
     await connectDB();
 
+    // Clean up any previous test data first
+    await Invoice.deleteMany({});
+    await Order.deleteMany({});
+    await Promotion.deleteMany({});
+
     let staff = await StaffCashier.findOne({ role: 'cashier' });
     if (!staff) {
       staff = await StaffCashier.create({
@@ -50,29 +55,22 @@ describe('Invoice Integration Tests', () => {
     }
     testCustomerId = customer._id;
 
-    let order = await Order.findOne();
-    if (!order) {
-      order = await Order.create({
-        customer_id: testCustomerId,
-        order_number: `ORD${Date.now()}`,
-        order_date: new Date(),
-        order_time: '12:00',
-        total_amount: 100000,
-        status: 'completed'
-      });
-    }
+    const order = await Order.create({
+      customer_id: testCustomerId,
+      order_number: `ORD${Date.now()}`,
+      order_date: new Date(),
+      order_time: '12:00',
+      total_amount: 100000,
+      status: 'completed'
+    });
     testOrderId = order._id;
-
-    const existingInvoice = await Invoice.findOne({ order_id: testOrderId });
-    if (existingInvoice) {
-      await Invoice.findByIdAndDelete(existingInvoice._id);
-    }
   });
 
   afterAll(async () => {
-    if (createdInvoiceId) {
-      await Invoice.findByIdAndDelete(createdInvoiceId).catch(() => {});
-    }
+    // Clean up all test data
+    await Invoice.deleteMany({});
+    await Order.deleteMany({});
+    await Promotion.deleteMany({});
   });
 
   describe('POST /api/v1/invoices - Create Invoice', () => {

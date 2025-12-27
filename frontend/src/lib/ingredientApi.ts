@@ -7,8 +7,7 @@ export interface Ingredient {
   quantity_in_stock: number;
   minimum_quantity: number;
   unit_price: number;
-  supplier_name: string;
-  supplier_contact: string;
+  supplier_id: string;
   expiry_date?: string;
   stock_status: string;
   expiry_status: string;
@@ -22,8 +21,7 @@ export interface IngredientData {
   quantity_in_stock: number;
   minimum_quantity: number;
   unit_price: number;
-  supplier_name: string;
-  supplier_contact: string;
+  supplier_id: string;
   expiry_date?: string;
   stock_status?: string;
   expiry_status?: string;

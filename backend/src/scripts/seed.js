@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
 const {
@@ -24,6 +26,23 @@ async function seedDatabase() {
   try {
     await connectDB();
     console.log('\nBẮT ĐẦU SEED DATABASE...\n');
+    
+    // XÓA UPLOADS FOLDER
+    console.log('Xóa thư mục uploads...');
+    const uploadsDir = path.join(__dirname, '../../uploads');
+    if (fs.existsSync(uploadsDir)) {
+      fs.rmSync(uploadsDir, { recursive: true, force: true });
+      console.log('Đã xóa thư mục uploads');
+    }
+    // Tạo lại thư mục uploads và các thư mục con
+    const subdirs = ['avatars', 'dishes'];
+    subdirs.forEach(subdir => {
+      const dirPath = path.join(uploadsDir, subdir);
+      if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, { recursive: true });
+      }
+    });
+    console.log('Đã tạo lại thư mục uploads\n');
     
     // XÓA DỮ LIỆU CŨ
     console.log('Xóa dữ liệu cũ...');
@@ -396,8 +415,7 @@ async function seedDatabase() {
         quantity_in_stock: 0, 
         minimum_quantity: 20, 
         unit_price: 350000, 
-        supplier_name: suppliers[0].name, 
-        supplier_contact: suppliers[0].phone_contact,
+        supplier_id: suppliers[0]._id,
         expiry_date: new Date('2026-01-15'),
         stock_status: 'available',
         expiry_status: 'valid'
@@ -408,8 +426,7 @@ async function seedDatabase() {
         quantity_in_stock: 0, 
         minimum_quantity: 10, 
         unit_price: 450000, 
-        supplier_name: suppliers[1].name, 
-        supplier_contact: suppliers[1].phone_contact,
+        supplier_id: suppliers[1]._id,
         expiry_date: new Date('2025-12-25'),
         stock_status: 'available',
         expiry_status: 'valid'
@@ -420,8 +437,7 @@ async function seedDatabase() {
         quantity_in_stock: 0, 
         minimum_quantity: 15, 
         unit_price: 280000, 
-        supplier_name: suppliers[1].name, 
-        supplier_contact: suppliers[1].phone_contact,
+        supplier_id: suppliers[1]._id,
         expiry_date: new Date('2025-12-20'),
         stock_status: 'low_stock',
         expiry_status: 'near_expiry'
@@ -432,8 +448,7 @@ async function seedDatabase() {
         quantity_in_stock: 0, 
         minimum_quantity: 10, 
         unit_price: 25000, 
-        supplier_name: suppliers[2].name, 
-        supplier_contact: suppliers[2].phone_contact,
+        supplier_id: suppliers[2]._id,
         expiry_date: new Date('2025-12-16'),
         stock_status: 'available',
         expiry_status: 'valid'
@@ -444,8 +459,7 @@ async function seedDatabase() {
         quantity_in_stock: 0,
         minimum_quantity: 10, 
         unit_price: 30000, 
-        supplier_name: suppliers[2].name, 
-        supplier_contact: suppliers[2].phone_contact,
+        supplier_id: suppliers[2]._id,
         expiry_date: new Date('2025-12-18'),
         stock_status: 'available',
         expiry_status: 'valid'
@@ -456,8 +470,7 @@ async function seedDatabase() {
         quantity_in_stock: 0,
         minimum_quantity: 8, 
         unit_price: 20000, 
-        supplier_name: suppliers[2].name, 
-        supplier_contact: suppliers[2].phone_contact,
+        supplier_id: suppliers[2]._id,
         expiry_date: new Date('2025-12-17'),
         stock_status: 'low_stock',
         expiry_status: 'valid'
@@ -468,8 +481,7 @@ async function seedDatabase() {
         quantity_in_stock: 0, 
         minimum_quantity: 5, 
         unit_price: 120000, 
-        supplier_name: suppliers[3].name, 
-        supplier_contact: suppliers[3].phone_contact,
+        supplier_id: suppliers[3]._id,
         expiry_date: new Date('2025-12-19'),
         stock_status: 'available',
         expiry_status: 'valid'
@@ -480,8 +492,7 @@ async function seedDatabase() {
         quantity_in_stock: 0, 
         minimum_quantity: 10, 
         unit_price: 45000, 
-        supplier_name: suppliers[4].name, 
-        supplier_contact: suppliers[4].phone_contact,
+        supplier_id: suppliers[4]._id,
         expiry_date: new Date('2026-06-14'),
         stock_status: 'available',
         expiry_status: 'valid'
@@ -492,8 +503,7 @@ async function seedDatabase() {
         quantity_in_stock: 0, 
         minimum_quantity: 50, 
         unit_price: 35000, 
-        supplier_name: suppliers[5].name, 
-        supplier_contact: suppliers[5].phone_contact,
+        supplier_id: suppliers[5]._id,
         expiry_date: new Date('2026-03-14'),
         stock_status: 'available',
         expiry_status: 'valid'
@@ -504,8 +514,7 @@ async function seedDatabase() {
         quantity_in_stock: 0, 
         minimum_quantity: 5, 
         unit_price: 180000, 
-        supplier_name: suppliers[3].name, 
-        supplier_contact: suppliers[3].phone_contact,
+        supplier_id: suppliers[3]._id,
         expiry_date: new Date('2025-12-16'),
         stock_status: 'out_of_stock',
         expiry_status: 'near_expiry'
@@ -519,27 +528,27 @@ async function seedDatabase() {
       { 
         import_number: 'IMP-001', 
         staff_id: staffs[4]._id, 
+        supplier_id: suppliers[0]._id,
         import_date: new Date('2025-12-01'), 
         total_cost: 17500000, 
-        supplier_name: suppliers[0].name, 
         notes: 'Nhập 50kg thịt bò Úc chất lượng cao', 
         status: 'completed' 
       },
       { 
         import_number: 'IMP-002', 
         staff_id: staffs[4]._id, 
+        supplier_id: suppliers[1]._id,
         import_date: new Date('2025-12-05'), 
         total_cost: 20500000, 
-        supplier_name: suppliers[1].name, 
         notes: 'Nhập cá hồi và tôm sú', 
         status: 'completed' 
       },
       { 
         import_number: 'IMP-003', 
         staff_id: staffs[4]._id, 
+        supplier_id: suppliers[2]._id,
         import_date: new Date('2025-12-10'), 
         total_cost: 3500000, 
-        supplier_name: suppliers[2].name, 
         notes: 'Rau tươi hàng ngày', 
         status: 'completed' 
       }
