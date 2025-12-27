@@ -1,4 +1,7 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+export const API_BASE_URL =
+  (import.meta as any).env?.VITE_API_URL ||
+  (import.meta as any).env?.VITE_API_BASE_URL ||
+  "http://localhost:5000/api/v1";
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -21,7 +24,7 @@ class ApiClient {
 
     const response = await fetch(url, {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...options.headers,
       },
       ...options,
@@ -37,12 +40,12 @@ class ApiClient {
   }
 
   get<T>(endpoint: string, options?: RequestInit) {
-    return this.request<T>(endpoint, { method: 'GET', ...options });
+    return this.request<T>(endpoint, { method: "GET", ...options });
   }
 
   post<T>(endpoint: string, body: any, options?: RequestInit) {
     return this.request<T>(endpoint, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(body),
       ...options,
     });
@@ -50,19 +53,19 @@ class ApiClient {
 
   put<T>(endpoint: string, body: any, options?: RequestInit) {
     return this.request<T>(endpoint, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(body),
       ...options,
     });
   }
 
   delete<T>(endpoint: string, options?: RequestInit) {
-    return this.request<T>(endpoint, { method: 'DELETE', ...options });
+    return this.request<T>(endpoint, { method: "DELETE", ...options });
   }
 
   patch<T>(endpoint: string, body: any, options?: RequestInit) {
     return this.request<T>(endpoint, {
-      method: 'PATCH',
+      method: "PATCH",
       body: JSON.stringify(body),
       ...options,
     });

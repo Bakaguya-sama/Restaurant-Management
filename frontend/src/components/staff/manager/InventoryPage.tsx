@@ -34,6 +34,11 @@ import {
   fetchExportHistory,
 } from "../../../lib/inventoryPageApi";
 
+const API_BASE_URL =
+  (import.meta as any).env?.VITE_API_URL ||
+  (import.meta as any).env?.VITE_API_BASE_URL ||
+  "http://localhost:5000/api/v1";
+
 export function InventoryPage() {
   // Fetch data from API
   const {
@@ -127,7 +132,7 @@ export function InventoryPage() {
   const refreshImportHistory = async () => {
     setImportHistoryLoading(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/inventory/imports`);
+      const response = await fetch(`${API_BASE_URL}/inventory/imports`);
       const result = await response.json();
       if (result.success && result.data) {
         setImportHistory(
@@ -857,7 +862,11 @@ export function InventoryPage() {
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium">Lịch sử nhập kho</h3>
             <div>
-              <Button size="sm" variant="secondary" onClick={refreshImportHistory}>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={refreshImportHistory}
+              >
                 Làm mới
               </Button>
             </div>
@@ -934,10 +943,12 @@ export function InventoryPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="text-sm text-gray-700">
-                  <strong>Mã phiếu:</strong> {selectedImportOrder.code || selectedImportOrder.id}
+                  <strong>Mã phiếu:</strong>{" "}
+                  {selectedImportOrder.code || selectedImportOrder.id}
                 </div>
                 <div className="text-sm text-gray-700">
-                  <strong>Nhà cung cấp:</strong> {selectedImportOrder.supplierName || "-"}
+                  <strong>Nhà cung cấp:</strong>{" "}
+                  {selectedImportOrder.supplierName || "-"}
                 </div>
                 <div className="text-sm text-gray-700">
                   <strong>Ngày nhập:</strong>{" "}
@@ -952,12 +963,16 @@ export function InventoryPage() {
               {selectedImportOrder.notes && (
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <strong className="text-sm">Ghi chú:</strong>
-                  <p className="text-sm text-gray-700 mt-1">{selectedImportOrder.notes}</p>
+                  <p className="text-sm text-gray-700 mt-1">
+                    {selectedImportOrder.notes}
+                  </p>
                 </div>
               )}
 
               <div>
-                <h4 className="text-sm font-medium mb-2">Danh sách nguyên liệu:</h4>
+                <h4 className="text-sm font-medium mb-2">
+                  Danh sách nguyên liệu:
+                </h4>
                 <div className="overflow-x-auto border rounded-lg">
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50">
@@ -980,11 +995,16 @@ export function InventoryPage() {
                             {(item.unitPrice || 0).toLocaleString()} đ
                           </td>
                           <td className="text-right p-3">
-                            {((item.quantity || 0) * (item.unitPrice || 0)).toLocaleString()} đ
+                            {(
+                              (item.quantity || 0) * (item.unitPrice || 0)
+                            ).toLocaleString()}{" "}
+                            đ
                           </td>
                           <td className="text-right p-3">
-                            {item.expiryDate 
-                              ? new Date(item.expiryDate).toLocaleDateString("vi-VN")
+                            {item.expiryDate
+                              ? new Date(item.expiryDate).toLocaleDateString(
+                                  "vi-VN"
+                                )
                               : "-"}
                           </td>
                         </tr>
@@ -996,7 +1016,8 @@ export function InventoryPage() {
 
               <div className="flex justify-end pt-4 border-t">
                 <div className="text-lg font-semibold">
-                  Tổng cộng: {(selectedImportOrder.total || 0).toLocaleString()} đ
+                  Tổng cộng: {(selectedImportOrder.total || 0).toLocaleString()}{" "}
+                  đ
                 </div>
               </div>
             </div>

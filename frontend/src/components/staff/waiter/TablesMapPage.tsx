@@ -20,7 +20,7 @@ import { useLocations } from "../../../hooks/useLocations";
 import { useCustomers } from "../../../hooks/useCustomers";
 import { useStaff } from "../../../hooks/useStaff";
 import { useReservations } from "../../../hooks/useReservations";
-import { createOrder } from "../../../lib/orderingPageApi";
+import { createOrder } from "../../../lib/orderingPageApi.clean";
 
 export function TablesMapPage() {
   const hookResult = useTables();
@@ -242,16 +242,16 @@ export function TablesMapPage() {
 
     try {
       await updateTableStatus(selectedTable.id, "occupied");
-      
+
       // Use bookingCode as reservation ID
       const reservationId = bookingCode.trim();
-      
+
       try {
         await updateReservationStatus(reservationId, "completed");
       } catch (err) {
         console.error("Error updating reservation status:", err);
       }
-      
+
       toast.success(`Đã check-in khách cho bàn ${selectedTable.table_number}`);
     } catch (err) {
       console.error("Error checking in:", err);

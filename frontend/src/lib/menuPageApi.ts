@@ -20,7 +20,8 @@ export interface GetDishesParams {
 
 // ==================== API CONFIGURATION ====================
 
-const API_BASE =
+const API_BASE_URL =
+  (import.meta as any).env?.VITE_API_URL ||
   (import.meta as any).env?.VITE_API_BASE_URL ||
   "http://localhost:5000/api/v1";
 
@@ -36,7 +37,7 @@ export const CATEGORY_MAP = {
     beverage: "Đồ uống",
     dessert: "Tráng miệng",
   } as Record<string, string>,
-  
+
   uiToApi: {
     "Khai vị": "appetizer",
     "Món chính": "main_course",
@@ -66,7 +67,7 @@ export function mapUiCategoryToApi(
 export async function fetchDishes(
   params: GetDishesParams = {}
 ): Promise<Dish[]> {
-  const url = new URL(`${API_BASE}/dishes`);
+  const url = new URL(`${API_BASE_URL}/dishes`);
 
   // Add query parameters
   if (params.search) {
@@ -82,7 +83,9 @@ export async function fetchDishes(
   const response = await fetch(url.toString());
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch dishes: ${response.status} ${response.statusText}`);
+    throw new Error(
+      `Failed to fetch dishes: ${response.status} ${response.statusText}`
+    );
   }
 
   const json = await response.json();
@@ -96,13 +99,15 @@ export async function fetchDishes(
  * Fetch top N most ordered dishes
  */
 export async function fetchTopDishes(limit: number = 3): Promise<Dish[]> {
-  const url = new URL(`${API_BASE}/dishes/top`);
+  const url = new URL(`${API_BASE_URL}/dishes/top`);
   url.searchParams.set("limit", String(limit));
 
   const response = await fetch(url.toString());
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch top dishes: ${response.status} ${response.statusText}`);
+    throw new Error(
+      `Failed to fetch top dishes: ${response.status} ${response.statusText}`
+    );
   }
 
   const json = await response.json();

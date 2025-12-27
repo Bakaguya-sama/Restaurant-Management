@@ -1,4 +1,7 @@
-const API_BASE_URL = 'http://localhost:5000/api/v1';
+const API_BASE_URL =
+  (import.meta as any).env?.VITE_API_URL ||
+  (import.meta as any).env?.VITE_API_BASE_URL ||
+  "http://localhost:5000/api/v1";
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -8,8 +11,10 @@ export interface ApiResponse<T> {
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Network error' }));
-    throw new Error(error.message || 'API request failed');
+    const error = await response
+      .json()
+      .catch(() => ({ message: "Network error" }));
+    throw new Error(error.message || "API request failed");
   }
   const data = await response.json();
   return data.data;
@@ -18,9 +23,10 @@ async function handleResponse<T>(response: Response): Promise<T> {
 export const customerApi = {
   getAll: async (params?: { membershipLevel?: string; search?: string }) => {
     const queryParams = new URLSearchParams();
-    if (params?.membershipLevel) queryParams.append('membershipLevel', params.membershipLevel);
-    if (params?.search) queryParams.append('search', params.search);
-    
+    if (params?.membershipLevel)
+      queryParams.append("membershipLevel", params.membershipLevel);
+    if (params?.search) queryParams.append("search", params.search);
+
     const response = await fetch(`${API_BASE_URL}/customers?${queryParams}`);
     return handleResponse<any[]>(response);
   },
@@ -32,8 +38,8 @@ export const customerApi = {
 
   create: async (data: any) => {
     const response = await fetch(`${API_BASE_URL}/customers`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
     return handleResponse<any>(response);
@@ -41,8 +47,8 @@ export const customerApi = {
 
   update: async (id: string, data: any) => {
     const response = await fetch(`${API_BASE_URL}/customers/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
     return handleResponse<any>(response);
@@ -50,29 +56,29 @@ export const customerApi = {
 
   delete: async (id: string) => {
     const response = await fetch(`${API_BASE_URL}/customers/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
     return handleResponse<any>(response);
   },
 
   ban: async (id: string) => {
     const response = await fetch(`${API_BASE_URL}/customers/${id}/ban`, {
-      method: 'PATCH',
+      method: "PATCH",
     });
     return handleResponse<any>(response);
   },
 
   unban: async (id: string) => {
     const response = await fetch(`${API_BASE_URL}/customers/${id}/unban`, {
-      method: 'PATCH',
+      method: "PATCH",
     });
     return handleResponse<any>(response);
   },
 
   addPoints: async (id: string, points: number) => {
     const response = await fetch(`${API_BASE_URL}/customers/${id}/points`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ points }),
     });
     return handleResponse<any>(response);
@@ -80,8 +86,8 @@ export const customerApi = {
 
   addSpending: async (id: string, amount: number) => {
     const response = await fetch(`${API_BASE_URL}/customers/${id}/spending`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ amount }),
     });
     return handleResponse<any>(response);
@@ -94,9 +100,11 @@ export const customerApi = {
 
   getTop: async (limit?: number) => {
     const queryParams = new URLSearchParams();
-    if (limit) queryParams.append('limit', limit.toString());
-    
-    const response = await fetch(`${API_BASE_URL}/customers/top?${queryParams}`);
+    if (limit) queryParams.append("limit", limit.toString());
+
+    const response = await fetch(
+      `${API_BASE_URL}/customers/top?${queryParams}`
+    );
     return handleResponse<any[]>(response);
   },
 };
@@ -104,9 +112,9 @@ export const customerApi = {
 export const staffApi = {
   getAll: async (params?: { role?: string; search?: string }) => {
     const queryParams = new URLSearchParams();
-    if (params?.role) queryParams.append('role', params.role);
-    if (params?.search) queryParams.append('search', params.search);
-    
+    if (params?.role) queryParams.append("role", params.role);
+    if (params?.search) queryParams.append("search", params.search);
+
     const response = await fetch(`${API_BASE_URL}/staff?${queryParams}`);
     return handleResponse<any[]>(response);
   },
@@ -118,8 +126,8 @@ export const staffApi = {
 
   create: async (data: any) => {
     const response = await fetch(`${API_BASE_URL}/staff`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
     return handleResponse<any>(response);
@@ -127,8 +135,8 @@ export const staffApi = {
 
   update: async (id: string, data: any) => {
     const response = await fetch(`${API_BASE_URL}/staff/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
     return handleResponse<any>(response);
@@ -136,21 +144,21 @@ export const staffApi = {
 
   delete: async (id: string) => {
     const response = await fetch(`${API_BASE_URL}/staff/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
     return handleResponse<any>(response);
   },
 
   deactivate: async (id: string) => {
     const response = await fetch(`${API_BASE_URL}/staff/${id}/deactivate`, {
-      method: 'PATCH',
+      method: "PATCH",
     });
     return handleResponse<any>(response);
   },
 
   activate: async (id: string) => {
     const response = await fetch(`${API_BASE_URL}/staff/${id}/activate`, {
-      method: 'PATCH',
+      method: "PATCH",
     });
     return handleResponse<any>(response);
   },
@@ -162,13 +170,20 @@ export const staffApi = {
 };
 
 export const violationApi = {
-  getAll: async (params?: { customer_id?: string; violation_type?: string; start_date?: string; end_date?: string }) => {
+  getAll: async (params?: {
+    customer_id?: string;
+    violation_type?: string;
+    start_date?: string;
+    end_date?: string;
+  }) => {
     const queryParams = new URLSearchParams();
-    if (params?.customer_id) queryParams.append('customer_id', params.customer_id);
-    if (params?.violation_type) queryParams.append('violation_type', params.violation_type);
-    if (params?.start_date) queryParams.append('start_date', params.start_date);
-    if (params?.end_date) queryParams.append('end_date', params.end_date);
-    
+    if (params?.customer_id)
+      queryParams.append("customer_id", params.customer_id);
+    if (params?.violation_type)
+      queryParams.append("violation_type", params.violation_type);
+    if (params?.start_date) queryParams.append("start_date", params.start_date);
+    if (params?.end_date) queryParams.append("end_date", params.end_date);
+
     const response = await fetch(`${API_BASE_URL}/violations?${queryParams}`);
     return handleResponse<any[]>(response);
   },
@@ -179,14 +194,16 @@ export const violationApi = {
   },
 
   getByCustomerId: async (customerId: string) => {
-    const response = await fetch(`${API_BASE_URL}/violations/customer/${customerId}`);
+    const response = await fetch(
+      `${API_BASE_URL}/violations/customer/${customerId}`
+    );
     return handleResponse<any[]>(response);
   },
 
   create: async (data: any) => {
     const response = await fetch(`${API_BASE_URL}/violations`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
     return handleResponse<any>(response);
@@ -194,8 +211,8 @@ export const violationApi = {
 
   update: async (id: string, data: any) => {
     const response = await fetch(`${API_BASE_URL}/violations/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
     return handleResponse<any>(response);
@@ -203,7 +220,7 @@ export const violationApi = {
 
   delete: async (id: string) => {
     const response = await fetch(`${API_BASE_URL}/violations/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
     return handleResponse<any>(response);
   },
@@ -214,19 +231,29 @@ export const violationApi = {
   },
 
   getTopViolators: async () => {
-    const response = await fetch(`${API_BASE_URL}/violations/statistics/top-violators`);
+    const response = await fetch(
+      `${API_BASE_URL}/violations/statistics/top-violators`
+    );
     return handleResponse<any[]>(response);
   },
 };
 
 export const ratingApi = {
-  getAll: async (params?: { customer_id?: string; score?: number; min_score?: number; max_score?: number }) => {
+  getAll: async (params?: {
+    customer_id?: string;
+    score?: number;
+    min_score?: number;
+    max_score?: number;
+  }) => {
     const queryParams = new URLSearchParams();
-    if (params?.customer_id) queryParams.append('customer_id', params.customer_id);
-    if (params?.score) queryParams.append('score', params.score.toString());
-    if (params?.min_score) queryParams.append('min_score', params.min_score.toString());
-    if (params?.max_score) queryParams.append('max_score', params.max_score.toString());
-    
+    if (params?.customer_id)
+      queryParams.append("customer_id", params.customer_id);
+    if (params?.score) queryParams.append("score", params.score.toString());
+    if (params?.min_score)
+      queryParams.append("min_score", params.min_score.toString());
+    if (params?.max_score)
+      queryParams.append("max_score", params.max_score.toString());
+
     const response = await fetch(`${API_BASE_URL}/ratings?${queryParams}`);
     return handleResponse<any[]>(response);
   },
@@ -238,8 +265,8 @@ export const ratingApi = {
 
   create: async (data: any) => {
     const response = await fetch(`${API_BASE_URL}/ratings`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
     return handleResponse<any>(response);
@@ -247,8 +274,8 @@ export const ratingApi = {
 
   update: async (id: string, data: any) => {
     const response = await fetch(`${API_BASE_URL}/ratings/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
     return handleResponse<any>(response);
@@ -256,7 +283,7 @@ export const ratingApi = {
 
   delete: async (id: string) => {
     const response = await fetch(`${API_BASE_URL}/ratings/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
     return handleResponse<any>(response);
   },
@@ -266,18 +293,24 @@ export const ratingApi = {
     return handleResponse<any[]>(response);
   },
 
-  createReply: async (ratingId: string, data: { staff_id: string; reply_text: string }) => {
-    const response = await fetch(`${API_BASE_URL}/ratings/${ratingId}/replies`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
+  createReply: async (
+    ratingId: string,
+    data: { staff_id: string; reply_text: string }
+  ) => {
+    const response = await fetch(
+      `${API_BASE_URL}/ratings/${ratingId}/replies`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }
+    );
     return handleResponse<any>(response);
   },
 
   deleteReply: async (replyId: string) => {
     const response = await fetch(`${API_BASE_URL}/ratings/replies/${replyId}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
     return handleResponse<any>(response);
   },
@@ -289,16 +322,27 @@ export const ratingApi = {
 };
 
 export const invoiceApi = {
-  getAll: async (params?: { payment_status?: string; payment_method?: string; customer_id?: string; staff_id?: string; start_date?: string; end_date?: string; search?: string }) => {
+  getAll: async (params?: {
+    payment_status?: string;
+    payment_method?: string;
+    customer_id?: string;
+    staff_id?: string;
+    start_date?: string;
+    end_date?: string;
+    search?: string;
+  }) => {
     const queryParams = new URLSearchParams();
-    if (params?.payment_status) queryParams.append('payment_status', params.payment_status);
-    if (params?.payment_method) queryParams.append('payment_method', params.payment_method);
-    if (params?.customer_id) queryParams.append('customer_id', params.customer_id);
-    if (params?.staff_id) queryParams.append('staff_id', params.staff_id);
-    if (params?.start_date) queryParams.append('start_date', params.start_date);
-    if (params?.end_date) queryParams.append('end_date', params.end_date);
-    if (params?.search) queryParams.append('search', params.search);
-    
+    if (params?.payment_status)
+      queryParams.append("payment_status", params.payment_status);
+    if (params?.payment_method)
+      queryParams.append("payment_method", params.payment_method);
+    if (params?.customer_id)
+      queryParams.append("customer_id", params.customer_id);
+    if (params?.staff_id) queryParams.append("staff_id", params.staff_id);
+    if (params?.start_date) queryParams.append("start_date", params.start_date);
+    if (params?.end_date) queryParams.append("end_date", params.end_date);
+    if (params?.search) queryParams.append("search", params.search);
+
     const response = await fetch(`${API_BASE_URL}/invoices?${queryParams}`);
     return handleResponse<any[]>(response);
   },
@@ -309,7 +353,9 @@ export const invoiceApi = {
   },
 
   getByInvoiceNumber: async (invoiceNumber: string) => {
-    const response = await fetch(`${API_BASE_URL}/invoices/number/${invoiceNumber}`);
+    const response = await fetch(
+      `${API_BASE_URL}/invoices/number/${invoiceNumber}`
+    );
     return handleResponse<any>(response);
   },
 
@@ -320,8 +366,8 @@ export const invoiceApi = {
 
   create: async (data: any) => {
     const response = await fetch(`${API_BASE_URL}/invoices`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
     return handleResponse<any>(response);
@@ -329,8 +375,8 @@ export const invoiceApi = {
 
   update: async (id: string, data: any) => {
     const response = await fetch(`${API_BASE_URL}/invoices/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
     return handleResponse<any>(response);
@@ -338,19 +384,23 @@ export const invoiceApi = {
 
   delete: async (id: string) => {
     const response = await fetch(`${API_BASE_URL}/invoices/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
     return handleResponse<any>(response);
   },
 
-  markAsPaid: async (id: string, paymentMethod: string, promotionId?: string | null) => {
+  markAsPaid: async (
+    id: string,
+    paymentMethod: string,
+    promotionId?: string | null
+  ) => {
     const body: any = { payment_method: paymentMethod };
     if (promotionId) {
       body.promotion_id = promotionId;
     }
     const response = await fetch(`${API_BASE_URL}/invoices/${id}/paid`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
     return handleResponse<any>(response);
@@ -358,7 +408,7 @@ export const invoiceApi = {
 
   cancel: async (id: string) => {
     const response = await fetch(`${API_BASE_URL}/invoices/${id}/cancel`, {
-      method: 'PATCH',
+      method: "PATCH",
     });
     return handleResponse<any>(response);
   },
@@ -370,22 +420,32 @@ export const invoiceApi = {
 
   getRevenue: async (start_date: string, end_date: string) => {
     const queryParams = new URLSearchParams();
-    queryParams.append('start_date', start_date);
-    queryParams.append('end_date', end_date);
-    
-    const response = await fetch(`${API_BASE_URL}/invoices/revenue?${queryParams}`);
+    queryParams.append("start_date", start_date);
+    queryParams.append("end_date", end_date);
+
+    const response = await fetch(
+      `${API_BASE_URL}/invoices/revenue?${queryParams}`
+    );
     return handleResponse<any>(response);
   },
 };
 
 export const promotionApi = {
-  getAll: async (params?: { is_active?: boolean; promotion_type?: string; search?: string; valid_now?: boolean }) => {
+  getAll: async (params?: {
+    is_active?: boolean;
+    promotion_type?: string;
+    search?: string;
+    valid_now?: boolean;
+  }) => {
     const queryParams = new URLSearchParams();
-    if (params?.is_active !== undefined) queryParams.append('is_active', params.is_active.toString());
-    if (params?.promotion_type) queryParams.append('promotion_type', params.promotion_type);
-    if (params?.search) queryParams.append('search', params.search);
-    if (params?.valid_now !== undefined) queryParams.append('valid_now', params.valid_now.toString());
-    
+    if (params?.is_active !== undefined)
+      queryParams.append("is_active", params.is_active.toString());
+    if (params?.promotion_type)
+      queryParams.append("promotion_type", params.promotion_type);
+    if (params?.search) queryParams.append("search", params.search);
+    if (params?.valid_now !== undefined)
+      queryParams.append("valid_now", params.valid_now.toString());
+
     const response = await fetch(`${API_BASE_URL}/promotions?${queryParams}`);
     return handleResponse<any[]>(response);
   },
@@ -402,8 +462,8 @@ export const promotionApi = {
 
   validate: async (promo_code: string, order_amount: number) => {
     const response = await fetch(`${API_BASE_URL}/promotions/validate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ promo_code, order_amount }),
     });
     return handleResponse<any>(response);
@@ -411,8 +471,8 @@ export const promotionApi = {
 
   create: async (data: any) => {
     const response = await fetch(`${API_BASE_URL}/promotions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
     return handleResponse<any>(response);
@@ -420,8 +480,8 @@ export const promotionApi = {
 
   update: async (id: string, data: any) => {
     const response = await fetch(`${API_BASE_URL}/promotions/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
     return handleResponse<any>(response);
@@ -429,22 +489,25 @@ export const promotionApi = {
 
   delete: async (id: string) => {
     const response = await fetch(`${API_BASE_URL}/promotions/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
     return handleResponse<any>(response);
   },
 
   activate: async (id: string) => {
     const response = await fetch(`${API_BASE_URL}/promotions/${id}/activate`, {
-      method: 'PATCH',
+      method: "PATCH",
     });
     return handleResponse<any>(response);
   },
 
   deactivate: async (id: string) => {
-    const response = await fetch(`${API_BASE_URL}/promotions/${id}/deactivate`, {
-      method: 'PATCH',
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/promotions/${id}/deactivate`,
+      {
+        method: "PATCH",
+      }
+    );
     return handleResponse<any>(response);
   },
 

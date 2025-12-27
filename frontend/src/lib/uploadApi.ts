@@ -1,5 +1,3 @@
-
-
 /**
  * Upload response from backend
  */
@@ -8,7 +6,7 @@ export interface UploadResponse {
   data: {
     filename: string;
     url: string;
-    uploadType: 'dishes' | 'avatars';
+    uploadType: "dishes" | "avatars";
     size: number;
   };
   message: string;
@@ -20,23 +18,23 @@ export interface UploadResponse {
 const UPLOAD_CONSTRAINTS = {
   dishes: {
     maxSize: 10 * 1024 * 1024, // 10MB
-    allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
-    errorMessage: 'File size exceeds 10MB limit for dish images'
+    allowedMimeTypes: ["image/jpeg", "image/png", "image/gif", "image/webp"],
+    errorMessage: "File size exceeds 10MB limit for dish images",
   },
   avatars: {
     maxSize: 5 * 1024 * 1024, // 5MB
-    allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
-    errorMessage: 'File size exceeds 5MB limit for avatars'
-  }
+    allowedMimeTypes: ["image/jpeg", "image/png", "image/gif", "image/webp"],
+    errorMessage: "File size exceeds 5MB limit for avatars",
+  },
 };
 
-const API_BASE =
+const API_BASE_URL =
+  (import.meta as any).env?.VITE_API_URL ||
   (import.meta as any).env?.VITE_API_BASE_URL ||
   "http://localhost:5000/api/v1";
 
 const BASE_URL =
-  (import.meta as any).env?.VITE_BASE_URL ||
-  "http://localhost:5000";
+  (import.meta as any).env?.VITE_BASE_URL || "http://localhost:5000";
 
 /**
  * Build complete URL for uploaded images
@@ -44,15 +42,15 @@ const BASE_URL =
  */
 export function buildImageUrl(imagePath: string): string {
   // Already a complete URL
-  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
     return imagePath;
   }
-  
+
   // Relative path - prepend BASE_URL
-  if (imagePath.startsWith('/')) {
+  if (imagePath.startsWith("/")) {
     return `${BASE_URL}${imagePath}`;
   }
-  
+
   // No leading slash - add it
   return `${BASE_URL}/${imagePath}`;
 }
@@ -63,8 +61,8 @@ export function buildImageUrl(imagePath: string): string {
  */
 export function extractRelativePath(fullUrl: string): string {
   if (!fullUrl) return "";
-  
-  if (fullUrl.startsWith('http://') || fullUrl.startsWith('https://')) {
+
+  if (fullUrl.startsWith("http://") || fullUrl.startsWith("https://")) {
     try {
       const url = new URL(fullUrl);
       return url.pathname;
@@ -72,11 +70,9 @@ export function extractRelativePath(fullUrl: string): string {
       return fullUrl;
     }
   }
-  
+
   return fullUrl;
 }
-
-
 
 /**
  * Validate file before upload
@@ -84,7 +80,7 @@ export function extractRelativePath(fullUrl: string): string {
  */
 export function validateFileForUpload(
   file: File,
-  uploadType: 'dishes' | 'avatars'
+  uploadType: "dishes" | "avatars"
 ): { valid: boolean; error?: string } {
   const constraints = UPLOAD_CONSTRAINTS[uploadType];
 
@@ -95,21 +91,21 @@ export function validateFileForUpload(
   if (file.size > constraints.maxSize) {
     return {
       valid: false,
-      error: constraints.errorMessage
+      error: constraints.errorMessage,
     };
   }
 
   if (!constraints.allowedMimeTypes.includes(file.type)) {
     return {
       valid: false,
-      error: `Invalid file type. Allowed types: ${constraints.allowedMimeTypes.join(', ')}`
+      error: `Invalid file type. Allowed types: ${constraints.allowedMimeTypes.join(
+        ", "
+      )}`,
     };
   }
 
   return { valid: true };
 }
-
-
 
 /**
  * Upload dish image to the server
@@ -120,33 +116,38 @@ export function validateFileForUpload(
  * @param {string} dishId - Dish ID for filename (optional)
  * @returns {Promise<string>} Image URL
  */
-export async function uploadDishImage(file: File, dishId?: string): Promise<string> {
-  const validation = validateFileForUpload(file, 'dishes');
+export async function uploadDishImage(
+  file: File,
+  dishId?: string
+): Promise<string> {
+  const validation = validateFileForUpload(file, "dishes");
   if (!validation.valid) {
     throw new Error(validation.error);
   }
 
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append("file", file);
   if (dishId) {
-    formData.append('entityId', dishId);
+    formData.append("entityId", dishId);
   }
 
-  const response = await fetch(`${API_BASE}/uploads/dishes`, {
-    method: 'POST',
+  const response = await fetch(`${API_BASE_URL}/uploads/dishes`, {
+    method: "POST",
     body: formData,
   });
 
   const data: UploadResponse = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || `Failed to upload dish image (${response.status})`);
+    throw new Error(
+      data.message || `Failed to upload dish image (${response.status})`
+    );
   }
 
   const imagePath = data.data.url;
-  console.log('[uploadDishImage] Server returned path:', imagePath);
+  console.log("[uploadDishImage] Server returned path:", imagePath);
   const fullUrl = buildImageUrl(imagePath);
-  console.log('[uploadDishImage] Built full URL:', fullUrl);
+  console.log("[uploadDishImage] Built full URL:", fullUrl);
   return fullUrl;
 }
 
@@ -159,33 +160,38 @@ export async function uploadDishImage(file: File, dishId?: string): Promise<stri
  * @param {string} userId - User ID for filename (optional)
  * @returns {Promise<string>} Avatar URL
  */
-export async function uploadAvatarImage(file: File, userId?: string): Promise<string> {
-  const validation = validateFileForUpload(file, 'avatars');
+export async function uploadAvatarImage(
+  file: File,
+  userId?: string
+): Promise<string> {
+  const validation = validateFileForUpload(file, "avatars");
   if (!validation.valid) {
     throw new Error(validation.error);
   }
 
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append("file", file);
   if (userId) {
-    formData.append('entityId', userId);
+    formData.append("entityId", userId);
   }
 
-  const response = await fetch(`${API_BASE}/uploads/avatars`, {
-    method: 'POST',
+  const response = await fetch(`${API_BASE_URL}/uploads/avatars`, {
+    method: "POST",
     body: formData,
   });
 
   const data: UploadResponse = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || `Failed to upload avatar (${response.status})`);
+    throw new Error(
+      data.message || `Failed to upload avatar (${response.status})`
+    );
   }
 
   const imagePath = data.data.url;
-  console.log('[uploadAvatarImage] Server returned path:', imagePath);
+  console.log("[uploadAvatarImage] Server returned path:", imagePath);
   const fullUrl = buildImageUrl(imagePath);
-  console.log('[uploadAvatarImage] Built full URL:', fullUrl);
+  console.log("[uploadAvatarImage] Built full URL:", fullUrl);
   return fullUrl;
 }
 
@@ -200,7 +206,7 @@ export async function uploadAvatarImage(file: File, userId?: string): Promise<st
  */
 export async function uploadImage(
   file: File,
-  uploadType: 'dishes' | 'avatars',
+  uploadType: "dishes" | "avatars",
   entityId?: string
 ): Promise<string> {
   const validation = validateFileForUpload(file, uploadType);
@@ -209,13 +215,13 @@ export async function uploadImage(
   }
 
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append("file", file);
   if (entityId) {
-    formData.append('entityId', entityId);
+    formData.append("entityId", entityId);
   }
 
-  const response = await fetch(`${API_BASE}/uploads/${uploadType}`, {
-    method: 'POST',
+  const response = await fetch(`${API_BASE_URL}/uploads/${uploadType}`, {
+    method: "POST",
     body: formData,
   });
 
@@ -225,7 +231,9 @@ export async function uploadImage(
     if (response.status === 413) {
       throw new Error(UPLOAD_CONSTRAINTS[uploadType].errorMessage);
     }
-    throw new Error(data.message || `Failed to upload image (${response.status})`);
+    throw new Error(
+      data.message || `Failed to upload image (${response.status})`
+    );
   }
 
   const imagePath = data.data.url;
@@ -234,8 +242,6 @@ export async function uploadImage(
   console.log(`[uploadImage] Built full URL (${uploadType}):`, fullUrl);
   return fullUrl;
 }
-
-
 
 /**
  * Delete an uploaded image from the server
@@ -247,19 +253,24 @@ export async function uploadImage(
  */
 export async function deleteImage(
   filename: string,
-  uploadType: 'dishes' | 'avatars'
+  uploadType: "dishes" | "avatars"
 ): Promise<void> {
-  const response = await fetch(`${API_BASE}/uploads/${uploadType}/${filename}`, {
-    method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/uploads/${uploadType}/${filename}`,
+    {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
 
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || `Failed to delete image (${response.status})`);
+    throw new Error(
+      data.message || `Failed to delete image (${response.status})`
+    );
   }
 }
 
@@ -271,7 +282,7 @@ export async function deleteImage(
  * @returns {Promise<void>}
  */
 export async function deleteDishImage(filename: string): Promise<void> {
-  await deleteImage(filename, 'dishes');
+  await deleteImage(filename, "dishes");
 }
 
 /**
@@ -282,9 +293,8 @@ export async function deleteDishImage(filename: string): Promise<void> {
  * @returns {Promise<void>}
  */
 export async function deleteAvatarImage(filename: string): Promise<void> {
-  await deleteImage(filename, 'avatars');
+  await deleteImage(filename, "avatars");
 }
-
 
 /**
  * Extract filename from URL
@@ -295,10 +305,10 @@ export async function deleteAvatarImage(filename: string): Promise<void> {
  */
 export function extractFilenameFromUrl(url: string): string {
   try {
-    const parts = url.split('/');
+    const parts = url.split("/");
     return parts[parts.length - 1];
   } catch {
-    return '';
+    return "";
   }
 }
 
@@ -312,8 +322,8 @@ export function extractFilenameFromUrl(url: string): string {
 export async function validateImageUrl(url: string): Promise<boolean> {
   try {
     const fullUrl = buildImageUrl(url);
-    console.log('[validateImageUrl] Checking URL:', fullUrl);
-    const response = await fetch(fullUrl, { method: 'HEAD' });
+    console.log("[validateImageUrl] Checking URL:", fullUrl);
+    const response = await fetch(fullUrl, { method: "HEAD" });
     return response.ok;
   } catch {
     return false;

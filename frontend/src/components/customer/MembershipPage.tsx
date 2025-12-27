@@ -25,6 +25,10 @@ import { copyToClipboard } from "../../lib/clipboard";
 import { PromotionCard } from "./PromotionCard";
 import { useAuth } from "../../contexts/AuthContext";
 
+const API_BASE_URL =
+  (import.meta as any).env?.VITE_API_URL ||
+  (import.meta as any).env?.VITE_API_BASE_URL ||
+  "http://localhost:5000/api/v1";
 export function MembershipPage() {
   const { userProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<
@@ -46,12 +50,8 @@ export function MembershipPage() {
     const fetchCustomerData = async () => {
       try {
         setIsLoading(true);
-        const apiBaseUrl =
-          (import.meta as any).env?.VITE_API_URL ||
-          "http://localhost:5000/api/v1";
-
         // Lấy danh sách customers
-        const response = await fetch(`${apiBaseUrl}/customers`);
+        const response = await fetch(`${API_BASE_URL}/customers`);
 
         if (!response.ok) {
           throw new Error("Không thể tải danh sách khách hàng");
@@ -82,11 +82,7 @@ export function MembershipPage() {
     const fetchPromotions = async () => {
       try {
         setIsLoadingPromotions(true);
-        const apiBaseUrl =
-          (import.meta as any).env?.VITE_API_URL ||
-          "http://localhost:5000/api/v1";
-
-        const response = await fetch(`${apiBaseUrl}/promotions`);
+        const response = await fetch(`${API_BASE_URL}/promotions`);
 
         if (!response.ok) {
           throw new Error("Không thể tải danh sách khuyến mãi");
@@ -116,12 +112,8 @@ export function MembershipPage() {
 
       try {
         setIsLoadingHistory(true);
-        const apiBaseUrl =
-          (import.meta as any).env?.VITE_API_URL ||
-          "http://localhost:5000/api/v1";
-
         // Fetch tất cả invoices
-        const invoicesResponse = await fetch(`${apiBaseUrl}/invoices`);
+        const invoicesResponse = await fetch(`${API_BASE_URL}/invoices`);
         if (!invoicesResponse.ok) throw new Error("Không thể tải hóa đơn");
 
         const invoicesResult = await invoicesResponse.json();

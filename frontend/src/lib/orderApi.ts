@@ -8,7 +8,11 @@ export interface OrderItemDTO {
 
 export interface CreateOrderParams {
   order_number: string;
-  order_type: 'dine-in-customer' | 'takeaway-customer' | 'dine-in-waiter' | 'takeaway-staff';
+  order_type:
+    | "dine-in-customer"
+    | "takeaway-customer"
+    | "dine-in-waiter"
+    | "takeaway-staff";
   order_time: string;
   table_id?: string;
   customer_id?: string;
@@ -24,11 +28,11 @@ export interface OrderDetailParams {
   unit_price: number;
   line_total: number;
   special_instructions?: string;
-  status: 'pending' | 'preparing' | 'ready' | 'served' | 'cancelled';
+  status: "pending" | "preparing" | "ready" | "served" | "cancelled";
 }
 
 export interface UpdateOrderDetailStatusParams {
-  status: 'pending' | 'preparing' | 'ready' | 'served' | 'cancelled';
+  status: "pending" | "preparing" | "ready" | "served" | "cancelled";
 }
 
 export interface OrderResponse {
@@ -51,7 +55,13 @@ export interface Order {
   order_type: string;
   order_date: string;
   order_time: string;
-  status: 'pending' | 'preparing' | 'ready' | 'served' | 'completed' | 'cancelled';
+  status:
+    | "pending"
+    | "preparing"
+    | "ready"
+    | "served"
+    | "completed"
+    | "cancelled";
   subtotal: number;
   tax: number;
   total_amount: number;
@@ -72,24 +82,26 @@ export interface OrderDetail {
   unit_price: number;
   line_total: number;
   special_instructions?: string;
-  status: 'pending' | 'preparing' | 'ready' | 'served' | 'cancelled';
+  status: "pending" | "preparing" | "ready" | "served" | "cancelled";
   created_at?: string;
   updated_at?: string;
 }
 
 // ==================== API CONFIGURATION ====================
 
-const API_BASE =
+const API_BASE_URL =
+  (import.meta as any).env?.VITE_API_URL ||
   (import.meta as any).env?.VITE_API_BASE_URL ||
   "http://localhost:5000/api/v1";
 
 // ==================== API FUNCTIONS ====================
 
-
-export async function getPendingOrderByTableId(tableId: string): Promise<Order | null> {
+export async function getPendingOrderByTableId(
+  tableId: string
+): Promise<Order | null> {
   try {
     const response = await fetch(
-      `${API_BASE}/orders?table_id=${tableId}&status=pending`,
+      `${API_BASE_URL}/orders?table_id=${tableId}&status=pending`,
       {
         method: "GET",
         headers: {
@@ -113,18 +125,14 @@ export async function getPendingOrderByTableId(tableId: string): Promise<Order |
   }
 }
 
-
 export async function getOrderById(orderId: string): Promise<Order> {
   try {
-    const response = await fetch(
-      `${API_BASE}/orders/${orderId}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
     if (!response.ok) {
       throw new Error(`Failed to fetch order: ${response.statusText}`);
@@ -141,11 +149,10 @@ export async function getOrderById(orderId: string): Promise<Order> {
   }
 }
 
-
 export async function getPendingTakeawayOrders(): Promise<Order[]> {
   try {
     const response = await fetch(
-      `${API_BASE}/orders?order_type=takeaway-staff&status=pending`,
+      `${API_BASE_URL}/orders?order_type=takeaway-staff&status=pending`,
       {
         method: "GET",
         headers: {
@@ -155,7 +162,9 @@ export async function getPendingTakeawayOrders(): Promise<Order[]> {
     );
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch pending takeaway orders: ${response.statusText}`);
+      throw new Error(
+        `Failed to fetch pending takeaway orders: ${response.statusText}`
+      );
     }
 
     const data = await response.json();
@@ -168,7 +177,6 @@ export async function getPendingTakeawayOrders(): Promise<Order[]> {
     throw error;
   }
 }
-
 
 export async function createOrder(params: CreateOrderParams): Promise<Order> {
   const response = await fetch(`${API_BASE}/orders`, {
@@ -192,7 +200,6 @@ export async function createOrder(params: CreateOrderParams): Promise<Order> {
 
   return data.data;
 }
-
 
 export async function createOrderDetail(
   params: OrderDetailParams
@@ -219,14 +226,13 @@ export async function createOrderDetail(
   return data.data;
 }
 
-
 export async function updateOrderDetailStatus(
   orderId: string,
   detailId: string,
   params: UpdateOrderDetailStatusParams
 ): Promise<OrderDetail> {
   const response = await fetch(
-    `${API_BASE}/orders/${orderId}/details/${detailId}`,
+    `${API_BASE_URL}/orders/${orderId}/details/${detailId}`,
     {
       method: "PUT",
       headers: {
@@ -248,14 +254,13 @@ export async function updateOrderDetailStatus(
   return data.data;
 }
 
-
 export async function updateOrderDetailQuantity(
   orderId: string,
   detailId: string,
   quantity: number
 ): Promise<OrderDetail> {
   const response = await fetch(
-    `${API_BASE}/orders/${orderId}/details/${detailId}`,
+    `${API_BASE_URL}/orders/${orderId}/details/${detailId}`,
     {
       method: "PUT",
       headers: {
@@ -277,7 +282,6 @@ export async function updateOrderDetailQuantity(
   return data.data;
 }
 
-
 export async function updateOrderDetailNotes(
   orderId: string,
   detailId: string,
@@ -288,7 +292,7 @@ export async function updateOrderDetailNotes(
   if (quantity !== undefined) {
     body.quantity = quantity;
   }
-  
+
   const response = await fetch(
     `${API_BASE}/orders/${orderId}/details/${detailId}`,
     {
@@ -312,14 +316,13 @@ export async function updateOrderDetailNotes(
   return data.data;
 }
 
-
 export async function patchOrderDetailStatus(
   orderId: string,
   detailId: string,
-  status: 'pending' | 'preparing' | 'ready' | 'served' | 'cancelled'
+  status: "pending" | "preparing" | "ready" | "served" | "cancelled"
 ): Promise<OrderDetail> {
   const response = await fetch(
-    `${API_BASE}/orders/${orderId}/details/${detailId}/status`,
+    `${API_BASE_URL}/orders/${orderId}/details/${detailId}/status`,
     {
       method: "PATCH",
       headers: {
@@ -341,10 +344,15 @@ export async function patchOrderDetailStatus(
   return data.data;
 }
 
-
 export async function updateOrderStatus(
   orderId: string,
-  status: 'pending' | 'preparing' | 'ready' | 'served' | 'completed' | 'cancelled'
+  status:
+    | "pending"
+    | "preparing"
+    | "ready"
+    | "served"
+    | "completed"
+    | "cancelled"
 ): Promise<Order> {
   const response = await fetch(`${API_BASE}/orders/${orderId}`, {
     method: "PUT",
@@ -366,10 +374,15 @@ export async function updateOrderStatus(
   return data.data;
 }
 
-
 export async function patchOrderStatus(
   orderId: string,
-  status: 'pending' | 'preparing' | 'ready' | 'served' | 'completed' | 'cancelled'
+  status:
+    | "pending"
+    | "preparing"
+    | "ready"
+    | "served"
+    | "completed"
+    | "cancelled"
 ): Promise<Order> {
   const response = await fetch(`${API_BASE}/orders/${orderId}/status`, {
     method: "PATCH",
@@ -391,17 +404,13 @@ export async function patchOrderStatus(
   return data.data;
 }
 
-
 export async function getOrderDetails(orderId: string): Promise<OrderDetail[]> {
-  const response = await fetch(
-    `${API_BASE}/orders/${orderId}/details`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  );
+  const response = await fetch(`${API_BASE_URL}/orders/${orderId}/details`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
 
   const data = await response.json();
 
@@ -411,14 +420,12 @@ export async function getOrderDetails(orderId: string): Promise<OrderDetail[]> {
       message: data.message || "Failed to fetch order details",
     };
   }
-  
+
   return Array.isArray(data.data) ? data.data : [];
 }
 export function generateOrderNumber(orderType: string): string {
   const timestamp = Date.now();
-  const random = Math.floor(Math.random() * 10000); 
-  const prefix = orderType === 'dine-in-waiter' ? 'DIN' : 'TO';
+  const random = Math.floor(Math.random() * 10000);
+  const prefix = orderType === "dine-in-waiter" ? "DIN" : "TO";
   return `${prefix}-${timestamp}-${random}`;
 }
-
-
