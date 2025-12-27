@@ -88,11 +88,7 @@ export interface OrderDetail {
 }
 
 // ==================== API CONFIGURATION ====================
-
-const API_BASE_URL =
-  (import.meta as any).env?.VITE_API_URL ||
-  (import.meta as any).env?.VITE_API_BASE_URL ||
-  "http://localhost:5000/api/v1";
+import { API_BASE_URL } from "./api";
 
 // ==================== API FUNCTIONS ====================
 
@@ -179,7 +175,7 @@ export async function getPendingTakeawayOrders(): Promise<Order[]> {
 }
 
 export async function createOrder(params: CreateOrderParams): Promise<Order> {
-  const response = await fetch(`${API_BASE}/orders`, {
+  const response = await fetch(`${API_BASE_URL}/orders`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
