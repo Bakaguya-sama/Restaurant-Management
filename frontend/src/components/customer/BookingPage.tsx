@@ -45,6 +45,7 @@ export function BookingPage() {
   });
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'card' | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -159,7 +160,14 @@ export function BookingPage() {
       return;
     }
 
+    if (!paymentMethod) {
+      toast.error("Vui lòng chọn phương thức thanh toán");
+      return;
+    }
+
     try {
+      const backendPaymentMethod = paymentMethod === 'wallet' ? 'transfer' : 'card';
+
       const reservationData: ReservationData = {
         customer_id: firstNonBannedCustomer.id,
         reservation_date: bookingData.date,
@@ -167,6 +175,7 @@ export function BookingPage() {
         reservation_checkout_time: bookingData.checkoutTime,
         number_of_guests: bookingData.guests,
         deposit_amount: "200000",
+        payment_method: backendPaymentMethod,
         special_requests: bookingData.notes,
         status: "pending",
         details: [
@@ -623,16 +632,34 @@ export function BookingPage() {
                 <div className="space-y-4 mb-6">
                   <div className="grid grid-cols-2 gap-4">
                     <button 
-                      className="p-4 border-2 rounded-lg text-left transition border-[#625EE8] bg-blue-50 hover:bg-blue-100 cursor-pointer"
+                      onClick={() => setPaymentMethod('wallet')}
+                      className={`p-4 border-2 rounded-lg text-left transition cursor-pointer ${
+                        paymentMethod === 'wallet'
+                          ? 'border-[#625EE8] bg-blue-50 hover:bg-blue-100'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
                     >
-                      <CreditCard className="w-6 h-6 text-[#625EE8] mb-2" />
+                      <CreditCard className={`w-6 h-6 mb-2 ${
+                        paymentMethod === 'wallet'
+                          ? 'text-[#625EE8]'
+                          : 'text-gray-600'
+                      }`} />
                       <p>Ví điện tử</p>
                       <p className="text-sm text-gray-600">MoMo, ZaloPay</p>
                     </button>
                     <button 
-                      className="p-4 border-2 rounded-lg text-left transition border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                      onClick={() => setPaymentMethod('card')}
+                      className={`p-4 border-2 rounded-lg text-left transition cursor-pointer ${
+                        paymentMethod === 'card'
+                          ? 'border-[#625EE8] bg-blue-50 hover:bg-blue-100'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
                     >
-                      <CreditCard className="w-6 h-6 text-gray-600 mb-2" />
+                      <CreditCard className={`w-6 h-6 mb-2 ${
+                        paymentMethod === 'card'
+                          ? 'text-[#625EE8]'
+                          : 'text-gray-600'
+                      }`} />
                       <p>Thẻ ngân hàng</p>
                       <p className="text-sm text-gray-600">ATM, Visa, Master</p>
                     </button>
@@ -671,6 +698,7 @@ export function BookingPage() {
                 </Button>
                 <Button 
                   onClick={handleConfirmBooking}
+                  disabled={!paymentMethod}
                 >
                   Xác nhận & Hoàn tất
                 </Button>

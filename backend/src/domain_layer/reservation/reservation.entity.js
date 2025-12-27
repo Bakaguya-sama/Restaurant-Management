@@ -8,6 +8,7 @@ class ReservationEntity {
     this.reservation_checkout_time = data.reservation_checkout_time;
     this.number_of_guests = data.number_of_guests;
     this.deposit_amount = data.deposit_amount;
+    this.payment_method = data.payment_method;
     this.status = data.status;
     this.special_requests = data.special_requests;
     this.created_at = data.created_at;
@@ -30,6 +31,9 @@ class ReservationEntity {
     }
     if (!this.deposit_amount) {
       errors.push('deposit_amount is required');
+    }
+    if (this.payment_method && !['card', 'transfer'].includes(this.payment_method)) {
+      errors.push('payment_method must be one of: card, transfer');
     }
     if (this.reservation_time && this.reservation_checkout_time) {
       const [resHour, resMinute] = this.reservation_time.split(':').map(Number);
