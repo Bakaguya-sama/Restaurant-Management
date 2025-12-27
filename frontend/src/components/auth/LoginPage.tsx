@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, Phone, Lock, User, AlertCircle } from "lucide-react";
+import { Mail, Phone, Lock, User, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { UserRole } from "../../types";
@@ -20,6 +20,10 @@ export function LoginPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [showPassword, setShowPassword] = useState({
+    customer: false,
+    staff: false,
+  });
 
   const handleCustomerLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,18 +138,37 @@ export function LoginPage() {
                 }}
                 required
               />
-              <Input
-                label="Mật khẩu"
-                type="password"
-                placeholder="Nhập mật khẩu"
-                icon={<Lock className="w-4 h-4" />}
-                value={customerForm.password}
-                onChange={(e) => {
-                  setError("");
-                  setCustomerForm({ ...customerForm, password: e.target.value });
-                }}
-                required
-              />
+              <div className="relative">
+                <Input
+                  label="Mật khẩu"
+                  type={showPassword.customer ? "text" : "password"}
+                  placeholder="Nhập mật khẩu"
+                  icon={<Lock className="w-4 h-4" />}
+                  value={customerForm.password}
+                  onChange={(e) => {
+                    setError("");
+                    setCustomerForm({ ...customerForm, password: e.target.value });
+                  }}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowPassword({
+                      ...showPassword,
+                      customer: !showPassword.customer,
+                    })
+                  }
+                  className="absolute right-3 top-9 text-gray-600 hover:text-gray-800"
+                  title={showPassword.customer ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"}
+                >
+                  {showPassword.customer ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
 
               <div className="flex items-center justify-between text-sm">
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -214,18 +237,37 @@ export function LoginPage() {
                 }}
                 required
               />
-              <Input
-                label="Mật khẩu"
-                type="password"
-                placeholder="Nhập mật khẩu"
-                icon={<Lock className="w-4 h-4" />}
-                value={staffForm.password}
-                onChange={(e) => {
-                  setError("");
-                  setStaffForm({ ...staffForm, password: e.target.value });
-                }}
-                required
-              />
+              <div className="relative">
+                <Input
+                  label="Mật khẩu"
+                  type={showPassword.staff ? "text" : "password"}
+                  placeholder="Nhập mật khẩu"
+                  icon={<Lock className="w-4 h-4" />}
+                  value={staffForm.password}
+                  onChange={(e) => {
+                    setError("");
+                    setStaffForm({ ...staffForm, password: e.target.value });
+                  }}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowPassword({
+                      ...showPassword,
+                      staff: !showPassword.staff,
+                    })
+                  }
+                  className="absolute right-3 top-9 text-gray-600 hover:text-gray-800"
+                  title={showPassword.staff ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"}
+                >
+                  {showPassword.staff ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
 
               <div className="flex items-center text-sm">
                 <label className="flex items-center gap-2 cursor-pointer">
