@@ -20,6 +20,7 @@ import { useLocations } from "../../../hooks/useLocations";
 import { useCustomers } from "../../../hooks/useCustomers";
 import { useStaff } from "../../../hooks/useStaff";
 import { useReservations } from "../../../hooks/useReservations";
+import { authService } from "../../../lib/authService";
 import { createOrder } from "../../../lib/orderingPageApi";
 
 export function TablesMapPage() {
@@ -57,8 +58,22 @@ export function TablesMapPage() {
   const [customerName, setCustomerName] = useState("");
   const [foundCustomer, setFoundCustomer] = useState<Customer | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const firstWaiter = staff.find((s) => s.role === "waiter");
+
+  useEffect(() => {
+    const loadCurrentUser = async () => {
+      try {
+        const response = await authService.getCurrentUser();
+        const userId = response.data.id || response.data._id;
+        setCurrentUserId(userId);
+      } catch (error) {
+        console.error('Error getting current user:', error);
+      }
+    };
+    loadCurrentUser();
+  }, []);
 
   useEffect(() => {
     fetchReservations();
@@ -188,8 +203,8 @@ export function TablesMapPage() {
       }
     }
 
-    if (!firstWaiter) {
-      toast.error("Không có nhân viên phục vụ nào. Vui lòng thử lại sau.");
+    if (!currentUserId) {
+      toast.error("Không thể xác định thông tin nhân viên. Vui lòng thử lại sau.");
       return;
     }
 
@@ -200,7 +215,7 @@ export function TablesMapPage() {
         order_time: new Date().toISOString(),
         table_id: selectedTable.id,
         customer_id: customerType === "member" ? foundCustomer?.id : undefined,
-        staff_id: firstWaiter.id,
+        staff_id: currentUserId,
         status: "pending" as const,
       };
 
@@ -319,8 +334,13 @@ export function TablesMapPage() {
       return;
     }
 
+    if (!currentUserId) {
+      toast.error("Không thể xác định thông tin nhân viên. Vui lòng thử lại sau.");
+      return;
+    }
+
     try {
-      await updateTableStatus(selectedTable.id, "broken", brokenReason);
+      await updateTableStatus(selectedTable.id, "broken", brokenReason, currentUserId);
       toast.success(`Đã báo hỏng bàn ${selectedTable.table_number}`);
     } catch (err) {
       console.error("Error marking table as broken:", err);

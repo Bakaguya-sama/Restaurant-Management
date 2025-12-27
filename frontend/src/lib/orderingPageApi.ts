@@ -139,7 +139,7 @@ export async function fetchOrderDetails(
 export async function createOrder(
   orderData: CreateOrderRequest
 ): Promise<OrderDTO> {
-  const response = await fetch(`\$\{getApiBaseUrl()\}/orders`, {
+  const response = await fetch(`${getApiBaseUrl()}/orders`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -147,14 +147,22 @@ export async function createOrder(
     body: JSON.stringify(orderData),
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(
-      error.message || `Failed to create order: ${response.status}`
-    );
+  let data;
+  try {
+    const text = await response.text();
+    if (!text) {
+      throw new Error(`Empty response from server: ${response.status}`);
+    }
+    data = JSON.parse(text);
+  } catch (e) {
+    throw new Error(`Invalid response from server: ${response.status} ${response.statusText}`);
   }
 
-  const data = await response.json();
+  if (!response.ok) {
+    const errorMessage = data?.message || `Failed to create order: ${response.status}`;
+    throw new Error(errorMessage);
+  }
+
   return data.data || data;
 }
 

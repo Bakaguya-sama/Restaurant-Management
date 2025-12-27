@@ -7,6 +7,7 @@ import { Badge } from "../../ui/badge";
 import { useOrderingDishes } from "../../../hooks/useOrderingDishes";
 import { useTables } from "../../../hooks/useTables";
 import { useStaff } from "../../../hooks/useStaff";
+import { authService } from "../../../lib/authService";
 import { Dish } from "../../../types";
 import { toast } from "sonner";
 import { ConfirmationModal } from "../../ui/ConfirmationModal";
@@ -72,6 +73,7 @@ export function OrderingPage() {
   >("info");
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [isProcessingInvoice, setIsProcessingInvoice] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   
   const { items: filteredItems } = useOrderingDishes(selectedCategory);
@@ -82,6 +84,19 @@ export function OrderingPage() {
   
   const { staff } = useStaff();
   const firstWaiterId = staff.find((s) => s.role === "waiter")?.id || undefined;
+
+  useEffect(() => {
+    const loadCurrentUser = async () => {
+      try {
+        const response = await authService.getCurrentUser();
+        const userId = response.data.id || response.data._id;
+        setCurrentUserId(userId);
+      } catch (error) {
+        console.error('Error getting current user:', error);
+      }
+    };
+    loadCurrentUser();
+  }, []);
 
   const categories = ["all", "Khai vị", "Món chính", "Đồ uống"];
   const quickNotes = ["Ít đá", "Không cay", "Không hành", "Ít dầu", "Thêm rau"];
@@ -727,8 +742,8 @@ export function OrderingPage() {
         const orderId = currentTableOrder.order._id || currentTableOrder.order.id as string;
         const latestOrder = await getOrderById(orderId);
 
-        if (!firstWaiterId) {
-          toast.error("Không tìm thấy nhân viên. Vui lòng thử lại.");
+        if (!currentUserId) {
+          toast.error("Không thể xác định thông tin nhân viên. Vui lòng thử lại.");
           setIsProcessingInvoice(false);
           return;
         }
@@ -743,7 +758,7 @@ export function OrderingPage() {
           payment_method: "cash",
           payment_status: "pending",
           table_id: currentTableOrder.order.table_id,
-          staff_id: firstWaiterId,
+          staff_id: currentUserId,
           invoice_time: new Date().toISOString(),
           notes: latestOrder.notes || `Bàn ${selectedTable}`,
         };
@@ -814,7 +829,7 @@ export function OrderingPage() {
           total_amount: totalAmount,
           payment_method: "cash",
           payment_status: "pending",
-          staff_id: firstWaiterId,
+          staff_id: currentUserId,
           invoice_time: new Date().toISOString(),
           notes: `Đơn mang về ${takeawayOrder.order.order_number || selectedTakeawayOrder}`,
         };

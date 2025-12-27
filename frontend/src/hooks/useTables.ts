@@ -55,10 +55,10 @@ export function useTables() {
     }
   };
 
-  const updateTableStatus = async (id: string, status: TableStatus, brokenReason?: string) => {
+  const updateTableStatus = async (id: string, status: TableStatus, brokenReason?: string, staffId?: string) => {
     try {
       setError(null);
-      const response = await tableApi.updateStatus(id, status, brokenReason);
+      const response = await tableApi.updateStatus(id, status, brokenReason, staffId);
       const updated = response.data;
       setTables(tables.map(t => t.id === id ? updated : t));
       return updated;
