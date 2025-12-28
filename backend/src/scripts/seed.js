@@ -412,6 +412,14 @@ async function seedDatabase() {
 
     // ==================== 10. INGREDIENTS ====================
     console.log('10/24 Tạo Ingredients...');
+    
+    // Helper function to calculate relative expiry dates
+    const getExpiryDate = (daysFromNow) => {
+      const date = new Date();
+      date.setDate(date.getDate() + daysFromNow);
+      return date;
+    };
+    
     const ingredients = await Ingredient.insertMany([
       { 
         name: 'Thịt bò Úc', 
@@ -420,7 +428,7 @@ async function seedDatabase() {
         minimum_quantity: 20, 
         unit_price: 350000, 
         supplier_id: suppliers[0]._id,
-        expiry_date: new Date('2026-01-15'),
+        expiry_date: getExpiryDate(18), // 18 days from now
         stock_status: 'available',
         expiry_status: 'valid'
       },
@@ -431,7 +439,7 @@ async function seedDatabase() {
         minimum_quantity: 10, 
         unit_price: 450000, 
         supplier_id: suppliers[1]._id,
-        expiry_date: new Date('2025-12-25'),
+        expiry_date: getExpiryDate(-3), // 3 days ago (already expired)
         stock_status: 'available',
         expiry_status: 'valid'
       },
@@ -442,7 +450,7 @@ async function seedDatabase() {
         minimum_quantity: 15, 
         unit_price: 280000, 
         supplier_id: suppliers[1]._id,
-        expiry_date: new Date('2025-12-20'),
+        expiry_date: getExpiryDate(8), // 8 days from now (near expiry)
         stock_status: 'low_stock',
         expiry_status: 'near_expiry'
       },
@@ -453,7 +461,7 @@ async function seedDatabase() {
         minimum_quantity: 10, 
         unit_price: 25000, 
         supplier_id: suppliers[2]._id,
-        expiry_date: new Date('2025-12-16'),
+        expiry_date: getExpiryDate(19), // 19 days from now
         stock_status: 'available',
         expiry_status: 'valid'
       },
@@ -464,7 +472,7 @@ async function seedDatabase() {
         minimum_quantity: 10, 
         unit_price: 30000, 
         supplier_id: suppliers[2]._id,
-        expiry_date: new Date('2025-12-18'),
+        expiry_date: getExpiryDate(21), // 21 days from now
         stock_status: 'available',
         expiry_status: 'valid'
       },
@@ -475,7 +483,7 @@ async function seedDatabase() {
         minimum_quantity: 8, 
         unit_price: 20000, 
         supplier_id: suppliers[2]._id,
-        expiry_date: new Date('2025-12-17'),
+        expiry_date: getExpiryDate(20), // 20 days from now
         stock_status: 'low_stock',
         expiry_status: 'valid'
       },
@@ -486,7 +494,7 @@ async function seedDatabase() {
         minimum_quantity: 5, 
         unit_price: 120000, 
         supplier_id: suppliers[3]._id,
-        expiry_date: new Date('2025-12-19'),
+        expiry_date: getExpiryDate(22), // 22 days from now
         stock_status: 'available',
         expiry_status: 'valid'
       },
@@ -497,7 +505,7 @@ async function seedDatabase() {
         minimum_quantity: 10, 
         unit_price: 45000, 
         supplier_id: suppliers[4]._id,
-        expiry_date: new Date('2026-06-14'),
+        expiry_date: getExpiryDate(168), // 6 months from now
         stock_status: 'available',
         expiry_status: 'valid'
       },
@@ -508,7 +516,7 @@ async function seedDatabase() {
         minimum_quantity: 50, 
         unit_price: 35000, 
         supplier_id: suppliers[5]._id,
-        expiry_date: new Date('2026-03-14'),
+        expiry_date: getExpiryDate(77), // ~2.5 months from now
         stock_status: 'available',
         expiry_status: 'valid'
       },
@@ -519,7 +527,7 @@ async function seedDatabase() {
         minimum_quantity: 5, 
         unit_price: 180000, 
         supplier_id: suppliers[3]._id,
-        expiry_date: new Date('2025-12-16'),
+        expiry_date: getExpiryDate(9), // 9 days from now (near expiry)
         stock_status: 'out_of_stock',
         expiry_status: 'near_expiry'
       }
@@ -528,12 +536,24 @@ async function seedDatabase() {
 
     // ==================== 11. STOCK IMPORTS ====================
     console.log('11/24 Tạo Stock Imports...');
+    
+    // Generate dates relative to current date
+    const today = new Date();
+    const import1Date = new Date(today);
+    import1Date.setDate(today.getDate() - 27); 
+    
+    const import2Date = new Date(today);
+    import2Date.setDate(today.getDate() - 23); 
+    
+    const import3Date = new Date(today);
+    import3Date.setDate(today.getDate() - 18); 
+    
     const stockImports = await StockImport.insertMany([
       { 
         import_number: 'IMP-001', 
         staff_id: staffs[4]._id, 
         supplier_id: suppliers[0]._id,
-        import_date: new Date('2025-12-01'), 
+        import_date: import1Date, 
         total_cost: 17500000, 
         notes: 'Nhập 50kg thịt bò Úc chất lượng cao', 
         status: 'completed' 
@@ -542,7 +562,7 @@ async function seedDatabase() {
         import_number: 'IMP-002', 
         staff_id: staffs[4]._id, 
         supplier_id: suppliers[1]._id,
-        import_date: new Date('2025-12-05'), 
+        import_date: import2Date, 
         total_cost: 20500000, 
         notes: 'Nhập cá hồi và tôm sú', 
         status: 'completed' 
@@ -551,7 +571,7 @@ async function seedDatabase() {
         import_number: 'IMP-003', 
         staff_id: staffs[4]._id, 
         supplier_id: suppliers[2]._id,
-        import_date: new Date('2025-12-10'), 
+        import_date: import3Date, 
         total_cost: 3500000, 
         notes: 'Rau tươi hàng ngày', 
         status: 'completed' 
