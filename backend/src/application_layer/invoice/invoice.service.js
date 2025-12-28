@@ -232,14 +232,53 @@ class InvoiceService {
       throw new Error('Cannot mark cancelled invoice as paid');
     }
 
+    let discountAmount = invoice.discount_amount || 0;
+    let totalAmount = invoice.total_amount;
+
+    // Apply promotion if provided
+    if (promotionId) {
+      const promotion = await this.promotionService.getPromotionById(promotionId);
+      if (!promotion) {
+        throw new Error('Promotion not found');
+      }
+
+      // Check if promotion can be used
+      const promotionEntity = require('../../domain_layer/promotion/promotion.entity');
+      const promoEntity = new promotionEntity(promotion);
+      
+      if (!promoEntity.isValidNow()) {
+        throw new Error('Promo code is not valid at this time');
+      }
+
+      if (!promoEntity.canBeUsed()) {
+        throw new Error('Promo code has reached maximum uses');
+      }
+
+      if (invoice.subtotal < promotion.minimum_order_amount) {
+        throw new Error(`Minimum order amount is ${promotion.minimum_order_amount}`);
+      }
+
+      // Calculate discount
+      discountAmount = promoEntity.calculateDiscount(invoice.subtotal);
+      totalAmount = invoice.subtotal + invoice.tax - discountAmount;
+
+      // Add promotion to invoice
+      await this.invoiceRepository.addPromotion(id, promotionId, discountAmount);
+      
+      // Increment promotion usage count
+      await this.promotionService.incrementPromotionUses(promotionId);
+    }
+
     // Calculate points earned: 10 points per 10,000đ spent
-    const pointsEarned = Math.floor(invoice.total_amount / 10000) * 10;
+    const pointsEarned = Math.floor(totalAmount / 10000) * 10;
 
     // Update invoice with points information
     const updateData = {
       payment_method: paymentMethod,
       payment_status: 'paid',
       paid_at: new Date(),
+      discount_amount: discountAmount,
+      total_amount: totalAmount,
       points_used: pointsUsed || 0,
       points_earned: pointsEarned
     };
