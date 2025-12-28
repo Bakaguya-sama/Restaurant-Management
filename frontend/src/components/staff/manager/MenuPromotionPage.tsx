@@ -21,7 +21,7 @@ import { Dish, Promotion } from "../../../types";
 import { toast } from "sonner";
 import {
   validateRequired,
-  validatePositiveNumber,
+  validatePrice,
   validateNumberRange,
 } from "../../../lib/validation";
 import { ConfirmationModal } from "../../ui/ConfirmationModal";
@@ -190,7 +190,7 @@ export function MenuPromotionPage() {
       return;
     }
 
-    const priceValidation = validatePositiveNumber(
+    const priceValidation = validatePrice(
       menuForm.price,
       "Giá món ăn"
     );
@@ -302,7 +302,7 @@ export function MenuPromotionPage() {
       return;
     }
 
-    const priceValidation = validatePositiveNumber(
+    const priceValidation = validatePrice(
       menuForm.price,
       "Giá món ăn"
     );
@@ -484,7 +484,7 @@ export function MenuPromotionPage() {
       return;
     }
 
-    const discountValidation = validatePositiveNumber(
+    const discountValidation = validatePrice(
       promoForm.discount_value,
       "Giá trị giảm giá"
     );
@@ -588,7 +588,7 @@ export function MenuPromotionPage() {
       return;
     }
 
-    const discountValidation = validatePositiveNumber(
+    const discountValidation = validatePrice(
       promoForm.discount_value,
       "Giá trị giảm giá"
     );
@@ -1421,7 +1421,7 @@ export function MenuPromotionPage() {
                 })
               }
               placeholder="Nhập giá"
-              min="0.01"
+              min="0"
               step="1000"
             />
           </div>
@@ -1581,6 +1581,7 @@ export function MenuPromotionPage() {
                     promotion_type: e.target.value as
                       | "percentage"
                       | "fixed_amount",
+                    discount_value: 0,
                   })
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg"
@@ -1749,6 +1750,7 @@ export function MenuPromotionPage() {
                     promotion_type: e.target.value as
                       | "percentage"
                       | "fixed_amount",
+                    discount_value: 0,
                   })
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg"
