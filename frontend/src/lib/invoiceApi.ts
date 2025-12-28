@@ -196,13 +196,22 @@ export const invoiceApi = {
   /**
    * Mark invoice as paid
    */
-  markAsPaid: async (id: string, params?: { payment_method?: string }) => {
+  markAsPaid: async (
+    id: string, 
+    payment_method?: string,
+    promotion_id?: string | null,
+    points_used?: number
+  ) => {
     const response = await fetch(`${getApiBaseUrl()}/invoices/${id}/paid`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(params || {}),
+      body: JSON.stringify({ 
+        payment_method,
+        promotion_id,
+        points_used
+      }),
     });
 
     const result = await response.json();

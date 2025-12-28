@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { UserRole } from "../../types";
 import { useStaff } from "../../hooks/useStaff";
 import { Staff } from "../../lib/staffApi";
+import { useAuth } from "../../contexts/AuthContext";
 import { authService } from "../../lib/authService";
 import { formatDateDisplay, convertDisplayDateToISO } from "../../lib/utils";
 import { uploadAvatarImage, buildImageUrl, extractRelativePath } from "../../lib/uploadApi";
@@ -26,6 +27,7 @@ const PLACEHOLDER_AVATAR = "https://upload.wikimedia.org/wikipedia/commons/7/7c/
 const MAX_IMAGE_RETRIES = 3;
 
 export function ProfilePage({ role }: ProfilePageProps) {
+  const { userProfile, isAuthenticated } = useAuth();
   const { staff, loading, getStaffById } = useStaff();
   const [currentStaff, setCurrentStaff] = useState<Staff | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -68,8 +70,18 @@ export function ProfilePage({ role }: ProfilePageProps) {
     const loadCurrentStaffProfile = async () => {
       try {
         setIsLoadingProfile(true);
-        const response = await authService.getCurrentUser();
-        const currentUserId = response.data.id || response.data._id;
+        
+        // Check if user is authenticated
+        if (!isAuthenticated || !userProfile) {
+          console.log('[STAFF_PROFILE] User not authenticated or no profile in context');
+          toast.error("Vui lòng đăng nhập để xem hồ sơ");
+          setIsLoadingProfile(false);
+          return;
+        }
+
+        // Use userId from AuthContext instead of calling getCurrentUser
+        const currentUserId = userProfile.id;
+        console.log('[STAFF_PROFILE] Loading profile for user ID:', currentUserId);
         
         if (currentUserId) {
           const staffMember = await getStaffById(currentUserId);
@@ -91,8 +103,8 @@ export function ProfilePage({ role }: ProfilePageProps) {
             }
           }
         }
-      } catch (error) {
-        console.error("[STAFF_PROFILE] Error loading current staff profile:", error);
+      } catch (error: any) {
+        console.error("[STAFF_PROFILE] Error loading staff profile:", error);
         toast.error("Không thể tải hồ sơ cá nhân");
       } finally {
         setIsLoadingProfile(false);
@@ -100,7 +112,7 @@ export function ProfilePage({ role }: ProfilePageProps) {
     };
 
     loadCurrentStaffProfile();
-  }, []);
+  }, [isAuthenticated, userProfile]);
 
   const getRoleLabel = (role: string): string => {
     switch (role) {
@@ -256,6 +268,12 @@ export function ProfilePage({ role }: ProfilePageProps) {
   };
 
   const handleChangePassword = async () => {
+    // Check authentication first
+    if (!isAuthenticated || !userProfile) {
+      toast.error("Vui lòng đăng nhập để đổi mật khẩu");
+      return;
+    }
+
     const currentPasswordValidation = validateRequired(
       passwordData.currentPassword,
       "Mật khẩu hiện tại"
@@ -284,7 +302,10 @@ export function ProfilePage({ role }: ProfilePageProps) {
 
     try {
       setIsChangingPassword(true);
-      await authService.changePassword({ currentPassword: passwordData.currentPassword, newPassword: passwordData.newPassword });
+      await authService.changePassword({ 
+        currentPassword: passwordData.currentPassword, 
+        newPassword: passwordData.newPassword 
+      });
       toast.success("Đổi mật khẩu thành công!");
       setShowPasswordChange(false);
       setPasswordData({
@@ -292,8 +313,10 @@ export function ProfilePage({ role }: ProfilePageProps) {
         newPassword: "",
         confirmPassword: "",
       });
-    } catch (error) {
-      toast.error("Đổi mật khẩu thất bại!");
+    } catch (error: any) {
+      console.error("Change password error:", error);
+      const errorMessage = error.message || "Đổi mật khẩu thất bại!";
+      toast.error(errorMessage);
     } finally {
       setIsChangingPassword(false);
     }

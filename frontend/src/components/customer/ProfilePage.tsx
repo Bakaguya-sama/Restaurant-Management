@@ -19,6 +19,7 @@ import { Input } from "../ui/Input";
 import { toast } from "sonner";
 import { useCustomers } from "../../hooks/useCustomers";
 import { Customer } from "../../lib/customerApi";
+import { useAuth } from "../../contexts/AuthContext";
 import { authService } from "../../lib/authService";
 import { formatDateDisplay, convertDisplayDateToISO } from "../../lib/utils";
 import { uploadAvatarImage, buildImageUrl, extractRelativePath } from "../../lib/uploadApi";
@@ -33,6 +34,7 @@ import {
 const PLACEHOLDER_AVATAR = "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png";
 
 export function CustomerProfilePage() {
+  const { userProfile, isAuthenticated } = useAuth();
   const { getCustomerById, updateCustomer } = useCustomers();
   const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -70,8 +72,18 @@ export function CustomerProfilePage() {
     const loadCurrentCustomerProfile = async () => {
       try {
         setIsLoadingProfile(true);
-        const response = await authService.getCurrentUser();
-        const currentUserId = response.data.id || response.data._id;
+        
+        // Check if user is authenticated
+        if (!isAuthenticated || !userProfile) {
+          console.log('[CUSTOMER_PROFILE] User not authenticated or no profile in context');
+          toast.error("Vui lòng đăng nhập để xem hồ sơ");
+          setIsLoadingProfile(false);
+          return;
+        }
+
+        // Use userId from AuthContext instead of calling getCurrentUser
+        const currentUserId = userProfile.id;
+        console.log('[CUSTOMER_PROFILE] Loading profile for user ID:', currentUserId);
         
         if (currentUserId) {
           const customer = await getCustomerById(currentUserId);
@@ -90,8 +102,8 @@ export function CustomerProfilePage() {
             }
           }
         }
-      } catch (error) {
-        console.error("[CUSTOMER_PROFILE] Error loading current customer profile:", error);
+      } catch (error: any) {
+        console.error("[CUSTOMER_PROFILE] Error loading customer profile:", error);
         toast.error("Không thể tải thông tin cá nhân");
       } finally {
         setIsLoadingProfile(false);
@@ -99,7 +111,7 @@ export function CustomerProfilePage() {
     };
 
     loadCurrentCustomerProfile();
-  }, []);
+  }, [isAuthenticated, userProfile]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -246,6 +258,12 @@ export function CustomerProfilePage() {
   };
 
   const handleChangePassword = async () => {
+    // Check authentication first
+    if (!isAuthenticated || !userProfile) {
+      toast.error("Vui lòng đăng nhập để đổi mật khẩu");
+      return;
+    }
+
     const currentPasswordValidation = validateRequired(
       passwordData.currentPassword,
       "Mật khẩu hiện tại"
@@ -274,7 +292,10 @@ export function CustomerProfilePage() {
 
     try {
       setIsChangingPassword(true);
-      await authService.changePassword({ currentPassword: passwordData.currentPassword, newPassword: passwordData.newPassword });
+      await authService.changePassword({ 
+        currentPassword: passwordData.currentPassword, 
+        newPassword: passwordData.newPassword 
+      });
       toast.success("Đổi mật khẩu thành công!");
       setShowPasswordChange(false);
       setPasswordData({
@@ -282,9 +303,10 @@ export function CustomerProfilePage() {
         newPassword: "",
         confirmPassword: "",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("[CUSTOMER_PROFILE] Error changing password:", error);
-      toast.error("Đổi mật khẩu thất bại!");
+      const errorMessage = error.message || "Đổi mật khẩu thất bại!";
+      toast.error(errorMessage);
     } finally {
       setIsChangingPassword(false);
     }
