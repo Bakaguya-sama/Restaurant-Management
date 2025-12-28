@@ -22,6 +22,7 @@ import { Badge } from "../../ui/badge";
 import { toast } from "sonner";
 import { invoiceApi, promotionApi } from "../../../lib/api";
 import { customerApi } from "../../../lib/customerApi";
+import { authService } from "../../../lib/authService";
 
 export function InvoicesPage() {
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
@@ -38,10 +39,24 @@ export function InvoicesPage() {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [promotions, setPromotions] = useState<any[]>([]);
   const [loadingPromotions, setLoadingPromotions] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchInvoices();
     fetchPromotions();
+  }, []);
+
+  useEffect(() => {
+    const loadCurrentUser = async () => {
+      try {
+        const response = await authService.getCurrentUser();
+        const userId = response.data.id || response.data._id;
+        setCurrentUserId(userId);
+      } catch (error) {
+        console.error('Error getting current user:', error);
+      }
+    };
+    loadCurrentUser();
   }, []);
 
   // When selectedInvoice changes, fetch customer's current points
@@ -297,7 +312,14 @@ export function InvoicesPage() {
     };
 
     try {
-      // Send promotion_id if cashier selected one
+      // First, update invoice with current staff_id if not already set
+      if (!selectedInvoice.staff_id || selectedInvoice.staff_id !== currentUserId) {
+        await invoiceApi.update(selectedInvoice.id, {
+          staff_id: currentUserId
+        });
+      }
+
+      // Then mark as paid
       const promotionId = cashierSelectedPromotion?.id || null;
       await invoiceApi.markAsPaid(
         selectedInvoice.id, 

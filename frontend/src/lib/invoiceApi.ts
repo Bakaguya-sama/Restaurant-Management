@@ -1,4 +1,5 @@
 import { apiClient } from './apiClient';
+import { getApiBaseUrl } from './apiConfig';
 
 // ==================== TYPE DEFINITIONS ====================
 
@@ -28,6 +29,7 @@ export interface CreateInvoiceParams {
 
 export interface UpdateInvoiceParams {
   payment_method?: string;
+  points_used?: number;
   notes?: string;
 }
 
@@ -41,36 +43,60 @@ export interface InvoiceStatistics {
 
 // ==================== INVOICE API ====================
 
-const API_BASE =
-  (import.meta as any).env?.VITE_API_BASE_URL ||
-  "http://localhost:5000/api/v1";
+// API base URL is now dynamically determined from apiConfig
+// Falls back to localhost:5000 if not configured
 
 export const invoiceApi = {
   /**
    * Get all invoices with optional filtering and search
    */
-  getAll: async (params?: { status?: string; search?: string; start_date?: string; end_date?: string }) => {
+  getAll: async (params?: { 
+    status?: string; 
+    search?: string; 
+    start_date?: string; 
+    end_date?: string;
+    customer_id?: string;
+    payment_status?: string;
+    payment_method?: string;
+  }) => {
     const queryParams = new URLSearchParams();
     if (params?.status) queryParams.append('status', params.status);
+    if (params?.payment_status) queryParams.append('payment_status', params.payment_status);
     if (params?.search) queryParams.append('search', params.search);
     if (params?.start_date) queryParams.append('start_date', params.start_date);
     if (params?.end_date) queryParams.append('end_date', params.end_date);
+    if (params?.customer_id) queryParams.append('customer_id', params.customer_id);
+    if (params?.payment_method) queryParams.append('payment_method', params.payment_method);
 
-    const response = await fetch(`${API_BASE}/invoices?${queryParams}`);
+    const response = await fetch(`${getApiBaseUrl()}/invoices?${queryParams}`);
     const result = await response.json();
 
     if (!response.ok) {
       throw new Error(result.message || 'Failed to fetch invoices');
     }
 
-    return result.data;
+    return result;
+  },
+
+  /**
+   * Get invoices by customer ID
+   */
+  getByCustomerId: async (customerId: string) => {
+    const response = await fetch(`${getApiBaseUrl()}/invoices?customer_id=${customerId}`);
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || 'Failed to fetch invoices for customer');
+    }
+
+    return result;
   },
 
   /**
    * Get invoice by ID
    */
   getById: async (id: string) => {
-    const response = await fetch(`${API_BASE}/invoices/${id}`);
+    const response = await fetch(`${getApiBaseUrl()}/invoices/${id}`);
     const result = await response.json();
 
     if (!response.ok) {
@@ -84,7 +110,7 @@ export const invoiceApi = {
    * Get invoice by invoice number
    */
   getByInvoiceNumber: async (invoiceNumber: string) => {
-    const response = await fetch(`${API_BASE}/invoices/number/${invoiceNumber}`);
+    const response = await fetch(`${getApiBaseUrl()}/invoices/number/${invoiceNumber}`);
     const result = await response.json();
 
     if (!response.ok) {
@@ -98,7 +124,7 @@ export const invoiceApi = {
    * Get invoice by order ID
    */
   getByOrderId: async (orderId: string) => {
-    const response = await fetch(`${API_BASE}/invoices/order/${orderId}`);
+    const response = await fetch(`${getApiBaseUrl()}/invoices/order/${orderId}`);
     const result = await response.json();
 
     if (!response.ok) {
@@ -112,7 +138,7 @@ export const invoiceApi = {
    * Create a new invoice
    */
   create: async (params: CreateInvoiceParams) => {
-    const response = await fetch(`${API_BASE}/invoices`, {
+    const response = await fetch(`${getApiBaseUrl()}/invoices`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -133,7 +159,7 @@ export const invoiceApi = {
    * Update invoice details
    */
   update: async (id: string, params: UpdateInvoiceParams) => {
-    const response = await fetch(`${API_BASE}/invoices/${id}`, {
+    const response = await fetch(`${getApiBaseUrl()}/invoices/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -154,7 +180,7 @@ export const invoiceApi = {
    * Delete invoice
    */
   delete: async (id: string) => {
-    const response = await fetch(`${API_BASE}/invoices/${id}`, {
+    const response = await fetch(`${getApiBaseUrl()}/invoices/${id}`, {
       method: 'DELETE',
     });
 
@@ -170,12 +196,13 @@ export const invoiceApi = {
   /**
    * Mark invoice as paid
    */
-  markAsPaid: async (id: string) => {
-    const response = await fetch(`${API_BASE}/invoices/${id}/paid`, {
+  markAsPaid: async (id: string, params?: { payment_method?: string }) => {
+    const response = await fetch(`${getApiBaseUrl()}/invoices/${id}/paid`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify(params || {}),
     });
 
     const result = await response.json();
@@ -191,7 +218,7 @@ export const invoiceApi = {
    * Cancel invoice
    */
   cancel: async (id: string) => {
-    const response = await fetch(`${API_BASE}/invoices/${id}/cancel`, {
+    const response = await fetch(`${getApiBaseUrl()}/invoices/${id}/cancel`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -211,7 +238,7 @@ export const invoiceApi = {
    * Get invoice statistics
    */
   getStatistics: async (): Promise<InvoiceStatistics> => {
-    const response = await fetch(`${API_BASE}/invoices/statistics`);
+    const response = await fetch(`${getApiBaseUrl()}/invoices/statistics`);
     const result = await response.json();
 
     if (!response.ok) {
@@ -229,7 +256,7 @@ export const invoiceApi = {
     queryParams.append('start_date', start_date);
     queryParams.append('end_date', end_date);
 
-    const response = await fetch(`${API_BASE}/invoices/revenue?${queryParams}`);
+    const response = await fetch(`${getApiBaseUrl()}/invoices/revenue?${queryParams}`);
     const result = await response.json();
 
     if (!response.ok) {

@@ -5,7 +5,8 @@ class InvoicePointsService {
     if (!totalAmount || totalAmount <= 0) {
       return 0;
     }
-    return Math.floor(totalAmount / 10000);
+
+    return Math.floor(totalAmount / 10);
   }
 
   async validatePointsForRedeeming(customerId, pointsToUse) {
@@ -66,6 +67,21 @@ class InvoicePointsService {
     }
 
     return customer.points;
+  }
+
+
+  async updateCustomerSpending(customerId, amount) {
+    if (!customerId || amount === 0) {
+      return null;
+    }
+
+    const customer = await Customer.findByIdAndUpdate(
+      customerId,
+      { $inc: { total_spent: amount } },
+      { new: true }
+    );
+
+    return customer;
   }
 }
 

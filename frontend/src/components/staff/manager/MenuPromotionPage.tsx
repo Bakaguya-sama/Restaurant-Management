@@ -25,6 +25,7 @@ import {
   validateNumberRange,
 } from "../../../lib/validation";
 import { ConfirmationModal } from "../../ui/ConfirmationModal";
+import { authService } from "../../../lib/authService";
 import { useDishes } from "../../../hooks/useDishes";
 import { useDishIngredients } from "../../../hooks/useDishIngredients";
 import { useIngredients } from "../../../hooks/useIngredients";
@@ -124,6 +125,7 @@ export function MenuPromotionPage() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());
   const [dishImageFile, setDishImageFile] = useState<File | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const setImageLoading = (src: string, isLoading: boolean) => {
     setLoadingImages((prev) => {
@@ -283,7 +285,8 @@ export function MenuPromotionPage() {
   const handleToggleAvailability = (id: string) => {
     const dish = apiDishes.find((d) => d.id === id);
     if (!dish) return;
-    toggleDishAvailability(id, !dish.is_available).catch((err) => {
+    const userId = !dish.is_available ? undefined : currentUserId || undefined;
+    toggleDishAvailability(id, !dish.is_available, userId).catch((err) => {
       toast.error(
         err instanceof Error ? err.message : "Lỗi khi cập nhật trạng thái"
       );
@@ -308,10 +311,13 @@ export function MenuPromotionPage() {
       return;
     }
 
-    let imageUrl =
-      editingDish.image_url
-        ? buildImageUrl(editingDish.image_url)
-        : PLACEHOLDER_IMAGE;
+    let imageUrl = PLACEHOLDER_IMAGE;
+    
+    if (menuForm.image === "") {
+      imageUrl = PLACEHOLDER_IMAGE;
+    } else if (editingDish.image_url) {
+      imageUrl = buildImageUrl(editingDish.image_url);
+    }
 
     const updateData = {
       name: menuForm.name,
@@ -728,6 +734,16 @@ export function MenuPromotionPage() {
   };
 
   useEffect(() => {
+    const loadCurrentUser = async () => {
+      try {
+        const response = await authService.getCurrentUser();
+        const userId = response.data.id || response.data._id;
+        setCurrentUserId(userId);
+      } catch (error) {
+        console.error('Error getting current user:', error);
+      }
+    };
+    loadCurrentUser();
     fetchIngredients().catch((err) => {
       console.error("Failed to fetch ingredients:", err);
     });
@@ -779,6 +795,12 @@ export function MenuPromotionPage() {
         item.category === selectedCategoryInEnglish;
       return matchesSearch && matchesCategory;
     });
+
+  // Debug: Check for unavailable dishes
+  const unavailableDishes = filteredMenuItems.filter(d => !d.is_available);
+  if (unavailableDishes.length > 0) {
+    console.warn("Unavailable dishes found:", unavailableDishes.map(d => ({ id: d.id, name: d.name, is_available: d.is_available })));
+  }
 
   const filteredPromotions = promotions.filter((promo) => {
     const matchesSearch =
