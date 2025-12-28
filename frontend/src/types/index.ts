@@ -119,6 +119,7 @@ export interface Reservation {
   reservation_checkout_time: string;
   number_of_guests: number;
   deposit_amount: string;
+  payment_method: 'card' | 'transfer';
   status: ReservationStatus;
   special_requests?: string;
   created_at: string;
@@ -132,6 +133,7 @@ export interface ReservationData {
   reservation_checkout_time: string;
   number_of_guests: number;
   deposit_amount?: string;
+  payment_method?: 'card' | 'transfer';
   status?: ReservationStatus;
   special_requests?: string;
   details: ReservationDetailData[];
@@ -174,25 +176,23 @@ export interface Booking {
 
 // Invoice Types
 export interface Invoice {
-  id: string;
-  tableId?: string;
-  customerId?: string;
-  items: OrderItem[];
+  id?: string;
+  _id?: string;
+  invoice_number: string;
+  order_id?: string;
+  staff_id?: string;
+  customer_id?: string;
+  invoice_date: string;
   subtotal: number;
   tax: number;
-  discount: number;
-  total: number;
-  promotionCode?: string;
-  pointsUsed?: number;
-  voucherCode?: string;
-  voucherAmount?: number;
-  paymentMethod?: "cash" | "card" | "wallet" | "online";
-  paymentRequestedAt?: string;
-  status: "pending" | "paid" | "cancelled" | "payment-requested";
-  createdAt: string;
-  paidAt?: string;
-  customerSelectedVoucher?: boolean;
-  customerSelectedPoints?: number;
+  discount_amount: number;
+  total_amount: number;
+  payment_method?: 'cash' | 'card' | 'transfer' | 'e-wallet';
+  payment_status: 'pending' | 'paid' | 'cancelled';
+  points_used?: number;
+  points_earned?: number;
+  paid_at?: string;
+  created_at: string;
 }
 
 // Inventory Types

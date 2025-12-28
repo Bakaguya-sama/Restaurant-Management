@@ -16,6 +16,7 @@ class DishService {
       
       if (dishIngredients.length === 0) {
         // No ingredients required, dish is available
+        await this.updateDishAvailabilityBased(dishId, true);
         return { available: true, missingIngredients: [] };
       }
 
@@ -45,13 +46,27 @@ class DishService {
         }
       }
 
+      const isAvailable = missingIngredients.length === 0;
+      await this.updateDishAvailabilityBased(dishId, isAvailable);
+
       return {
-        available: missingIngredients.length === 0,
+        available: isAvailable,
         missingIngredients
       };
     } catch (error) {
       console.error('Error checking dish availability:', error);
       return { available: false, missingIngredients: [] };
+    }
+  }
+
+  async updateDishAvailabilityBased(dishId, isAvailable) {
+    try {
+      await this.dishRepository.update(dishId, {
+        is_available: isAvailable,
+        updated_at: new Date()
+      });
+    } catch (error) {
+      console.error('Error updating dish availability:', error);
     }
   }
 

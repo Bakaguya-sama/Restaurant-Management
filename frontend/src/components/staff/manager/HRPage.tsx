@@ -21,6 +21,7 @@ import {
 } from "../../../lib/validation";
 import { ConfirmationModal } from "../../ui/ConfirmationModal";
 import { staffApi } from "../../../lib/api";
+import { authService } from "../../../lib/authService";
 
 interface Employee {
   id: string;
@@ -85,6 +86,7 @@ export function HRPage() {
 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -104,7 +106,17 @@ export function HRPage() {
   const [selectedRole, setSelectedRole] = useState<Employee["role"]>("waiter");
 
   useEffect(() => {
-    fetchEmployees();
+    const loadData = async () => {
+      try {
+        const response = await authService.getCurrentUser();
+        const userId = response.data.id || response.data._id;
+        setCurrentUserId(userId);
+      } catch (error) {
+        console.error('Error getting current user:', error);
+      }
+      await fetchEmployees();
+    };
+    loadData();
   }, []);
 
   const fetchEmployees = async () => {
@@ -118,7 +130,7 @@ export function HRPage() {
         role: staff.role,
         phone: staff.phone || '',
         email: staff.email || '',
-        status: staff.is_active ? 'active' : 'inactive',
+        status: (staff.is_active ? 'active'  : 'inactive') as any,
       }));
       setEmployees(transformedData);
     } catch (error: any) {
@@ -444,25 +456,33 @@ export function HRPage() {
                     </div>
                   </td>
                   <td className="p-4">
-                    <Badge
-                      className={
-                        employee.status === "active"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-gray-100 text-gray-700"
-                      }
-                    >
-                      {employee.status === "active"
-                        ? "Hoạt động"
-                        : "Ngừng hoạt động"}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      {employee.id === currentUserId && (
+                        <Badge className="bg-blue-100 text-blue-700">
+                          Người dùng hiện tại
+                        </Badge>
+                      )}
+                      <Badge
+                        className={
+                          employee.status === "active"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-gray-100 text-gray-700"
+                        }
+                      >
+                        {employee.status === "active"
+                          ? "Hoạt động"
+                          : "Ngừng hoạt động"}
+                      </Badge>
+                    </div>
                   </td>
                   <td className="p-4">
                     <div className="flex gap-2">
                       <Button
                         size="sm"
-                        variant={employee.status === "active" ? "outline" : "default"}
+                        variant={employee.status === "active" ? "secondary" : "primary"}
                         onClick={() => handleToggleStatus(employee)}
                         title={employee.status === "active" ? "Tạm ngừng" : "Kích hoạt"}
+                        disabled={employee.id === currentUserId}
                       >
                         {employee.status === "active" ? "Tạm ngừng" : "Kích hoạt"}
                       </Button>
@@ -471,6 +491,7 @@ export function HRPage() {
                         variant="secondary"
                         onClick={() => handleOpenRole(employee)}
                         title="Đổi vai trò"
+                        disabled={employee.id === currentUserId}
                       >
                         <Shield className="w-4 h-4" />
                       </Button>
@@ -478,6 +499,7 @@ export function HRPage() {
                         size="sm"
                         variant="secondary"
                         onClick={() => handleDeleteEmployee(employee.id)}
+                        disabled={employee.id === currentUserId}
                       >
                         <Trash2 className="w-4 h-4 text-red-600" />
                       </Button>

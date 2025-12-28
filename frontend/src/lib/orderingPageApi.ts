@@ -1,5 +1,7 @@
 // ==================== TYPE DEFINITIONS ====================
 
+import { getApiBaseUrl } from "./apiConfig";
+
 export interface OrderDTO {
   id: string;
   order_number: string;
@@ -64,9 +66,8 @@ export interface TableDTO {
 
 // ==================== API CONFIGURATION ====================
 
-const API_BASE =
-  (import.meta as any).env?.VITE_API_BASE_URL ||
-  "http://localhost:5000/api/v1";
+// API base URL is now dynamically determined from apiConfig
+// Falls back to localhost:5000 if not configured
 
 // ==================== API FUNCTIONS ====================
 
@@ -76,7 +77,7 @@ const API_BASE =
 export async function fetchTables(
   status?: "available" | "occupied" | "reserved" | "maintenance"
 ): Promise<TableDTO[]> {
-  const url = new URL(`${API_BASE}/tables`);
+  const url = new URL(`\$\{getApiBaseUrl()\}/tables`);
   if (status) {
     url.searchParams.set("status", status);
   }
@@ -99,7 +100,7 @@ export async function fetchTables(
 export async function fetchOrderByTableId(
   tableId: string
 ): Promise<OrderDTO | null> {
-  const response = await fetch(`${API_BASE}/orders/table/${tableId}`);
+  const response = await fetch(`\$\{getApiBaseUrl()\}/orders/table/${tableId}`);
 
   if (!response.ok) {
     if (response.status === 404) {
@@ -120,7 +121,7 @@ export async function fetchOrderByTableId(
 export async function fetchOrderDetails(
   orderId: string
 ): Promise<OrderDetailDTO[]> {
-  const response = await fetch(`${API_BASE}/orders/${orderId}/details`);
+  const response = await fetch(`\$\{getApiBaseUrl()\}/orders/${orderId}/details`);
 
   if (!response.ok) {
     throw new Error(
@@ -138,7 +139,7 @@ export async function fetchOrderDetails(
 export async function createOrder(
   orderData: CreateOrderRequest
 ): Promise<OrderDTO> {
-  const response = await fetch(`${API_BASE}/orders`, {
+  const response = await fetch(`${getApiBaseUrl()}/orders`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -146,14 +147,22 @@ export async function createOrder(
     body: JSON.stringify(orderData),
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(
-      error.message || `Failed to create order: ${response.status}`
-    );
+  let data;
+  try {
+    const text = await response.text();
+    if (!text) {
+      throw new Error(`Empty response from server: ${response.status}`);
+    }
+    data = JSON.parse(text);
+  } catch (e) {
+    throw new Error(`Invalid response from server: ${response.status} ${response.statusText}`);
   }
 
-  const data = await response.json();
+  if (!response.ok) {
+    const errorMessage = data?.message || `Failed to create order: ${response.status}`;
+    throw new Error(errorMessage);
+  }
+
   return data.data || data;
 }
 
@@ -164,7 +173,7 @@ export async function addItemToOrder(
   orderId: string,
   item: AddOrderItemRequest
 ): Promise<OrderDetailDTO> {
-  const response = await fetch(`${API_BASE}/orders/${orderId}/details`, {
+  const response = await fetch(`\$\{getApiBaseUrl()\}/orders/${orderId}/details`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -192,7 +201,7 @@ export async function updateOrderItem(
   updates: UpdateOrderItemRequest
 ): Promise<OrderDetailDTO> {
   const response = await fetch(
-    `${API_BASE}/orders/${orderId}/details/${detailId}`,
+    `\$\{getApiBaseUrl()\}/orders/${orderId}/details/${detailId}`,
     {
       method: "PUT",
       headers: {
@@ -221,7 +230,7 @@ export async function removeOrderItem(
   detailId: string
 ): Promise<void> {
   const response = await fetch(
-    `${API_BASE}/orders/${orderId}/details/${detailId}`,
+    `\$\{getApiBaseUrl()\}/orders/${orderId}/details/${detailId}`,
     {
       method: "DELETE",
     }
@@ -242,7 +251,7 @@ export async function updateOrderStatus(
   orderId: string,
   status: "pending" | "in_progress" | "completed" | "cancelled"
 ): Promise<OrderDTO> {
-  const response = await fetch(`${API_BASE}/orders/${orderId}`, {
+  const response = await fetch(`\$\{getApiBaseUrl()\}/orders/${orderId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -265,7 +274,7 @@ export async function updateOrderStatus(
  * Calculate order total
  */
 export async function calculateOrderTotal(orderId: string): Promise<number> {
-  const response = await fetch(`${API_BASE}/orders/${orderId}/calculate`, {
+  const response = await fetch(`\$\{getApiBaseUrl()\}/orders/${orderId}/calculate`, {
     method: "POST",
   });
 
@@ -286,7 +295,7 @@ export async function updateTableStatus(
   tableId: string,
   status: "available" | "occupied" | "reserved" | "maintenance"
 ): Promise<TableDTO> {
-  const response = await fetch(`${API_BASE}/tables/${tableId}`, {
+  const response = await fetch(`\$\{getApiBaseUrl()\}/tables/${tableId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
