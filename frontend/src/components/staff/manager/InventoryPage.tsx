@@ -127,7 +127,7 @@ export function InventoryPage() {
   const refreshImportHistory = async () => {
     setImportHistoryLoading(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/inventory/imports`);
+      const response = await fetch(`${API_BASE_URL}/inventory/imports`);
       const result = await response.json();
       if (result.success && result.data) {
         setImportHistory(
