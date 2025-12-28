@@ -144,35 +144,99 @@ class CustomerRepository {
     const banned = await User.countDocuments({ role: 'customer', isBanned: true });
     const active = total - banned;
 
-    const byMembershipLevel = await User.aggregate([
-      { $match: { role: 'customer' } },
+    // Count VIP customers (gold, platinum, diamond)
+    const vipCount = await User.countDocuments({ 
+      role: 'customer', 
+      membership_level: { $in: ['gold', 'platinum', 'diamond'] } 
+    });
+
+    // Count new customers (created in last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const newCustomers = await User.countDocuments({ 
+      role: 'customer',
+      created_at: { $gte: thirtyDaysAgo }
+    });
+
+    // Count returning customers (customers with more than 1 invoice)
+    const { Invoice } = require('../../models');
+    const returningCustomers = await Invoice.aggregate([
       {
         $group: {
-          _id: '$membership_level',
-          count: { $sum: 1 }
+          _id: '$customer_id',
+          invoiceCount: { $sum: 1 }
         }
+      },
+      {
+        $match: { invoiceCount: { $gt: 1 } }
+      },
+      {
+        $count: 'total'
       }
     ]);
 
-    const totalSpending = await User.aggregate([
+    // Calculate average spending per customer
+    const avgSpendingResult = await User.aggregate([
       { $match: { role: 'customer' } },
       {
         $group: {
           _id: null,
-          total: { $sum: '$total_spent' }
+          avgSpending: { $avg: '$total_spent' },
+          totalRevenue: { $sum: '$total_spent' }
         }
       }
     ]);
+
+    // Get segments by membership level with revenue
+    const segments = await User.aggregate([
+      { $match: { role: 'customer' } },
+      {
+        $group: {
+          _id: '$membership_level',
+          count: { $sum: 1 },
+          revenue: { $sum: '$total_spent' }
+        }
+      },
+      {
+        $addFields: {
+          tier: {
+            $switch: {
+              branches: [
+                { case: { $eq: ['$_id', 'diamond'] }, then: 'Diamond' },
+                { case: { $eq: ['$_id', 'platinum'] }, then: 'Platinum' },
+                { case: { $eq: ['$_id', 'gold'] }, then: 'Gold' },
+                { case: { $eq: ['$_id', 'silver'] }, then: 'Silver' },
+                { case: { $eq: ['$_id', 'bronze'] }, then: 'Bronze' },
+                { case: { $eq: ['$_id', 'regular'] }, then: 'Regular' }
+              ],
+              default: 'Regular'
+            }
+          }
+        }
+      },
+      { $sort: { revenue: -1 } }
+    ]);
+
+    const totalRevenue = avgSpendingResult[0]?.totalRevenue || 0;
+    
+    // Calculate percentage for each segment
+    const segmentsWithPercentage = segments.map(seg => ({
+      tier: seg.tier,
+      count: seg.count,
+      revenue: seg.revenue,
+      percentage: totalRevenue > 0 ? (seg.revenue / totalRevenue) * 100 : 0
+    }));
 
     return {
       total,
       active,
       banned,
-      byMembershipLevel: byMembershipLevel.reduce((acc, item) => {
-        acc[item._id] = item.count;
-        return acc;
-      }, {}),
-      totalRevenue: totalSpending[0]?.total || 0
+      vip: vipCount,
+      new: newCustomers,
+      returning: returningCustomers[0]?.total || 0,
+      avgSpending: avgSpendingResult[0]?.avgSpending || 0,
+      totalRevenue: totalRevenue,
+      segments: segmentsWithPercentage
     };
   }
 
