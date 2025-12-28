@@ -53,16 +53,21 @@ export function useReservations() {
   const fetchReservationsByCustomerId = useCallback(async (customerId: string) => {
     try {
       setLoading(true);
+      console.log(`[useReservations] fetchReservationsByCustomerId called with: "${customerId}" (type: ${typeof customerId})`);
       const response = await reservationApi.getByCustomerId(customerId);
+      console.log(`[useReservations] API response:`, response);
       if (response.success && response.data) {
+        console.log(`[useReservations] Setting ${response.data.length} reservations`);
         setReservations(response.data);
         setError(null);
       } else {
+        console.warn(`[useReservations] API returned success=false or no data`);
         setError('Không thể tải danh sách đặt bàn');
         toast.error('Không thể tải danh sách đặt bàn');
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Lỗi khi tải đặt bàn';
+      console.error(`[useReservations] Error:`, errorMessage);
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {

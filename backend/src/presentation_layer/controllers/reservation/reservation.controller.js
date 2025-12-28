@@ -63,9 +63,13 @@ class ReservationController {
 
   async getReservationsByCustomerId(req, res) {
     try {
-      const reservations = await this.reservationService.getReservationsByCustomerId(req.params.customerId);
+      const customerId = req.params.customerId;
+      console.log(`[ReservationController] getReservationsByCustomerId called with customerId: "${customerId}"`);
+      const reservations = await this.reservationService.getReservationsByCustomerId(customerId);
+      console.log(`[ReservationController] reservations returned: ${reservations.length} items`);
       res.json({ success: true, data: reservations, message: 'Reservations by customer' });
     } catch (error) {
+      console.error(`[ReservationController] Error in getReservationsByCustomerId:`, error);
       res.status(400).json({ success: false, data: null, message: error.message });
     }
   }

@@ -43,13 +43,12 @@ export function BookingManagementPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const customersResponse = await customerApi.getAll({ isBanned: false });
-        if (customersResponse.success && customersResponse.data) {
-          setCustomers(customersResponse.data);
-          const firstUnbannedCustomer = customersResponse.data[0];
-          if (firstUnbannedCustomer) {
-            await fetchReservationsByCustomerId(firstUnbannedCustomer.id);
-          }
+        console.log(`[BookingManagementPage] useEffect triggered, userProfile?.id: "${userProfile?.id}"`);
+        if (userProfile?.id) {
+          console.log(`[BookingManagementPage] Calling fetchReservationsByCustomerId with: "${userProfile.id}"`);
+          await fetchReservationsByCustomerId(userProfile.id);
+        } else {
+          console.warn(`[BookingManagementPage] userProfile?.id is falsy:`, userProfile);
         }
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : "Lỗi khi tải dữ liệu";
@@ -59,51 +58,53 @@ export function BookingManagementPage() {
     };
 
     fetchData();
-  }, []);
+  }, [userProfile?.id, fetchReservationsByCustomerId]);
 
   useEffect(() => {
     const enrichReservations = async () => {
       try {
         const enriched = await Promise.all(
-          reservations.map(async (reservation: any) => {
-            let tableNumber = "N/A";
-            let locationName = "N/A";
-            let formattedCreatedAt = "N/A";
+          reservations
+            .filter((reservation: any) => reservation?.id) // Filter out reservations without ID
+            .map(async (reservation: any) => {
+              let tableNumber = "N/A";
+              let locationName = "N/A";
+              let formattedCreatedAt = "N/A";
 
-            if (reservation.created_at) {
-              const date = new Date(reservation.created_at);
-              formattedCreatedAt = date.toISOString().split("T")[0];
-            }
+              if (reservation.created_at) {
+                const date = new Date(reservation.created_at);
+                formattedCreatedAt = date.toISOString().split("T")[0];
+              }
 
-            try {
-              const detailsResponse = await reservationDetailApi.getByReservationId(reservation.id);
-              
-              if (detailsResponse.success && detailsResponse.data && detailsResponse.data.length > 0) {
-                const tableId = detailsResponse.data[0].table_id;
+              try {
+                const detailsResponse = await reservationDetailApi.getByReservationId(reservation.id);
                 
-                const tableResponse = await tableApi.getById(tableId);
-                if (tableResponse.success && tableResponse.data) {
-                  tableNumber = tableResponse.data.table_number;
+                if (detailsResponse.success && detailsResponse.data && detailsResponse.data.length > 0) {
+                  const tableId = detailsResponse.data[0].table_id;
                   
-                  if (tableResponse.data.location_id) {
-                    const locationResponse = await locationApi.getById(tableResponse.data.location_id);
-                    if (locationResponse.success && locationResponse.data) {
-                      locationName = locationResponse.data.name;
+                  const tableResponse = await tableApi.getById(tableId);
+                  if (tableResponse.success && tableResponse.data) {
+                    tableNumber = tableResponse.data.table_number;
+                    
+                    if (tableResponse.data.location_id) {
+                      const locationResponse = await locationApi.getById(tableResponse.data.location_id);
+                      if (locationResponse.success && locationResponse.data) {
+                        locationName = locationResponse.data.name;
+                      }
                     }
                   }
                 }
+              } catch (err) {
+                console.error(`Error fetching details for reservation ${reservation.id}:`, err);
               }
-            } catch (err) {
-              console.error(`Error fetching details for reservation ${reservation.id}:`, err);
-            }
 
-            return {
-              ...reservation,
-              tableNumber,
-              locationName,
-              createdAtFormatted: formattedCreatedAt,
-            };
-          })
+              return {
+                ...reservation,
+                tableNumber,
+                locationName,
+                createdAtFormatted: formattedCreatedAt,
+              };
+            })
         );
         setEnrichedReservations(enriched);
       } catch (err) {

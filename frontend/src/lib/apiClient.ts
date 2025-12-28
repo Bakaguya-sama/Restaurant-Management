@@ -28,6 +28,12 @@ class ApiClient {
     });
 
     const data = await response.json();
+    console.log(`[apiClient] ${options.method || 'GET'} ${endpoint}`, { 
+      status: response.status, 
+      rawData: data,
+      dataType: typeof data.data,
+      dataLength: Array.isArray(data.data) ? data.data.length : 'N/A'
+    });
 
     if (!response.ok) {
       throw new Error(data.message || `HTTP Error: ${response.status}`);

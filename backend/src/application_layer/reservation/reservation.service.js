@@ -106,7 +106,8 @@ class ReservationService {
     const result = [];
     for (const r of reservations) {
       const updated = await this.updateStatus(r);
-      result.push(this.formatReservationResponse(updated));
+      const formatted = await this.formatReservationResponse(updated);
+      result.push(formatted);
     }
     return result;
   }
@@ -116,10 +117,12 @@ class ReservationService {
     const result = [];
     for (const r of reservations) {
       const updated = await this.updateStatus(r);
-      result.push(this.formatReservationResponse(updated));
+      const formatted = await this.formatReservationResponse(updated);
+      result.push(formatted);
     }
     return result;
   }
+  
 
   async getReservationStatistics() {
     return await this.reservationRepository.getStatistics();
@@ -288,43 +291,54 @@ class ReservationService {
   }
 
   async formatReservationResponse(reservation) {
-    // Convert reservation_date to YYYY-MM-DD string format
-    let formattedDate = reservation.reservation_date;
-    if (reservation.reservation_date instanceof Date) {
-      const year = reservation.reservation_date.getFullYear();
-      const month = String(reservation.reservation_date.getMonth() + 1).padStart(2, '0');
-      const day = String(reservation.reservation_date.getDate()).padStart(2, '0');
-      formattedDate = `${year}-${month}-${day}`;
-    }
+    try {
+      // Convert Mongoose document to plain object first
+      const reservationObj = reservation.toObject ? reservation.toObject() : reservation;
+      
+      // Convert reservation_date to YYYY-MM-DD string format
+      let formattedDate = reservationObj.reservation_date;
+      if (reservationObj.reservation_date instanceof Date) {
+        const year = reservationObj.reservation_date.getFullYear();
+        const month = String(reservationObj.reservation_date.getMonth() + 1).padStart(2, '0');
+        const day = String(reservationObj.reservation_date.getDate()).padStart(2, '0');
+        formattedDate = `${year}-${month}-${day}`;
+      }
 
-    // Get reservation details (tables) with complete table information
-    const details = await this.reservationDetailRepository.findByReservationId(reservation._id);
-    const detailsWithTables = [];
-    for (const detail of details) {
-      const table = await this.tableRepository.findById(detail.table_id);
-      detailsWithTables.push({
-        id: detail._id || detail.id,
-        table_id: detail.table_id,
-        table_number: table?.table_number,
-        capacity: table?.capacity
-      });
-    }
+      // Get reservation details (tables) with complete table information
+      const details = await this.reservationDetailRepository.findByReservationId(reservationObj._id);
+      const detailsWithTables = [];
+      for (const detail of details) {
+        const table = await this.tableRepository.findById(detail.table_id);
+        detailsWithTables.push({
+          id: detail._id || detail.id,
+          table_id: detail.table_id,
+          table_number: table?.table_number,
+          capacity: table?.capacity
+        });
+      }
 
-    return {
-      id: reservation._id || reservation.id,
-      customer_id: reservation.customer_id,
-      reservation_date: formattedDate,
-      reservation_time: reservation.reservation_time,
-      reservation_checkout_time: reservation.reservation_checkout_time,
-      number_of_guests: reservation.number_of_guests,
-      deposit_amount: reservation.deposit_amount,
-      payment_method: reservation.payment_method,
-      status: reservation.status,
-      special_requests: reservation.special_requests,
-      details: detailsWithTables,
-      created_at: reservation.created_at,
-      updated_at: reservation.updated_at
-    };
+      const response = {
+        id: reservationObj._id || reservationObj.id,
+        customer_id: reservationObj.customer_id,
+        reservation_date: formattedDate,
+        reservation_time: reservationObj.reservation_time,
+        reservation_checkout_time: reservationObj.reservation_checkout_time,
+        number_of_guests: reservationObj.number_of_guests,
+        deposit_amount: reservationObj.deposit_amount,
+        payment_method: reservationObj.payment_method,
+        status: reservationObj.status,
+        special_requests: reservationObj.special_requests,
+        details: detailsWithTables,
+        created_at: reservationObj.created_at,
+        updated_at: reservationObj.updated_at
+      };
+      
+      console.log(`[ReservationService] formatReservationResponse returning:`, JSON.stringify(response, null, 2));
+      return response;
+    } catch (error) {
+      console.error(`[ReservationService] Error in formatReservationResponse:`, error);
+      throw error;
+    }
   }
 }
 

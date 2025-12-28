@@ -95,8 +95,18 @@ export function BookingPage() {
     fetchData();
   }, []);
 
-  const firstNonBannedCustomer = customers.find((c) => !c.isBanned);
-  const isBlacklisted = !firstNonBannedCustomer;
+  // Autofill name and phone from user profile
+  useEffect(() => {
+    if (userProfile?.name || userProfile?.phone) {
+      setBookingData((prev) => ({
+        ...prev,
+        name: userProfile.name || prev.name,
+        phone: userProfile.phone || prev.phone,
+      }));
+    }
+  }, [userProfile]);
+
+  const isUserBanned = userProfile?.isBanned ?? false;
 
   const getFloorName = (locationId?: string) => {
     if (!locationId) return "N/A";
@@ -150,7 +160,12 @@ export function BookingPage() {
   };
 
   const handleConfirmBooking = async () => {
-    if (!firstNonBannedCustomer || !selectedTable) {
+    if (!userProfile?.id) {
+      toast.error("Vui lòng đăng nhập để đặt bàn");
+      return;
+    }
+
+    if (!selectedTable) {
       toast.error("Vui lòng chọn bàn");
       return;
     }
@@ -169,7 +184,7 @@ export function BookingPage() {
       const backendPaymentMethod = paymentMethod === 'wallet' ? 'transfer' : 'card';
 
       const reservationData: ReservationData = {
-        customer_id: firstNonBannedCustomer.id,
+        customer_id: userProfile.id,
         reservation_date: bookingData.date,
         reservation_time: bookingData.time,
         reservation_checkout_time: bookingData.checkoutTime,
@@ -274,40 +289,15 @@ export function BookingPage() {
       </div>
 
       {/* Blacklist Warning */}
-      {isBlacklisted && (
+      {isUserBanned && (
         <Card className="p-6 mb-6 border-red-300 bg-red-50">
           <div className="flex items-start gap-3">
-            {/* <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-2xl">!</span>
-            </div> */}
             <div className="flex-1">
               <h3 className="text-red-800 mb-2">Tài khoản bị hạn chế</h3>
               <p className="text-red-700 mb-4">
                 Tài khoản của bạn đang bị hạn chế do vi phạm chính sách. Bạn
                 không thể đặt bàn trực tuyến.
               </p>
-              {/* {currentCustomer?.violations &&
-                currentCustomer.violations.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-sm text-red-700 font-medium">Lý do:</p>
-                    {currentCustomer.violations.map((violation) => (
-                      <div
-                        key={violation.id}
-                        className="text-sm text-red-600 bg-white p-3 rounded"
-                      >
-                        <p className="font-medium">
-                          {violation.type === "no-show" && "Không đến nhận bàn"}
-                          {violation.type === "late-cancel" && "Hủy bàn muộn"}
-                          {violation.type === "damage" && "Gây hư hại tài sản"}
-                        </p>
-                        <p>{violation.description}</p>
-                        <p className="text-xs text-gray-600 mt-1">
-                          {new Date(violation.date).toLocaleDateString("vi-VN")}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )} */}
               <p className="text-sm text-red-600 mt-4">
                 Vui lòng liên hệ trực tiếp nhà hàng để được hỗ trợ.
               </p>
@@ -316,11 +306,7 @@ export function BookingPage() {
         </Card>
       )}
 
-      {isBlacklisted ? (
-        ""
-      ) : (
-        <>
-          {/* Progress Steps */}
+      {/* Progress Steps */}
           <div className="flex items-center justify-center mb-12">
             {["Chọn thời gian", "Chọn bàn", "Thông tin", "Thanh toán"].map(
               (label, index) => (
@@ -369,6 +355,7 @@ export function BookingPage() {
                     setBookingData({ ...bookingData, date: e.target.value })
                   }
                   min={new Date().toISOString().split("T")[0]}
+                  disabled={isUserBanned}
                 />
                 <Input
                   label="Giờ (8:00 - 20:00)"
@@ -380,6 +367,7 @@ export function BookingPage() {
                   }
                   min="08:00"
                   max="20:00"
+                  disabled={isUserBanned}
                 />
                 <Input
                   label="Giờ kết thúc (Tối đa 3h)"
@@ -391,6 +379,7 @@ export function BookingPage() {
                   }
                   min="08:00"
                   max="20:00"
+                  disabled={isUserBanned}
                 />
                 <Input
                   label="Số người"
@@ -406,6 +395,7 @@ export function BookingPage() {
                   min="1"
                   max="8"
                   step="1"
+                  disabled={isUserBanned}
                 />
               </div>
               <Button
@@ -503,7 +493,7 @@ export function BookingPage() {
 
                   setStep(2);
                 }}
-                disabled={!bookingData.date || !bookingData.time || !bookingData.checkoutTime}
+                disabled={!bookingData.date || !bookingData.time || !bookingData.checkoutTime || isUserBanned}
               >
                 Tiếp tục
               </Button>
@@ -535,8 +525,11 @@ export function BookingPage() {
                       <button
                         key={table.id}
                         onClick={() => handleTableSelect(table)}
+                        disabled={isUserBanned}
                         className={`p-4 rounded-lg border-2 transition-all ${
-                          selectedTable?.id === table.id
+                          isUserBanned
+                            ? "opacity-50 cursor-not-allowed"
+                            : selectedTable?.id === table.id
                             ? "border-[#625EE8] bg-blue-50"
                             : "border-gray-200 hover:border-gray-300"
                         }`}
@@ -563,7 +556,7 @@ export function BookingPage() {
                 <Button variant="secondary" onClick={() => setStep(1)}>
                   Quay lại
                 </Button>
-                <Button onClick={() => setStep(3)} disabled={!selectedTable}>
+                <Button onClick={() => setStep(3)} disabled={!selectedTable || isUserBanned}>
                   Tiếp tục
                 </Button>
               </div>
@@ -583,6 +576,7 @@ export function BookingPage() {
                       setBookingData({ ...bookingData, name: e.target.value })
                     }
                     placeholder="Nhập họ tên"
+                    disabled={isUserBanned}
                   />
                   <Input
                     label="Số điện thoại"
@@ -591,6 +585,7 @@ export function BookingPage() {
                       setBookingData({ ...bookingData, phone: e.target.value })
                     }
                     placeholder="Nhập số điện thoại"
+                    disabled={isUserBanned}
                   />
                   <Textarea
                     label="Ghi chú yêu cầu đặc biệt"
@@ -600,6 +595,7 @@ export function BookingPage() {
                     }
                     placeholder="VD: Cần ghế em bé, khu vực yên tĩnh..."
                     rows={3}
+                    disabled={isUserBanned}
                   />
                 </div>
               </Card>
@@ -609,7 +605,7 @@ export function BookingPage() {
                 </Button>
                 <Button
                   onClick={() => setStep(4)}
-                  disabled={!bookingData.name || !bookingData.phone}
+                  disabled={!bookingData.name || !bookingData.phone || isUserBanned}
                 >
                   Tiếp tục
                 </Button>
@@ -633,8 +629,11 @@ export function BookingPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <button 
                       onClick={() => setPaymentMethod('wallet')}
+                      disabled={isUserBanned}
                       className={`p-4 border-2 rounded-lg text-left transition cursor-pointer ${
-                        paymentMethod === 'wallet'
+                        isUserBanned
+                          ? 'opacity-50 cursor-not-allowed'
+                          : paymentMethod === 'wallet'
                           ? 'border-[#625EE8] bg-blue-50 hover:bg-blue-100'
                           : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                       }`}
@@ -649,8 +648,11 @@ export function BookingPage() {
                     </button>
                     <button 
                       onClick={() => setPaymentMethod('card')}
+                      disabled={isUserBanned}
                       className={`p-4 border-2 rounded-lg text-left transition cursor-pointer ${
-                        paymentMethod === 'card'
+                        isUserBanned
+                          ? 'opacity-50 cursor-not-allowed'
+                          : paymentMethod === 'card'
                           ? 'border-[#625EE8] bg-blue-50 hover:bg-blue-100'
                           : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                       }`}
@@ -698,15 +700,13 @@ export function BookingPage() {
                 </Button>
                 <Button 
                   onClick={handleConfirmBooking}
-                  disabled={!paymentMethod}
+                  disabled={!paymentMethod || isUserBanned}
                 >
                   Xác nhận & Hoàn tất
                 </Button>
               </div>
             </div>
           )}
-        </>
-      )}
-    </div>
-  );
-}
+        </div>
+      );
+    }

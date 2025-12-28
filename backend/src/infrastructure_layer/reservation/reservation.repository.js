@@ -1,10 +1,13 @@
 const { Reservation } = require('../../models');
+const mongoose = require('mongoose');
 
 class ReservationRepository {
   async findAll(filters = {}) {
     const query = {};
     if (filters.customer_id) {
-      query.customer_id = filters.customer_id;
+      query.customer_id = mongoose.Types.ObjectId.isValid(filters.customer_id) 
+        ? new mongoose.Types.ObjectId(filters.customer_id)
+        : filters.customer_id;
     }
     if (filters.status) {
       query.status = filters.status;
@@ -16,7 +19,21 @@ class ReservationRepository {
   }
 
   async findByCustomerId(customerId) {
-    return await Reservation.find({ customer_id: customerId }).sort({ created_at: -1 });
+    console.log(`[ReservationRepository] findByCustomerId called with: "${customerId}" (type: ${typeof customerId})`);
+    const isValidObjectId = mongoose.Types.ObjectId.isValid(customerId);
+    console.log(`[ReservationRepository] isValidObjectId: ${isValidObjectId}`);
+    
+    const objectId = isValidObjectId 
+      ? new mongoose.Types.ObjectId(customerId)
+      : customerId;
+    console.log(`[ReservationRepository] objectId to query: ${objectId}`);
+    
+    const result = await Reservation.find({ customer_id: objectId }).sort({ created_at: -1 });
+    console.log(`[ReservationRepository] Query result count: ${result.length}`);
+    if (result.length > 0) {
+      console.log(`[ReservationRepository] First result customer_id: ${result[0].customer_id}`);
+    }
+    return result;
   }
 
   async findByTableId(tableId) {
