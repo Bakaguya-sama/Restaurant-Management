@@ -99,6 +99,10 @@ class CustomerApi {
   async login(email: string, password: string): Promise<ApiResponse<Customer>> {
     return apiClient.post<Customer>(`${this.baseEndpoint}/login`, { email, password });
   }
+
+  async changePassword(id: string, currentPassword: string, newPassword: string): Promise<ApiResponse<void>> {
+    return apiClient.patch<void>(`${this.baseEndpoint}/${id}/change-password`, { currentPassword, newPassword });
+  }
 }
 
 export const customerApi = new CustomerApi();

@@ -85,6 +85,10 @@ class StaffApi {
   async login(username: string, password: string): Promise<ApiResponse<Staff>> {
     return apiClient.post<Staff>(`${this.baseEndpoint}/login`, { username, password });
   }
+
+  async changePassword(id: string, currentPassword: string, newPassword: string): Promise<ApiResponse<void>> {
+    return apiClient.patch<void>(`${this.baseEndpoint}/${id}/change-password`, { currentPassword, newPassword });
+  }
 }
 
 export const staffApi = new StaffApi();

@@ -174,6 +174,17 @@ export function useCustomers() {
     }
   };
 
+  const changePassword = async (id: string, currentPassword: string, newPassword: string): Promise<void> => {
+    try {
+      setError(null);
+      await customerApi.changePassword(id, currentPassword, newPassword);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to change password';
+      setError(message);
+      throw err;
+    }
+  };
+
   return {
     customers,
     loading,
@@ -189,6 +200,7 @@ export function useCustomers() {
     addSpending,
     getStatistics,
     getTopCustomers,
-    loginCustomer
+    loginCustomer,
+    changePassword
   };
 }

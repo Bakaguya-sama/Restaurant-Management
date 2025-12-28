@@ -6,8 +6,7 @@ class IngredientEntity {
     quantity_in_stock,
     minimum_quantity,
     unit_price,
-    supplier_name,
-    supplier_contact,
+    supplier_id,
     expiry_date,
     stock_status,
     expiry_status,
@@ -20,8 +19,7 @@ class IngredientEntity {
     this.quantity_in_stock = quantity_in_stock;
     this.minimum_quantity = minimum_quantity;
     this.unit_price = unit_price;
-    this.supplier_name = supplier_name;
-    this.supplier_contact = supplier_contact;
+    this.supplier_id = supplier_id;
     this.expiry_date = expiry_date;
     this.stock_status = stock_status;
     this.expiry_status = expiry_status;

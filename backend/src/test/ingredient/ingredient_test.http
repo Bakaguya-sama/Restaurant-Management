@@ -18,8 +18,7 @@ Content-Type: application/json
   "quantity_in_stock": 10,
   "minimum_quantity": 2,
   "unit_price": 85000,
-  "supplier_name": "ABC Supplier",
-  "supplier_contact": "0123456789",
+  "supplier_id": "667f1f77bcf86cd799439011",
   "stock_status": "available"
 }
 
@@ -34,8 +33,7 @@ Content-Type: application/json
   "quantity_in_stock": 15,
   "minimum_quantity": 3,
   "unit_price": 25000,
-  "supplier_name": "XYZ Supplier",
-  "supplier_contact": "0987654321",
+  "supplier_id": "667f1f77bcf86cd799439012",
   "stock_status": "available"
 }
 
@@ -50,7 +48,7 @@ Content-Type: application/json
   "quantity_in_stock": 5,
   "minimum_quantity": 1,
   "unit_price": 180000,
-  "supplier_name": "Premium Foods",
+  "supplier_id": "667f1f77bcf86cd799439013",
   "stock_status": "available"
 }
 
@@ -65,7 +63,7 @@ Content-Type: application/json
   "quantity_in_stock": 8,
   "minimum_quantity": 2,
   "unit_price": 15000,
-  "supplier_name": "Salt Corp",
+  "supplier_id": "667f1f77bcf86cd799439014",
   "stock_status": "available"
 }
 
@@ -80,7 +78,7 @@ Content-Type: application/json
   "quantity_in_stock": 500,
   "minimum_quantity": 100,
   "unit_price": 120000,
-  "supplier_name": "Spice House",
+  "supplier_id": "667f1f77bcf86cd799439015",
   "stock_status": "available"
 }
 
@@ -139,7 +137,7 @@ Content-Type: application/json
   "quantity_in_stock": 12,
   "minimum_quantity": 3,
   "unit_price": 95000,
-  "supplier_name": "Premium Supplier"
+  "supplier_id": "667f1f77bcf86cd799439011"
 }
 
 

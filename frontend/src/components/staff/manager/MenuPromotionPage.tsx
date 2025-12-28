@@ -33,6 +33,7 @@ import {
   uploadDishImage,
   validateImageUrl,
   buildImageUrl,
+  extractRelativePath,
 } from "../../../lib/uploadApi";
 
 const PLACEHOLDER_IMAGE =
@@ -122,6 +123,7 @@ export function MenuPromotionPage() {
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());
+  const [dishImageFile, setDishImageFile] = useState<File | null>(null);
 
   const setImageLoading = (src: string, isLoading: boolean) => {
     setLoadingImages((prev) => {
@@ -135,33 +137,34 @@ export function MenuPromotionPage() {
     });
   };
 
-  const handleImageUpload = async (file: File): Promise<string | null> => {
-    setUploadingImage(true);
-    try {
-      const dishId = menuForm.id || editingDish?.id;
-      const imageUrl = await uploadDishImage(file, dishId);
-
-      const isValid = await validateImageUrl(imageUrl);
-      if (!isValid) {
-        toast.error(
-          "Tải ảnh lên thành công nhưng không thể truy cập được, sẽ dùng ảnh mặc định"
-        );
-        return PLACEHOLDER_IMAGE;
-      }
-
-      toast.success("Tải ảnh lên thành công!");
-      return imageUrl;
-    } catch (error) {
-      console.error("Image upload error:", error);
-      toast.error(
-        `Lỗi tải ảnh: ${
-          error instanceof Error ? error.message : "Lỗi không xác định"
-        }`
-      );
+  const handleImageUpload = (file: File): string | null => {
+    const validTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Chỉ chấp nhận file ảnh (JPG, PNG, GIF, WebP)");
       return null;
-    } finally {
-      setUploadingImage(false);
     }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Kích thước ảnh không được vượt quá 10MB");
+      return null;
+    }
+
+    setDishImageFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setMenuForm((prev) => ({
+        ...prev,
+        image: reader.result as string,
+      }));
+    };
+    reader.readAsDataURL(file);
+    return reader.result as string;
   };
 
   const addIngredientRow = () => {
@@ -194,21 +197,7 @@ export function MenuPromotionPage() {
       return;
     }
 
-    let imageUrl = menuForm.image || PLACEHOLDER_IMAGE;
-    if (menuForm.image && menuForm.image !== PLACEHOLDER_IMAGE) {
-      try {
-        const isValid = await validateImageUrl(menuForm.image);
-        if (!isValid) {
-          console.warn(
-            "Uploaded image URL is not accessible, using placeholder"
-          );
-          imageUrl = PLACEHOLDER_IMAGE;
-        }
-      } catch (error) {
-        console.warn("Failed to validate image URL:", error);
-        imageUrl = PLACEHOLDER_IMAGE;
-      }
-    }
+    let imageUrl = PLACEHOLDER_IMAGE;
 
     const newItem = {
       name: menuForm.name,
@@ -220,8 +209,32 @@ export function MenuPromotionPage() {
     };
 
     try {
+      setUploadingImage(true);
       const response = await createDish(newItem);
       const dishId = response?.id;
+
+      if (dishImageFile && dishId) {
+        try {
+          const uploadedUrl = await uploadDishImage(dishImageFile, dishId);
+          let finalImagePath = PLACEHOLDER_IMAGE;
+          
+          if (uploadedUrl && uploadedUrl.trim()) {
+            const isValidUrl = await validateImageUrl(uploadedUrl);
+            if (isValidUrl) {
+              finalImagePath = extractRelativePath(uploadedUrl);
+            }
+          }
+          
+          await updateDish(dishId, {
+            ...newItem,
+            image_url: finalImagePath,
+          });
+          setDishImageFile(null);
+        } catch (uploadError) {
+          console.error("Image upload failed:", uploadError);
+          toast.error("Ảnh món ăn cập nhật thất bại, nhưng món ăn đã được thêm");
+        }
+      }
 
       if (dishId && ingredientRows.length > 0) {
         const validIngredients = ingredientRows.filter(
@@ -262,6 +275,8 @@ export function MenuPromotionPage() {
       setIngredientRows([{ ingredientId: "", quantity: 0 }]);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Lỗi khi thêm món ăn");
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -294,36 +309,9 @@ export function MenuPromotionPage() {
     }
 
     let imageUrl =
-      menuForm.image ||
-      (editingDish.image_url
+      editingDish.image_url
         ? buildImageUrl(editingDish.image_url)
-        : PLACEHOLDER_IMAGE);
-    if (
-      menuForm.image &&
-      menuForm.image !==
-        (editingDish.image_url
-          ? buildImageUrl(editingDish.image_url)
-          : PLACEHOLDER_IMAGE) &&
-      menuForm.image !== PLACEHOLDER_IMAGE
-    ) {
-      try {
-        const fullUrl = buildImageUrl(menuForm.image);
-        const isValid = await validateImageUrl(fullUrl);
-        if (!isValid) {
-          console.warn(
-            "Uploaded image URL is not accessible, using existing image"
-          );
-          imageUrl = editingDish.image_url
-            ? buildImageUrl(editingDish.image_url)
-            : PLACEHOLDER_IMAGE;
-        }
-      } catch (error) {
-        console.warn("Failed to validate image URL:", error);
-        imageUrl = editingDish.image_url
-          ? buildImageUrl(editingDish.image_url)
-          : PLACEHOLDER_IMAGE;
-      }
-    }
+        : PLACEHOLDER_IMAGE;
 
     const updateData = {
       name: menuForm.name,
@@ -334,7 +322,31 @@ export function MenuPromotionPage() {
     };
 
     try {
+      setUploadingImage(true);
       await updateDish(editingDish.id, updateData);
+
+      if (dishImageFile) {
+        try {
+          const uploadedUrl = await uploadDishImage(dishImageFile, editingDish.id);
+          let finalImagePath = PLACEHOLDER_IMAGE;
+          
+          if (uploadedUrl && uploadedUrl.trim()) {
+            const isValidUrl = await validateImageUrl(uploadedUrl);
+            if (isValidUrl) {
+              finalImagePath = extractRelativePath(uploadedUrl);
+            }
+          }
+          
+          await updateDish(editingDish.id, {
+            ...updateData,
+            image_url: finalImagePath,
+          });
+          setDishImageFile(null);
+        } catch (uploadError) {
+          console.error("Image upload failed:", uploadError);
+          toast.error("Ảnh món ăn cập nhật thất bại, nhưng thông tin đã được lưu");
+        }
+      }
 
       if (ingredientRows.length > 0) {
         const validIngredients = ingredientRows.filter(
@@ -381,6 +393,8 @@ export function MenuPromotionPage() {
       toast.error(
         err instanceof Error ? err.message : "Lỗi khi cập nhật món ăn"
       );
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -735,12 +749,21 @@ export function MenuPromotionPage() {
   }, [apiDishes]);
 
   const filteredMenuItems = apiDishes
-    .map((item) => ({
-      ...item,
-      image_url: item.image_url
-        ? buildImageUrl(item.image_url)
-        : PLACEHOLDER_IMAGE,
-    }))
+    .map((item) => {
+      let imageUrl = PLACEHOLDER_IMAGE;
+      if (item.image_url) {
+        try {
+          imageUrl = buildImageUrl(item.image_url);
+        } catch (err) {
+          console.warn("Invalid image URL for dish:", item.id, err);
+          imageUrl = PLACEHOLDER_IMAGE;
+        }
+      }
+      return {
+        ...item,
+        image_url: imageUrl,
+      };
+    })
     .filter((item) => {
       const matchesSearch = item.name
         .toLowerCase()
@@ -922,7 +945,7 @@ export function MenuPromotionPage() {
                                 newSrc
                               );
                               img.src = newSrc;
-                            }, 1000 * (retryCount + 1));
+                            }, 1000);
                           } else {
                             console.log(
                               "[GRID] Fallback to placeholder after retries"
@@ -1207,6 +1230,7 @@ export function MenuPromotionPage() {
         isOpen={showAddMenuModal}
         onClose={() => {
           setShowAddMenuModal(false);
+          setDishImageFile(null);
           setMenuForm({
             id: "",
             name: "",
@@ -1264,7 +1288,7 @@ export function MenuPromotionPage() {
                           newSrc
                         );
                         img.src = newSrc;
-                      }, 1000 * (retryCount + 1));
+                      }, 1000);
                     } else {
                       console.log(
                         "[ADD MODAL] Fallback to placeholder after retries"
@@ -1292,14 +1316,7 @@ export function MenuPromotionPage() {
                       input.onchange = (e: any) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          handleImageUpload(file).then((url) => {
-                            if (url) {
-                              setMenuForm({
-                                ...menuForm,
-                                image: url,
-                              });
-                            }
-                          });
+                          handleImageUpload(file);
                         }
                       };
                       input.click();
@@ -1328,14 +1345,7 @@ export function MenuPromotionPage() {
                   input.onchange = (e: any) => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      handleImageUpload(file).then((url) => {
-                        if (url) {
-                          setMenuForm({
-                            ...menuForm,
-                            image: url,
-                          });
-                        }
-                      });
+                      handleImageUpload(file);
                     }
                   };
                   input.click();
@@ -1493,7 +1503,10 @@ export function MenuPromotionPage() {
             <Button
               variant="secondary"
               fullWidth
-              onClick={() => setShowAddMenuModal(false)}
+              onClick={() => {
+                setShowAddMenuModal(false);
+                setDishImageFile(null);
+              }}
               disabled={uploadingImage}
             >
               Hủy
@@ -1941,6 +1954,7 @@ export function MenuPromotionPage() {
         isOpen={showEditMenuModal}
         onClose={() => {
           setShowEditMenuModal(false);
+          setDishImageFile(null);
           setEditingDish(null);
           setMenuForm({
             id: "",
@@ -1999,7 +2013,7 @@ export function MenuPromotionPage() {
                           newSrc
                         );
                         img.src = newSrc;
-                      }, 1000 * (retryCount + 1));
+                      }, 1000);
                     } else {
                       console.log(
                         "[EDIT MODAL] Fallback to placeholder after retries"
@@ -2027,14 +2041,7 @@ export function MenuPromotionPage() {
                       input.onchange = (e: any) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          handleImageUpload(file).then((url) => {
-                            if (url) {
-                              setMenuForm({
-                                ...menuForm,
-                                image: url,
-                              });
-                            }
-                          });
+                          handleImageUpload(file);
                         }
                       };
                       input.click();
@@ -2063,14 +2070,7 @@ export function MenuPromotionPage() {
                   input.onchange = (e: any) => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      handleImageUpload(file).then((url) => {
-                        if (url) {
-                          setMenuForm({
-                            ...menuForm,
-                            image: url,
-                          });
-                        }
-                      });
+                      handleImageUpload(file);
                     }
                   };
                   input.click();
@@ -2227,7 +2227,10 @@ export function MenuPromotionPage() {
               <Button
                 variant="secondary"
                 fullWidth
-                onClick={() => setShowEditMenuModal(false)}
+                onClick={() => {
+                setShowEditMenuModal(false);
+                setDishImageFile(null);
+              }}
                 disabled={uploadingImage}
               >
                 Hủy

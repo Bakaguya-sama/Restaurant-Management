@@ -31,15 +31,14 @@ exports.getIngredientById = async (req, res) => {
 
 exports.createIngredient = async (req, res) => {
   try {
-    const { name, unit, quantity_in_stock, minimum_quantity, unit_price, supplier_name, supplier_contact, expiry_date, stock_status, expiry_status } = req.body;
+    const { name, unit, quantity_in_stock, minimum_quantity, unit_price, supplier_id, expiry_date, stock_status, expiry_status } = req.body;
     const ingredient = await ingredientService.createIngredient({
       name,
       unit,
       quantity_in_stock,
       minimum_quantity,
       unit_price,
-      supplier_name,
-      supplier_contact,
+      supplier_id,
       expiry_date,
       stock_status,
       expiry_status,
@@ -54,15 +53,14 @@ exports.createIngredient = async (req, res) => {
 exports.updateIngredient = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, unit, quantity_in_stock, minimum_quantity, unit_price, supplier_name, supplier_contact, expiry_date, stock_status, expiry_status } = req.body;
+    const { name, unit, quantity_in_stock, minimum_quantity, unit_price, supplier_id, expiry_date, stock_status, expiry_status } = req.body;
     const ingredient = await ingredientService.updateIngredient(id, {
       name,
       unit,
       quantity_in_stock,
       minimum_quantity,
       unit_price,
-      supplier_name,
-      supplier_contact,
+      supplier_id,
       expiry_date,
       stock_status,
       expiry_status,
