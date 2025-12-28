@@ -43,12 +43,8 @@ export function BookingManagementPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log(`[BookingManagementPage] useEffect triggered, userProfile?.id: "${userProfile?.id}"`);
         if (userProfile?.id) {
-          console.log(`[BookingManagementPage] Calling fetchReservationsByCustomerId with: "${userProfile.id}"`);
           await fetchReservationsByCustomerId(userProfile.id);
-        } else {
-          console.warn(`[BookingManagementPage] userProfile?.id is falsy:`, userProfile);
         }
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : "Lỗi khi tải dữ liệu";

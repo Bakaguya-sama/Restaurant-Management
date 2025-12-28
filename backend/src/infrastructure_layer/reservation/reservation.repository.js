@@ -19,21 +19,10 @@ class ReservationRepository {
   }
 
   async findByCustomerId(customerId) {
-    console.log(`[ReservationRepository] findByCustomerId called with: "${customerId}" (type: ${typeof customerId})`);
-    const isValidObjectId = mongoose.Types.ObjectId.isValid(customerId);
-    console.log(`[ReservationRepository] isValidObjectId: ${isValidObjectId}`);
-    
-    const objectId = isValidObjectId 
+    const objectId = mongoose.Types.ObjectId.isValid(customerId) 
       ? new mongoose.Types.ObjectId(customerId)
       : customerId;
-    console.log(`[ReservationRepository] objectId to query: ${objectId}`);
-    
-    const result = await Reservation.find({ customer_id: objectId }).sort({ created_at: -1 });
-    console.log(`[ReservationRepository] Query result count: ${result.length}`);
-    if (result.length > 0) {
-      console.log(`[ReservationRepository] First result customer_id: ${result[0].customer_id}`);
-    }
-    return result;
+    return await Reservation.find({ customer_id: objectId }).sort({ created_at: -1 });
   }
 
   async findByTableId(tableId) {

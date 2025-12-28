@@ -29,6 +29,7 @@ export interface CreateInvoiceParams {
 
 export interface UpdateInvoiceParams {
   payment_method?: string;
+  points_used?: number;
   notes?: string;
 }
 
@@ -49,12 +50,23 @@ export const invoiceApi = {
   /**
    * Get all invoices with optional filtering and search
    */
-  getAll: async (params?: { status?: string; search?: string; start_date?: string; end_date?: string }) => {
+  getAll: async (params?: { 
+    status?: string; 
+    search?: string; 
+    start_date?: string; 
+    end_date?: string;
+    customer_id?: string;
+    payment_status?: string;
+    payment_method?: string;
+  }) => {
     const queryParams = new URLSearchParams();
     if (params?.status) queryParams.append('status', params.status);
+    if (params?.payment_status) queryParams.append('payment_status', params.payment_status);
     if (params?.search) queryParams.append('search', params.search);
     if (params?.start_date) queryParams.append('start_date', params.start_date);
     if (params?.end_date) queryParams.append('end_date', params.end_date);
+    if (params?.customer_id) queryParams.append('customer_id', params.customer_id);
+    if (params?.payment_method) queryParams.append('payment_method', params.payment_method);
 
     const response = await fetch(`${getApiBaseUrl()}/invoices?${queryParams}`);
     const result = await response.json();
@@ -63,7 +75,21 @@ export const invoiceApi = {
       throw new Error(result.message || 'Failed to fetch invoices');
     }
 
-    return result.data;
+    return result;
+  },
+
+  /**
+   * Get invoices by customer ID
+   */
+  getByCustomerId: async (customerId: string) => {
+    const response = await fetch(`${getApiBaseUrl()}/invoices?customer_id=${customerId}`);
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || 'Failed to fetch invoices for customer');
+    }
+
+    return result;
   },
 
   /**
@@ -170,12 +196,13 @@ export const invoiceApi = {
   /**
    * Mark invoice as paid
    */
-  markAsPaid: async (id: string) => {
+  markAsPaid: async (id: string, params?: { payment_method?: string }) => {
     const response = await fetch(`${getApiBaseUrl()}/invoices/${id}/paid`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify(params || {}),
     });
 
     const result = await response.json();
