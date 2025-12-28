@@ -203,6 +203,7 @@ export interface InventoryItem {
   quantity: number;
   unit: string;
   expiryDate?: string;
+  expiryStatus?: 'valid' | 'near_expiry' | 'expired';
   supplierId?: string;
   lastUpdated: string;
 }
