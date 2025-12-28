@@ -9,8 +9,7 @@ async function getAllIngredients() {
     quantity_in_stock: ing.quantity_in_stock,
     minimum_quantity: ing.minimum_quantity,
     unit_price: ing.unit_price,
-    supplier_name: ing.supplier_name,
-    supplier_contact: ing.supplier_contact,
+    supplier_id: ing.supplier_id,
     expiry_date: ing.expiry_date,
     stock_status: ing.stock_status,
     expiry_status: ing.expiry_status,
@@ -32,8 +31,7 @@ async function getIngredientById(id) {
     quantity_in_stock: ingredient.quantity_in_stock,
     minimum_quantity: ingredient.minimum_quantity,
     unit_price: ingredient.unit_price,
-    supplier_name: ingredient.supplier_name,
-    supplier_contact: ingredient.supplier_contact,
+    supplier_id: ingredient.supplier_id,
     expiry_date: ingredient.expiry_date,
     stock_status: ingredient.stock_status,
     expiry_status: ingredient.expiry_status,
@@ -52,6 +50,9 @@ async function createIngredient(data) {
   if (!data.unit_price && data.unit_price !== 0) {
     throw { status: 400, message: 'Ingredient unit_price is required' };
   }
+  if (!data.supplier_id) {
+    throw { status: 400, message: 'Ingredient supplier_id is required' };
+  }
   
   const existing = await ingredientRepo.findByName(data.name);
   if (existing) {
@@ -64,8 +65,7 @@ async function createIngredient(data) {
     quantity_in_stock: data.quantity_in_stock || 0,
     minimum_quantity: data.minimum_quantity || 0,
     unit_price: data.unit_price,
-    supplier_name: data.supplier_name,
-    supplier_contact: data.supplier_contact,
+    supplier_id: data.supplier_id,
     expiry_date: data.expiry_date,
     stock_status: data.stock_status,
     expiry_status: data.expiry_status,
@@ -78,8 +78,7 @@ async function createIngredient(data) {
     quantity_in_stock: ingredient.quantity_in_stock,
     minimum_quantity: ingredient.minimum_quantity,
     unit_price: ingredient.unit_price,
-    supplier_name: ingredient.supplier_name,
-    supplier_contact: ingredient.supplier_contact,
+    supplier_id: ingredient.supplier_id,
     expiry_date: ingredient.expiry_date,
     stock_status: ingredient.stock_status,
     expiry_status: ingredient.expiry_status,
@@ -107,8 +106,7 @@ async function updateIngredient(id, data) {
     quantity_in_stock: data.quantity_in_stock,
     minimum_quantity: data.minimum_quantity,
     unit_price: data.unit_price,
-    supplier_name: data.supplier_name,
-    supplier_contact: data.supplier_contact,
+    supplier_id: data.supplier_id,
     expiry_date: data.expiry_date,
     stock_status: data.stock_status,
     expiry_status: data.expiry_status,
@@ -121,8 +119,7 @@ async function updateIngredient(id, data) {
     quantity_in_stock: ingredient.quantity_in_stock,
     minimum_quantity: ingredient.minimum_quantity,
     unit_price: ingredient.unit_price,
-    supplier_name: ingredient.supplier_name,
-    supplier_contact: ingredient.supplier_contact,
+    supplier_id: ingredient.supplier_id,
     expiry_date: ingredient.expiry_date,
     stock_status: ingredient.stock_status,
     expiry_status: ingredient.expiry_status,

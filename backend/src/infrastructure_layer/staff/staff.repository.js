@@ -61,6 +61,10 @@ class StaffRepository {
   }
 
   async update(id, updateData) {
+    if (updateData.role) {
+      return await this.updateRole(id, updateData.role, updateData);
+    }
+    
     updateData.updated_at = new Date();
     const staff = await User.findByIdAndUpdate(
       id,
@@ -70,6 +74,56 @@ class StaffRepository {
     
     if (!staff || !['waiter', 'cashier', 'manager'].includes(staff.role)) return null;
     return new StaffEntity(staff.toObject());
+  }
+
+  async updateRole(id, newRole, additionalData = {}) {
+    if (!['waiter', 'cashier', 'manager'].includes(newRole)) {
+      throw new Error('Invalid role. Must be waiter, cashier, or manager');
+    }
+
+    const existingStaff = await User.findById(id);
+    if (!existingStaff || !['waiter', 'cashier', 'manager'].includes(existingStaff.role)) {
+      throw new Error('Staff not found');
+    }
+
+    if (existingStaff.role === newRole) {
+      if (Object.keys(additionalData).length > 0) {
+        delete additionalData.role;
+        additionalData.updated_at = new Date();
+        const updated = await User.findByIdAndUpdate(
+          id,
+          additionalData,
+          { new: true, runValidators: true }
+        ).select('-password_hash');
+        return new StaffEntity(updated.toObject());
+      }
+      return new StaffEntity(existingStaff.toObject());
+    }
+
+    const staffData = existingStaff.toObject();
+    delete staffData._id;
+    delete staffData.__v;
+    delete staffData.__t;
+    
+    staffData.role = newRole;
+    staffData.updated_at = new Date();
+    
+    Object.keys(additionalData).forEach(key => {
+      if (key !== 'role' && additionalData[key] !== undefined) {
+        staffData[key] = additionalData[key];
+      }
+    });
+
+    await User.findByIdAndDelete(id);
+
+    const NewModel = this.getModelByRole(newRole);
+    const newStaff = new NewModel({
+      _id: existingStaff._id,
+      ...staffData
+    });
+    
+    const savedStaff = await newStaff.save();
+    return new StaffEntity(savedStaff.toObject());
   }
 
   async delete(id) {

@@ -1,4 +1,5 @@
 import { InventoryItem, Supplier } from "../types";
+import { getApiBaseUrl } from "./apiConfig";
 
 // ==================== TYPE DEFINITIONS ====================
 
@@ -42,8 +43,8 @@ export interface ExportItemsParams {
 
 // ==================== API CONFIGURATION ====================
 
-const API_BASE =
-  (import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:5000/api/v1";
+// API base URL is now dynamically determined from apiConfig
+// Falls back to localhost:5000 if not configured
 
 // ==================== UTILITY FUNCTIONS ====================
 
@@ -83,7 +84,7 @@ export function mapSupplierDTOToSupplier(supplier: SupplierDTO): Supplier {
  * Fetch inventory items from backend API
  */
 export async function fetchInventory(): Promise<InventoryItem[]> {
-  const response = await fetch(`${API_BASE}/inventory`);
+  const response = await fetch(`${getApiBaseUrl()}/inventory`);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch inventory: ${response.status}`);
@@ -99,7 +100,7 @@ export async function fetchInventory(): Promise<InventoryItem[]> {
  * Fetch suppliers from backend API
  */
 export async function fetchSuppliers(): Promise<Supplier[]> {
-  const response = await fetch(`${API_BASE}/suppliers`);
+  const response = await fetch(`${getApiBaseUrl()}/suppliers`);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch suppliers: ${response.status}`);
@@ -117,7 +118,7 @@ export async function fetchSuppliers(): Promise<Supplier[]> {
 export async function importInventoryItems(
   params: ImportItemsParams
 ): Promise<void> {
-  const response = await fetch(`${API_BASE}/inventory/import`, {
+  const response = await fetch(`${getApiBaseUrl()}/inventory/import`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -137,7 +138,7 @@ export async function importInventoryItems(
 export async function exportInventoryItems(
   params: ExportItemsParams
 ): Promise<void> {
-  const response = await fetch(`${API_BASE}/inventory/export`, {
+  const response = await fetch(`${getApiBaseUrl()}/inventory/export`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -172,7 +173,7 @@ export interface ExportOrderDTO {
 }
 
 export async function fetchExportHistory(): Promise<ExportOrderDTO[]> {
-  const response = await fetch(`${API_BASE}/inventory/exports`);
+  const response = await fetch(`${getApiBaseUrl()}/inventory/exports`);
   if (!response.ok) {
     throw new Error(`Failed to fetch export history: ${response.status}`);
   }
@@ -192,7 +193,7 @@ export async function updateInventoryItem(
     supplierId?: string;
   }
 ): Promise<void> {
-  const response = await fetch(`${API_BASE}/inventory/${id}`, {
+  const response = await fetch(`${getApiBaseUrl()}/inventory/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -214,7 +215,7 @@ export async function createSupplier(supplier: {
   phone: string;
   address: string;
 }): Promise<Supplier> {
-  const response = await fetch(`${API_BASE}/suppliers`, {
+  const response = await fetch(`${getApiBaseUrl()}/suppliers`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -242,7 +243,7 @@ export async function updateSupplier(
   id: string,
   supplier: { name: string; phone: string; address: string }
 ): Promise<void> {
-  const response = await fetch(`${API_BASE}/suppliers/${id}`, {
+  const response = await fetch(`${getApiBaseUrl()}/suppliers/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -264,7 +265,7 @@ export async function updateSupplier(
  * Delete supplier
  */
 export async function deleteSupplier(id: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/suppliers/${id}`, {
+  const response = await fetch(`${getApiBaseUrl()}/suppliers/${id}`, {
     method: "DELETE",
   });
 

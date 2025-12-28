@@ -22,6 +22,7 @@ import { Badge } from "../../ui/badge";
 import { toast } from "sonner";
 import { invoiceApi, promotionApi } from "../../../lib/api";
 import { customerApi } from "../../../lib/customerApi";
+import { authService } from "../../../lib/authService";
 
 export function InvoicesPage() {
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
@@ -38,25 +39,44 @@ export function InvoicesPage() {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [promotions, setPromotions] = useState<any[]>([]);
   const [loadingPromotions, setLoadingPromotions] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchInvoices();
     fetchPromotions();
   }, []);
 
+  useEffect(() => {
+    const loadCurrentUser = async () => {
+      try {
+        const response = await authService.getCurrentUser();
+        const userId = response.data.id || response.data._id;
+        setCurrentUserId(userId);
+      } catch (error) {
+        console.error('Error getting current user:', error);
+      }
+    };
+    loadCurrentUser();
+  }, []);
+
   // When selectedInvoice changes, fetch customer's current points
   useEffect(() => {
     const loadCustomerPoints = async () => {
       if (!selectedInvoice || !selectedInvoice.customerId) {
+        console.log('No selected invoice or customer ID:', selectedInvoice);
         setCustomerPoints(null);
         setCashierPointsToUse("");
         return;
       }
 
+      console.log('Loading points for customer ID:', selectedInvoice.customerId);
+
       try {
         const res: any = await customerApi.getById(selectedInvoice.customerId);
+        console.log('Customer data received:', res);
         if (res && res.data) {
           setCustomerPoints(res.data.points || 0);
+          console.log('Customer points set to:', res.data.points || 0);
         } else {
           setCustomerPoints(0);
         }
@@ -83,12 +103,19 @@ export function InvoicesPage() {
             price: item.unit_price || item.dish_id?.price || 0,
           })) || [];
 
+        // Extract customer ID từ populated object hoặc string
+        const getCustomerId = () => {
+          if (!invoice.customer_id) return null;
+          if (typeof invoice.customer_id === 'string') return invoice.customer_id;
+          return invoice.customer_id._id || invoice.customer_id.id || null;
+        };
+
         return {
           id: invoice.id,
           tableId: invoice.order_id?.table_id || "",
           tableNumber: invoice.order_id?.table?.table_number || "N/A",
-          customerId: invoice.customer_id,
-          customerName: invoice.customer?.full_name || "Khách hàng",
+          customerId: getCustomerId(),
+          customerName: invoice.customer_id?.full_name || invoice.customer?.full_name || "Khách hàng",
           items,
           subtotal: invoice.subtotal || 0,
           tax: invoice.tax || 0,
@@ -274,6 +301,9 @@ export function InvoicesPage() {
 
     const pointsEarned = Math.floor(totalAmount / 10000) * 10;
 
+    // Get points used from selectedInvoice
+    const pointsUsed = selectedInvoice.customerSelectedPoints || 0;
+
     // Map payment method to backend format
     const paymentMethodMap: { [key: string]: string } = {
       cash: 'cash',
@@ -282,12 +312,20 @@ export function InvoicesPage() {
     };
 
     try {
-      // Send promotion_id if cashier selected one
+      // First, update invoice with current staff_id if not already set
+      if (!selectedInvoice.staff_id || selectedInvoice.staff_id !== currentUserId) {
+        await invoiceApi.update(selectedInvoice.id, {
+          staff_id: currentUserId
+        });
+      }
+
+      // Then mark as paid
       const promotionId = cashierSelectedPromotion?.id || null;
       await invoiceApi.markAsPaid(
         selectedInvoice.id, 
         paymentMethodMap[paymentMethod] || 'cash',
-        promotionId
+        promotionId,
+        pointsUsed
       );
       await fetchInvoices();
 

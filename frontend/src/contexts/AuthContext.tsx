@@ -1,25 +1,32 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { UserRole } from "../types";
+import { authService } from "../lib/authService";
 
 interface UserProfile {
+  id: string;
   name: string;
   email: string;
   phone: string;
   address?: string;
   role: UserRole;
+  membership_level?: string;
+  points?: number;
+  total_spent?: number;
+  isBanned?: boolean;
+  image_url?: string;
 }
 
 interface AuthContextType {
   isAuthenticated: boolean;
   userProfile: UserProfile | null;
-  login: (role: UserRole) => void;
-  logout: () => void;
+  login: (identifier: string, password: string, role?: UserRole) => Promise<UserProfile>;
+  logout: () => Promise<void>;
   updateProfile: (profile: Partial<UserProfile>) => void;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// LocalStorage keys
 const AUTH_STORAGE_KEY = "restaurant_auth";
 const USER_PROFILE_STORAGE_KEY = "restaurant_user_profile";
 
@@ -28,69 +35,95 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Restore authentication state from localStorage on mount
   useEffect(() => {
-    try {
-      const savedAuth = localStorage.getItem(AUTH_STORAGE_KEY);
-      const savedProfile = localStorage.getItem(USER_PROFILE_STORAGE_KEY);
+    const initAuth = async () => {
+      try {
+        const accessToken = authService.getAccessToken();
+        const savedProfile = localStorage.getItem(USER_PROFILE_STORAGE_KEY);
 
-      if (savedAuth === "true" && savedProfile) {
-        setIsAuthenticated(true);
-        setUserProfile(JSON.parse(savedProfile));
+        if (accessToken && savedProfile) {
+          try {
+            const response = await authService.getCurrentUser();
+            const user = response.data;
+            
+            const profile: UserProfile = {
+              id: user.id,
+              name: user.full_name,
+              email: user.email,
+              phone: user.phone,
+              address: user.address,
+              role: user.role,
+              membership_level: user.membership_level,
+              points: user.points,
+              total_spent: user.total_spent,
+              isBanned: user.isBanned,
+              image_url: user.image_url
+            };
+
+            setUserProfile(profile);
+            setIsAuthenticated(true);
+            localStorage.setItem(AUTH_STORAGE_KEY, "true");
+            localStorage.setItem(USER_PROFILE_STORAGE_KEY, JSON.stringify(profile));
+          } catch (error) {
+            authService.clearTokens();
+            localStorage.removeItem(AUTH_STORAGE_KEY);
+            localStorage.removeItem(USER_PROFILE_STORAGE_KEY);
+          }
+        }
+      } catch (error) {
+        console.error("Error restoring auth state:", error);
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        localStorage.removeItem(USER_PROFILE_STORAGE_KEY);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Error restoring auth state:", error);
-      // Clear invalid data
-      localStorage.removeItem(AUTH_STORAGE_KEY);
-      localStorage.removeItem(USER_PROFILE_STORAGE_KEY);
-    } finally {
-      setIsLoading(false);
-    }
+    };
+
+    initAuth();
   }, []);
 
-  const login = (role: UserRole) => {
-    setIsAuthenticated(true);
+  const login = async (identifier: string, password: string, role?: UserRole) => {
+    try {
+      const response = await authService.login({ identifier, password, role });
+      const { accessToken, refreshToken, user } = response.data;
 
-    // Mock user profile based on role
-    // TEST BLACKLIST: Switch between customers to test different scenarios
+      authService.setTokens(accessToken, refreshToken);
 
-    // Option 1: Normal customer (NOT blacklisted) - C001
-    const customerProfile = {
-      name: "Nguyễn Văn An",
-      email: "an.nguyen@email.com",
-      phone: "0912345678",
-    };
+      const profile: UserProfile = {
+        id: user.id,
+        name: user.full_name,
+        email: user.email,
+        phone: user.phone,
+        address: user.address,
+        role: user.role,
+        membership_level: user.membership_level,
+        points: user.points,
+        total_spent: user.total_spent,
+        isBanned: user.isBanned,
+        image_url: user.image_url
+      };
 
-    // Option 2: Blacklisted customer - C002
-    // const customerProfile = {
-    //   name: "Trần Thị Bình",
-    //   email: "binh.tran@email.com",
-    //   phone: "0987654321",
-    // };
+      setUserProfile(profile);
+      setIsAuthenticated(true);
 
-    const profile: UserProfile = {
-      name: role === "customer" ? customerProfile.name : "Nhân viên",
-      email:
-        role === "customer" ? customerProfile.email : "staff@restaurant.com",
-      phone: role === "customer" ? customerProfile.phone : "0123456789",
-      role,
-      address: role === "customer" ? undefined : "123 Đường ABC, Hà Nội",
-    };
-
-    setUserProfile(profile);
-
-    // Persist to localStorage
-    localStorage.setItem(AUTH_STORAGE_KEY, "true");
-    localStorage.setItem(USER_PROFILE_STORAGE_KEY, JSON.stringify(profile));
+      localStorage.setItem(AUTH_STORAGE_KEY, "true");
+      localStorage.setItem(USER_PROFILE_STORAGE_KEY, JSON.stringify(profile));
+      
+      return profile;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Login failed');
+    }
   };
 
-  const logout = () => {
-    setIsAuthenticated(false);
-    setUserProfile(null);
-
-    // Clear localStorage
-    localStorage.removeItem(AUTH_STORAGE_KEY);
-    localStorage.removeItem(USER_PROFILE_STORAGE_KEY);
+  const logout = async () => {
+    try {
+      await authService.logout();
+    } finally {
+      setIsAuthenticated(false);
+      setUserProfile(null);
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      localStorage.removeItem(USER_PROFILE_STORAGE_KEY);
+    }
   };
 
   const updateProfile = (profile: Partial<UserProfile>) => {
@@ -98,7 +131,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const updatedProfile = { ...userProfile, ...profile };
       setUserProfile(updatedProfile);
 
-      // Update localStorage
       localStorage.setItem(
         USER_PROFILE_STORAGE_KEY,
         JSON.stringify(updatedProfile)
@@ -106,7 +138,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Show loading state while restoring auth
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -126,6 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         logout,
         updateProfile,
+        isLoading,
       }}
     >
       {children}

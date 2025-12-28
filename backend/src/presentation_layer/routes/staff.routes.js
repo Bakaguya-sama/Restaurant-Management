@@ -22,4 +22,6 @@ router.patch('/:id/deactivate', (req, res) => staffController.deactivateStaff(re
 
 router.patch('/:id/activate', (req, res) => staffController.activateStaff(req, res));
 
+router.patch('/:id/role', (req, res) => staffController.updateStaffRole(req, res));
+
 module.exports = router;

@@ -69,7 +69,32 @@ class StaffService {
       delete updateData.password;
     }
 
+    if (updateData.role) {
+      const validRoles = ['waiter', 'cashier', 'manager'];
+      if (!validRoles.includes(updateData.role)) {
+        throw new Error('Invalid role. Must be waiter, cashier, or manager');
+      }
+    }
+
     return await this.staffRepository.update(id, updateData);
+  }
+
+  async updateStaffRole(id, newRole) {
+    const validRoles = ['waiter', 'cashier', 'manager'];
+    if (!validRoles.includes(newRole)) {
+      throw new Error('Invalid role. Must be waiter, cashier, or manager');
+    }
+
+    const existingStaff = await this.staffRepository.findById(id);
+    if (!existingStaff) {
+      throw new Error('Staff not found');
+    }
+
+    if (existingStaff.role === newRole) {
+      return existingStaff;
+    }
+
+    return await this.staffRepository.updateRole(id, newRole);
   }
 
   async deleteStaff(id) {

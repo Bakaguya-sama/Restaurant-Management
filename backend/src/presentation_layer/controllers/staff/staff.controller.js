@@ -141,6 +141,32 @@ class StaffController {
     }
   }
 
+  async updateStaffRole(req, res) {
+    try {
+      const { role } = req.body;
+      
+      if (!role) {
+        return res.status(400).json({
+          success: false,
+          message: 'Role is required'
+        });
+      }
+
+      const staff = await this.staffService.updateStaffRole(req.params.id, role);
+      
+      res.status(200).json({
+        success: true,
+        data: staff,
+        message: 'Role updated successfully'
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
   async loginStaff(req, res) {
     try {
       const { username, password } = req.body;

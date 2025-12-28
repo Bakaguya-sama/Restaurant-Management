@@ -17,11 +17,13 @@ import { Modal } from "../ui/Modal";
 import { Badge } from "../ui/badge";
 import { Textarea } from "../ui/textarea";
 import { Input } from "../ui/Input";
-import { mockPromotions } from "../../lib/mockData";
 import { toast } from "sonner";
 import { invoiceApi } from "../../lib/invoiceApi";
 import { customerApi } from "../../lib/customerApi";
 import { ratingApi } from "../../lib/ratingApi";
+import { promotionApi } from "../../lib/promotionApi";
+import { authService } from "../../lib/authService";
+import { Promotion } from "../../types";
 
 export function BillsPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -39,6 +41,7 @@ export function BillsPage() {
   const [allBills, setAllBills] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [customerId, setCustomerId] = useState<string | null>(null);
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
 
   const customerPoints = 1500;
 
@@ -46,34 +49,32 @@ export function BillsPage() {
     try {
       setLoading(true);
       
-      const customersResponse = await customerApi.getAll({ isBanned: false });
-      if (!customersResponse.success || customersResponse.data.length === 0) {
-        toast.error("Không tìm thấy khách hàng");
+      const response = await authService.getCurrentUser();
+      const currentUserId = response.data.id || response.data._id;
+      
+      if (!currentUserId) {
+        toast.error("Không thể xác định người dùng hiện tại");
         setLoading(false);
         return;
       }
 
-      const firstCustomer = customersResponse.data[0];
-      const customerId = (firstCustomer as any)._id || firstCustomer.id;
-      setCustomerId(customerId);
+      setCustomerId(currentUserId);
 
-      const response = await invoiceApi.getAll({ 
-        customer_id: customerId 
-      });
+      const invoicesResponse = await invoiceApi.getByCustomerId(currentUserId);
       
-      if (!response.success || !response.data) {
+      if (!invoicesResponse.success || !invoicesResponse.data) {
         setAllBills([]);
         setLoading(false);
         return;
       }
 
-      // Lấy ratings và replies của customer
+      
       let customerRating = null;
       let ratingReply = null;
       try {
-        const ratingsResponse = await ratingApi.getAll({ customer_id: customerId });
+        const ratingsResponse = await ratingApi.getAll({ customer_id: currentUserId });
         if (ratingsResponse.success && ratingsResponse.data && ratingsResponse.data.length > 0) {
-          // Lấy rating mới nhất
+          
           const ratings = ratingsResponse.data;
           customerRating = ratings.sort((a: any, b: any) => {
             const dateA = new Date(a.rating_date || a.created_at).getTime();
@@ -81,7 +82,7 @@ export function BillsPage() {
             return dateB - dateA;
           })[0];
 
-          // Lấy reply của rating này (nếu có)
+          
           const ratingId = (customerRating as any)._id || customerRating.id;
           const repliesResponse = await ratingApi.getReplies(ratingId);
           if (repliesResponse.success && repliesResponse.data && repliesResponse.data.length > 0) {
@@ -92,12 +93,19 @@ export function BillsPage() {
         console.error("Error fetching ratings/replies:", error);
       }
       
-      const transformedBills = response.data.map((invoice: any) => {
+      const transformedBills = invoicesResponse.data.map((invoice: any) => {
         const invoiceObj = invoice._id ? invoice : invoice;
         const orderItems = invoiceObj.order_id?.items || [];
+        const invoiceId = invoiceObj._id || invoiceObj.id;
+        
+        // Calculate discount breakdown
+        const totalDiscount = invoiceObj.discount_amount || 0;
+        const pointsUsed = invoiceObj.points_used || 0;
+        const pointsDiscount = pointsUsed * 1; // 1 point = 1 in currency
+        const voucherDiscount = Math.max(0, totalDiscount - pointsDiscount);
         
         return {
-          id: invoiceObj.invoice_number || invoiceObj._id,
+          id: invoiceObj.invoice_number || invoiceId,
           date: new Date(invoiceObj.created_at).toISOString().split("T")[0],
           time: new Date(invoiceObj.created_at).toLocaleTimeString("vi-VN", {
             hour: "2-digit",
@@ -113,19 +121,19 @@ export function BillsPage() {
           })),
           subtotal: invoiceObj.subtotal,
           tax: invoiceObj.tax,
-          discount: 0,
-          voucherDiscount: invoiceObj.discount_amount || 0,
-          pointsDiscount: 0,
+          discount: totalDiscount, // Total discount for display
+          voucherDiscount: voucherDiscount, // Voucher portion
+          pointsDiscount: pointsDiscount, // Points portion
           total: invoiceObj.total_amount,
           status: invoiceObj.payment_status,
           createdAt: invoiceObj.created_at,
           voucherCode: null,
           voucherUsed: null,
-          pointsUsed: 0,
+          pointsUsed: pointsUsed,
           paymentMethod: invoiceObj.payment_method,
           orderId: invoiceObj.order_id?._id,
-          invoiceId: invoiceObj._id,
-          // Gắn rating và reply vào tất cả hóa đơn đã thanh toán
+          invoiceId: invoiceId,
+          
           feedback: invoiceObj.payment_status === 'paid' && customerRating ? customerRating.description : null,
           feedbackReply: invoiceObj.payment_status === 'paid' && ratingReply ? ratingReply.reply_text : null,
           feedbackReplyDate: invoiceObj.payment_status === 'paid' && ratingReply ? ratingReply.reply_date : null,
@@ -143,44 +151,66 @@ export function BillsPage() {
 
   useEffect(() => {
     fetchInvoices();
+    fetchPromotions();
   }, []);
 
+  const fetchPromotions = async () => {
+    try {
+      const response = await promotionApi.getAll();
+      if (response.success && response.data) {
+        setPromotions(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching promotions:", error);
+      
+    }
+  };
+
   const handleApplyVoucher = () => {
-    const voucher = mockPromotions.find(
-      (p) => p.code === voucherCode && p.active
+    const voucher = promotions.find(
+      (p) => p.promo_code?.toUpperCase() === voucherCode.toUpperCase() && p.is_active
     );
     if (voucher) {
-      // Check if promotion has available quantity
-      if (
-        voucher.promotionQuantity !== undefined &&
-        voucher.promotionQuantity <= 0
-      ) {
+      
+      const availableUses = (voucher.max_uses || 0) - (voucher.current_uses || 0);
+      if (availableUses <= 0) {
         toast.error("Đã hết lượt sử dụng cho mã khuyến mãi này");
         return;
       }
 
-      let discount = 0;
-      if (voucher.discountType === "percentage") {
-        discount = Math.floor(
-          (currentBill.subtotal + currentBill.tax) *
-            (voucher.discountValue / 100)
+      
+      const orderTotal = selectedBill.subtotal + selectedBill.tax;
+      if (voucher.minimum_order_amount && orderTotal < voucher.minimum_order_amount) {
+        toast.error(`Đơn hàng phải từ ${voucher.minimum_order_amount.toLocaleString()}đ`);
+        return;
+      }
+
+      let voucherDiscount = 0;
+      if (voucher.promotion_type === "percentage") {
+        voucherDiscount = Math.floor(
+          (selectedBill.subtotal + selectedBill.tax) *
+            (voucher.discount_value / 100)
         );
       } else {
-        discount = voucher.discountValue;
+        voucherDiscount = voucher.discount_value;
       }
 
       setAppliedVoucher(voucher);
       const updatedBills = [...allBills];
       const billIndex = updatedBills.findIndex((b) => b.id === selectedBill.id);
+      
+      
+      const totalDiscount = voucherDiscount + updatedBills[billIndex].pointsDiscount;
+      
       updatedBills[billIndex] = {
         ...updatedBills[billIndex],
-        voucherDiscount: discount,
-        voucherCode: voucher.code as any,
+        voucherDiscount: voucherDiscount,
+        voucherCode: voucher.promo_code,
+        discount: totalDiscount, 
         total:
           updatedBills[billIndex].subtotal +
           updatedBills[billIndex].tax -
-          discount -
-          updatedBills[billIndex].pointsDiscount,
+          totalDiscount,
       };
       setAllBills(updatedBills);
       setSelectedBill(updatedBills[billIndex]);
@@ -191,35 +221,47 @@ export function BillsPage() {
     }
   };
 
-  const handleSelectPromotion = (promo: any) => {
-    // Check if promotion has available quantity
-    if (promo.promotionQuantity !== undefined && promo.promotionQuantity <= 0) {
+  const handleSelectPromotion = (promo: Promotion) => {
+    
+    const availableUses = (promo.max_uses || 0) - (promo.current_uses || 0);
+    if (availableUses <= 0) {
       toast.error("Đã hết lượt sử dụng cho mã khuyến mãi này");
       return;
     }
 
-    let discount = 0;
-    if (promo.discountType === "percentage") {
-      discount = Math.floor(
-        (selectedBill.subtotal + selectedBill.tax) * (promo.discountValue / 100)
+    
+    const orderTotal = selectedBill.subtotal + selectedBill.tax;
+    if (promo.minimum_order_amount && orderTotal < promo.minimum_order_amount) {
+      toast.error(`Đơn hàng phải từ ${promo.minimum_order_amount.toLocaleString()}đ`);
+      return;
+    }
+
+    let voucherDiscount = 0;
+    if (promo.promotion_type === "percentage") {
+      voucherDiscount = Math.floor(
+        (selectedBill.subtotal + selectedBill.tax) * (promo.discount_value / 100)
       );
     } else {
-      discount = promo.discountValue;
+      voucherDiscount = promo.discount_value;
     }
 
     setAppliedVoucher(promo);
-    setVoucherCode(promo.code);
+    setVoucherCode(promo.promo_code || "");
     const updatedBills = [...allBills];
     const billIndex = updatedBills.findIndex((b) => b.id === selectedBill.id);
+    
+    
+    const totalDiscount = voucherDiscount + updatedBills[billIndex].pointsDiscount;
+    
     updatedBills[billIndex] = {
       ...updatedBills[billIndex],
-      voucherDiscount: discount,
-      voucherCode: promo.code,
+      voucherDiscount: voucherDiscount,
+      voucherCode: promo.promo_code,
+      discount: totalDiscount, 
       total:
         updatedBills[billIndex].subtotal +
         updatedBills[billIndex].tax -
-        discount -
-        updatedBills[billIndex].pointsDiscount,
+        totalDiscount,
     };
     setAllBills(updatedBills);
     setSelectedBill(updatedBills[billIndex]);
@@ -237,23 +279,27 @@ export function BillsPage() {
       return;
     }
 
-    const discount = pointsToUse; // 1000 points = 1000đ
+    const pointsDiscount = pointsToUse; // 1000 points = 1000đ
     const updatedBills = [...allBills];
     const billIndex = updatedBills.findIndex((b) => b.id === selectedBill.id);
+    
+    
+    const totalDiscount = updatedBills[billIndex].voucherDiscount + pointsDiscount;
+    
     updatedBills[billIndex] = {
       ...updatedBills[billIndex],
-      pointsDiscount: discount,
+      pointsDiscount: pointsDiscount,
       pointsUsed: pointsToUse,
+      discount: totalDiscount, 
       total:
         updatedBills[billIndex].subtotal +
         updatedBills[billIndex].tax -
-        updatedBills[billIndex].voucherDiscount -
-        discount,
+        totalDiscount,
     };
     setAllBills(updatedBills);
     setSelectedBill(updatedBills[billIndex]);
     toast.success(
-      `Đã quy đổi ${pointsToUse} điểm = ${discount.toLocaleString()}đ`
+      `Đã quy đổi ${pointsToUse} điểm = ${pointsDiscount.toLocaleString()}đ`
     );
   };
 
@@ -264,6 +310,7 @@ export function BillsPage() {
     }
 
     if (!selectedBill || !selectedBill.invoiceId) {
+      console.error("Selected bill:", selectedBill);
       toast.error("Không tìm thấy thông tin hóa đơn");
       return;
     }
@@ -276,18 +323,25 @@ export function BillsPage() {
         online: 'transfer',
       };
 
+      const mappedPaymentMethod = paymentMethodMap[paymentMethod];
+
+      
       await invoiceApi.update(selectedBill.invoiceId, {
-        payment_method: paymentMethodMap[paymentMethod],
+        payment_method: mappedPaymentMethod,
+        points_used: selectedBill.pointsUsed || 0,
       });
 
       if (paymentMethod === 'cash') {
         toast.success("Đã gửi yêu cầu thanh toán! Vui lòng chờ nhân viên xác nhận.");
       } else {
-        await invoiceApi.markAsPaid(selectedBill.invoiceId, paymentMethodMap[paymentMethod], null);
+        
+        await invoiceApi.markAsPaid(selectedBill.invoiceId, {
+          payment_method: mappedPaymentMethod,
+        });
         
         const updatedBills = allBills.map(bill => 
           bill.invoiceId === selectedBill.invoiceId 
-            ? { ...bill, status: 'paid', paymentMethod: paymentMethodMap[paymentMethod] }
+            ? { ...bill, status: 'paid', paymentMethod: mappedPaymentMethod }
             : bill
         );
         setAllBills(updatedBills);
@@ -296,7 +350,10 @@ export function BillsPage() {
       }
       
       setShowPaymentModal(false);
+      setSelectedBill(null);
       setPaymentMethod(null);
+      setPointsToUse(0);
+      setShowVoucherSection(false);
     } catch (error: any) {
       console.error("Payment error:", error);
       toast.error(error.message || "Thanh toán thất bại");
@@ -325,7 +382,7 @@ export function BillsPage() {
       setShowFeedbackModal(false);
       setFeedback("");
       
-      // Refresh bills để cập nhật feedback
+      
       await fetchInvoices();
     } catch (error: any) {
       console.error("Rating error:", error);
@@ -702,6 +759,7 @@ export function BillsPage() {
                                 ...updatedBills[billIndex],
                                 pointsDiscount: 0,
                                 pointsUsed: 0,
+                                discount: updatedBills[billIndex].voucherDiscount, 
                                 total:
                                   updatedBills[billIndex].subtotal +
                                   updatedBills[billIndex].tax -
@@ -744,15 +802,21 @@ export function BillsPage() {
                 <span>Thuế VAT (10%):</span>
                 <span>{selectedBill.tax.toLocaleString()}đ</span>
               </div>
-              {selectedBill.voucherDiscount > 0 && (
+              {selectedBill.discount > 0 && (
                 <div className="flex justify-between text-green-600">
-                  <span>Giảm giá (Voucher):</span>
+                  <span>Tổng giảm giá:</span>
+                  <span>-{selectedBill.discount.toLocaleString()}đ</span>
+                </div>
+              )}
+              {selectedBill.voucherDiscount > 0 && (
+                <div className="flex justify-between text-sm text-gray-500 ml-4">
+                  <span>Từ voucher:</span>
                   <span>-{selectedBill.voucherDiscount.toLocaleString()}đ</span>
                 </div>
               )}
               {selectedBill.pointsDiscount > 0 && (
-                <div className="flex justify-between text-green-600">
-                  <span>Giảm giá (Điểm):</span>
+                <div className="flex justify-between text-sm text-gray-500 ml-4">
+                  <span>Từ điểm:</span>
                   <span>-{selectedBill.pointsDiscount.toLocaleString()}đ</span>
                 </div>
               )}
@@ -826,43 +890,45 @@ export function BillsPage() {
               Hoặc chọn khuyến mãi có sẵn
             </label>
             <div className="space-y-3">
-              {mockPromotions
-                .filter(
-                  (p) =>
-                    p.active &&
-                    (p.promotionQuantity === undefined ||
-                      p.promotionQuantity > 0)
-                )
-                .map((promo) => (
-                  <div
-                    key={promo.id}
-                    onClick={() => handleSelectPromotion(promo)}
-                    className="p-4 border-2 rounded-lg hover:border-[#625EE8] cursor-pointer transition-all"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h4>{promo.name}</h4>
-                      <span className="px-3 py-1 bg-[#625EE8] text-white rounded-full text-sm">
-                        {promo.discountType === "percentage"
-                          ? `${promo.discountValue}%`
-                          : `${promo.discountValue.toLocaleString()}đ`}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-1">
-                      Mã: {promo.code}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-gray-500">
-                        HSD:{" "}
-                        {new Date(promo.endDate).toLocaleDateString("vi-VN")}
+              {promotions.length === 0 ? (
+                <p className="text-center text-gray-500 py-4">Không có khuyến mãi nào</p>
+              ) : (
+                promotions
+                  .filter((p) => p.is_active && ((p.max_uses || 0) - (p.current_uses || 0)) > 0)
+                  .map((promo) => (
+                    <div
+                      key={promo.id || promo._id}
+                      onClick={() => handleSelectPromotion(promo)}
+                      className="p-4 border-2 rounded-lg hover:border-[#625EE8] cursor-pointer transition-all"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <h4>{promo.name}</h4>
+                        <span className="px-3 py-1 bg-[#625EE8] text-white rounded-full text-sm">
+                          {promo.promotion_type === "percentage"
+                            ? `${promo.discount_value}%`
+                            : `${promo.discount_value.toLocaleString()}đ`}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-1">
+                        Mã: {promo.promo_code}
                       </p>
-                      {promo.promotionQuantity !== undefined && (
+                      <div className="flex items-center justify-between">
                         <p className="text-xs text-gray-500">
-                          Còn {promo.promotionQuantity} lượt
+                          HSD:{" "}
+                          {new Date(promo.end_date).toLocaleDateString("vi-VN")}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Còn {(promo.max_uses || 0) - (promo.current_uses || 0)} lượt
+                        </p>
+                      </div>
+                      {promo.minimum_order_amount > 0 && (
+                        <p className="text-xs text-gray-400 mt-2">
+                          Đơn tối thiểu: {promo.minimum_order_amount.toLocaleString()}đ
                         </p>
                       )}
                     </div>
-                  </div>
-                ))}
+                  ))
+              )}
             </div>
           </div>
         </div>

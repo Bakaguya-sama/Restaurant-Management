@@ -28,10 +28,13 @@ export const dishApi = {
 
   delete: (id: string) => apiClient.delete(`/dishes/${id}`),
 
-  toggleAvailability: (id: string, is_available: boolean, reason?: string) => {
+  toggleAvailability: (id: string, is_available: boolean, staffId?: string, reason?: string) => {
     const payload: any = { is_available };
     if (reason) {
       payload.reason = reason;
+    }
+    if (!is_available && staffId) {
+      payload.manual_unavailable_by = staffId;
     }
     return apiClient.patch<Dish>(`/dishes/${id}/availability`, payload);
   },

@@ -6,19 +6,31 @@ process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/
 const request = require('supertest');
 const mongoose = require('mongoose');
 const app = require('../../../server');
-const { Ingredient } = require('../../models');
+const { Ingredient, Supplier } = require('../../models');
 
 describe('Ingredient Integration Tests', () => {
+  let supplierId;
+
   beforeAll(async () => {
     if (mongoose.connection.readyState !== 1) {
       await new Promise((resolve) => mongoose.connection.once('open', resolve));
     }
 
     await Ingredient.deleteMany({});
+    await Supplier.deleteMany({});
+
+    // Create a test supplier
+    const supplier = await Supplier.create({
+      name: 'Test Supplier',
+      phone_contact: '0123456789',
+      address: '123 Test Street',
+    });
+    supplierId = supplier._id.toString();
   });
 
   afterAll(async () => {
     await Ingredient.deleteMany({});
+    await Supplier.deleteMany({});
     await mongoose.connection.close();
   });
 
@@ -30,8 +42,7 @@ describe('Ingredient Integration Tests', () => {
         quantity_in_stock: 10,
         minimum_quantity: 2,
         unit_price: 85000,
-        supplier_name: 'ABC Supplier',
-        supplier_contact: '0123456789',
+        supplier_id: supplierId,
         stock_status: 'available',
       };
       const res = await request(app).post('/api/v1/ingredients').send(payload);
@@ -48,6 +59,7 @@ describe('Ingredient Integration Tests', () => {
         name: 'Muối',
         unit: 'kg',
         unit_price: 15000,
+        supplier_id: supplierId,
       };
       const res = await request(app).post('/api/v1/ingredients').send(payload);
       expect(res.status).toBe(201);
@@ -60,6 +72,7 @@ describe('Ingredient Integration Tests', () => {
       const payload = {
         unit: 'kg',
         unit_price: 50000,
+        supplier_id: supplierId,
       };
       const res = await request(app).post('/api/v1/ingredients').send(payload);
       expect(res.status).toBe(400);
@@ -71,6 +84,7 @@ describe('Ingredient Integration Tests', () => {
       const payload = {
         name: 'Cà chua',
         unit_price: 25000,
+        supplier_id: supplierId,
       };
       const res = await request(app).post('/api/v1/ingredients').send(payload);
       expect(res.status).toBe(400);
@@ -82,6 +96,7 @@ describe('Ingredient Integration Tests', () => {
       const payload = {
         name: 'Dầu ô liu',
         unit: 'lít',
+        supplier_id: supplierId,
       };
       const res = await request(app).post('/api/v1/ingredients').send(payload);
       expect(res.status).toBe(400);
@@ -94,6 +109,7 @@ describe('Ingredient Integration Tests', () => {
         name: 'Hạt tiêu',
         unit: 'g',
         unit_price: 120000,
+        supplier_id: supplierId,
       };
       await request(app).post('/api/v1/ingredients').send(payload);
       const res = await request(app).post('/api/v1/ingredients').send(payload);
@@ -130,6 +146,7 @@ describe('Ingredient Integration Tests', () => {
         name: 'Test Ingredient',
         unit: 'kg',
         unit_price: 50000,
+        supplier_id: supplierId,
       });
       const id = createRes.body.data.id;
 
@@ -155,6 +172,7 @@ describe('Ingredient Integration Tests', () => {
         unit: 'kg',
         unit_price: 30000,
         quantity_in_stock: 5,
+        supplier_id: supplierId,
       });
       const id = createRes.body.data.id;
 
@@ -184,11 +202,13 @@ describe('Ingredient Integration Tests', () => {
         name: 'Ingredient1',
         unit: 'kg',
         unit_price: 50000,
+        supplier_id: supplierId,
       };
       const payload2 = {
         name: 'Ingredient2',
         unit: 'kg',
         unit_price: 60000,
+        supplier_id: supplierId,
       };
 
       const res1 = await request(app).post('/api/v1/ingredients').send(payload1);
@@ -211,6 +231,7 @@ describe('Ingredient Integration Tests', () => {
         unit: 'kg',
         unit_price: 25000,
         quantity_in_stock: 5,
+        supplier_id: supplierId,
       });
       const id = createRes.body.data.id;
 
@@ -228,6 +249,7 @@ describe('Ingredient Integration Tests', () => {
         unit: 'kg',
         unit_price: 30000,
         quantity_in_stock: 10,
+        supplier_id: supplierId,
       });
       const id = createRes.body.data.id;
 
@@ -243,6 +265,7 @@ describe('Ingredient Integration Tests', () => {
         name: 'Missing Qty Test',
         unit: 'kg',
         unit_price: 35000,
+        supplier_id: supplierId,
       });
       const id = createRes.body.data.id;
 
@@ -258,6 +281,7 @@ describe('Ingredient Integration Tests', () => {
         name: 'Negative Qty Test',
         unit: 'kg',
         unit_price: 40000,
+        supplier_id: supplierId,
       });
       const id = createRes.body.data.id;
 
@@ -275,6 +299,7 @@ describe('Ingredient Integration Tests', () => {
         name: 'Delete Test',
         unit: 'kg',
         unit_price: 45000,
+        supplier_id: supplierId,
       });
       const id = createRes.body.data.id;
 

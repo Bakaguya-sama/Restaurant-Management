@@ -213,9 +213,9 @@ export function StaffLayout() {
                 className="flex items-center gap-2 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors"
               >
                 <div className="w-8 h-8 bg-[#625EE8] rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm">NV</span>
+                  <span className="text-white text-sm">{userProfile?.name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'NV'}</span>
                 </div>
-                <span className="text-sm">Nhân viên</span>
+                <span className="text-sm">{userProfile?.name || 'Nhân viên'}</span>
                 <ChevronDown className="w-4 h-4 text-gray-600" />
               </button>
 

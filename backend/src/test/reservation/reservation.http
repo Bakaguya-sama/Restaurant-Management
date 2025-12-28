@@ -38,6 +38,7 @@ Content-Type: application/json
     { "table_id": "{{tableId}}" }
   ],
   "status": "pending",
+  "payment_method": "card",
   "special_requests": ""
 }
 

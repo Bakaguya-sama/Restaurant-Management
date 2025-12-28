@@ -79,6 +79,7 @@ const ReservationSchema = new Schema({
   reservation_checkout_time: { type: String, required: true }, // "20:00"
   number_of_guests: { type: Number, required: true },
   deposit_amount: { type: String, required: true }, // "200000"
+  payment_method: { type: String, enum: ['card', 'transfer'], required: true , default: 'card' },
   status: { type: String, enum: ['pending', 'confirmed', 'in_progress', 'cancelled', 'completed'], default: 'pending' },
   special_requests: String,
   created_at: { type: Date, default: Date.now },
@@ -120,8 +121,7 @@ const IngredientSchema = new Schema({
   quantity_in_stock: { type: Number, default: 0 },
   minimum_quantity: { type: Number, default: 0 },
   unit_price: { type: Number, required: true },
-  supplier_name: String,
-  supplier_contact: String,
+  supplier_id: { type: Schema.Types.ObjectId, ref: 'Supplier' },
   expiry_date: Date,
   stock_status: { type: String, enum: ['available', 'low_stock', 'out_of_stock'], default: 'available' },
   expiry_status: { type: String, enum: ['valid', 'near_expiry', 'expired'], default: 'valid' },
@@ -137,7 +137,6 @@ const StockImportSchema = new Schema({
   supplier_id: { type: Schema.Types.ObjectId, ref: 'Supplier' },
   import_date: { type: Date, default: Date.now },
   total_cost: { type: Number, default: 0 },
-  supplier_name: String,
   notes: String,
   status: { type: String, enum: ['pending', 'completed', 'cancelled'], default: 'pending' },
   created_at: { type: Date, default: Date.now }

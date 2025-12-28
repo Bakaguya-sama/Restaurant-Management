@@ -5,6 +5,7 @@ const path = require('path');
 const connectDB = require('./config/database');
 
 
+const authRouter = require('./src/presentation_layer/routes/auth.routes');
 const inventoryRouter = require('./src/presentation_layer/routes/inventory.routes');
 const ingredientsRouter = require('./src/presentation_layer/routes/ingredients.routes');
 const suppliersRouter = require('./src/presentation_layer/routes/supplier.routes');
@@ -61,6 +62,8 @@ app.get('/api/health', (req, res) => {
     uptime: process.uptime()
   });
 });
+
+app.use('/api/v1/auth', authRouter);
 
 app.use('/api/v1/inventory', inventoryRouter);
 app.use('/api/v1/ingredients', ingredientsRouter);

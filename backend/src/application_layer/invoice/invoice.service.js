@@ -81,18 +81,11 @@ class InvoiceService {
       }
     }
 
-    const taxRate = invoiceData.tax_rate || 0;
-    const totals = new InvoiceEntity({}).calculateTotals(
-      invoiceData.subtotal,
-      taxRate,
-      discountAmount
-    );
-
-    // Handle points (Dependency Inversion: service is injected)
+    
     let pointsUsed = invoiceData.points_used || 0;
     let pointsEarned = invoiceData.points_earned || 0;
 
-    // Validate and apply points if customer exists
+    
     if (invoiceData.customer_id) {
       if (pointsUsed > 0) {
         const pointsValidation = await this.pointsService.validatePointsForRedeeming(
@@ -102,13 +95,20 @@ class InvoiceService {
         if (!pointsValidation.isValid) {
           throw new Error(pointsValidation.message);
         }
+        discountAmount += pointsUsed;
       }
 
-      // Calculate points earned if not explicitly provided
       if (!invoiceData.points_earned) {
-        pointsEarned = this.pointsService.calculatePointsEarned(totals.total_amount);
+        pointsEarned = this.pointsService.calculatePointsEarned(invoiceData.subtotal + invoiceData.tax);
       }
     }
+
+    const taxRate = invoiceData.tax_rate || 0;
+    const totals = new InvoiceEntity({}).calculateTotals(
+      invoiceData.subtotal,
+      taxRate,
+      discountAmount
+    );
 
     const finalInvoiceData = {
       invoice_number: invoiceData.invoice_number,
@@ -187,7 +187,7 @@ class InvoiceService {
       throw new Error('Cannot apply promotion to cancelled invoice');
     }
 
-    // Validate promotion
+    
     const promotion = await this.promotionService.getPromotionById(promotionId);
     if (!promotion) {
       throw new Error('Promotion not found');
@@ -198,11 +198,11 @@ class InvoiceService {
       invoice.subtotal
     );
 
-    // Calculate new discount and total
+    
     let discountAmount = validation.discount_amount;
     const newTotal = invoice.subtotal + invoice.tax - discountAmount;
 
-    // Update invoice
+    
     const updateData = {
       discount_amount: discountAmount,
       total_amount: newTotal
@@ -210,7 +210,7 @@ class InvoiceService {
 
     const updatedInvoice = await this.invoiceRepository.update(id, updateData);
 
-    // Clear old promotions and add new one
+    
     await this.invoiceRepository.clearPromotions(id);
     await this.invoiceRepository.addPromotion(id, promotionId, discountAmount);
     await this.promotionService.incrementPromotionUses(promotionId);
@@ -218,7 +218,7 @@ class InvoiceService {
     return await this.invoiceRepository.findById(id);
   }
 
-  async markAsPaid(id, paymentMethod, promotionId = null) {
+  async markAsPaid(id, paymentMethod, promotionId = null, pointsUsed = 0) {
     const invoice = await this.invoiceRepository.findById(id);
     if (!invoice) {
       throw new Error('Invoice not found');
@@ -232,27 +232,90 @@ class InvoiceService {
       throw new Error('Cannot mark cancelled invoice as paid');
     }
 
-    // Apply points to customer when invoice is paid
-    if (invoice.customer_id && invoice.points_earned > 0) {
+    paymentMethod = paymentMethod || 'cash';
+
+    let discountAmount = invoice.discount_amount || 0;
+    let updatedPoints = pointsUsed || invoice.points_used || 0;
+
+   
+    if (promotionId) {
+      const promotion = await this.promotionService.getPromotionById(promotionId);
+      if (!promotion) {
+        throw new Error('Promotion not found');
+      }
+
+      if (promotion.max_uses !== -1 && promotion.current_uses >= promotion.max_uses) {
+        throw new Error('Promotion has reached maximum uses');
+      }
+
+      const validation = await this.promotionService.validatePromoCode(
+        promotion.promo_code,
+        invoice.subtotal
+      );
+
+      discountAmount = validation.discount_amount;
+
+      await this.invoiceRepository.addPromotion(id, promotionId, discountAmount);
+      await this.promotionService.incrementPromotionUses(promotionId);
+    }
+
+    
+    if (updatedPoints > 0) {
+      if (invoice.customer_id) {
+        const pointsValidation = await this.pointsService.validatePointsForRedeeming(
+          invoice.customer_id,
+          updatedPoints
+        );
+        if (!pointsValidation.isValid) {
+          throw new Error(pointsValidation.message);
+        }
+      }
+      discountAmount += updatedPoints;
+    }
+
+    const newTotal = Math.max(0, invoice.subtotal + invoice.tax - discountAmount);
+    
+    // Recalculate points earned based on final invoice amount
+    let pointsToEarn = 0;
+    if (invoice.customer_id) {
+      pointsToEarn = this.pointsService.calculatePointsEarned(newTotal);
+    }
+    
+    await this.invoiceRepository.update(id, {
+      discount_amount: discountAmount,
+      total_amount: newTotal,
+      points_used: updatedPoints,
+      points_earned: pointsToEarn
+    });
+
+  
+    if (invoice.customer_id && pointsToEarn > 0) {
       try {
-        await this.pointsService.awardCustomerPoints(invoice.customer_id, invoice.points_earned);
+        await this.pointsService.awardCustomerPoints(invoice.customer_id, pointsToEarn);
       } catch (error) {
         console.error('Failed to award points:', error);
-        // Don't fail invoice payment if points award fails
       }
     }
 
-    // Redeem points if used
-    if (invoice.customer_id && invoice.points_used > 0) {
+    // Redeem points if customer used them for discount
+    if (invoice.customer_id && updatedPoints > 0) {
       try {
-        await this.pointsService.redeemCustomerPoints(invoice.customer_id, invoice.points_used);
+        await this.pointsService.redeemCustomerPoints(invoice.customer_id, updatedPoints);
       } catch (error) {
         console.error('Failed to redeem points:', error);
-        // Don't fail invoice payment if points redemption fails
       }
     }
 
-    return await this.invoiceRepository.updatePaymentStatus(id, 'paid', new Date());
+    // Update customer total spending when invoice is paid
+    if (invoice.customer_id && newTotal > 0) {
+      try {
+        await this.pointsService.updateCustomerSpending(invoice.customer_id, newTotal);
+      } catch (error) {
+        console.error('Failed to update customer spending:', error);
+      }
+    }
+
+    return await this.invoiceRepository.updatePaymentStatus(id, 'paid', new Date(), paymentMethod);
   }
 
   async cancelInvoice(id) {
