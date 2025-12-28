@@ -64,10 +64,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setIsAuthenticated(true);
             localStorage.setItem(AUTH_STORAGE_KEY, "true");
             localStorage.setItem(USER_PROFILE_STORAGE_KEY, JSON.stringify(profile));
-          } catch (error) {
+          } catch (error: any) {
+            console.log('Token validation failed, clearing auth state:', error.message);
+            // Token invalid or expired, clear everything
             authService.clearTokens();
             localStorage.removeItem(AUTH_STORAGE_KEY);
             localStorage.removeItem(USER_PROFILE_STORAGE_KEY);
+            setIsAuthenticated(false);
+            setUserProfile(null);
           }
         }
       } catch (error) {

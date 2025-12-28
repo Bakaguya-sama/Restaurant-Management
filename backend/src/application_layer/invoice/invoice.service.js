@@ -288,7 +288,7 @@ class InvoiceService {
     // Apply points to customer when invoice is paid
     if (invoice.customer_id && pointsEarned > 0) {
       try {
-        await this.pointsService.awardCustomerPoints(invoice.customer_id, pointsToEarn);
+        await this.pointsService.awardCustomerPoints(invoice.customer_id, pointsEarned);
       } catch (error) {
         console.error('Failed to award points:', error);
         // Don't fail invoice payment if points award fails
@@ -298,7 +298,7 @@ class InvoiceService {
     // Redeem points if used
     if (invoice.customer_id && pointsUsed > 0) {
       try {
-        await this.pointsService.redeemCustomerPoints(invoice.customer_id, updatedPoints);
+        await this.pointsService.redeemCustomerPoints(invoice.customer_id, pointsUsed);
       } catch (error) {
         console.error('Failed to redeem points:', error);
         // Don't fail invoice payment if points redemption fails
