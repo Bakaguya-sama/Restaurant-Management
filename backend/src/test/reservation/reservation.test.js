@@ -6,6 +6,13 @@ let app;
 let customer;
 let table1;
 let table2;
+let table3;
+let table4;
+let table5;
+let table6;
+let table7;
+let table8;
+let table9;
 
 // Helper function to generate valid reservation times (avoid midnight wraparound)
 function getValidReservationTimes() {
@@ -24,6 +31,13 @@ beforeAll(async () => {
   customer = await createCustomer();
   table1 = await createTable();
   table2 = await createTable();
+  table3 = await createTable();
+  table4 = await createTable();
+  table5 = await createTable();
+  table6 = await createTable();
+  table7 = await createTable();
+  table8 = await createTable();
+  table9 = await createTable();
 });
 
 afterAll(async () => {
@@ -48,12 +62,14 @@ describe('Reservation API', () => {
           reservation_checkout_time: checkoutTimeStr,
           details: [{ table_id: table1._id }],
           number_of_guests: 2,
-          deposit_amount: 200000
+          deposit_amount: 200000,
+          payment_method: 'card'
         });
       
       expect(res.statusCode).toBe(201);
       expect(res.body.success).toBe(true);
       expect(res.body.data.status).toBe('pending');
+      expect(res.body.data.payment_method).toBe('card');
     });
 
     it('returns 400 when details are missing', async () => {
@@ -91,11 +107,35 @@ describe('Reservation API', () => {
           reservation_checkout_time: timeStr,
           details: [{ table_id: table1._id }],
           number_of_guests: 2,
-          deposit_amount: 200000
+          deposit_amount: 200000,
+          payment_method: 'card'
         });
       expect(res.statusCode).toBe(400);
       expect(res.body.success).toBe(false);
       expect(res.body.message).toContain('must be after');
+    });
+
+    it('returns 400 for invalid payment_method', async () => {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 1);
+      const dateStr = futureDate.toISOString().split('T')[0];
+      const { timeStr, checkoutTimeStr } = getValidReservationTimes();
+      
+      const res = await request(app)
+        .post('/api/v1/reservations')
+        .send({
+          customer_id: customer._id,
+          reservation_date: dateStr,
+          reservation_time: timeStr,
+          reservation_checkout_time: checkoutTimeStr,
+          details: [{ table_id: table1._id }],
+          number_of_guests: 2,
+          deposit_amount: 200000,
+          payment_method: 'invalid_method'
+        });
+      expect(res.statusCode).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toContain('payment_method');
     });
 
     it('creates reservation outside 1 hour window without marking table reserved', async () => {
@@ -111,9 +151,10 @@ describe('Reservation API', () => {
           reservation_date: dateStr,
           reservation_time: timeStr,
           reservation_checkout_time: checkoutTimeStr,
-          details: [{ table_id: table1._id }],
+          details: [{ table_id: table2._id }],
           number_of_guests: 2,
-          deposit_amount: 200000
+          deposit_amount: 200000,
+          payment_method: 'transfer'
         });
       expect(res.statusCode).toBe(201);
       expect(res.body.success).toBe(true);
@@ -149,9 +190,10 @@ describe('Reservation API', () => {
           reservation_date: dateStr,
           reservation_time: timeStr,
           reservation_checkout_time: checkoutTimeStr,
-          details: [{ table_id: table1._id }],
+          details: [{ table_id: table3._id }],
           number_of_guests: 2,
-          deposit_amount: 200000
+          deposit_amount: 200000,
+          payment_method: 'card'
         });
       
       const resId = createRes.body.data.id;
@@ -183,9 +225,10 @@ describe('Reservation API', () => {
           reservation_date: dateStr,
           reservation_time: timeStr,
           reservation_checkout_time: checkoutTimeStr,
-          details: [{ table_id: table1._id }],
+          details: [{ table_id: table4._id }],
           number_of_guests: 2,
-          deposit_amount: 200000
+          deposit_amount: 200000,
+          payment_method: 'transfer'
         });
       const resId = createRes.body.data.id;
 
@@ -211,9 +254,10 @@ describe('Reservation API', () => {
           reservation_date: dateStr,
           reservation_time: timeStr,
           reservation_checkout_time: checkoutTimeStr,
-          details: [{ table_id: table1._id }],
+          details: [{ table_id: table5._id }],
           number_of_guests: 2,
-          deposit_amount: 200000
+          deposit_amount: 200000,
+          payment_method: 'card'
         });
       const resId = createRes.body.data.id;
 
@@ -238,9 +282,10 @@ describe('Reservation API', () => {
           reservation_date: dateStr,
           reservation_time: timeStr,
           reservation_checkout_time: checkoutTimeStr,
-          details: [{ table_id: table1._id }],
+          details: [{ table_id: table6._id }],
           number_of_guests: 2,
-          deposit_amount: 200000
+          deposit_amount: 200000,
+          payment_method: 'transfer'
         });
       const resId = createRes.body.data.id;
 
@@ -265,9 +310,10 @@ describe('Reservation API', () => {
           reservation_date: dateStr,
           reservation_time: timeStr,
           reservation_checkout_time: checkoutTimeStr,
-          details: [{ table_id: table1._id }],
+          details: [{ table_id: table7._id }],
           number_of_guests: 2,
-          deposit_amount: 200000
+          deposit_amount: 200000,
+          payment_method: 'card'
         });
       const resId = createRes.body.data.id;
 
@@ -298,9 +344,10 @@ describe('Reservation API', () => {
           reservation_date: dateStr,
           reservation_time: timeStr,
           reservation_checkout_time: checkoutTimeStr,
-          details: [{ table_id: table1._id }],
+          details: [{ table_id: table8._id }],
           number_of_guests: 2,
-          deposit_amount: 200000
+          deposit_amount: 200000,
+          payment_method: 'transfer'
         });
       const resId = createRes.body.data.id;
 
@@ -331,9 +378,10 @@ describe('Reservation API', () => {
           reservation_date: dateStr,
           reservation_time: timeStr,
           reservation_checkout_time: checkoutTimeStr,
-          details: [{ table_id: table1._id }],
+          details: [{ table_id: table9._id }],
           number_of_guests: 2,
-          deposit_amount: 200000
+          deposit_amount: 200000,
+          payment_method: 'card'
         });
       const resId = createRes.body.data.id;
 

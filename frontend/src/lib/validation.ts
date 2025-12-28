@@ -130,6 +130,16 @@ export function validatePositiveNumber(
 }
 
 /**
+ * Validate price
+ */
+export function validatePrice(
+  value: number | string,
+  fieldName: string = "Giá trị"
+): ValidationResult {
+  return validateNumberRange(value, 1, undefined, fieldName);
+}
+
+/**
  * Validate integer
  */
 export function validateInteger(

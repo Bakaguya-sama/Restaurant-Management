@@ -1,10 +1,13 @@
 const { Reservation } = require('../../models');
+const mongoose = require('mongoose');
 
 class ReservationRepository {
   async findAll(filters = {}) {
     const query = {};
     if (filters.customer_id) {
-      query.customer_id = filters.customer_id;
+      query.customer_id = mongoose.Types.ObjectId.isValid(filters.customer_id) 
+        ? new mongoose.Types.ObjectId(filters.customer_id)
+        : filters.customer_id;
     }
     if (filters.status) {
       query.status = filters.status;
@@ -16,7 +19,10 @@ class ReservationRepository {
   }
 
   async findByCustomerId(customerId) {
-    return await Reservation.find({ customer_id: customerId }).sort({ created_at: -1 });
+    const objectId = mongoose.Types.ObjectId.isValid(customerId) 
+      ? new mongoose.Types.ObjectId(customerId)
+      : customerId;
+    return await Reservation.find({ customer_id: objectId }).sort({ created_at: -1 });
   }
 
   async findByTableId(tableId) {

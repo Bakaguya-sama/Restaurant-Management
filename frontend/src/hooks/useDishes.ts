@@ -67,10 +67,10 @@ export function useDishes() {
     }
   };
 
-  const toggleDishAvailability = async (id: string, is_available: boolean) => {
+  const toggleDishAvailability = async (id: string, is_available: boolean, staff_id?: string, reason?: string) => {
     try {
       setError(null);
-      const response = await dishApi.toggleAvailability(id, is_available);
+      const response = await dishApi.toggleAvailability(id, is_available, staff_id, reason);
       const updated = response.data;
       setDishes(dishes.map(d => d.id === id ? updated : d));
       return updated;
