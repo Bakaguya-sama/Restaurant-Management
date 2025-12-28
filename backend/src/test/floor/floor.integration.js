@@ -101,16 +101,15 @@ describe('Floor Integration Tests', () => {
       await Floor.findByIdAndDelete(firstFloorId);
     });
 
-    it('shoutimestamp = Date.now();
+    it('should fail when creating floor with duplicate floor_number', async () => {
+      const timestamp = Date.now();
       const uniqueLevel = timestamp % 10000;
       const firstFloor = {
-        floor_name: `Floor ${timestamp
-        floor_name: `Floor ${Date.now()}`,
+        floor_name: `Floor ${timestamp}`,
         floor_number: uniqueLevel,
         description: 'First floor'
       };
 
-      
       const firstResponse = await request(app)
         .post('/api/v1/floors')
         .send(firstFloor)
@@ -118,7 +117,6 @@ describe('Floor Integration Tests', () => {
 
       const firstFloorId = firstResponse.body.data.id;
 
-      
       const duplicateLevelFloor = {
         floor_name: `Floor ${Date.now() + 1}`,
         floor_number: uniqueLevel,
@@ -133,7 +131,6 @@ describe('Floor Integration Tests', () => {
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('already exists');
 
-      
       await Floor.findByIdAndDelete(firstFloorId);
     });
   });
