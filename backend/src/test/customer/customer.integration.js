@@ -254,7 +254,22 @@ describe('Customer Integration Tests', () => {
       expect(response.body.data).toHaveProperty('total');
       expect(response.body.data).toHaveProperty('active');
       expect(response.body.data).toHaveProperty('banned');
-      expect(response.body.data).toHaveProperty('byMembershipLevel');
+      expect(response.body.data).toHaveProperty('vip');
+      expect(response.body.data).toHaveProperty('new');
+      expect(response.body.data).toHaveProperty('returning');
+      expect(response.body.data).toHaveProperty('avgSpending');
+      expect(response.body.data).toHaveProperty('totalRevenue');
+      expect(response.body.data).toHaveProperty('segments');
+      expect(Array.isArray(response.body.data.segments)).toBe(true);
+      
+      // Verify segment structure
+      if (response.body.data.segments.length > 0) {
+        const segment = response.body.data.segments[0];
+        expect(segment).toHaveProperty('tier');
+        expect(segment).toHaveProperty('count');
+        expect(segment).toHaveProperty('revenue');
+        expect(segment).toHaveProperty('percentage');
+      }
     });
   });
 

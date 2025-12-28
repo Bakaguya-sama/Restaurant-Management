@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   AlertTriangle,
   DollarSign,
@@ -12,9 +12,93 @@ import {
 import { Card } from "../../ui/Card";
 import { Button } from "../../ui/Button";
 import { Badge } from "../../ui/badge";
+import { dashboardApi, DashboardStatistics, InventoryAlert, CustomerStatistics, Feedback } from "../../../lib/dashboardApi";
+import { toast } from "sonner";
 
 export function ManagerDashboard() {
-  const [dateRange, setDateRange] = useState("week");
+  const [dateRange, setDateRange] = useState<"today" | "week" | "month">("week");
+  const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState<DashboardStatistics | null>(null);
+  const [inventoryAlerts, setInventoryAlerts] = useState<InventoryAlert[]>([]);
+  const [customerStats, setCustomerStats] = useState<CustomerStatistics | null>(null);
+  const [recentFeedback, setRecentFeedback] = useState<Feedback[]>([]);
+
+  // Calculate date range for filtering
+  const getDateRange = () => {
+    const endDate = new Date();
+    const startDate = new Date();
+    
+    switch (dateRange) {
+      case 'today':
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      case 'week':
+        startDate.setDate(endDate.getDate() - 7);
+        break;
+      case 'month':
+        startDate.setMonth(endDate.getMonth() - 1);
+        break;
+    }
+    
+    return { startDate, endDate };
+  };
+
+  // Filter inventory alerts by date range
+  const getFilteredAlerts = (status: string) => {
+    const { startDate, endDate } = getDateRange();
+    
+    return inventoryAlerts.filter(item => {
+      if (item.status !== status) return false;
+      
+      // For expired items, check if expiry date is within the selected date range
+      if (status === 'expired' && item.expiryDate) {
+        const expiryDate = new Date(item.expiryDate);
+        return expiryDate >= startDate && expiryDate <= endDate;
+      }
+      
+      return true;
+    });
+  };
+
+  // Fetch dashboard data
+  useEffect(() => {
+    fetchDashboardData();
+  }, [dateRange]);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const [statsResponse, alertsResponse, customerResponse, feedbackResponse] = await Promise.all([
+        dashboardApi.getStatistics(dateRange),
+        dashboardApi.getInventoryAlerts(),
+        dashboardApi.getCustomerStatistics(),
+        dashboardApi.getRecentFeedback(5, dateRange)
+      ]);
+
+      setDashboardData(statsResponse.data);
+      setInventoryAlerts(alertsResponse.data || []);
+      setCustomerStats(customerResponse.data || { total: 0, vip: 0, new: 0, returning: 0, avgSpending: 0 });
+      setRecentFeedback(feedbackResponse.data || []);
+    } catch (error: any) {
+      console.error("Failed to fetch dashboard data:", error);
+      toast.error("Không thể tải dữ liệu dashboard");
+      // Set default empty data on error
+      setDashboardData({
+        invoices: { count: 0, revenue: 0, list: [] },
+        topDishes: [],
+        lowDishes: [],
+        damagedItems: [],
+        bookings: { count: 0, guests: 0 },
+        newCustomers: 0
+      });
+      setInventoryAlerts([]);
+      setCustomerStats({ total: 0, vip: 0, new: 0, returning: 0, avgSpending: 0 });
+      setRecentFeedback([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Mock data theo time range
   const getDataByRange = () => {
@@ -271,86 +355,17 @@ export function ManagerDashboard() {
     return dataByRange[dateRange as keyof typeof dataByRange];
   };
 
-  const currentData = getDataByRange();
-
-  // Báo cáo kho nguyên liệu (không đổi theo time range)
-  const inventoryAlerts = [
-    {
-      name: "Thịt bò",
-      current: 8,
-      minimum: 15,
-      expiryDate: "2026-01-20",
-      status: "low",
-    },
-    {
-      name: "Rau sống",
-      current: 3,
-      minimum: 10,
-      expiryDate: "2025-12-18",
-      status: "low",
-    },
-    {
-      name: "Tôm tươi",
-      current: 12,
-      minimum: 15,
-      expiryDate: "2025-12-15",
-      status: "expiring",
-    },
-    {
-      name: "Sữa tươi",
-      current: 5,
-      minimum: 10,
-      expiryDate: "2025-12-14",
-      status: "expiring",
-    },
-  ];
-
-  // Báo cáo khách hàng (không đổi theo time range)
-  const customerStats = {
-    vip: 45,
-    new: currentData.newCustomers,
-    returning: 467,
-    avgSpending: 850000,
+  // Use API data or fallback to empty defaults
+  const currentData = dashboardData || {
+    invoices: { count: 0, revenue: 0, list: [] },
+    topDishes: [],
+    lowDishes: [],
+    damagedItems: [],
+    bookings: { count: 0, guests: 0 },
+    newCustomers: 0
   };
 
-  const customerSegments = [
-    { tier: "Kim cương", count: 45, revenue: 35100000, percentage: 28 },
-    { tier: "Bạch kim", count: 82, revenue: 28200000, percentage: 22 },
-    { tier: "Vàng", count: 128, revenue: 52800000, percentage: 42 },
-    { tier: "Bạc", count: 234, revenue: 28400000, percentage: 23 },
-    { tier: "Đồng", count: 156, revenue: 18900000, percentage: 15 },
-  ];
-
-  // Báo cáo phản hồi (5 phản hồi gần nhất)
-  const recentFeedback = [
-    {
-      customer: "Nguyễn Văn An",
-      comment:
-        "Món ăn rất ngon, phục vụ tận tình. Đặc biệt là phở bò rất đúng vị.",
-      date: "2025-12-12",
-    },
-    {
-      customer: "Trần Thị Bình",
-      comment:
-        "Không gian đẹp, nhưng thời gian chờ hơi lâu. Nên cải thiện tốc độ phục vụ.",
-      date: "2025-12-11",
-    },
-    {
-      customer: "Lê Văn Cường",
-      comment: "Sẽ quay lại lần sau. Nhân viên nhiệt tình, thân thiện.",
-      date: "2025-12-11",
-    },
-    {
-      customer: "Phạm Thị Dung",
-      comment: "Món ăn ổn nhưng giá hơi cao so với mặt bằng chung.",
-      date: "2025-12-10",
-    },
-    {
-      customer: "Hoàng Minh Tuấn",
-      comment: "Đồ ăn ngon, không gian sạch sẽ. Sẽ giới thiệu cho bạn bè.",
-      date: "2025-12-09",
-    },
-  ];
+  const customerSegments = customerStats?.segments || [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -395,22 +410,28 @@ export function ManagerDashboard() {
         <div className="flex gap-3">
           <select
             value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
+            onChange={(e) => setDateRange(e.target.value as "today" | "week" | "month")}
             className="px-4 py-2 border border-gray-300 rounded-lg h-10"
+            disabled={loading}
           >
             <option value="today">Hôm nay</option>
             <option value="week">Tuần này</option>
             <option value="month">Tháng này</option>
           </select>
-          <Button>
+          <Button disabled={loading}>
             <Download className="w-4 h-4 mr-2" />
             Xuất báo cáo
           </Button>
         </div>
       </div>
 
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <p className="text-gray-500">Đang tải dữ liệu...</p>
+        </div>
+      ) : (
       <div className="space-y-6">
-        {/* 1. Báo cáo xem kho nguyên liệu (cảnh báo) */}
+        {/* 1. Báo cáo xem kho nguyên liệu (cảnh báo) - CHỈ SẮP HẾT HẠN */}
         <Card className="p-6">
           <div className="flex items-center gap-2 mb-4">
             <AlertTriangle className="w-5 h-5 text-orange-600" />
@@ -428,25 +449,36 @@ export function ManagerDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {inventoryAlerts.map((item, index) => (
-                  <tr key={index} className="border-b hover:bg-gray-50">
-                    <td className="py-3 px-4">{item.name}</td>
-                    <td className="text-right py-3 px-4">{item.current} kg</td>
-                    <td className="text-right py-3 px-4">{item.minimum} kg</td>
-                    <td className="text-right py-3 px-4">{item.expiryDate}</td>
-                    <td className="text-center py-3 px-4">
-                      <Badge className={getStatusColor(item.status)}>
-                        {getStatusText(item.status)}
-                      </Badge>
-                    </td>
-                  </tr>
-                ))}
+                {(() => {
+                  const expiringItems = inventoryAlerts.filter(item => item.status === 'expiring' || item.status === 'low');
+                  return expiringItems.length > 0 ? (
+                    expiringItems.map((item, index) => (
+                      <tr key={index} className="border-b hover:bg-gray-50">
+                        <td className="py-3 px-4">{item.name}</td>
+                        <td className="text-right py-3 px-4">{item.current} kg</td>
+                        <td className="text-right py-3 px-4">{item.minimum} kg</td>
+                        <td className="text-right py-3 px-4">{item.expiryDate || 'N/A'}</td>
+                        <td className="text-center py-3 px-4">
+                          <Badge className={getStatusColor(item.status)}>
+                            {getStatusText(item.status)}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className="text-center py-4 text-gray-500">
+                        Không có cảnh báo
+                      </td>
+                    </tr>
+                  );
+                })()}
               </tbody>
             </table>
           </div>
         </Card>
 
-        {/* 2. Báo cáo nguyên liệu bị hỏng/hết hạn */}
+        {/* 2. Báo cáo nguyên liệu bị hỏng/hết hạn - CHỈ HẾT HẠN */}
         <Card className="p-6">
           <div className="flex items-center gap-2 mb-4">
             <Package className="w-5 h-5 text-red-600" />
@@ -458,33 +490,36 @@ export function ManagerDashboard() {
                 <tr className="border-b">
                   <th className="text-left py-3 px-4">Nguyên liệu</th>
                   <th className="text-right py-3 px-4">Số lượng</th>
-                  <th className="text-right py-3 px-4">Giá trị</th>
-                  <th className="text-right py-3 px-4">Ngày loại bỏ</th>
-                  <th className="text-center py-3 px-4">Lý do</th>
+                  <th className="text-right py-3 px-4">Mức tối thiểu</th>
+                  <th className="text-right py-3 px-4">Ngày hết hạn</th>
+                  <th className="text-center py-3 px-4">Trạng thái</th>
                 </tr>
               </thead>
               <tbody>
-                {currentData.damagedItems.map((item, index) => (
-                  <tr key={index} className="border-b hover:bg-gray-50">
-                    <td className="py-3 px-4">{item.name}</td>
-                    <td className="text-right py-3 px-4">{item.quantity} kg</td>
-                    <td className="text-right py-3 px-4 text-red-600">
-                      {item.value.toLocaleString()}đ
-                    </td>
-                    <td className="text-right py-3 px-4">{item.date}</td>
-                    <td className="text-center py-3 px-4">
-                      <Badge
-                        className={
-                          item.reason === "Hết hạn"
-                            ? "bg-orange-100 text-orange-700"
-                            : "bg-red-100 text-red-700"
-                        }
-                      >
-                        {item.reason}
-                      </Badge>
-                    </td>
-                  </tr>
-                ))}
+                {(() => {
+                  const expiredItems = getFilteredAlerts('expired');
+                  return expiredItems.length > 0 ? (
+                    expiredItems.map((item, index) => (
+                      <tr key={index} className="border-b hover:bg-gray-50">
+                        <td className="py-3 px-4">{item.name}</td>
+                        <td className="text-right py-3 px-4">{item.current} kg</td>
+                        <td className="text-right py-3 px-4">{item.minimum} kg</td>
+                        <td className="text-right py-3 px-4">{item.expiryDate || 'N/A'}</td>
+                        <td className="text-center py-3 px-4">
+                          <Badge className={getStatusColor(item.status)}>
+                            {getStatusText(item.status)}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className="text-center py-4 text-gray-500">
+                        Không có dữ liệu
+                      </td>
+                    </tr>
+                  );
+                })()}
               </tbody>
             </table>
           </div>
@@ -552,22 +587,30 @@ export function ManagerDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {currentData.invoices.list.map((invoice, index) => (
-                  <tr key={index} className="border-b hover:bg-gray-50">
-                    <td className="py-3 px-4">{invoice.id}</td>
-                    <td className="py-3 px-4">{invoice.date}</td>
-                    <td className="py-3 px-4">{invoice.customer}</td>
-                    <td className="text-right py-3 px-4">{invoice.items}</td>
-                    <td className="text-right py-3 px-4 text-green-600">
-                      {invoice.total.toLocaleString()}đ
-                    </td>
-                    <td className="text-center py-3 px-4">
-                      <Badge className={getStatusColor(invoice.status)}>
-                        {getStatusText(invoice.status)}
-                      </Badge>
+                {currentData.invoices.list && currentData.invoices.list.length > 0 ? (
+                  currentData.invoices.list.map((invoice, index) => (
+                    <tr key={index} className="border-b hover:bg-gray-50">
+                      <td className="py-3 px-4">{invoice.id}</td>
+                      <td className="py-3 px-4">{invoice.date}</td>
+                      <td className="py-3 px-4">{invoice.customer}</td>
+                      <td className="text-right py-3 px-4">{invoice.items}</td>
+                      <td className="text-right py-3 px-4 text-green-600">
+                        {invoice.total.toLocaleString()}đ
+                      </td>
+                      <td className="text-center py-3 px-4">
+                        <Badge className={getStatusColor(invoice.status)}>
+                          {getStatusText(invoice.status)}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="text-center py-4 text-gray-500">
+                      Không có dữ liệu
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
@@ -594,15 +637,23 @@ export function ManagerDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {currentData.topDishes.map((dish, index) => (
-                      <tr key={index} className="border-b hover:bg-gray-50">
-                        <td className="py-2 px-3">{dish.name}</td>
-                        <td className="text-right py-2 px-3">{dish.sold}</td>
-                        <td className="text-right py-2 px-3 text-green-600">
-                          {dish.revenue.toLocaleString()}đ
+                    {currentData.topDishes && currentData.topDishes.length > 0 ? (
+                      currentData.topDishes.map((dish, index) => (
+                        <tr key={index} className="border-b hover:bg-gray-50">
+                          <td className="py-2 px-3">{dish.name}</td>
+                          <td className="text-right py-2 px-3">{dish.sold}</td>
+                          <td className="text-right py-2 px-3 text-green-600">
+                            {dish.revenue.toLocaleString()}đ
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={3} className="text-center py-4 text-gray-500 text-sm">
+                          Không có dữ liệu
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -621,15 +672,23 @@ export function ManagerDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {currentData.lowDishes.map((dish, index) => (
-                      <tr key={index} className="border-b hover:bg-gray-50">
-                        <td className="py-2 px-3">{dish.name}</td>
-                        <td className="text-right py-2 px-3">{dish.sold}</td>
-                        <td className="text-right py-2 px-3 text-red-600">
-                          {dish.revenue.toLocaleString()}đ
+                    {currentData.lowDishes && currentData.lowDishes.length > 0 ? (
+                      currentData.lowDishes.map((dish, index) => (
+                        <tr key={index} className="border-b hover:bg-gray-50">
+                          <td className="py-2 px-3">{dish.name}</td>
+                          <td className="text-right py-2 px-3">{dish.sold}</td>
+                          <td className="text-right py-2 px-3 text-red-600">
+                            {dish.revenue.toLocaleString()}đ
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={3} className="text-center py-4 text-gray-500 text-sm">
+                          Không có dữ liệu
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -648,22 +707,22 @@ export function ManagerDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div className="p-4 bg-yellow-50 rounded-lg">
               <p className="text-gray-600 text-sm mb-1">Khách VIP</p>
-              <p className="text-2xl text-yellow-600">{customerStats.vip}</p>
+              <p className="text-2xl text-yellow-600">{customerStats?.vip || 0}</p>
             </div>
             <div className="p-4 bg-blue-50 rounded-lg">
               <p className="text-gray-600 text-sm mb-1">Khách mới</p>
-              <p className="text-2xl text-blue-600">{customerStats.new}</p>
+              <p className="text-2xl text-blue-600">{customerStats?.new || 0}</p>
             </div>
             <div className="p-4 bg-green-50 rounded-lg">
               <p className="text-gray-600 text-sm mb-1">Khách quay lại</p>
               <p className="text-2xl text-green-600">
-                {customerStats.returning}
+                {customerStats?.returning || 0}
               </p>
             </div>
             <div className="p-4 bg-purple-50 rounded-lg">
               <p className="text-gray-600 text-sm mb-1">Chi tiêu TB</p>
               <p className="text-2xl text-purple-600">
-                {customerStats.avgSpending.toLocaleString()}đ
+                {(customerStats?.avgSpending || 0).toLocaleString()}đ
               </p>
             </div>
           </div>
@@ -680,32 +739,40 @@ export function ManagerDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {customerSegments.map((segment, index) => (
-                  <tr key={index} className="border-b hover:bg-gray-50">
-                    <td className="py-3 px-4">
-                      <Badge
-                        className={
-                          segment.tier === "Diamond"
-                            ? "bg-blue-100 text-blue-700"
-                            : segment.tier === "Platinum"
-                            ? "bg-purple-100 text-purple-700"
-                            : segment.tier === "Gold"
-                            ? "bg-yellow-100 text-yellow-700"
-                            : "bg-gray-100 text-gray-700"
-                        }
-                      >
-                        {segment.tier}
-                      </Badge>
-                    </td>
-                    <td className="text-right py-3 px-4">{segment.count}</td>
-                    <td className="text-right py-3 px-4 text-[#625EE8]">
-                      {segment.revenue.toLocaleString()}đ
-                    </td>
-                    <td className="text-right py-3 px-4">
-                      {segment.percentage}%
+                {customerSegments && customerSegments.length > 0 ? (
+                  customerSegments.map((segment, index) => (
+                    <tr key={index} className="border-b hover:bg-gray-50">
+                      <td className="py-3 px-4">
+                        <Badge
+                          className={
+                            segment.tier === "Diamond"
+                              ? "bg-blue-100 text-blue-700"
+                              : segment.tier === "Platinum"
+                              ? "bg-purple-100 text-purple-700"
+                              : segment.tier === "Gold"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : "bg-gray-100 text-gray-700"
+                          }
+                        >
+                          {segment.tier}
+                        </Badge>
+                      </td>
+                      <td className="text-right py-3 px-4">{segment.count}</td>
+                      <td className="text-right py-3 px-4 text-[#625EE8]">
+                        {segment.revenue.toLocaleString()}đ
+                      </td>
+                      <td className="text-right py-3 px-4">
+                        {segment.percentage.toFixed(1)}%
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="text-center py-4 text-gray-500">
+                      Không có dữ liệu
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
@@ -731,9 +798,9 @@ export function ManagerDashboard() {
             <div className="p-4 bg-blue-50 rounded-lg">
               <p className="text-gray-600 text-sm mb-1">TB khách/đặt bàn</p>
               <p className="text-2xl text-blue-600 mb-1">
-                {Math.round(
-                  currentData.bookings.guests / currentData.bookings.count
-                )}{" "}
+                {currentData.bookings.count > 0
+                  ? Math.round(currentData.bookings.guests / currentData.bookings.count)
+                  : 0}{" "}
                 khách
               </p>
               <p className="text-sm text-gray-700">Trung bình</p>
@@ -757,18 +824,25 @@ export function ManagerDashboard() {
           {/* Recent Feedback - 5 phản hồi gần nhất */}
           <h4 className="mb-3">5 phản hồi gần nhất</h4>
           <div className="space-y-3">
-            {recentFeedback.map((feedback, index) => (
-              <div key={index} className="p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="font-medium">{feedback.customer}</p>
-                  <p className="text-sm text-gray-600">{feedback.date}</p>
+            {recentFeedback && recentFeedback.length > 0 ? (
+              recentFeedback.map((feedback, index) => (
+                <div key={index} className="p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="font-medium">{feedback.customer}</p>
+                    <p className="text-sm text-gray-600">{feedback.date}</p>
+                  </div>
+                  <p className="text-gray-700">{feedback.comment}</p>
                 </div>
-                <p className="text-gray-700">{feedback.comment}</p>
+              ))
+            ) : (
+              <div className="p-4 bg-gray-50 rounded-lg text-center text-gray-500">
+                Không có phản hồi
               </div>
-            ))}
+            )}
           </div>
         </Card>
       </div>
+      )}
     </div>
   );
 }
