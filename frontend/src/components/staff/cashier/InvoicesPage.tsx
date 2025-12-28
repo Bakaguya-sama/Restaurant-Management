@@ -48,12 +48,24 @@ export function InvoicesPage() {
 
   useEffect(() => {
     const loadCurrentUser = async () => {
+      // Check if user is authenticated
+      if (!authService.isAuthenticated()) {
+        console.log('User is not authenticated, skipping getCurrentUser');
+        return;
+      }
+
       try {
         const response = await authService.getCurrentUser();
         const userId = response.data.id || response.data._id;
         setCurrentUserId(userId);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error getting current user:', error);
+        
+        // If token is invalid or expired, clear tokens
+        if (error.message?.includes('token') || error.message?.includes('Invalid') || error.message?.includes('expired')) {
+          console.log('Token invalid or expired, clearing authentication');
+          authService.clearTokens();
+        }
       }
     };
     loadCurrentUser();
@@ -312,14 +324,7 @@ export function InvoicesPage() {
     };
 
     try {
-      // First, update invoice with current staff_id if not already set
-      if (!selectedInvoice.staff_id || selectedInvoice.staff_id !== currentUserId) {
-        await invoiceApi.update(selectedInvoice.id, {
-          staff_id: currentUserId
-        });
-      }
-
-      // Then mark as paid
+      // Mark as paid with promotion and points
       const promotionId = cashierSelectedPromotion?.id || null;
       await invoiceApi.markAsPaid(
         selectedInvoice.id, 

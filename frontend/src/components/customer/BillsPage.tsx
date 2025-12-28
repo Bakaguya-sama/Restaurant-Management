@@ -335,9 +335,12 @@ export function BillsPage() {
         toast.success("Đã gửi yêu cầu thanh toán! Vui lòng chờ nhân viên xác nhận.");
       } else {
         
-        await invoiceApi.markAsPaid(selectedBill.invoiceId, {
-          payment_method: mappedPaymentMethod,
-        });
+        await invoiceApi.markAsPaid(
+          selectedBill.invoiceId, 
+          mappedPaymentMethod,
+          null,
+          selectedBill.pointsUsed || 0
+        );
         
         const updatedBills = allBills.map(bill => 
           bill.invoiceId === selectedBill.invoiceId 

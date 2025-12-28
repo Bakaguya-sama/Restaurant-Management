@@ -232,90 +232,80 @@ class InvoiceService {
       throw new Error('Cannot mark cancelled invoice as paid');
     }
 
-    paymentMethod = paymentMethod || 'cash';
-
     let discountAmount = invoice.discount_amount || 0;
-    let updatedPoints = pointsUsed || invoice.points_used || 0;
+    let totalAmount = invoice.total_amount;
 
-   
+    // Apply promotion if provided
     if (promotionId) {
       const promotion = await this.promotionService.getPromotionById(promotionId);
       if (!promotion) {
         throw new Error('Promotion not found');
       }
 
-      if (promotion.max_uses !== -1 && promotion.current_uses >= promotion.max_uses) {
-        throw new Error('Promotion has reached maximum uses');
+      // Check if promotion can be used
+      const promotionEntity = require('../../domain_layer/promotion/promotion.entity');
+      const promoEntity = new promotionEntity(promotion);
+      
+      if (!promoEntity.isValidNow()) {
+        throw new Error('Promo code is not valid at this time');
       }
 
-      const validation = await this.promotionService.validatePromoCode(
-        promotion.promo_code,
-        invoice.subtotal
-      );
+      if (!promoEntity.canBeUsed()) {
+        throw new Error('Promo code has reached maximum uses');
+      }
 
-      discountAmount = validation.discount_amount;
+      if (invoice.subtotal < promotion.minimum_order_amount) {
+        throw new Error(`Minimum order amount is ${promotion.minimum_order_amount}`);
+      }
 
+      // Calculate discount
+      discountAmount = promoEntity.calculateDiscount(invoice.subtotal);
+      totalAmount = invoice.subtotal + invoice.tax - discountAmount;
+
+      // Add promotion to invoice
       await this.invoiceRepository.addPromotion(id, promotionId, discountAmount);
+      
+      // Increment promotion usage count
       await this.promotionService.incrementPromotionUses(promotionId);
     }
 
-    
-    if (updatedPoints > 0) {
-      if (invoice.customer_id) {
-        const pointsValidation = await this.pointsService.validatePointsForRedeeming(
-          invoice.customer_id,
-          updatedPoints
-        );
-        if (!pointsValidation.isValid) {
-          throw new Error(pointsValidation.message);
-        }
-      }
-      discountAmount += updatedPoints;
-    }
+    // Calculate points earned: 10 points per 10,000đ spent
+    const pointsEarned = Math.floor(totalAmount / 10000) * 10;
 
-    const newTotal = Math.max(0, invoice.subtotal + invoice.tax - discountAmount);
-    
-    // Recalculate points earned based on final invoice amount
-    let pointsToEarn = 0;
-    if (invoice.customer_id) {
-      pointsToEarn = this.pointsService.calculatePointsEarned(newTotal);
-    }
-    
-    await this.invoiceRepository.update(id, {
+    // Update invoice with points information
+    const updateData = {
+      payment_method: paymentMethod,
+      payment_status: 'paid',
+      paid_at: new Date(),
       discount_amount: discountAmount,
-      total_amount: newTotal,
-      points_used: updatedPoints,
-      points_earned: pointsToEarn
-    });
+      total_amount: totalAmount,
+      points_used: pointsUsed || 0,
+      points_earned: pointsEarned
+    };
 
-  
-    if (invoice.customer_id && pointsToEarn > 0) {
+    await this.invoiceRepository.update(id, updateData);
+
+    // Apply points to customer when invoice is paid
+    if (invoice.customer_id && pointsEarned > 0) {
       try {
-        await this.pointsService.awardCustomerPoints(invoice.customer_id, pointsToEarn);
+        await this.pointsService.awardCustomerPoints(invoice.customer_id, pointsEarned);
       } catch (error) {
         console.error('Failed to award points:', error);
+        // Don't fail invoice payment if points award fails
       }
     }
 
-    // Redeem points if customer used them for discount
-    if (invoice.customer_id && updatedPoints > 0) {
+    // Redeem points if used
+    if (invoice.customer_id && pointsUsed > 0) {
       try {
-        await this.pointsService.redeemCustomerPoints(invoice.customer_id, updatedPoints);
+        await this.pointsService.redeemCustomerPoints(invoice.customer_id, pointsUsed);
       } catch (error) {
         console.error('Failed to redeem points:', error);
+        // Don't fail invoice payment if points redemption fails
       }
     }
 
-    // Update customer total spending when invoice is paid
-    if (invoice.customer_id && newTotal > 0) {
-      try {
-        await this.pointsService.updateCustomerSpending(invoice.customer_id, newTotal);
-      } catch (error) {
-        console.error('Failed to update customer spending:', error);
-      }
-    }
-
-    return await this.invoiceRepository.updatePaymentStatus(id, 'paid', new Date(), paymentMethod);
+    return await this.invoiceRepository.findById(id);
   }
 
   async cancelInvoice(id) {
