@@ -87,7 +87,7 @@ class ReservationService {
     const result = [];
     for (const r of reservations) {
       const updated = await this.updateStatus(r);
-      result.push(this.formatReservationResponse(updated));
+      result.push(await this.formatReservationResponse(updated));
     }
     return result;
   }

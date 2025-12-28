@@ -21,10 +21,27 @@ class RatingRepository {
       query.score = { ...query.score, $lte: filters.max_score };
     }
 
-    const ratings = await Rating.find(query)
+    // Filter by date range
+    if (filters.start_date || filters.end_date) {
+      query.rating_date = {};
+      if (filters.start_date) {
+        query.rating_date.$gte = new Date(filters.start_date);
+      }
+      if (filters.end_date) {
+        query.rating_date.$lte = new Date(filters.end_date);
+      }
+    }
+
+    let queryBuilder = Rating.find(query)
       .populate('customer_id', 'full_name email phone membership_level')
-      .sort({ rating_date: -1 })
-      .lean();
+      .sort({ rating_date: -1 });
+
+    // Apply limit if specified
+    if (filters.limit) {
+      queryBuilder = queryBuilder.limit(parseInt(filters.limit));
+    }
+
+    const ratings = await queryBuilder.lean();
 
     return ratings.map(r => new RatingEntity(r).toJSON());
   }

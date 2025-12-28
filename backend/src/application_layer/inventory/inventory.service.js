@@ -24,6 +24,7 @@ function mapBatch(b) {
       : null,
     supplierName: supplierName || null,
     lastUpdated: b.lastUpdated ? new Date(b.lastUpdated).toISOString() : null,
+    minimumQuantity: b.minimum_quantity || 0,
   });
 }
 
