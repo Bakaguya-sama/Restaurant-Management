@@ -98,6 +98,7 @@ async function getBatches({ low = false, expiring = false }) {
       originalQuantity: "$quantity", // Keep original for reference
       unit: "$ingredient.unit",
       expiryDate: "$expiry_date",
+      minimum_quantity: "$ingredient.minimum_quantity",
     },
   });
 

@@ -582,12 +582,12 @@ async function seedDatabase() {
     // ==================== 12. STOCK IMPORT DETAILS ====================
     console.log('12/24 Tạo Stock Import Details...');
     const stockImportDetails = await StockImportDetail.insertMany([
-      { import_id: stockImports[0]._id, ingredient_id: ingredients[0]._id, quantity: 50, unit_price: 350000, line_total: 17500000, expiry_date: new Date('2026-01-01') },
-      { import_id: stockImports[1]._id, ingredient_id: ingredients[1]._id, quantity: 30, unit_price: 450000, line_total: 13500000, expiry_date: new Date('2025-12-25') },
-      { import_id: stockImports[1]._id, ingredient_id: ingredients[2]._id, quantity: 25, unit_price: 280000, line_total: 7000000, expiry_date: new Date('2025-12-20') },
-      { import_id: stockImports[2]._id, ingredient_id: ingredients[3]._id, quantity: 15, unit_price: 25000, line_total: 375000, expiry_date: new Date('2025-12-17') },
-      { import_id: stockImports[2]._id, ingredient_id: ingredients[4]._id, quantity: 20, unit_price: 30000, line_total: 600000, expiry_date: new Date('2025-12-18') },
-      { import_id: stockImports[2]._id, ingredient_id: ingredients[5]._id, quantity: 18, unit_price: 20000, line_total: 360000, expiry_date: new Date('2025-12-16') }
+      { import_id: stockImports[0]._id, ingredient_id: ingredients[0]._id, quantity: 50, unit_price: 350000, line_total: 17500000, expiry_date: new Date('2027-01-01') },
+      { import_id: stockImports[1]._id, ingredient_id: ingredients[1]._id, quantity: 30, unit_price: 450000, line_total: 13500000, expiry_date: new Date('2025-12-29') }, // cá hồi: near expiry
+      { import_id: stockImports[1]._id, ingredient_id: ingredients[2]._id, quantity: 25, unit_price: 280000, line_total: 7000000, expiry_date: new Date('2025-12-20') }, 
+      { import_id: stockImports[2]._id, ingredient_id: ingredients[3]._id, quantity: 15, unit_price: 25000, line_total: 375000, expiry_date: new Date('2027-12-17') },
+      { import_id: stockImports[2]._id, ingredient_id: ingredients[4]._id, quantity: 20, unit_price: 30000, line_total: 600000, expiry_date: new Date('2027-12-18') },
+      { import_id: stockImports[2]._id, ingredient_id: ingredients[5]._id, quantity: 18, unit_price: 20000, line_total: 360000, expiry_date: new Date('2027-12-16') }
     ]);
     console.log(`   OK ${stockImportDetails.length} import details\n`);
 

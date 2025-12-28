@@ -3,7 +3,7 @@ name: Backend - Test
 on:
   push:
     branches:
-      - main
+      - huy-fix
     paths:
       - "backend/**"
   pull_request:

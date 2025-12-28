@@ -27,6 +27,7 @@ const reservationRouter = require('./src/presentation_layer/routes/reservation.r
 const reservationDetailRouter = require('./src/presentation_layer/routes/reservationdetail.routes');
 const dishesUploadsRouter = require('./src/presentation_layer/routes/dishes-uploads.routes');
 const avatarsUploadsRouter = require('./src/presentation_layer/routes/avatars-uploads.routes');
+const dashboardRouter = require('./src/presentation_layer/routes/dashboard.routes');
 
 // Load environment variables
 dotenv.config();
@@ -97,6 +98,8 @@ app.use('/api/v1/rating-replies', ratingReplyRouter);
 app.use('/api/v1/orders', orderRouter);
 app.use('/api/v1/reservations', reservationRouter);
 app.use('/api/v1/reservation-details', reservationDetailRouter);
+
+app.use('/api/v1/dashboard', dashboardRouter);
 
 // Upload Routes - Separated by type
 app.use('/api/v1/uploads/dishes', dishesUploadsRouter);

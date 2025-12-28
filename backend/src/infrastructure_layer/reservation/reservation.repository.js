@@ -15,6 +15,18 @@ class ReservationRepository {
     if (filters.reservation_date) {
       query.reservation_date = filters.reservation_date;
     }
+    
+    // Filter by date range
+    if (filters.start_date || filters.end_date) {
+      query.reservation_date = query.reservation_date || {};
+      if (filters.start_date) {
+        query.reservation_date.$gte = new Date(filters.start_date);
+      }
+      if (filters.end_date) {
+        query.reservation_date.$lte = new Date(filters.end_date);
+      }
+    }
+    
     return await Reservation.find(query).sort({ created_at: -1 });
   }
 
