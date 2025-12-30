@@ -45,6 +45,9 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Serve static files from placeholder_images directory
+app.use('/placeholder_images', express.static(path.join(__dirname, 'placeholder_images')));
+
 // Health check route
 app.get('/', (req, res) => {
   res.json({

@@ -5,18 +5,21 @@ import { Modal } from "../ui/Modal";
 import { Input } from "../ui/Input";
 import { Dish } from "../../types";
 import { useMenuDishes } from "../../hooks/useMenuDishes";
+import { buildImageUrl } from "../../lib/uploadApi";
+import { useImageLoader } from "../../hooks/useImageLoader";
+
+const PLACEHOLDER_IMAGE = "/placeholder_images/placeholder_dish_image.jpg";
 
 export function MenuPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
+  const [loadedImages, setLoadedImages] = useState<Record<string, string>>({});
 
   const categories = ["all", "Khai vị", "Món chính", "Đồ uống"];
 
-  // Fetch dishes from API
   const { items } = useMenuDishes(searchQuery, selectedCategory);
 
-  // Items already filtered by API, no need for additional client-side filtering
   const filteredItems = items;
 
   return (
@@ -57,22 +60,21 @@ export function MenuPage() {
 
       {/* Menu Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredItems.map((item) => (
-          <Card
-            key={item.id}
-            hover
-            onClick={() => item.is_available && setSelectedDish(item)}
-            className={`overflow-hidden ${!item.is_available ? "opacity-60" : ""}`}
-          >
-            <div className="relative">
-              <img
-                src={
-                  item.image_url ||
-                  "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400"
-                }
-                alt={item.name}
-                className="w-full h-48 object-cover"
-              />
+        {filteredItems.map((item) => {
+          const displayImage = useImageLoader(item.image_url, PLACEHOLDER_IMAGE);
+          return (
+            <Card
+              key={item.id}
+              hover
+              onClick={() => item.is_available && setSelectedDish(item)}
+              className={`overflow-hidden ${!item.is_available ? "opacity-60" : ""}`}
+            >
+              <div className="relative">
+                <img
+                  src={displayImage}
+                  alt={item.name}
+                  className="w-full h-48 object-cover"
+                />
               {!item.is_available && (
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                   <span className="text-white px-4 py-2 bg-red-500 rounded-lg">
@@ -92,8 +94,9 @@ export function MenuPage() {
                 </span>
               </div>
             </div>
-          </Card>
-        ))}
+            </Card>
+          );
+        })}
       </div>
 
       {filteredItems.length === 0 && (
@@ -109,18 +112,17 @@ export function MenuPage() {
         title={selectedDish?.name || ""}
         size="xl"
       >
-        {selectedDish && (
-          <div className="space-y-6">
-            {/* Ảnh ở trên */}
-            <div>
-              <img
-                src={
-                  selectedDish.image_url ||
-                  "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=800"
-                }
-                alt={selectedDish.name}
-                className="w-full h-96 object-cover rounded-lg"
-              />
+        {selectedDish && (() => {
+          const displayImage = useImageLoader(selectedDish.image_url, PLACEHOLDER_IMAGE);
+          return (
+            <div className="space-y-6">
+              {/* Ảnh ở trên */}
+              <div>
+                <img
+                  src={displayImage}
+                  alt={selectedDish.name}
+                  className="w-full h-96 object-cover rounded-lg"
+                />
             </div>
 
             {/* Thông tin ở dưới */}
@@ -142,8 +144,9 @@ export function MenuPage() {
                 </p>
               </div>
             </div>
-          </div>
-        )}
+            </div>
+          );
+        })()}
       </Modal>
     </div>
   );

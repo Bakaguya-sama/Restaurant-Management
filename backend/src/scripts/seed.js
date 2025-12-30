@@ -81,7 +81,7 @@ async function seedDatabase() {
         date_of_birth: new Date('1995-05-15'),
         hire_date: new Date('2022-03-10'),
         role: 'waiter', 
-        image_url: '/images/staff/waiter1.jpg', 
+        image_url: '/placeholder_images/placeholder_avatar_image.png', 
         username: 'hung.waiter', 
         password_hash: password,
         is_active: true
@@ -94,7 +94,7 @@ async function seedDatabase() {
         date_of_birth: new Date('1998-08-22'),
         hire_date: new Date('2023-01-15'),
         role: 'waiter', 
-        image_url: '/images/staff/waiter2.jpg', 
+        image_url: '/placeholder_images/placeholder_avatar_image.png', 
         username: 'mai.waiter', 
         password_hash: password,
         is_active: true
@@ -110,7 +110,7 @@ async function seedDatabase() {
         date_of_birth: new Date('1992-12-08'),
         hire_date: new Date('2021-06-20'),
         role: 'cashier', 
-        image_url: '/images/staff/cashier1.jpg', 
+        image_url: '/placeholder_images/placeholder_avatar_image.png', 
         username: 'nam.cashier', 
         password_hash: password,
         is_active: true
@@ -123,7 +123,7 @@ async function seedDatabase() {
         date_of_birth: new Date('1996-03-18'),
         hire_date: new Date('2022-09-05'),
         role: 'cashier', 
-        image_url: '/images/staff/cashier2.jpg', 
+        image_url: '/placeholder_images/placeholder_avatar_image.png', 
         username: 'lan.cashier', 
         password_hash: password,
         is_active: true
@@ -139,7 +139,7 @@ async function seedDatabase() {
         date_of_birth: new Date('1988-07-25'),
         hire_date: new Date('2020-01-10'),
         role: 'manager', 
-        image_url: '/images/staff/manager1.jpg', 
+        image_url: '/placeholder_images/placeholder_avatar_image.png', 
         username: 'minh.manager', 
         password_hash: password,
         is_active: true
@@ -152,7 +152,7 @@ async function seedDatabase() {
         date_of_birth: new Date('1990-11-02'),
         hire_date: new Date('2019-05-15'),
         role: 'manager', 
-        image_url: '/images/staff/manager2.jpg', 
+        image_url: '/placeholder_images/placeholder_avatar_image.png', 
         username: 'hoa.manager', 
         password_hash: password,
         is_active: true
@@ -177,7 +177,7 @@ async function seedDatabase() {
         membership_level: 'diamond', 
         points: 5000, 
         total_spent: 50000000, 
-        image_url: '/images/customers/customer1.jpg',
+        image_url: '/placeholder_images/placeholder_avatar_image.png',
         role: 'customer',
         username: 'tuan.customer',
         password_hash: password,
@@ -193,7 +193,7 @@ async function seedDatabase() {
         membership_level: 'platinum', 
         points: 3000, 
         total_spent: 30000000, 
-        image_url: '/images/customers/customer2.jpg',
+        image_url: '/placeholder_images/placeholder_avatar_image.png',
         role: 'customer',
         username: 'huong.customer',
         password_hash: password,
@@ -209,7 +209,7 @@ async function seedDatabase() {
         membership_level: 'gold', 
         points: 1800, 
         total_spent: 15000000, 
-        image_url: '/images/customers/customer3.jpg',
+        image_url: '/placeholder_images/placeholder_avatar_image.png',
         role: 'customer',
         username: 'huy.customer',
         password_hash: password,
@@ -225,7 +225,7 @@ async function seedDatabase() {
         membership_level: 'silver', 
         points: 800, 
         total_spent: 5000000, 
-        image_url: '/images/customers/customer4.jpg',
+        image_url: '/placeholder_images/placeholder_avatar_image.png',
         role: 'customer',
         username: 'nga.customer',
         password_hash: password,
@@ -241,7 +241,7 @@ async function seedDatabase() {
         membership_level: 'bronze', 
         points: 300, 
         total_spent: 2000000, 
-        image_url: '/images/customers/customer5.jpg',
+        image_url: '/placeholder_images/placeholder_avatar_image.png',
         role: 'customer',
         username: 'khoa.customer',
         password_hash: password,
@@ -257,7 +257,7 @@ async function seedDatabase() {
         membership_level: 'regular',
         points: 50,
         total_spent: 500000,
-        image_url: '/images/customers/customer6.jpg',
+        image_url: '/placeholder_images/placeholder_avatar_image.png',
         role: 'customer',
         username: 'son.customer',
         password_hash: password,
@@ -621,14 +621,14 @@ async function seedDatabase() {
     // ==================== 15. DISHES ====================
     console.log('15/24 Tạo Dishes...');
     const dishes = await Dish.insertMany([
-      { name: 'Bò bít tết Úc', description: 'Bò Úc nướng chín vừa, kèm khoai tây chiên vàng, salad rau tươi và sốt tiêu đen', category: 'main_course', price: 350000, is_available: true, image_url: 'https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400' },
-      { name: 'Cá hồi nướng chanh bơ', description: 'Cá hồi Na Uy nướng lửa, kèm bơ tươi, chanh và rau thơm', category: 'main_course', price: 420000, is_available: true, image_url: 'https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400' },
-      { name: 'Tôm sú nướng bơ tỏi', description: 'Tôm sú to tươi, nướng bơ tỏi thơm phức, kèm bánh mì nướng', category: 'main_course', price: 280000, is_available: true, image_url: 'https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400' },
-      { name: 'Salad rau xà lách tươi', description: 'Rau xà lách, cà chua, bơ tươi, sốt dầu giấm balsamic', category: 'appetizer', price: 85000, is_available: true, image_url: 'https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400' },
-      { name: 'Gỏi tôm', description: 'Tôm sú, nước mắm chua cay vừa vặn, kèm rau sống', category: 'appetizer', price: 120000, is_available: true, image_url: 'https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400' },
-      { name: 'Tiramisu', description: 'Bánh Tiramisu truyền thống Ý, kem mịn mềm', category: 'dessert', price: 95000, is_available: true, image_url: 'https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400' },
-      { name: 'Coca Cola', description: 'Nước ngọt Coca Cola lạnh mát', category: 'beverage', price: 25000, is_available: true, image_url: 'https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400' },
-      { name: 'Nước cam vắt tươi', description: 'Nước cam tươi vắt 100%, không đường', category: 'beverage', price: 35000, is_available: true, image_url: 'https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400' }
+      { name: 'Bò bít tết Úc', description: 'Bò Úc nướng chín vừa, kèm khoai tây chiên vàng, salad rau tươi và sốt tiêu đen', category: 'main_course', price: 350000, is_available: true, image_url: '/placeholder_images/placeholder_dish_image.jpg' },
+      { name: 'Cá hồi nướng chanh bơ', description: 'Cá hồi Na Uy nướng lửa, kèm bơ tươi, chanh và rau thơm', category: 'main_course', price: 420000, is_available: true, image_url: '/placeholder_images/placeholder_dish_image.jpg' },
+      { name: 'Tôm sú nướng bơ tỏi', description: 'Tôm sú to tươi, nướng bơ tỏi thơm phức, kèm bánh mì nướng', category: 'main_course', price: 280000, is_available: true, image_url: '/placeholder_images/placeholder_dish_image.jpg' },
+      { name: 'Salad rau xà lách tươi', description: 'Rau xà lách, cà chua, bơ tươi, sốt dầu giấm balsamic', category: 'appetizer', price: 85000, is_available: true, image_url: '/placeholder_images/placeholder_dish_image.jpg' },
+      { name: 'Gỏi tôm', description: 'Tôm sú, nước mắm chua cay vừa vặn, kèm rau sống', category: 'appetizer', price: 120000, is_available: true, image_url: '/placeholder_images/placeholder_dish_image.jpg' },
+      { name: 'Tiramisu', description: 'Bánh Tiramisu truyền thống Ý, kem mịn mềm', category: 'dessert', price: 95000, is_available: true, image_url: '/placeholder_images/placeholder_dish_image.jpg' },
+      { name: 'Coca Cola', description: 'Nước ngọt Coca Cola lạnh mát', category: 'beverage', price: 25000, is_available: true, image_url: '/placeholder_images/placeholder_dish_image.jpg' },
+      { name: 'Nước cam vắt tươi', description: 'Nước cam tươi vắt 100%, không đường', category: 'beverage', price: 35000, is_available: true, image_url: '/placeholder_images/placeholder_dish_image.jpg' }
     ]);
     console.log(`   OK ${dishes.length} dishes\n`);
 
