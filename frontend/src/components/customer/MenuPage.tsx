@@ -10,11 +10,48 @@ import { useImageLoader } from "../../hooks/useImageLoader";
 
 const PLACEHOLDER_IMAGE = "/placeholder_images/placeholder_dish_image.jpg";
 
+function DishCard({ item, onSelect }: { item: Dish; onSelect: (dish: Dish) => void }) {
+  const displayImage = useImageLoader(item.image_url || "", PLACEHOLDER_IMAGE);
+  
+  return (
+    <Card
+      hover
+      onClick={() => item.is_available && onSelect(item)}
+      className={`overflow-hidden ${!item.is_available ? "opacity-60" : ""}`}
+    >
+      <div className="relative">
+        <img
+          src={displayImage}
+          alt={item.name}
+          className="w-full h-48 object-cover"
+        />
+        {!item.is_available && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+            <span className="text-white px-4 py-2 bg-red-500 rounded-lg">
+              Tạm hết
+            </span>
+          </div>
+        )}
+      </div>
+      <div className="p-4">
+        <h4 className="mb-2">{item.name}</h4>
+        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+          {item.description || "Món ăn ngon tuyệt vời"}
+        </p>
+        <div className="flex items-center justify-between">
+          <span className="text-[#625EE8]">
+            {item.price.toLocaleString()}đ
+          </span>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 export function MenuPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
-  const [loadedImages, setLoadedImages] = useState<Record<string, string>>({});
 
   const categories = ["all", "Khai vị", "Món chính", "Đồ uống"];
 
@@ -60,43 +97,9 @@ export function MenuPage() {
 
       {/* Menu Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredItems.map((item) => {
-          const displayImage = useImageLoader(item.image_url, PLACEHOLDER_IMAGE);
-          return (
-            <Card
-              key={item.id}
-              hover
-              onClick={() => item.is_available && setSelectedDish(item)}
-              className={`overflow-hidden ${!item.is_available ? "opacity-60" : ""}`}
-            >
-              <div className="relative">
-                <img
-                  src={displayImage}
-                  alt={item.name}
-                  className="w-full h-48 object-cover"
-                />
-              {!item.is_available && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <span className="text-white px-4 py-2 bg-red-500 rounded-lg">
-                    Tạm hết
-                  </span>
-                </div>
-              )}
-            </div>
-            <div className="p-4">
-              <h4 className="mb-2">{item.name}</h4>
-              <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                {item.description || "Món ăn ngon tuyệt vời"}
-              </p>
-              <div className="flex items-center justify-between">
-                <span className="text-[#625EE8]">
-                  {item.price.toLocaleString()}đ
-                </span>
-              </div>
-            </div>
-            </Card>
-          );
-        })}
+        {filteredItems.map((item) => (
+          <DishCard key={item.id} item={item} onSelect={setSelectedDish} />
+        ))}
       </div>
 
       {filteredItems.length === 0 && (

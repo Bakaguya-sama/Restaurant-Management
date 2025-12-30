@@ -93,7 +93,6 @@ export function ProfilePage({ role }: ProfilePageProps) {
       try {
         setIsLoadingProfile(true);
         
-        // Check if user is authenticated
         if (!isAuthenticated || !userProfile) {
           console.log('[STAFF_PROFILE] User not authenticated or no profile in context');
           toast.error("Vui lòng đăng nhập để xem hồ sơ");
@@ -101,11 +100,10 @@ export function ProfilePage({ role }: ProfilePageProps) {
           return;
         }
 
-        // Use userId from AuthContext instead of calling getCurrentUser
         const currentUserId = userProfile.id;
         console.log('[STAFF_PROFILE] Loading profile for user ID:', currentUserId);
         
-        if (currentUserId) {
+        try {
           const staffMember = await getStaffById(currentUserId);
           if (staffMember) {
             setCurrentStaff(staffMember);
@@ -123,6 +121,38 @@ export function ProfilePage({ role }: ProfilePageProps) {
             if (staffMember.image_url) {
               setAvatarUrl(staffMember.image_url);
             }
+          }
+        } catch (apiError: any) {
+          console.warn("[STAFF_PROFILE] Failed to fetch staff data from API, using AuthContext fallback:", apiError);
+          
+          setCurrentStaff({
+            id: userProfile.id,
+            full_name: userProfile.name || "",
+            email: userProfile.email || "",
+            phone: userProfile.phone || "",
+            address: userProfile.address || "",
+            role: userProfile.role || "waiter",
+            image_url: userProfile.image_url,
+            hire_date: "",
+            date_of_birth: "",
+            created_at: "",
+            updated_at: ""
+          } as any);
+          
+          setProfileData({
+            fullName: userProfile.name || "",
+            email: userProfile.email || "",
+            phone: userProfile.phone || "",
+            address: userProfile.address || "",
+            dateOfBirth: "",
+            position: getRoleLabel(userProfile.role || "waiter"),
+            employeeId: userProfile.id || "",
+            joinDate: "",
+            department: getRoleDepartment(userProfile.role || "waiter"),
+          });
+          
+          if (userProfile.image_url) {
+            setAvatarUrl(userProfile.image_url);
           }
         }
       } catch (error: any) {
