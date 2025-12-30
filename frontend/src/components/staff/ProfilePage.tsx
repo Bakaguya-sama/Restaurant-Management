@@ -51,7 +51,7 @@ function AvatarImage({ src }: { src: string | null }) {
 
 export function ProfilePage({ role }: ProfilePageProps) {
   const { userProfile, isAuthenticated } = useAuth();
-  const { staff, loading, getStaffById } = useStaff();
+  const { getStaffById, updateStaff } = useStaff();
   const [currentStaff, setCurrentStaff] = useState<Staff | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -85,8 +85,6 @@ export function ProfilePage({ role }: ProfilePageProps) {
   });
 
   const [showPasswordChange, setShowPasswordChange] = useState(false);
-
-  const { updateStaff } = useStaff();
 
   useEffect(() => {
     const loadCurrentStaffProfile = async () => {
