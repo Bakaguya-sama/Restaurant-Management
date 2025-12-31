@@ -44,6 +44,12 @@ class StaffRepository {
     return staff;
   }
 
+  async findByPhone(phone) {
+    const staff = await User.findOne({ phone, role: { $in: ['waiter', 'cashier', 'manager'] } });
+    if (!staff) return null;
+    return staff;
+  }
+
   async findByUsername(username) {
     const staff = await User.findOne({ username, role: { $in: ['waiter', 'cashier', 'manager'] } });
     if (!staff) return null;

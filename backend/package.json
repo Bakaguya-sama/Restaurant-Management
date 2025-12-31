@@ -8,8 +8,8 @@
     "dev": "nodemon server.js",
     "seed": "node src/scripts/seed.js",
     "test:wipe-db": "node src/scripts/wipe-test-db.js",
-    "test": "npm run test:wipe-db && jest --runInBand --verbose --detectOpenHandles --forceExit",
-    "test:watch": "npm run test:wipe-db && jest --watch --runInBand --verbose"
+    "test": "npm run test:wipe-db && jest --verbose --detectOpenHandles --forceExit",
+    "test:watch": "npm run test:wipe-db && jest --watch --verbose"
   },
   "keywords": [
     "restaurant",

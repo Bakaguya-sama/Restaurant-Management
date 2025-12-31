@@ -225,9 +225,10 @@ export function CustomerProfilePage() {
 
   const handleSaveProfile = async () => {
     const nameValidation = validateRequired(profileData.fullName, "Họ và tên");
-    const emailValidation = validateEmail(profileData.email);
+    const emailValidation = profileData.email
+      ? validateEmail(profileData.email)
+      : { isValid: true };
     const phoneValidation = validateVietnamesePhone(profileData.phone);
-    const addressValidation = validateRequired(profileData.address, "Địa chỉ");
 
     if (!nameValidation.isValid) {
       toast.error(nameValidation.error);
@@ -241,11 +242,6 @@ export function CustomerProfilePage() {
 
     if (!phoneValidation.isValid) {
       toast.error(phoneValidation.error);
-      return;
-    }
-
-    if (!addressValidation.isValid) {
-      toast.error(addressValidation.error);
       return;
     }
 
@@ -451,7 +447,7 @@ export function CustomerProfilePage() {
                   disabled={!isEditing}
                 />
                 <Input
-                  label="Email"
+                  label="Email (tùy chọn)"
                   type="email"
                   value={profileData.email}
                   onChange={(e) =>
@@ -469,7 +465,7 @@ export function CustomerProfilePage() {
                 />
                 {isEditing ? (
                   <Input
-                    label="Ngày sinh"
+                    label="Ngày sinh (tùy chọn)"
                     type="date"
                     value={profileData.dateOfBirth ? convertDisplayDateToISO(profileData.dateOfBirth) : ""}
                     onChange={(e) => {
@@ -478,6 +474,11 @@ export function CustomerProfilePage() {
                         setProfileData({
                           ...profileData,
                           dateOfBirth: formatDateDisplay(isoDate) || "",
+                        });
+                      } else {
+                        setProfileData({
+                          ...profileData,
+                          dateOfBirth: "",
                         });
                       }
                     }}
@@ -503,7 +504,7 @@ export function CustomerProfilePage() {
                 /> */}
                 <div className="md:col-span-2">
                   <Input
-                    label="Địa chỉ"
+                    label="Địa chỉ (tùy chọn)"
                     value={profileData.address}
                     onChange={(e) =>
                       setProfileData({ ...profileData, address: e.target.value })

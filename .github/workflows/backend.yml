@@ -56,7 +56,7 @@ jobs:
           timeout 30 bash -c 'until nc -z localhost 27017; do sleep 1; done'
 
       - name: Run fast tests (single node)
-        run: npm test -- --runInBand --maxWorkers=50%
+        run: npm test -- --runInBand 
         env:
           MONGODB_URI: mongodb://localhost:27017/restaurant_management_test
           NODE_ENV: test

@@ -37,6 +37,12 @@ class CustomerRepository {
     return customer;
   }
 
+  async findByPhone(phone) {
+    const customer = await User.findOne({ phone, role: 'customer' });
+    if (!customer) return null;
+    return customer;
+  }
+
   async create(customerData) {
     customerData.role = 'customer';
     const customer = new CustomerModel(customerData);

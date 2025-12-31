@@ -22,8 +22,8 @@ class CustomerEntity {
       errors.push('Full name is required');
     }
 
-    if (!this.email || !this.isValidEmail(this.email)) {
-      errors.push('Valid email is required');
+    if (this.email && !this.isValidEmail(this.email)) {
+      errors.push('Invalid email format');
     }
 
     if (!this.phone || this.phone.trim().length === 0) {

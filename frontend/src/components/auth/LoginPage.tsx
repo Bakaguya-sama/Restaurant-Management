@@ -124,9 +124,9 @@ export function LoginPage() {
               )}
               
               <Input
-                label="Số điện thoại hoặc Email"
+                label="Email, Số điện thoại hoặc Tên đăng nhập"
                 type="text"
-                placeholder="Nhập số điện thoại hoặc email"
+                placeholder="Nhập email, số điện thoại hoặc tên đăng nhập"
                 icon={<Phone className="w-4 h-4" />}
                 value={customerForm.identifier}
                 onChange={(e) => {
