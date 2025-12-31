@@ -82,6 +82,7 @@ const ReservationSchema = new Schema({
   deposit_amount: { type: String, required: true }, // "200000"
   payment_method: { type: String, enum: ['card', 'transfer'], required: true , default: 'card' },
   status: { type: String, enum: ['pending', 'confirmed', 'in_progress', 'cancelled', 'completed'], default: 'pending' },
+  isPaid: { type: Boolean, default: false },
   special_requests: String,
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now }

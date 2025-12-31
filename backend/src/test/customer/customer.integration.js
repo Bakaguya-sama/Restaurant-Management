@@ -49,10 +49,11 @@ describe('Customer Integration Tests', () => {
     it('should fail when creating customer with duplicate email', async () => {
       // First, create the customer to ensure the email exists
       const uniqueEmail = `duplicate.test.${Date.now()}@example.com`;
+      const uniquePhone = `098765${String(Date.now() % 10000).padStart(4, '0')}`;
       const firstCustomer = {
         full_name: 'First Customer',
         email: uniqueEmail,
-        phone: '0987654321',
+        phone: uniquePhone,
         username: `first${Date.now()}`,
         password: 'password123'
       };
@@ -66,7 +67,7 @@ describe('Customer Integration Tests', () => {
       const duplicateCustomer = {
         full_name: 'Duplicate Customer',
         email: uniqueEmail,
-        phone: '0987654322',
+        phone: `098765${String((Date.now() + 1) % 10000).padStart(4, '0')}`,
         username: `dup${Date.now()}`,
         password: 'password456'
       };

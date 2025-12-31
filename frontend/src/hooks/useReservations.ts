@@ -159,6 +159,32 @@ export function useReservations() {
     []
   );
 
+  const updateReservationIsPaid = useCallback(
+    async (id: string, isPaid: boolean) => {
+      try {
+        setLoading(true);
+        const response = await reservationApi.updateIsPaid(id, isPaid);
+        if (response.success && response.data) {
+          setReservations((prev) =>
+            prev.map((r) => (r.id === id ? response.data : r))
+          );
+          toast.success(isPaid ? 'Đánh dấu đã thanh toán' : 'Đánh dấu chưa thanh toán');
+          return response.data;
+        } else {
+          setError('Không thể cập nhật trạng thái thanh toán');
+          toast.error('Không thể cập nhật trạng thái thanh toán');
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Lỗi khi cập nhật thanh toán';
+        setError(errorMessage);
+        toast.error(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
   const deleteReservation = useCallback(async (id: string) => {
     try {
       setLoading(true);
@@ -249,6 +275,7 @@ export function useReservations() {
     createReservation,
     updateReservation,
     updateReservationStatus,
+    updateReservationIsPaid,
     deleteReservation,
     addTableToReservation,
     removeTableFromReservation,

@@ -63,13 +63,15 @@ describe('Reservation API', () => {
           details: [{ table_id: table1._id }],
           number_of_guests: 2,
           deposit_amount: 200000,
-          payment_method: 'card'
+          payment_method: 'card',
+          isPaid: false
         });
       
       expect(res.statusCode).toBe(201);
       expect(res.body.success).toBe(true);
       expect(res.body.data.status).toBe('pending');
       expect(res.body.data.payment_method).toBe('card');
+      expect(res.body.data.isPaid).toBe(false);
     });
 
     it('returns 400 when details are missing', async () => {
@@ -364,12 +366,14 @@ describe('Reservation API', () => {
     });
   });
 
-  describe('DELETE /api/v1/reservations/:id', () => {
-    it('deletes a reservation', async () => {
+  describe('PATCH /api/v1/reservations/:id/is-paid - Update isPaid', () => {
+    it('updates isPaid to true', async () => {
       const futureDate = new Date();
       futureDate.setDate(futureDate.getDate() + 1);
       const dateStr = futureDate.toISOString().split('T')[0];
-      const { timeStr, checkoutTimeStr } = getValidReservationTimes();
+      // Use a unique time slot (13:00-15:00) to avoid conflicts
+      const timeStr = '13:00';
+      const checkoutTimeStr = '15:00';
       
       const createRes = await request(app)
         .post('/api/v1/reservations')
@@ -381,7 +385,114 @@ describe('Reservation API', () => {
           details: [{ table_id: table9._id }],
           number_of_guests: 2,
           deposit_amount: 200000,
-          payment_method: 'card'
+          payment_method: 'card',
+          isPaid: false
+        });
+      
+      expect(createRes.statusCode).toBe(201);
+      expect(createRes.body.success).toBe(true);
+      const resId = createRes.body.data.id;
+
+      const res = await request(app)
+        .patch(`/api/v1/reservations/${resId}/is-paid`)
+        .send({ isPaid: true });
+      
+      expect(res.statusCode).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.isPaid).toBe(true);
+    });
+
+    it('updates isPaid to false', async () => {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 1);
+      const dateStr = futureDate.toISOString().split('T')[0];
+      // Use a unique time slot (14:30-16:30) to avoid conflicts
+      const timeStr = '14:30';
+      const checkoutTimeStr = '16:30';
+      
+      const createRes = await request(app)
+        .post('/api/v1/reservations')
+        .send({
+          customer_id: customer._id,
+          reservation_date: dateStr,
+          reservation_time: timeStr,
+          reservation_checkout_time: checkoutTimeStr,
+          details: [{ table_id: table9._id }],
+          number_of_guests: 2,
+          deposit_amount: 200000,
+          payment_method: 'card',
+          isPaid: true
+        });
+      
+      expect(createRes.statusCode).toBe(201);
+      expect(createRes.body.success).toBe(true);
+      const resId = createRes.body.data.id;
+
+      const res = await request(app)
+        .patch(`/api/v1/reservations/${resId}/is-paid`)
+        .send({ isPaid: false });
+      
+      expect(res.statusCode).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.isPaid).toBe(false);
+    });
+
+    it('returns 400 for non-boolean isPaid value', async () => {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 1);
+      const dateStr = futureDate.toISOString().split('T')[0];
+      // Use a unique time slot (16:00-18:00) to avoid conflicts
+      const timeStr = '16:00';
+      const checkoutTimeStr = '18:00';
+      
+      const createRes = await request(app)
+        .post('/api/v1/reservations')
+        .send({
+          customer_id: customer._id,
+          reservation_date: dateStr,
+          reservation_time: timeStr,
+          reservation_checkout_time: checkoutTimeStr,
+          details: [{ table_id: table9._id }],
+          number_of_guests: 2,
+          deposit_amount: 200000,
+          payment_method: 'card',
+          isPaid: false
+        });
+      
+      expect(createRes.statusCode).toBe(201);
+      expect(createRes.body.success).toBe(true);
+      const resId = createRes.body.data.id;
+
+      const res = await request(app)
+        .patch(`/api/v1/reservations/${resId}/is-paid`)
+        .send({ isPaid: 'yes' });
+      
+      expect(res.statusCode).toBe(400);
+      expect(res.body.success).toBe(false);
+    });
+  });
+
+  describe('DELETE /api/v1/reservations/:id', () => {
+    it('deletes a reservation', async () => {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 1);
+      const dateStr = futureDate.toISOString().split('T')[0];
+      // Use a unique time slot (17:30-19:30) to avoid conflicts with isPaid tests
+      const timeStr = '17:30';
+      const checkoutTimeStr = '19:30';
+      
+      const createRes = await request(app)
+        .post('/api/v1/reservations')
+        .send({
+          customer_id: customer._id,
+          reservation_date: dateStr,
+          reservation_time: timeStr,
+          reservation_checkout_time: checkoutTimeStr,
+          details: [{ table_id: table9._id }],
+          number_of_guests: 2,
+          deposit_amount: 200000,
+          payment_method: 'card',
+          isPaid: false
         });
       const resId = createRes.body.data.id;
 

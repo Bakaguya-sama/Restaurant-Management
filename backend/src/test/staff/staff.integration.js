@@ -50,23 +50,25 @@ describe('Staff Integration Tests', () => {
       // First, create the staff to ensure the email exists
       const firstStaff = {
         full_name: 'First Staff',
-        email: 'duplicate.staff@restaurant.com',
-        phone: '0987654321',
+        email: `duplicate.staff.${Date.now()}@restaurant.com`,
+        phone: `098765432${Date.now() % 10}`,
         role: 'cashier',
         username: `first${Date.now()}`,
         password: 'password123'
       };
 
-      await request(app)
+      const createResponse = await request(app)
         .post('/api/v1/staff')
         .send(firstStaff)
         .expect(201);
 
+      expect(createResponse.body.success).toBe(true);
+
       // Then try to create another staff with the same email
       const duplicateStaff = {
         full_name: 'Duplicate Staff',
-        email: 'duplicate.staff@restaurant.com',
-        phone: '0987654322',
+        email: firstStaff.email,
+        phone: `098765432${(Date.now() + 1) % 10}`,
         role: 'waiter',
         username: `duplicate${Date.now()}`,
         password: 'password456'

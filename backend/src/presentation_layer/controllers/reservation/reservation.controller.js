@@ -52,6 +52,16 @@ class ReservationController {
     }
   }
 
+  async updateReservationIsPaid(req, res) {
+    try {
+      const { isPaid } = req.body;
+      const reservation = await this.reservationService.updateReservationIsPaid(req.params.id, isPaid);
+      res.json({ success: true, data: reservation, message: 'Reservation payment status updated successfully' });
+    } catch (error) {
+      res.status(400).json({ success: false, data: null, message: error.message });
+    }
+  }
+
   async deleteReservation(req, res) {
     try {
       await this.reservationService.deleteReservation(req.params.id);
