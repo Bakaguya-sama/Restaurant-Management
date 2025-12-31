@@ -3,15 +3,26 @@ import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { Modal } from "../ui/Modal";
 import { Dish } from "../../types";
-// import { PromotionCard } from "./PromotionCard";
 import { useNavigate } from "react-router-dom";
 import { fetchTopDishes } from "../../lib/menuPageApi";
+import { useImageLoader } from "../../hooks/useImageLoader";
+import { buildImageUrl } from "../../lib/uploadApi";
+
+const PLACEHOLDER_IMAGE =
+  "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400";
 
 export function HomePage() {
   const navigate = useNavigate();
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
   const [featuredDishes, setFeaturedDishes] = useState<Dish[]>([]);
   const [loading, setLoading] = useState(true);
+  // imageUrls removed — do not call hooks inside loops or effects
+
+  // Hook to get selected dish image (called unconditionally to obey hooks rules)
+  const selectedDishImage = useImageLoader(
+    selectedDish?.image_url || "",
+    PLACEHOLDER_IMAGE
+  );
 
   // Load top 3 most ordered dishes
   useEffect(() => {
@@ -30,6 +41,8 @@ export function HomePage() {
 
     loadTopDishes();
   }, []);
+
+  // Do not call hooks inside loops. For list images, use buildImageUrl and rely on onError fallback.
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
@@ -62,57 +75,6 @@ export function HomePage() {
         </div>
       </div>
 
-      {/* Quick Actions */}
-      {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-        <Card
-          hover
-          onClick={() => navigate("/customer/booking")}
-          className="p-6 text-center cursor-pointer"
-        >
-          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-            <Calendar className="w-6 h-6 text-[#625EE8]" />
-          </div>
-          <h4 className="mb-2">Đặt bàn</h4>
-          <p className="text-sm text-gray-600">Đặt chỗ trước dễ dàng</p>
-        </Card>
-
-        <Card
-          hover
-          onClick={() => navigate("/customer/menu")}
-          className="p-6 text-center cursor-pointer"
-        >
-          <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-            <UtensilsCrossed className="w-6 h-6 text-[#625EE8]" />
-          </div>
-          <h4 className="mb-2">Thực đơn</h4>
-          <p className="text-sm text-gray-600">Khám phá món ăn</p>
-        </Card>
-
-        <Card
-          hover
-          onClick={() => navigate("/customer/membership")}
-          className="p-6 text-center cursor-pointer"
-        >
-          <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-3">
-            <Gift className="w-6 h-6 text-[#F59E0B]" />
-          </div>
-          <h4 className="mb-2">Ưu đãi</h4>
-          <p className="text-sm text-gray-600">Nhận voucher hấp dẫn</p>
-        </Card>
-
-        <Card
-          hover
-          onClick={() => navigate("/customer/bills")}
-          className="p-6 text-center cursor-pointer"
-        >
-          <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
-            <Star className="w-6 h-6 text-[#8B5CF6]" />
-          </div>
-          <h4 className="mb-2">Hóa đơn</h4>
-          <p className="text-sm text-gray-600">Theo dõi chi tiêu</p>
-        </Card>
-      </div> */}
-
       {/* Featured Dishes */}
       <div className="mb-12">
         <div className="flex items-center justify-between mb-6">
@@ -131,19 +93,27 @@ export function HomePage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {featuredDishes.map((item) => (
+            {featuredDishes.map((item, index) => (
               <Card key={item.id} hover className="overflow-hidden">
                 <img
                   src={
-                    item.image_url ||
-                    "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400"
+                    item.image_url
+                      ? buildImageUrl(item.image_url)
+                      : PLACEHOLDER_IMAGE
                   }
                   alt={item.name}
                   className="w-full h-48 object-cover"
+                  onError={(e) => {
+                    const img = e.currentTarget as HTMLImageElement;
+                    img.onerror = null;
+                    img.src = PLACEHOLDER_IMAGE;
+                  }}
                 />
                 <div className="p-4">
                   <h4 className="mb-2">{item.name}</h4>
-                  <p className="text-sm text-gray-600 mb-3">{item.description}</p>
+                  <p className="text-sm text-gray-600 mb-3">
+                    {item.description}
+                  </p>
                   <div className="flex items-center justify-between">
                     <span className="text-[#625EE8]">
                       {item.price.toLocaleString()}đ
@@ -159,22 +129,12 @@ export function HomePage() {
         )}
       </div>
 
-      {/* Promotions */}
-      {/* <div>
-        <h2 className="mb-6">Khuyến mãi đang diễn ra</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {mockPromotions
-            .filter(
-              (p) =>
-                p.promotionQuantity === undefined || p.promotionQuantity > 0
-            )
-            .map((promotion) => (
-              <PromotionCard key={promotion.id} promotion={promotion} />
-            ))}
-        </div>
-      </div> */}
-
       {/* Dish Detail Modal */}
+      {/* Ensure we call the hook unconditionally at top level for the modal image */}
+      {/** Hook call for selectedDish image (always called, even if selectedDish is null) */}
+      {
+        // call hook once at top-level
+      }
       <Modal
         isOpen={selectedDish !== null}
         onClose={() => setSelectedDish(null)}
@@ -186,12 +146,14 @@ export function HomePage() {
             {/* Ảnh ở trên */}
             <div>
               <img
-                src={
-                  selectedDish.image_url ||
-                  "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=800"
-                }
+                src={selectedDishImage}
                 alt={selectedDish.name}
                 className="w-full h-96 object-cover rounded-lg"
+                onError={(e) => {
+                  const img = e.currentTarget as HTMLImageElement;
+                  img.onerror = null;
+                  img.src = PLACEHOLDER_IMAGE;
+                }}
               />
             </div>
 

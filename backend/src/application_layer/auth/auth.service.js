@@ -1,11 +1,15 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { User, Customer, Staff } = require('../../models');
+const { User } = require('../../models');
+const RegisterUseCase = require('./register.usecase');
+const UserRepository = require('../../infrastructure_layer/auth/user.repository');
 
 class AuthService {
   constructor() {
     this.jwtSecret = process.env.JWT_SECRET || 'your-secret-key';
     this.jwtRefreshSecret = process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key';
+    this.registerUseCase = new RegisterUseCase();
+    this.userRepository = new UserRepository();
   }
 
   generateAccessToken(user) {
@@ -34,59 +38,7 @@ class AuthService {
   }
 
   async registerCustomer(data) {
-    const { full_name, email, phone, address, date_of_birth, username, password } = data;
-
-    const existingUser = await User.findOne({
-      $or: [{ email }, { username }]
-    });
-
-    if (existingUser) {
-      if (existingUser.email === email) {
-        throw new Error('Email already exists');
-      }
-      if (existingUser.username === username) {
-        throw new Error('Username already exists');
-      }
-    }
-
-    const password_hash = await bcrypt.hash(password, 10);
-
-    const customer = new Customer({
-      full_name,
-      email,
-      phone,
-      address,
-      date_of_birth,
-      username,
-      password_hash,
-      role: 'customer',
-      membership_level: 'regular',
-      points: 0,
-      total_spent: 0,
-      isBanned: false,
-      is_active: true
-    });
-
-    await customer.save();
-
-    const accessToken = this.generateAccessToken(customer);
-    const refreshToken = this.generateRefreshToken(customer);
-
-    return {
-      accessToken,
-      refreshToken,
-      user: {
-        id: customer._id,
-        full_name: customer.full_name,
-        email: customer.email,
-        phone: customer.phone,
-        address: customer.address,
-        role: customer.role,
-        membership_level: customer.membership_level,
-        points: customer.points,
-        total_spent: customer.total_spent
-      }
-    };
+    return this.registerUseCase.execute(data);
   }
 
   async login(identifier, password, role = null) {
@@ -94,7 +46,7 @@ class AuthService {
 
     if (role === 'customer') {
       user = await User.findOne({
-        $or: [{ email: identifier }, { username: identifier }],
+        $or: [{ email: identifier }, { username: identifier }, { phone: identifier }],
         role: 'customer'
       });
     } else if (role && ['waiter', 'cashier', 'manager'].includes(role)) {
@@ -211,7 +163,7 @@ class AuthService {
   }
 
   async changePassword(userId, currentPassword, newPassword) {
-    const user = await User.findById(userId);
+    const user = await this.userRepository.findByIdWithPassword(userId);
     
     if (!user) {
       throw new Error('User not found');
@@ -222,8 +174,8 @@ class AuthService {
       throw new Error('Current password is incorrect');
     }
 
-    user.password_hash = await bcrypt.hash(newPassword, 10);
-    await user.save();
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.userRepository.updatePassword(userId, hashedPassword);
 
     return { message: 'Password changed successfully' };
   }

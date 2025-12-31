@@ -1,5 +1,6 @@
 import { InventoryItem, Supplier } from "../types";
 import { getApiBaseUrl } from "./apiConfig";
+import { ingredientApi, Ingredient } from "./ingredientApi";
 
 // ==================== TYPE DEFINITIONS ====================
 
@@ -49,20 +50,19 @@ export interface ExportItemsParams {
 // ==================== UTILITY FUNCTIONS ====================
 
 /**
- * Map API batch data to InventoryItem format for UI
+ * Map Ingredient from API to InventoryItem for UI
  */
-export function mapInventoryBatchToInventoryItem(
-  batch: InventoryBatchDTO
-): InventoryItem {
+function mapIngredientToInventoryItem(ingredient: Ingredient): InventoryItem {
   return {
-    id: batch.id,
-    ingredientId: batch.ingredientId || batch.id,
-    name: batch.name || "",
-    quantity: batch.quantity,
-    unit: batch.unit || "",
-    expiryDate: batch.expiryDate || undefined,
-    supplierId: batch.supplierName || "",
-    lastUpdated: batch.lastUpdated || new Date().toISOString(),
+    id: ingredient.id,
+    ingredientId: ingredient.id,
+    name: ingredient.name,
+    quantity: ingredient.quantity_in_stock,
+    unit: ingredient.unit,
+    expiryDate: ingredient.expiry_date || undefined,
+    expiryStatus: ingredient.expiry_status as 'valid' | 'near_expiry' | 'expired' | undefined,
+    supplierId: ingredient.supplier_id,
+    lastUpdated: ingredient.updatedAt || ingredient.createdAt || new Date().toISOString(),
   };
 }
 
@@ -78,22 +78,13 @@ export function mapSupplierDTOToSupplier(supplier: SupplierDTO): Supplier {
   };
 }
 
-// ==================== API FUNCTIONS ====================
-
 /**
- * Fetch inventory items from backend API
+ * Fetch inventory items from backend API using ingredientApi
  */
 export async function fetchInventory(): Promise<InventoryItem[]> {
-  const response = await fetch(`${getApiBaseUrl()}/inventory`);
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch inventory: ${response.status}`);
-  }
-
-  const json = await response.json();
-  const batches = (json?.data || []) as InventoryBatchDTO[];
-
-  return batches.map(mapInventoryBatchToInventoryItem);
+  const response = await ingredientApi.getAll();
+  const ingredients = (response?.data || []) as Ingredient[];
+  return ingredients.map(mapIngredientToInventoryItem);
 }
 
 /**

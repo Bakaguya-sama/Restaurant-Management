@@ -5,6 +5,52 @@ import { Modal } from "../ui/Modal";
 import { Input } from "../ui/Input";
 import { Dish } from "../../types";
 import { useMenuDishes } from "../../hooks/useMenuDishes";
+import { buildImageUrl } from "../../lib/uploadApi";
+import { useImageLoader } from "../../hooks/useImageLoader";
+
+const PLACEHOLDER_IMAGE = "/placeholder_images/placeholder_dish_image.jpg";
+
+function DishCard({
+  item,
+  onSelect,
+}: {
+  item: Dish;
+  onSelect: (dish: Dish) => void;
+}) {
+  const displayImage = useImageLoader(item.image_url || "", PLACEHOLDER_IMAGE);
+
+  return (
+    <Card
+      hover
+      onClick={() => item.is_available && onSelect(item)}
+      className={`overflow-hidden ${!item.is_available ? "opacity-60" : ""}`}
+    >
+      <div className="relative">
+        <img
+          src={displayImage}
+          alt={item.name}
+          className="w-full h-48 object-cover"
+        />
+        {!item.is_available && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+            <span className="text-white px-4 py-2 bg-red-500 rounded-lg">
+              Tạm hết
+            </span>
+          </div>
+        )}
+      </div>
+      <div className="p-4">
+        <h4 className="mb-2">{item.name}</h4>
+        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+          {item.description || "Món ăn ngon tuyệt vời"}
+        </p>
+        <div className="flex items-center justify-between">
+          <span className="text-[#625EE8]">{item.price.toLocaleString()}đ</span>
+        </div>
+      </div>
+    </Card>
+  );
+}
 
 export function MenuPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -13,11 +59,15 @@ export function MenuPage() {
 
   const categories = ["all", "Khai vị", "Món chính", "Đồ uống"];
 
-  // Fetch dishes from API
   const { items } = useMenuDishes(searchQuery, selectedCategory);
 
-  // Items already filtered by API, no need for additional client-side filtering
   const filteredItems = items;
+
+  // Always call useImageLoader, even if selectedDish is null
+  const displayImage = useImageLoader(
+    selectedDish?.image_url || "",
+    PLACEHOLDER_IMAGE
+  );
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
@@ -58,41 +108,7 @@ export function MenuPage() {
       {/* Menu Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredItems.map((item) => (
-          <Card
-            key={item.id}
-            hover
-            onClick={() => item.is_available && setSelectedDish(item)}
-            className={`overflow-hidden ${!item.is_available ? "opacity-60" : ""}`}
-          >
-            <div className="relative">
-              <img
-                src={
-                  item.image_url ||
-                  "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400"
-                }
-                alt={item.name}
-                className="w-full h-48 object-cover"
-              />
-              {!item.is_available && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <span className="text-white px-4 py-2 bg-red-500 rounded-lg">
-                    Tạm hết
-                  </span>
-                </div>
-              )}
-            </div>
-            <div className="p-4">
-              <h4 className="mb-2">{item.name}</h4>
-              <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                {item.description || "Món ăn ngon tuyệt vời"}
-              </p>
-              <div className="flex items-center justify-between">
-                <span className="text-[#625EE8]">
-                  {item.price.toLocaleString()}đ
-                </span>
-              </div>
-            </div>
-          </Card>
+          <DishCard key={item.id} item={item} onSelect={setSelectedDish} />
         ))}
       </div>
 
@@ -114,10 +130,7 @@ export function MenuPage() {
             {/* Ảnh ở trên */}
             <div>
               <img
-                src={
-                  selectedDish.image_url ||
-                  "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=800"
-                }
+                src={displayImage}
                 alt={selectedDish.name}
                 className="w-full h-96 object-cover rounded-lg"
               />

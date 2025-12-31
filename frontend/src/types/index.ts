@@ -124,6 +124,7 @@ export interface Reservation {
   special_requests?: string;
   created_at: string;
   updated_at: string;
+  isPaid?: boolean;
 }
 
 export interface ReservationData {
@@ -203,6 +204,7 @@ export interface InventoryItem {
   quantity: number;
   unit: string;
   expiryDate?: string;
+  expiryStatus?: 'valid' | 'near_expiry' | 'expired';
   supplierId?: string;
   lastUpdated: string;
 }

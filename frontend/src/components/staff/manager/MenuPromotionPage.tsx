@@ -36,9 +36,53 @@ import {
   buildImageUrl,
   extractRelativePath,
 } from "../../../lib/uploadApi";
+import { useImageLoader } from "../../../hooks/useImageLoader";
 
-const PLACEHOLDER_IMAGE =
-  "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400";
+const PLACEHOLDER_IMAGE = "/placeholder_images/placeholder_dish_image.jpg";
+
+// Helper component for grid item images
+function GridItemImage({ imageUrl }: { imageUrl: string }) {
+  const displayImage = useImageLoader(imageUrl, PLACEHOLDER_IMAGE);
+  return (
+    <img
+      src={displayImage}
+      alt="Dish"
+      className="w-full h-48 object-cover"
+    />
+  );
+}
+
+// Helper component for modal preview images
+function ModalImagePreview({ imageUrl }: { imageUrl: string }) {
+  const displayImage = useImageLoader(imageUrl, PLACEHOLDER_IMAGE);
+
+  return (
+    <img
+      src={displayImage}
+      alt="Preview"
+      className="w-full h-48 object-cover rounded-lg"
+    />
+  );
+}
+
+// Helper component for view modal images
+function ViewModalImage({
+  dishName,
+  imageUrl,
+}: {
+  dishName: string;
+  imageUrl: string | null | undefined;
+}) {
+  const displayImage = useImageLoader(imageUrl, PLACEHOLDER_IMAGE);
+
+  return (
+    <img
+      src={displayImage}
+      alt={dishName}
+      className="w-full h-96 object-cover rounded-lg"
+    />
+  );
+}
 
 export function MenuPromotionPage() {
   const {
@@ -123,21 +167,8 @@ export function MenuPromotionPage() {
   >("info");
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());
   const [dishImageFile, setDishImageFile] = useState<File | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-
-  const setImageLoading = (src: string, isLoading: boolean) => {
-    setLoadingImages((prev) => {
-      const newSet = new Set(prev);
-      if (isLoading) {
-        newSet.add(src);
-      } else {
-        newSet.delete(src);
-      }
-      return newSet;
-    });
-  };
 
   const handleImageUpload = (file: File): string | null => {
     const validTypes = [
@@ -917,79 +948,7 @@ export function MenuPromotionPage() {
                     className="overflow-hidden cursor-pointer"
                   >
                     <div className="relative">
-                      {loadingImages.has(
-                        item.image_url || PLACEHOLDER_IMAGE
-                      ) && (
-                        <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-lg" />
-                      )}
-                      <img
-                        src={item.image_url || PLACEHOLDER_IMAGE}
-                        alt={item.name}
-                        className="w-full h-48 object-cover"
-                        onLoad={() => {
-                          console.log(
-                            "[GRID] Image loaded successfully:",
-                            item.image_url
-                          );
-                          setImageLoading(
-                            item.image_url || PLACEHOLDER_IMAGE,
-                            false
-                          );
-                        }}
-                        onError={(e) => {
-                          const img = e.target as HTMLImageElement;
-                          const originalSrc = item.image_url;
-                          const retryCount = parseInt(
-                            img.dataset.retryCount || "0"
-                          );
-                          console.log("[GRID] Image load error:", {
-                            originalSrc,
-                            retryCount,
-                            currentSrc: img.src,
-                          });
-
-                          if (
-                            retryCount < 3 &&
-                            originalSrc &&
-                            originalSrc !== PLACEHOLDER_IMAGE
-                          ) {
-                            img.dataset.retryCount = String(retryCount + 1);
-                            console.log(
-                              `[GRID] Retrying image load (attempt ${
-                                retryCount + 1
-                              }):`,
-                              originalSrc
-                            );
-                            setTimeout(() => {
-                              const newSrc = `${originalSrc}?t=${Date.now()}`;
-                              console.log(
-                                "[GRID] Setting image src with cache buster:",
-                                newSrc
-                              );
-                              img.src = newSrc;
-                            }, 1000);
-                          } else {
-                            console.log(
-                              "[GRID] Fallback to placeholder after retries"
-                            );
-                            img.src = PLACEHOLDER_IMAGE;
-                            setImageLoading(
-                              item.image_url || PLACEHOLDER_IMAGE,
-                              false
-                            );
-                          }
-                        }}
-                        onLoadStart={() => {
-                          console.log(
-                            "[GRID] Image loading started:",
-                            item.image_url
-                          );
-                          setImageLoading(
-                            item.image_url || PLACEHOLDER_IMAGE,
-                            true
-                          );
-                        }}
-                      />
+                      <GridItemImage imageUrl={item.image_url} />
                       {!item.is_available && (
                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                           <span className="text-white px-4 py-2 bg-red-500 rounded-lg">
@@ -1271,62 +1230,8 @@ export function MenuPromotionPage() {
             <label className="block mb-2 text-sm font-medium">Ảnh món ăn</label>
             {menuForm.image ? (
               <div className="relative group">
-                {loadingImages.has(menuForm.image) && (
-                  <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-lg z-10" />
-                )}
-                <img
-                  src={menuForm.image}
-                  alt="Preview"
-                  className="w-full h-48 object-cover rounded-lg"
-                  onLoad={() => {
-                    console.log(
-                      "[ADD MODAL] Image loaded successfully:",
-                      menuForm.image
-                    );
-                    setImageLoading(menuForm.image, false);
-                  }}
-                  onError={(e) => {
-                    const img = e.target as HTMLImageElement;
-                    const originalSrc = menuForm.image;
-                    const retryCount = parseInt(img.dataset.retryCount || "0");
-                    console.log("[ADD MODAL] Image load error:", {
-                      originalSrc,
-                      retryCount,
-                      currentSrc: img.src,
-                    });
-
-                    if (retryCount < 3 && originalSrc !== PLACEHOLDER_IMAGE) {
-                      img.dataset.retryCount = String(retryCount + 1);
-                      console.log(
-                        `[ADD MODAL] Retrying image load (attempt ${
-                          retryCount + 1
-                        }):`,
-                        originalSrc
-                      );
-                      setTimeout(() => {
-                        const newSrc = `${originalSrc}?t=${Date.now()}`;
-                        console.log(
-                          "[ADD MODAL] Setting image src with cache buster:",
-                          newSrc
-                        );
-                        img.src = newSrc;
-                      }, 1000);
-                    } else {
-                      console.log(
-                        "[ADD MODAL] Fallback to placeholder after retries"
-                      );
-                      img.src = PLACEHOLDER_IMAGE;
-                      setImageLoading(menuForm.image, false);
-                    }
-                  }}
-                  onLoadStart={() => {
-                    console.log(
-                      "[ADD MODAL] Image loading started:",
-                      menuForm.image
-                    );
-                    setImageLoading(menuForm.image, true);
-                  }}
-                />
+                <ModalImagePreview imageUrl={menuForm.image} />
+                      
                 <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
                   <Button
                     size="sm"
@@ -1884,13 +1789,9 @@ export function MenuPromotionPage() {
         {selectedDish && (
           <div className="space-y-6">
             <div>
-              <img
-                src={
-                  selectedDish.image ||
-                  "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=800"
-                }
-                alt={selectedDish.name}
-                className="w-full h-96 object-cover rounded-lg"
+              <ViewModalImage
+                dishName={selectedDish.name}
+                imageUrl={selectedDish.image}
               />
             </div>
 
@@ -1998,62 +1899,7 @@ export function MenuPromotionPage() {
             <label className="block mb-2 text-sm font-medium">Ảnh món ăn</label>
             {menuForm.image ? (
               <div className="relative group">
-                {loadingImages.has(menuForm.image) && (
-                  <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-lg z-10" />
-                )}
-                <img
-                  src={menuForm.image}
-                  alt="Preview"
-                  className="w-full h-48 object-cover rounded-lg"
-                  onLoad={() => {
-                    console.log(
-                      "[EDIT MODAL] Image loaded successfully:",
-                      menuForm.image
-                    );
-                    setImageLoading(menuForm.image, false);
-                  }}
-                  onError={(e) => {
-                    const img = e.target as HTMLImageElement;
-                    const originalSrc = menuForm.image;
-                    const retryCount = parseInt(img.dataset.retryCount || "0");
-                    console.log("[EDIT MODAL] Image load error:", {
-                      originalSrc,
-                      retryCount,
-                      currentSrc: img.src,
-                    });
-
-                    if (retryCount < 3 && originalSrc !== PLACEHOLDER_IMAGE) {
-                      img.dataset.retryCount = String(retryCount + 1);
-                      console.log(
-                        `[EDIT MODAL] Retrying image load (attempt ${
-                          retryCount + 1
-                        }):`,
-                        originalSrc
-                      );
-                      setTimeout(() => {
-                        const newSrc = `${originalSrc}?t=${Date.now()}`;
-                        console.log(
-                          "[EDIT MODAL] Setting image src with cache buster:",
-                          newSrc
-                        );
-                        img.src = newSrc;
-                      }, 1000);
-                    } else {
-                      console.log(
-                        "[EDIT MODAL] Fallback to placeholder after retries"
-                      );
-                      img.src = PLACEHOLDER_IMAGE;
-                      setImageLoading(menuForm.image, false);
-                    }
-                  }}
-                  onLoadStart={() => {
-                    console.log(
-                      "[EDIT MODAL] Image loading started:",
-                      menuForm.image
-                    );
-                    setImageLoading(menuForm.image, true);
-                  }}
-                />
+                <ModalImagePreview imageUrl={menuForm.image} />
                 <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
                   <Button
                     size="sm"

@@ -127,7 +127,7 @@ export function InventoryPage() {
   const refreshImportHistory = async () => {
     setImportHistoryLoading(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/inventory/imports`);
+      const response = await fetch(`${API_BASE_URL}/inventory/imports`);
       const result = await response.json();
       if (result.success && result.data) {
         setImportHistory(
@@ -166,7 +166,8 @@ export function InventoryPage() {
   };
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [expiryFilter, setExpiryFilter] = useState<string>("all");
+  const [stockFilter, setStockFilter] = useState<string>("all");
   const [showImportModal, setShowImportModal] = useState(false);
   const [showDisposeModal, setShowDisposeModal] = useState(false);
   const [showAddSupplierModal, setShowAddSupplierModal] = useState(false);
@@ -242,26 +243,32 @@ export function InventoryPage() {
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
 
-    if (statusFilter === "all") {
-      return matchesSearch;
-    } else if (statusFilter === "expired") {
-      return matchesSearch && item.expiryDate && isExpired(item.expiryDate);
-    } else if (statusFilter === "expiring") {
-      return (
-        matchesSearch &&
-        item.expiryDate &&
-        isExpiringSoon(item.expiryDate) &&
-        !isExpired(item.expiryDate)
-      );
-    } else if (statusFilter === "low-stock") {
-      return matchesSearch && item.quantity < 10;
-    } else if (statusFilter === "normal") {
-      const expired = item.expiryDate && isExpired(item.expiryDate);
-      const expiring = item.expiryDate && isExpiringSoon(item.expiryDate);
-      const lowStock = item.quantity < 10;
-      return matchesSearch && !expired && !expiring && !lowStock;
+    // Check expiry filter
+    let expiryMatches = true;
+    if (expiryFilter === "expired") {
+      expiryMatches = (item.expiryStatus === 'expired') || (item.expiryDate !== undefined && isExpired(item.expiryDate));
+    } else if (expiryFilter === "expiring") {
+      expiryMatches = (item.expiryStatus === 'near_expiry') || (item.expiryDate !== undefined && isExpiringSoon(item.expiryDate) && !isExpired(item.expiryDate));
+    } else if (expiryFilter === "valid") {
+      // Valid means: NOT expired AND NOT expiring
+      const isExpiredItem = (item.expiryStatus === 'expired') || (item.expiryDate !== undefined && isExpired(item.expiryDate));
+      const isExpiringItem = (item.expiryStatus === 'near_expiry') || (item.expiryDate !== undefined && isExpiringSoon(item.expiryDate) && !isExpired(item.expiryDate));
+      expiryMatches = !isExpiredItem && !isExpiringItem;
     }
-    return matchesSearch;
+    // If expiryFilter is "all", expiryMatches stays true
+
+    // Check stock filter
+    let stockMatches = true;
+    if (stockFilter === "out-of-stock") {
+      stockMatches = item.quantity === 0;
+    } else if (stockFilter === "low-stock") {
+      stockMatches = item.quantity > 0 && item.quantity < 10;
+    } else if (stockFilter === "normal") {
+      stockMatches = item.quantity >= 10;
+    }
+    // If stockFilter is "all", stockMatches stays true
+
+    return matchesSearch && expiryMatches && stockMatches;
   });
 
   const addImportRow = () => {
@@ -574,7 +581,7 @@ export function InventoryPage() {
           </div>
 
           {/* Search and Filter */}
-          <div className="flex gap-4 items-center">
+          <div className="flex gap-4 items-end">
             <div className="flex-1">
               <Input
                 placeholder="Tìm kiếm nguyên liệu..."
@@ -585,16 +592,30 @@ export function InventoryPage() {
               />
             </div>
             <div className="w-48">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <label className="block text-sm font-medium mb-2">Hạn sử dụng</label>
+              <Select value={expiryFilter} onValueChange={setExpiryFilter}>
                 <SelectTrigger className="h-10">
-                  <SelectValue placeholder="Trạng thái" />
+                  <SelectValue placeholder="Hạn sử dụng" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                  <SelectItem value="normal">Bình thường</SelectItem>
-                  <SelectItem value="low-stock">Sắp hết hàng</SelectItem>
+                  <SelectItem value="all">Tất cả</SelectItem>
+                  <SelectItem value="valid">Bình thường</SelectItem>
                   <SelectItem value="expiring">Sắp hết hạn</SelectItem>
                   <SelectItem value="expired">Hết hạn</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-48">
+              <label className="block text-sm font-medium mb-2">Tồn kho</label>
+              <Select value={stockFilter} onValueChange={setStockFilter}>
+                <SelectTrigger className="h-10">
+                  <SelectValue placeholder="Tồn kho" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả</SelectItem>
+                  <SelectItem value="normal">Bình thường</SelectItem>
+                  <SelectItem value="low-stock">Sắp hết</SelectItem>
+                  <SelectItem value="out-of-stock">Hết hàng</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -637,7 +658,8 @@ export function InventoryPage() {
                     <th className="text-left p-4">Số lượng</th>
                     <th className="text-left p-4">Đơn vị</th>
                     <th className="text-left p-4">Hạn sử dụng</th>
-                    <th className="text-left p-4">Trạng thái</th>
+                    <th className="text-left p-4">Tình trạng hạn sử dụng</th>
+                    <th className="text-left p-4">Tình trạng tồn kho</th>
                     <th className="text-left p-4">Cập nhật</th>
                   </tr>
                 </thead>
@@ -699,24 +721,43 @@ export function InventoryPage() {
                         </td>
                         <td className="p-4">
                           <div className="space-y-1">
-                            {expired && (
+                            {(item.expiryStatus === 'expired' || (item.expiryDate && isExpired(item.expiryDate))) && (
                               <Badge className="bg-red-100 text-red-700">
                                 Hết hạn
                               </Badge>
                             )}
-                            {!expired && expiring && (
+                            {(item.expiryStatus === 'near_expiry' || (!item.expiryStatus && item.expiryDate && isExpiringSoon(item.expiryDate) && !isExpired(item.expiryDate))) && (
                               <Badge className="bg-yellow-100 text-yellow-700">
                                 Sắp hết hạn
                               </Badge>
                             )}
-                            {isLowStock && (
+                            {(item.expiryStatus === 'valid' && item.expiryDate && !isExpired(item.expiryDate) && !isExpiringSoon(item.expiryDate)) && (
+                              <Badge className="bg-green-100 text-green-700">
+                                Bình Thường
+                              </Badge>
+                            )}
+                            {(!item.expiryStatus && !expired && !expiring) && (
+                              <Badge className="bg-green-100 text-green-700">
+                                Bình Thường
+                              </Badge>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <div className="space-y-1">
+                            {item.quantity === 0 && (
+                              <Badge className="bg-red-100 text-red-700">
+                                Hết hàng
+                              </Badge>
+                            )}
+                            {item.quantity > 0 && item.quantity < 10 && (
                               <Badge className="bg-orange-100 text-orange-700">
                                 Sắp hết
                               </Badge>
                             )}
-                            {!expired && !expiring && !isLowStock && (
+                            {item.quantity >= 10 && (
                               <Badge className="bg-green-100 text-green-700">
-                                Tốt
+                                Bình thường
                               </Badge>
                             )}
                           </div>

@@ -20,9 +20,10 @@ describe('Floor Integration Tests', () => {
 
   describe('POST /api/v1/floors - Create Floor', () => {
     it('should create a new floor successfully', async () => {
+      const uniqueId = Math.random().toString(36).substring(7);
       const newFloor = {
-        floor_name: `Ground Floor ${Date.now()}`,
-        floor_number: Math.floor(Math.random() * 100000),
+        floor_name: `Ground Floor ${uniqueId}`,
+        floor_number: Math.floor(Math.random() * 1000000),
         description: 'Main entrance and dining area'
       };
 
@@ -71,10 +72,11 @@ describe('Floor Integration Tests', () => {
     });
 
     it('should fail when creating floor with duplicate floor_name', async () => {
-      const floorName = `Unique Floor ${Date.now()}`;
+      const uniqueId = Math.random().toString(36).substring(7);
+      const floorName = `Unique Floor ${uniqueId}`;
       const firstFloor = {
         floor_name: floorName,
-        floor_number: Math.floor(Math.random() * 10000),
+        floor_number: Math.floor(Math.random() * 1000000),
         description: 'First floor'
       };
 
@@ -100,14 +102,14 @@ describe('Floor Integration Tests', () => {
     });
 
     it('should fail when creating floor with duplicate floor_number', async () => {
-      const uniqueLevel = Math.floor(Math.random() * 10000);
+      const uniqueId = Math.random().toString(36).substring(7);
+      const uniqueLevel = Math.floor(Math.random() * 1000000);
       const firstFloor = {
-        floor_name: `Floor ${Date.now()}`,
+        floor_name: `Floor ${uniqueId}`,
         floor_number: uniqueLevel,
         description: 'First floor'
       };
 
-      
       const firstResponse = await request(app)
         .post('/api/v1/floors')
         .send(firstFloor)
@@ -115,9 +117,8 @@ describe('Floor Integration Tests', () => {
 
       const firstFloorId = firstResponse.body.data.id;
 
-      
       const duplicateLevelFloor = {
-        floor_name: `Floor ${Date.now() + 1}`,
+        floor_name: `Floor ${Math.random().toString(36).substring(7)}`,
         floor_number: uniqueLevel,
         description: 'Duplicate level'
       };
@@ -130,7 +131,6 @@ describe('Floor Integration Tests', () => {
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('already exists');
 
-      
       await Floor.findByIdAndDelete(firstFloorId);
     });
   });
@@ -149,9 +149,10 @@ describe('Floor Integration Tests', () => {
 
   describe('GET /api/v1/floors/:id - Get Floor by ID', () => {
     beforeEach(async () => {
+      const uniqueId = Math.random().toString(36).substring(7);
       const floor = new Floor({
-        floor_name: `Floor ${Date.now()}`,
-        floor_number: Math.floor(Math.random() * 1000),
+        floor_name: `Floor ${uniqueId}`,
+        floor_number: Math.floor(Math.random() * 1000000),
         description: 'Test floor'
       });
       const savedFloor = await floor.save();
@@ -183,9 +184,10 @@ describe('Floor Integration Tests', () => {
 
   describe('PUT /api/v1/floors/:id - Update Floor', () => {
     beforeEach(async () => {
+      const uniqueId = Math.random().toString(36).substring(7);
       const floor = new Floor({
-        floor_name: `Floor ${Date.now()}`,
-        floor_number: Math.floor(Math.random() * 1000),
+        floor_name: `Floor ${uniqueId}`,
+        floor_number: Math.floor(Math.random() * 1000000),
         description: 'Test floor'
       });
       const savedFloor = await floor.save();
@@ -193,9 +195,10 @@ describe('Floor Integration Tests', () => {
     });
 
     it('should update floor successfully', async () => {
+      const uniqueId = Math.random().toString(36).substring(7);
       const updateData = {
-        floor_name: `Updated Floor ${Date.now()}`,
-        floor_number: Math.floor(Math.random() * 100000),
+        floor_name: `Updated Floor ${uniqueId}`,
+        floor_number: Math.floor(Math.random() * 1000000),
         description: 'Updated description'
       };
 
@@ -243,8 +246,9 @@ describe('Floor Integration Tests', () => {
     let floorIdForDelete;
 
     beforeEach(async () => {
+      const uniqueId = Math.random().toString(36).substring(7);
       const floor = new Floor({
-        floor_name: `Floor ${Date.now()}-${Math.random()}`,
+        floor_name: `Floor ${uniqueId}`,
         floor_number: Math.floor(Math.random() * 1000000),
         description: 'Test floor'
       });

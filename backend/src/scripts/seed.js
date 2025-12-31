@@ -81,7 +81,7 @@ async function seedDatabase() {
         date_of_birth: new Date('1995-05-15'),
         hire_date: new Date('2022-03-10'),
         role: 'waiter', 
-        image_url: '/images/staff/waiter1.jpg', 
+        image_url: '/placeholder_images/placeholder_avatar_image.png', 
         username: 'hung.waiter', 
         password_hash: password,
         is_active: true
@@ -94,7 +94,7 @@ async function seedDatabase() {
         date_of_birth: new Date('1998-08-22'),
         hire_date: new Date('2023-01-15'),
         role: 'waiter', 
-        image_url: '/images/staff/waiter2.jpg', 
+        image_url: '/placeholder_images/placeholder_avatar_image.png', 
         username: 'mai.waiter', 
         password_hash: password,
         is_active: true
@@ -110,7 +110,7 @@ async function seedDatabase() {
         date_of_birth: new Date('1992-12-08'),
         hire_date: new Date('2021-06-20'),
         role: 'cashier', 
-        image_url: '/images/staff/cashier1.jpg', 
+        image_url: '/placeholder_images/placeholder_avatar_image.png', 
         username: 'nam.cashier', 
         password_hash: password,
         is_active: true
@@ -123,7 +123,7 @@ async function seedDatabase() {
         date_of_birth: new Date('1996-03-18'),
         hire_date: new Date('2022-09-05'),
         role: 'cashier', 
-        image_url: '/images/staff/cashier2.jpg', 
+        image_url: '/placeholder_images/placeholder_avatar_image.png', 
         username: 'lan.cashier', 
         password_hash: password,
         is_active: true
@@ -139,7 +139,7 @@ async function seedDatabase() {
         date_of_birth: new Date('1988-07-25'),
         hire_date: new Date('2020-01-10'),
         role: 'manager', 
-        image_url: '/images/staff/manager1.jpg', 
+        image_url: '/placeholder_images/placeholder_avatar_image.png', 
         username: 'minh.manager', 
         password_hash: password,
         is_active: true
@@ -152,7 +152,7 @@ async function seedDatabase() {
         date_of_birth: new Date('1990-11-02'),
         hire_date: new Date('2019-05-15'),
         role: 'manager', 
-        image_url: '/images/staff/manager2.jpg', 
+        image_url: '/placeholder_images/placeholder_avatar_image.png', 
         username: 'hoa.manager', 
         password_hash: password,
         is_active: true
@@ -177,7 +177,7 @@ async function seedDatabase() {
         membership_level: 'diamond', 
         points: 5000, 
         total_spent: 50000000, 
-        image_url: '/images/customers/customer1.jpg',
+        image_url: '/placeholder_images/placeholder_avatar_image.png',
         role: 'customer',
         username: 'tuan.customer',
         password_hash: password,
@@ -193,7 +193,7 @@ async function seedDatabase() {
         membership_level: 'platinum', 
         points: 3000, 
         total_spent: 30000000, 
-        image_url: '/images/customers/customer2.jpg',
+        image_url: '/placeholder_images/placeholder_avatar_image.png',
         role: 'customer',
         username: 'huong.customer',
         password_hash: password,
@@ -209,7 +209,7 @@ async function seedDatabase() {
         membership_level: 'gold', 
         points: 1800, 
         total_spent: 15000000, 
-        image_url: '/images/customers/customer3.jpg',
+        image_url: '/placeholder_images/placeholder_avatar_image.png',
         role: 'customer',
         username: 'huy.customer',
         password_hash: password,
@@ -225,7 +225,7 @@ async function seedDatabase() {
         membership_level: 'silver', 
         points: 800, 
         total_spent: 5000000, 
-        image_url: '/images/customers/customer4.jpg',
+        image_url: '/placeholder_images/placeholder_avatar_image.png',
         role: 'customer',
         username: 'nga.customer',
         password_hash: password,
@@ -241,7 +241,7 @@ async function seedDatabase() {
         membership_level: 'bronze', 
         points: 300, 
         total_spent: 2000000, 
-        image_url: '/images/customers/customer5.jpg',
+        image_url: '/placeholder_images/placeholder_avatar_image.png',
         role: 'customer',
         username: 'khoa.customer',
         password_hash: password,
@@ -257,7 +257,7 @@ async function seedDatabase() {
         membership_level: 'regular',
         points: 50,
         total_spent: 500000,
-        image_url: '/images/customers/customer6.jpg',
+        image_url: '/placeholder_images/placeholder_avatar_image.png',
         role: 'customer',
         username: 'son.customer',
         password_hash: password,
@@ -315,7 +315,8 @@ async function seedDatabase() {
         number_of_guests: 6,
         deposit_amount: '200000',
         payment_method: 'card',
-        status: 'confirmed', 
+        status: 'confirmed',
+        isPaid: true, 
         special_requests: 'Trang trí bàn sinh nhật, không có cà chua' 
       },
       { 
@@ -327,6 +328,7 @@ async function seedDatabase() {
         deposit_amount: '200000',
         payment_method: 'transfer',
         status: 'pending',
+        isPaid: false,
         special_requests: 'Bàn yên tĩnh, có đèn nến'
       },
       { 
@@ -338,6 +340,7 @@ async function seedDatabase() {
         deposit_amount: '200000',
         payment_method: 'card',
         status: 'completed',
+        isPaid: true,
         special_requests: 'Menu vegetarian'
       },
       { 
@@ -348,7 +351,8 @@ async function seedDatabase() {
         number_of_guests: 2,
         deposit_amount: '200000',
         payment_method: 'transfer',
-        status: 'confirmed'
+        status: 'confirmed',
+        isPaid: true
       }
     ]);
     console.log(`   OK ${reservations.length} reservations\n`);
@@ -412,6 +416,14 @@ async function seedDatabase() {
 
     // ==================== 10. INGREDIENTS ====================
     console.log('10/24 Tạo Ingredients...');
+    
+    // Helper function to calculate relative expiry dates
+    const getExpiryDate = (daysFromNow) => {
+      const date = new Date();
+      date.setDate(date.getDate() + daysFromNow);
+      return date;
+    };
+    
     const ingredients = await Ingredient.insertMany([
       { 
         name: 'Thịt bò Úc', 
@@ -420,7 +432,7 @@ async function seedDatabase() {
         minimum_quantity: 20, 
         unit_price: 350000, 
         supplier_id: suppliers[0]._id,
-        expiry_date: new Date('2026-01-15'),
+        expiry_date: getExpiryDate(18), // 18 days from now
         stock_status: 'available',
         expiry_status: 'valid'
       },
@@ -431,7 +443,7 @@ async function seedDatabase() {
         minimum_quantity: 10, 
         unit_price: 450000, 
         supplier_id: suppliers[1]._id,
-        expiry_date: new Date('2025-12-25'),
+        expiry_date: getExpiryDate(-3), // 3 days ago (already expired)
         stock_status: 'available',
         expiry_status: 'valid'
       },
@@ -442,7 +454,7 @@ async function seedDatabase() {
         minimum_quantity: 15, 
         unit_price: 280000, 
         supplier_id: suppliers[1]._id,
-        expiry_date: new Date('2025-12-20'),
+        expiry_date: getExpiryDate(8), // 8 days from now (near expiry)
         stock_status: 'low_stock',
         expiry_status: 'near_expiry'
       },
@@ -453,7 +465,7 @@ async function seedDatabase() {
         minimum_quantity: 10, 
         unit_price: 25000, 
         supplier_id: suppliers[2]._id,
-        expiry_date: new Date('2025-12-16'),
+        expiry_date: getExpiryDate(19), // 19 days from now
         stock_status: 'available',
         expiry_status: 'valid'
       },
@@ -464,7 +476,7 @@ async function seedDatabase() {
         minimum_quantity: 10, 
         unit_price: 30000, 
         supplier_id: suppliers[2]._id,
-        expiry_date: new Date('2025-12-18'),
+        expiry_date: getExpiryDate(21), // 21 days from now
         stock_status: 'available',
         expiry_status: 'valid'
       },
@@ -475,7 +487,7 @@ async function seedDatabase() {
         minimum_quantity: 8, 
         unit_price: 20000, 
         supplier_id: suppliers[2]._id,
-        expiry_date: new Date('2025-12-17'),
+        expiry_date: getExpiryDate(20), // 20 days from now
         stock_status: 'low_stock',
         expiry_status: 'valid'
       },
@@ -486,7 +498,7 @@ async function seedDatabase() {
         minimum_quantity: 5, 
         unit_price: 120000, 
         supplier_id: suppliers[3]._id,
-        expiry_date: new Date('2025-12-19'),
+        expiry_date: getExpiryDate(22), // 22 days from now
         stock_status: 'available',
         expiry_status: 'valid'
       },
@@ -497,7 +509,7 @@ async function seedDatabase() {
         minimum_quantity: 10, 
         unit_price: 45000, 
         supplier_id: suppliers[4]._id,
-        expiry_date: new Date('2026-06-14'),
+        expiry_date: getExpiryDate(168), // 6 months from now
         stock_status: 'available',
         expiry_status: 'valid'
       },
@@ -508,7 +520,7 @@ async function seedDatabase() {
         minimum_quantity: 50, 
         unit_price: 35000, 
         supplier_id: suppliers[5]._id,
-        expiry_date: new Date('2026-03-14'),
+        expiry_date: getExpiryDate(77), // ~2.5 months from now
         stock_status: 'available',
         expiry_status: 'valid'
       },
@@ -519,7 +531,7 @@ async function seedDatabase() {
         minimum_quantity: 5, 
         unit_price: 180000, 
         supplier_id: suppliers[3]._id,
-        expiry_date: new Date('2025-12-16'),
+        expiry_date: getExpiryDate(9), // 9 days from now (near expiry)
         stock_status: 'out_of_stock',
         expiry_status: 'near_expiry'
       }
@@ -528,12 +540,24 @@ async function seedDatabase() {
 
     // ==================== 11. STOCK IMPORTS ====================
     console.log('11/24 Tạo Stock Imports...');
+    
+    // Generate dates relative to current date
+    const today = new Date();
+    const import1Date = new Date(today);
+    import1Date.setDate(today.getDate() - 27); 
+    
+    const import2Date = new Date(today);
+    import2Date.setDate(today.getDate() - 23); 
+    
+    const import3Date = new Date(today);
+    import3Date.setDate(today.getDate() - 18); 
+    
     const stockImports = await StockImport.insertMany([
       { 
         import_number: 'IMP-001', 
         staff_id: staffs[4]._id, 
         supplier_id: suppliers[0]._id,
-        import_date: new Date('2025-12-01'), 
+        import_date: import1Date, 
         total_cost: 17500000, 
         notes: 'Nhập 50kg thịt bò Úc chất lượng cao', 
         status: 'completed' 
@@ -542,7 +566,7 @@ async function seedDatabase() {
         import_number: 'IMP-002', 
         staff_id: staffs[4]._id, 
         supplier_id: suppliers[1]._id,
-        import_date: new Date('2025-12-05'), 
+        import_date: import2Date, 
         total_cost: 20500000, 
         notes: 'Nhập cá hồi và tôm sú', 
         status: 'completed' 
@@ -551,7 +575,7 @@ async function seedDatabase() {
         import_number: 'IMP-003', 
         staff_id: staffs[4]._id, 
         supplier_id: suppliers[2]._id,
-        import_date: new Date('2025-12-10'), 
+        import_date: import3Date, 
         total_cost: 3500000, 
         notes: 'Rau tươi hàng ngày', 
         status: 'completed' 
@@ -601,14 +625,14 @@ async function seedDatabase() {
     // ==================== 15. DISHES ====================
     console.log('15/24 Tạo Dishes...');
     const dishes = await Dish.insertMany([
-      { name: 'Bò bít tết Úc', description: 'Bò Úc nướng chín vừa, kèm khoai tây chiên vàng, salad rau tươi và sốt tiêu đen', category: 'main_course', price: 350000, is_available: true, image_url: 'https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400' },
-      { name: 'Cá hồi nướng chanh bơ', description: 'Cá hồi Na Uy nướng lửa, kèm bơ tươi, chanh và rau thơm', category: 'main_course', price: 420000, is_available: true, image_url: 'https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400' },
-      { name: 'Tôm sú nướng bơ tỏi', description: 'Tôm sú to tươi, nướng bơ tỏi thơm phức, kèm bánh mì nướng', category: 'main_course', price: 280000, is_available: true, image_url: 'https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400' },
-      { name: 'Salad rau xà lách tươi', description: 'Rau xà lách, cà chua, bơ tươi, sốt dầu giấm balsamic', category: 'appetizer', price: 85000, is_available: true, image_url: 'https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400' },
-      { name: 'Gỏi tôm', description: 'Tôm sú, nước mắm chua cay vừa vặn, kèm rau sống', category: 'appetizer', price: 120000, is_available: true, image_url: 'https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400' },
-      { name: 'Tiramisu', description: 'Bánh Tiramisu truyền thống Ý, kem mịn mềm', category: 'dessert', price: 95000, is_available: true, image_url: 'https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400' },
-      { name: 'Coca Cola', description: 'Nước ngọt Coca Cola lạnh mát', category: 'beverage', price: 25000, is_available: true, image_url: 'https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400' },
-      { name: 'Nước cam vắt tươi', description: 'Nước cam tươi vắt 100%, không đường', category: 'beverage', price: 35000, is_available: true, image_url: 'https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400' }
+      { name: 'Bò bít tết Úc', description: 'Bò Úc nướng chín vừa, kèm khoai tây chiên vàng, salad rau tươi và sốt tiêu đen', category: 'main_course', price: 350000, is_available: true, image_url: '/placeholder_images/placeholder_dish_image.jpg' },
+      { name: 'Cá hồi nướng chanh bơ', description: 'Cá hồi Na Uy nướng lửa, kèm bơ tươi, chanh và rau thơm', category: 'main_course', price: 420000, is_available: true, image_url: '/placeholder_images/placeholder_dish_image.jpg' },
+      { name: 'Tôm sú nướng bơ tỏi', description: 'Tôm sú to tươi, nướng bơ tỏi thơm phức, kèm bánh mì nướng', category: 'main_course', price: 280000, is_available: true, image_url: '/placeholder_images/placeholder_dish_image.jpg' },
+      { name: 'Salad rau xà lách tươi', description: 'Rau xà lách, cà chua, bơ tươi, sốt dầu giấm balsamic', category: 'appetizer', price: 85000, is_available: true, image_url: '/placeholder_images/placeholder_dish_image.jpg' },
+      { name: 'Gỏi tôm', description: 'Tôm sú, nước mắm chua cay vừa vặn, kèm rau sống', category: 'appetizer', price: 120000, is_available: true, image_url: '/placeholder_images/placeholder_dish_image.jpg' },
+      { name: 'Tiramisu', description: 'Bánh Tiramisu truyền thống Ý, kem mịn mềm', category: 'dessert', price: 95000, is_available: true, image_url: '/placeholder_images/placeholder_dish_image.jpg' },
+      { name: 'Coca Cola', description: 'Nước ngọt Coca Cola lạnh mát', category: 'beverage', price: 25000, is_available: true, image_url: '/placeholder_images/placeholder_dish_image.jpg' },
+      { name: 'Nước cam vắt tươi', description: 'Nước cam tươi vắt 100%, không đường', category: 'beverage', price: 35000, is_available: true, image_url: '/placeholder_images/placeholder_dish_image.jpg' }
     ]);
     console.log(`   OK ${dishes.length} dishes\n`);
 

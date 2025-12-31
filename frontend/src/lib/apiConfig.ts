@@ -33,7 +33,7 @@ export function getApiBaseUrl(): string {
   }
 
   // Server-side fallback (should not happen in normal usage)
-  return 'http://localhost:5000/api/v1';
+  return (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000/api/v1';
 }
 
 /**
@@ -66,7 +66,7 @@ export function getBaseUrl(): string {
   }
 
   // Server-side fallback
-  return 'http://localhost:5000';
+  return (import.meta as any).env?.VITE_BASE_URL || 'http://localhost:5000';
 }
 
 /**

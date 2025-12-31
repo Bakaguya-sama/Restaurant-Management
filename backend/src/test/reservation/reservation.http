@@ -39,6 +39,7 @@ Content-Type: application/json
   ],
   "status": "pending",
   "payment_method": "card",
+  "isPaid": false,
   "special_requests": ""
 }
 
@@ -109,6 +110,22 @@ Content-Type: application/json
 
 {
   "status": "in_progress"
+}
+
+# Update reservation isPaid status
+PATCH http://localhost:5001/api/v1/reservations/{{reservationId}}/is-paid
+Content-Type: application/json
+
+{
+  "isPaid": true
+}
+
+# Mark reservation as not paid
+PATCH http://localhost:5001/api/v1/reservations/{{reservationId}}/is-paid
+Content-Type: application/json
+
+{
+  "isPaid": false
 }
 
 # Delete reservation

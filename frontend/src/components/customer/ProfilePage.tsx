@@ -23,6 +23,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { authService } from "../../lib/authService";
 import { formatDateDisplay, convertDisplayDateToISO } from "../../lib/utils";
 import { uploadAvatarImage, buildImageUrl, extractRelativePath } from "../../lib/uploadApi";
+import { useImageLoader } from "../../hooks/useImageLoader";
 import {
   validateEmail,
   validateVietnamesePhone,
@@ -31,7 +32,28 @@ import {
   validatePasswordMatch,
 } from "../../lib/validation";
 
-const PLACEHOLDER_AVATAR = "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png";
+const PLACEHOLDER_AVATAR = "/placeholder_images/placeholder_avatar_image.png";
+
+function AvatarImage({ src }: { src: string | null }) {
+  if (src?.startsWith("data:")) {
+    return (
+      <img
+        src={src}
+        alt="Avatar"
+        className="w-full h-full object-cover"
+      />
+    );
+  }
+  
+  const displayImage = useImageLoader(src, PLACEHOLDER_AVATAR);
+  return (
+    <img
+      src={displayImage}
+      alt="Avatar"
+      className="w-full h-full object-cover"
+    />
+  );
+}
 
 export function CustomerProfilePage() {
   const { userProfile, isAuthenticated } = useAuth();
@@ -42,7 +64,6 @@ export function CustomerProfilePage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [avatarLoading, setAvatarLoading] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [profileData, setProfileData] = useState({
@@ -73,7 +94,6 @@ export function CustomerProfilePage() {
       try {
         setIsLoadingProfile(true);
         
-        // Check if user is authenticated
         if (!isAuthenticated || !userProfile) {
           console.log('[CUSTOMER_PROFILE] User not authenticated or no profile in context');
           toast.error("Vui lòng đăng nhập để xem hồ sơ");
@@ -81,11 +101,10 @@ export function CustomerProfilePage() {
           return;
         }
 
-        // Use userId from AuthContext instead of calling getCurrentUser
         const currentUserId = userProfile.id;
         console.log('[CUSTOMER_PROFILE] Loading profile for user ID:', currentUserId);
         
-        if (currentUserId) {
+        try {
           const customer = await getCustomerById(currentUserId);
           if (customer) {
             setCurrentCustomer(customer);
@@ -98,8 +117,38 @@ export function CustomerProfilePage() {
               memberSince: customer.created_at ? new Date(customer.created_at).toISOString().split('T')[0] : "",
             });
             if (customer.image_url) {
-              setAvatarUrl(buildImageUrl(customer.image_url));
+              setAvatarUrl(customer.image_url);
             }
+          }
+        } catch (apiError: any) {
+          console.warn("[CUSTOMER_PROFILE] Failed to fetch customer data from API, using AuthContext fallback:", apiError);
+          
+          setCurrentCustomer({
+            id: userProfile.id,
+            full_name: userProfile.name || "",
+            email: userProfile.email || "",
+            phone: userProfile.phone || "",
+            address: userProfile.address || "",
+            membership_level: userProfile.membership_level || "regular",
+            points: userProfile.points || 0,
+            total_spent: userProfile.total_spent || 0,
+            isBanned: userProfile.isBanned || false,
+            image_url: userProfile.image_url,
+            created_at: "",
+            updated_at: ""
+          } as any);
+          
+          setProfileData({
+            fullName: userProfile.name || "",
+            email: userProfile.email || "",
+            phone: userProfile.phone || "",
+            address: userProfile.address || "",
+            dateOfBirth: "",
+            memberSince: "",
+          });
+          
+          if (userProfile.image_url) {
+            setAvatarUrl(userProfile.image_url);
           }
         }
       } catch (error: any) {
@@ -166,7 +215,7 @@ export function CustomerProfilePage() {
           ...currentCustomer,
           image_url: relativePath,
         });
-        setAvatarUrl(buildImageUrl(relativePath));
+        setAvatarUrl(relativePath);
       }
     } catch (uploadError) {
       console.error("[CUSTOMER_PROFILE] Avatar upload failed:", uploadError);
@@ -176,9 +225,10 @@ export function CustomerProfilePage() {
 
   const handleSaveProfile = async () => {
     const nameValidation = validateRequired(profileData.fullName, "Họ và tên");
-    const emailValidation = validateEmail(profileData.email);
+    const emailValidation = profileData.email
+      ? validateEmail(profileData.email)
+      : { isValid: true };
     const phoneValidation = validateVietnamesePhone(profileData.phone);
-    const addressValidation = validateRequired(profileData.address, "Địa chỉ");
 
     if (!nameValidation.isValid) {
       toast.error(nameValidation.error);
@@ -192,11 +242,6 @@ export function CustomerProfilePage() {
 
     if (!phoneValidation.isValid) {
       toast.error(phoneValidation.error);
-      return;
-    }
-
-    if (!addressValidation.isValid) {
-      toast.error(addressValidation.error);
       return;
     }
 
@@ -250,7 +295,7 @@ export function CustomerProfilePage() {
         memberSince: currentCustomer.created_at || "",
       });
       if (currentCustomer.image_url) {
-        setAvatarUrl(buildImageUrl(currentCustomer.image_url));
+        setAvatarUrl(currentCustomer.image_url);
       } else {
         setAvatarUrl(null);
       }
@@ -258,7 +303,6 @@ export function CustomerProfilePage() {
   };
 
   const handleChangePassword = async () => {
-    // Check authentication first
     if (!isAuthenticated || !userProfile) {
       toast.error("Vui lòng đăng nhập để đổi mật khẩu");
       return;
@@ -332,27 +376,11 @@ export function CustomerProfilePage() {
             <Card className="p-6">
               <div className="text-center">
                 <div className="relative inline-block mb-4">
-                  <div className="w-32 h-32 bg-[#625EE8] rounded-full flex items-center justify-center mx-auto overflow-hidden">
+                  <div className="w-32 h-32 bg-[#625EE8] rounded-full flex items-center justify-center mx-auto overflow-hidden relative">
                     {avatarUrl ? (
-                      <img
-                        src={avatarUrl}
-                        alt="Avatar"
-                        className="w-full h-full object-cover"
-                        onLoad={() => {
-                          setAvatarLoading(false);
-                        }}
-                        onError={() => {
-                          setAvatarLoading(false);
-                          setAvatarUrl(PLACEHOLDER_AVATAR);
-                        }}
-                        onLoadStart={() => {
-                          setAvatarLoading(true);
-                        }}
-                      />
+                      <AvatarImage src={avatarUrl} />
                     ) : (
-                      <span className="text-white text-4xl">
-                        {profileData.fullName.charAt(0)}
-                      </span>
+                      <User className="w-16 h-16 text-white" />
                     )}
                   </div>
                   <input
@@ -419,7 +447,7 @@ export function CustomerProfilePage() {
                   disabled={!isEditing}
                 />
                 <Input
-                  label="Email"
+                  label="Email (tùy chọn)"
                   type="email"
                   value={profileData.email}
                   onChange={(e) =>
@@ -437,7 +465,7 @@ export function CustomerProfilePage() {
                 />
                 {isEditing ? (
                   <Input
-                    label="Ngày sinh"
+                    label="Ngày sinh (tùy chọn)"
                     type="date"
                     value={profileData.dateOfBirth ? convertDisplayDateToISO(profileData.dateOfBirth) : ""}
                     onChange={(e) => {
@@ -446,6 +474,11 @@ export function CustomerProfilePage() {
                         setProfileData({
                           ...profileData,
                           dateOfBirth: formatDateDisplay(isoDate) || "",
+                        });
+                      } else {
+                        setProfileData({
+                          ...profileData,
+                          dateOfBirth: "",
                         });
                       }
                     }}
@@ -471,7 +504,7 @@ export function CustomerProfilePage() {
                 /> */}
                 <div className="md:col-span-2">
                   <Input
-                    label="Địa chỉ"
+                    label="Địa chỉ (tùy chọn)"
                     value={profileData.address}
                     onChange={(e) =>
                       setProfileData({ ...profileData, address: e.target.value })

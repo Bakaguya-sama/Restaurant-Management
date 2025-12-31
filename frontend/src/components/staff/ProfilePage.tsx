@@ -11,6 +11,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { authService } from "../../lib/authService";
 import { formatDateDisplay, convertDisplayDateToISO } from "../../lib/utils";
 import { uploadAvatarImage, buildImageUrl, extractRelativePath } from "../../lib/uploadApi";
+import { useImageLoader } from "../../hooks/useImageLoader";
 import {
   validateEmail,
   validateVietnamesePhone,
@@ -23,19 +24,40 @@ interface ProfilePageProps {
   role: UserRole;
 }
 
-const PLACEHOLDER_AVATAR = "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png";
-const MAX_IMAGE_RETRIES = 3;
+const PLACEHOLDER_AVATAR = "/placeholder_images/placeholder_avatar_image.png";
+
+function AvatarImage({ src }: { src: string | null }) {
+  
+  if (src?.startsWith("data:")) {
+    return (
+      <img
+        src={src}
+        alt="Avatar"
+        className="w-full h-full object-cover"
+      />
+    );
+  }
+  
+  
+  const displayImage = useImageLoader(src, PLACEHOLDER_AVATAR);
+  return (
+    <img
+      src={displayImage}
+      alt="Avatar"
+      className="w-full h-full object-cover"
+    />
+  );
+}
 
 export function ProfilePage({ role }: ProfilePageProps) {
   const { userProfile, isAuthenticated } = useAuth();
-  const { staff, loading, getStaffById } = useStaff();
+  const { getStaffById, updateStaff } = useStaff();
   const [currentStaff, setCurrentStaff] = useState<Staff | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [avatarLoading, setAvatarLoading] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [profileData, setProfileData] = useState({
@@ -64,14 +86,11 @@ export function ProfilePage({ role }: ProfilePageProps) {
 
   const [showPasswordChange, setShowPasswordChange] = useState(false);
 
-  const { updateStaff } = useStaff();
-
   useEffect(() => {
     const loadCurrentStaffProfile = async () => {
       try {
         setIsLoadingProfile(true);
         
-        // Check if user is authenticated
         if (!isAuthenticated || !userProfile) {
           console.log('[STAFF_PROFILE] User not authenticated or no profile in context');
           toast.error("Vui lòng đăng nhập để xem hồ sơ");
@@ -79,11 +98,10 @@ export function ProfilePage({ role }: ProfilePageProps) {
           return;
         }
 
-        // Use userId from AuthContext instead of calling getCurrentUser
         const currentUserId = userProfile.id;
         console.log('[STAFF_PROFILE] Loading profile for user ID:', currentUserId);
         
-        if (currentUserId) {
+        try {
           const staffMember = await getStaffById(currentUserId);
           if (staffMember) {
             setCurrentStaff(staffMember);
@@ -99,8 +117,40 @@ export function ProfilePage({ role }: ProfilePageProps) {
               department: getRoleDepartment(staffMember.role),
             });
             if (staffMember.image_url) {
-              setAvatarUrl(buildImageUrl(staffMember.image_url));
+              setAvatarUrl(staffMember.image_url);
             }
+          }
+        } catch (apiError: any) {
+          console.warn("[STAFF_PROFILE] Failed to fetch staff data from API, using AuthContext fallback:", apiError);
+          
+          setCurrentStaff({
+            id: userProfile.id,
+            full_name: userProfile.name || "",
+            email: userProfile.email || "",
+            phone: userProfile.phone || "",
+            address: userProfile.address || "",
+            role: userProfile.role || "waiter",
+            image_url: userProfile.image_url,
+            hire_date: "",
+            date_of_birth: "",
+            created_at: "",
+            updated_at: ""
+          } as any);
+          
+          setProfileData({
+            fullName: userProfile.name || "",
+            email: userProfile.email || "",
+            phone: userProfile.phone || "",
+            address: userProfile.address || "",
+            dateOfBirth: "",
+            position: getRoleLabel(userProfile.role || "waiter"),
+            employeeId: userProfile.id || "",
+            joinDate: "",
+            department: getRoleDepartment(userProfile.role || "waiter"),
+          });
+          
+          if (userProfile.image_url) {
+            setAvatarUrl(userProfile.image_url);
           }
         }
       } catch (error: any) {
@@ -183,7 +233,6 @@ export function ProfilePage({ role }: ProfilePageProps) {
     const nameValidation = validateRequired(profileData.fullName, "Họ và tên");
     const emailValidation = validateEmail(profileData.email);
     const phoneValidation = validateVietnamesePhone(profileData.phone);
-    const addressValidation = validateRequired(profileData.address, "Địa chỉ");
 
     if (!nameValidation.isValid) {
       toast.error(nameValidation.error);
@@ -197,11 +246,6 @@ export function ProfilePage({ role }: ProfilePageProps) {
 
     if (!phoneValidation.isValid) {
       toast.error(phoneValidation.error);
-      return;
-    }
-
-    if (!addressValidation.isValid) {
-      toast.error(addressValidation.error);
       return;
     }
 
@@ -262,7 +306,7 @@ export function ProfilePage({ role }: ProfilePageProps) {
         department: getRoleDepartment(currentStaff.role),
       });
       if (currentStaff.image_url) {
-        setAvatarUrl(buildImageUrl(currentStaff.image_url));
+        setAvatarUrl(currentStaff.image_url);
       }
     }
   };
@@ -343,59 +387,7 @@ export function ProfilePage({ role }: ProfilePageProps) {
                 <div className="relative inline-block mb-4">
                   <div className="w-32 h-32 bg-[#625EE8] rounded-full flex items-center justify-center mx-auto overflow-hidden">
                     {avatarUrl ? (
-                      <img
-                        src={avatarUrl}
-                        alt="Avatar"
-                        className="w-full h-full object-cover"
-                        onLoad={() => {
-                          console.log("[PROFILE] Avatar loaded successfully");
-                          setAvatarLoading(false);
-                        }}
-                        onError={(e) => {
-                          const img = e.target as HTMLImageElement;
-                          const originalSrc = avatarUrl;
-                          const retryCount = parseInt(
-                            img.dataset.retryCount || "0"
-                          );
-                          console.log("[PROFILE] Avatar load error:", {
-                            originalSrc,
-                            retryCount,
-                            currentSrc: img.src,
-                          });
-
-                          if (
-                            retryCount < MAX_IMAGE_RETRIES &&
-                            originalSrc &&
-                            originalSrc !== PLACEHOLDER_AVATAR
-                          ) {
-                            img.dataset.retryCount = String(retryCount + 1);
-                            console.log(
-                              `[PROFILE] Retrying avatar load (attempt ${
-                                retryCount + 1
-                              }/${MAX_IMAGE_RETRIES}):`,
-                              originalSrc
-                            );
-                            setTimeout(() => {
-                              const newSrc = `${originalSrc}?t=${Date.now()}`;
-                              console.log(
-                                "[PROFILE] Setting avatar src with cache buster:",
-                                newSrc
-                              );
-                              img.src = newSrc;
-                            }, 1000);
-                          } else {
-                            console.log(
-                              "[PROFILE] Fallback to placeholder after retries"
-                            );
-                            img.src = PLACEHOLDER_AVATAR;
-                            setAvatarLoading(false);
-                          }
-                        }}
-                        onLoadStart={() => {
-                          console.log("[PROFILE] Avatar loading started");
-                          setAvatarLoading(true);
-                        }}
-                      />
+                      <AvatarImage src={avatarUrl} />
                     ) : (
                       <span className="text-white text-4xl">
                         {profileData.fullName.charAt(0) || "?"}
@@ -476,7 +468,7 @@ export function ProfilePage({ role }: ProfilePageProps) {
                 />
                 {isEditing ? (
                   <Input
-                    label="Ngày sinh"
+                    label="Ngày sinh (tùy chọn)"
                     type="date"
                     value={profileData.dateOfBirth}
                     onChange={(e) =>
@@ -495,7 +487,7 @@ export function ProfilePage({ role }: ProfilePageProps) {
                 )}
                 <div className="md:col-span-2">
                   <Input
-                    label="Địa chỉ"
+                    label="Địa chỉ (tùy chọn)"
                     value={profileData.address}
                     onChange={(e) =>
                       setProfileData({ ...profileData, address: e.target.value })

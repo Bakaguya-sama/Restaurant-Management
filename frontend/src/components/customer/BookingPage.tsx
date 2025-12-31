@@ -192,7 +192,7 @@ export function BookingPage() {
         deposit_amount: "200000",
         payment_method: backendPaymentMethod,
         special_requests: bookingData.notes,
-        status: "pending",
+        status: "confirmed",
         details: [
           {
             table_id: selectedTable.id,
