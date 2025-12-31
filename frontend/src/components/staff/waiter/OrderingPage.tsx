@@ -7,6 +7,7 @@ import { Badge } from "../../ui/badge";
 import { useOrderingDishes } from "../../../hooks/useOrderingDishes";
 import { useTables } from "../../../hooks/useTables";
 import { useStaff } from "../../../hooks/useStaff";
+import { useImageLoader } from "../../../hooks/useImageLoader";
 import { authService } from "../../../lib/authService";
 import { Dish } from "../../../types";
 import { toast } from "sonner";
@@ -29,7 +30,18 @@ import {
 } from "../../../lib/orderApi";
 import { invoiceApi } from "../../../lib/invoiceApi";
 
-const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=300";
+const PLACEHOLDER_IMAGE = "/placeholder_images/placeholder_dish_image.jpg";
+
+function DishImage({ imageUrl }: { imageUrl: string }) {
+  const displayImage = useImageLoader(imageUrl, PLACEHOLDER_IMAGE);
+  return (
+    <img
+      src={displayImage}
+      alt="Dish"
+      className="w-full h-32 object-cover"
+    />
+  );
+}
 
 interface OrderItem {
   item: Dish;
@@ -1225,17 +1237,7 @@ export function OrderingPage() {
                 onClick={() => handleAddToOrder(item)}
                 className="cursor-pointer overflow-hidden"
               >
-                <img
-                  src={
-                    item.image_url ||
-                    PLACEHOLDER_IMAGE
-                  }
-                  alt={item.name}
-                  className="w-full h-32 object-cover"
-                  onError={(e) => {
-                    e.currentTarget.src = PLACEHOLDER_IMAGE;
-                  }}
-                />
+                <DishImage imageUrl={item.image_url} />
                 <div className="p-3">
                   <h4 className="text-sm mb-1">{item.name}</h4>
                   <p className="text-[#625EE8]">{item.price.toLocaleString()}đ</p>
