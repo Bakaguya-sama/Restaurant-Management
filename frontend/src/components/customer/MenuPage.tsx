@@ -10,9 +10,15 @@ import { useImageLoader } from "../../hooks/useImageLoader";
 
 const PLACEHOLDER_IMAGE = "/placeholder_images/placeholder_dish_image.jpg";
 
-function DishCard({ item, onSelect }: { item: Dish; onSelect: (dish: Dish) => void }) {
+function DishCard({
+  item,
+  onSelect,
+}: {
+  item: Dish;
+  onSelect: (dish: Dish) => void;
+}) {
   const displayImage = useImageLoader(item.image_url || "", PLACEHOLDER_IMAGE);
-  
+
   return (
     <Card
       hover
@@ -39,9 +45,7 @@ function DishCard({ item, onSelect }: { item: Dish; onSelect: (dish: Dish) => vo
           {item.description || "Món ăn ngon tuyệt vời"}
         </p>
         <div className="flex items-center justify-between">
-          <span className="text-[#625EE8]">
-            {item.price.toLocaleString()}đ
-          </span>
+          <span className="text-[#625EE8]">{item.price.toLocaleString()}đ</span>
         </div>
       </div>
     </Card>
@@ -58,6 +62,12 @@ export function MenuPage() {
   const { items } = useMenuDishes(searchQuery, selectedCategory);
 
   const filteredItems = items;
+
+  // Always call useImageLoader, even if selectedDish is null
+  const displayImage = useImageLoader(
+    selectedDish?.image_url || "",
+    PLACEHOLDER_IMAGE
+  );
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
@@ -115,17 +125,15 @@ export function MenuPage() {
         title={selectedDish?.name || ""}
         size="xl"
       >
-        {selectedDish && (() => {
-          const displayImage = useImageLoader(selectedDish.image_url, PLACEHOLDER_IMAGE);
-          return (
-            <div className="space-y-6">
-              {/* Ảnh ở trên */}
-              <div>
-                <img
-                  src={displayImage}
-                  alt={selectedDish.name}
-                  className="w-full h-96 object-cover rounded-lg"
-                />
+        {selectedDish && (
+          <div className="space-y-6">
+            {/* Ảnh ở trên */}
+            <div>
+              <img
+                src={displayImage}
+                alt={selectedDish.name}
+                className="w-full h-96 object-cover rounded-lg"
+              />
             </div>
 
             {/* Thông tin ở dưới */}
@@ -147,9 +155,8 @@ export function MenuPage() {
                 </p>
               </div>
             </div>
-            </div>
-          );
-        })()}
+          </div>
+        )}
       </Modal>
     </div>
   );
