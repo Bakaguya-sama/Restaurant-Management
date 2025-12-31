@@ -17,6 +17,11 @@ class RegisterUseCase {
     if (existingUser) {
       this.throwDuplicateError(existingUser, request);
     }
+    
+    const existingPhone = await this.userRepository.findByPhone(request.phone);
+    if (existingPhone) {
+      throw new Error('phone already exists');
+    }
 
     const customer = await this.userRepository.createCustomer(request);
     

@@ -19,6 +19,10 @@ class UserRepository {
     return User.findOne({ username });
   }
 
+  async findByPhone(phone) {
+    return User.findOne({ phone });
+  }
+
   async findById(id) {
     return User.findById(id).select('-password_hash');
   }

@@ -4,6 +4,7 @@ module.exports = {
   verbose: true,
   forceExit: true,
   detectOpenHandles: false,
+  maxWorkers: 1,
   testMatch: [
     '**/src/test/**/*.test.js',
     '**/src/test/**/*.integration.js'

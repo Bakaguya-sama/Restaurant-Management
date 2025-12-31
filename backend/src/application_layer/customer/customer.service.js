@@ -60,6 +60,13 @@ class CustomerService {
       }
     }
 
+    if (updateData.phone && updateData.phone !== existingCustomer.phone) {
+      const phoneExists = await this.customerRepository.findByPhone(updateData.phone);
+      if (phoneExists) {
+        throw new Error('Phone already exists');
+      }
+    }
+
     if (updateData.password) {
       const salt = await bcrypt.genSalt(10);
       updateData.password_hash = await bcrypt.hash(updateData.password, salt);

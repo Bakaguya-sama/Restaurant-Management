@@ -46,7 +46,7 @@ class AuthService {
 
     if (role === 'customer') {
       user = await User.findOne({
-        $or: [{ email: identifier }, { username: identifier }],
+        $or: [{ email: identifier }, { username: identifier }, { phone: identifier }],
         role: 'customer'
       });
     } else if (role && ['waiter', 'cashier', 'manager'].includes(role)) {
