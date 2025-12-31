@@ -19,7 +19,10 @@ export function HomePage() {
   // imageUrls removed — do not call hooks inside loops or effects
 
   // Hook to get selected dish image (called unconditionally to obey hooks rules)
-  const selectedDishImage = useImageLoader(selectedDish?.image_url || "", PLACEHOLDER_IMAGE);
+  const selectedDishImage = useImageLoader(
+    selectedDish?.image_url || "",
+    PLACEHOLDER_IMAGE
+  );
 
   // Load top 3 most ordered dishes
   useEffect(() => {
@@ -93,7 +96,11 @@ export function HomePage() {
             {featuredDishes.map((item, index) => (
               <Card key={item.id} hover className="overflow-hidden">
                 <img
-                  src={item.image_url ? buildImageUrl(item.image_url) : PLACEHOLDER_IMAGE}
+                  src={
+                    item.image_url
+                      ? buildImageUrl(item.image_url)
+                      : PLACEHOLDER_IMAGE
+                  }
                   alt={item.name}
                   className="w-full h-48 object-cover"
                   onError={(e) => {

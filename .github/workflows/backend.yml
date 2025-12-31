@@ -3,7 +3,7 @@ name: Backend - Test
 on:
   push:
     branches:
-      - huy-fix
+      - "**"
     paths:
       - "backend/**"
   pull_request:
@@ -13,8 +13,58 @@ on:
       - "backend/**"
 
 jobs:
-  backend-tests:
-    name: Backend - Test
+  fast-tests:
+    name: Fast Tests (push)
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    # single node version for quicker runs
+    strategy:
+      matrix:
+        node-version: [22.x]
+
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+          cache-dependency-path: ./backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Wait for MongoDB
+        run: |
+          echo "Waiting for MongoDB to be ready..."
+          timeout 30 bash -c 'until nc -z localhost 27017; do sleep 1; done'
+
+      - name: Run fast tests (single node)
+        run: npm test -- --runInBand --maxWorkers=50%
+        env:
+          MONGODB_URI: mongodb://localhost:27017/restaurant_management_test
+          NODE_ENV: test
+          JWT_SECRET: test-secret-key-for-ci
+
+  full-tests:
+    name: Full Tests (PR)
+    if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -53,7 +103,7 @@ jobs:
           echo "Waiting for MongoDB to be ready..."
           timeout 30 bash -c 'until nc -z localhost 27017; do sleep 1; done'
 
-      - name: Run tests
+      - name: Run tests (full matrix)
         run: npm test
         env:
           MONGODB_URI: mongodb://localhost:27017/restaurant_management_test
