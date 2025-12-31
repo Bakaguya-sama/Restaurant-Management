@@ -5,7 +5,7 @@ const Schema = mongoose.Schema;
 const UserSchema = new Schema({
   full_name: { type: String, required: true },
   email: { type: String, required: false, unique: true, sparse: true },
-  phone: { type: String, required: true },
+  phone: { type: String, required: true , unique: true },
   address: String,
   date_of_birth: Date,
   image_url: String,
@@ -82,6 +82,7 @@ const ReservationSchema = new Schema({
   deposit_amount: { type: String, required: true }, // "200000"
   payment_method: { type: String, enum: ['card', 'transfer'], required: true , default: 'card' },
   status: { type: String, enum: ['pending', 'confirmed', 'in_progress', 'cancelled', 'completed'], default: 'pending' },
+  isPaid: { type: Boolean, default: false },
   special_requests: String,
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now }

@@ -281,6 +281,20 @@ class ReservationService {
     return this.formatReservationResponse(updated);
   }
 
+  async updateReservationIsPaid(id, isPaid) {
+    const reservation = await this.reservationRepository.findById(id);
+    if (!reservation) {
+      throw new Error('Reservation not found');
+    }
+
+    if (typeof isPaid !== 'boolean') {
+      throw new Error('isPaid must be a boolean value');
+    }
+
+    const updated = await this.reservationRepository.update(id, { isPaid });
+    return this.formatReservationResponse(updated);
+  }
+
   async deleteReservation(id) {
     const details = await this.reservationDetailRepository.findAll({ reservation_id: id });
     for (const detail of details) {
@@ -326,6 +340,7 @@ class ReservationService {
       deposit_amount: reservationObj.deposit_amount,
       payment_method: reservationObj.payment_method,
       status: reservationObj.status,
+      isPaid: reservationObj.isPaid,
       special_requests: reservationObj.special_requests,
       details: detailsWithTables,
       created_at: reservationObj.created_at,

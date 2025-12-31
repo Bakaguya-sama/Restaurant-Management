@@ -52,6 +52,9 @@ export const reservationApi = {
   updateStatus: (id: string, status: ReservationStatus) =>
     apiClient.patch<Reservation>(`/reservations/${id}/status`, { status }),
 
+  updateIsPaid: (id: string, isPaid: boolean) =>
+    apiClient.patch<Reservation>(`/reservations/${id}/is-paid`, { isPaid }),
+
   delete: (id: string) =>
     apiClient.delete<void>(`/reservations/${id}`),
 

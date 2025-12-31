@@ -30,7 +30,7 @@ import { toast } from "sonner";
 
 export function BookingManagementPage() {
   const { userProfile } = useAuth();
-  const { reservations, fetchReservationsByCustomerId, loading } = useReservations();
+  const { reservations, fetchReservationsByCustomerId, loading, updateReservationIsPaid } = useReservations();
   const [customers, setCustomers] = useState<any[]>([]);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -285,20 +285,16 @@ export function BookingManagementPage() {
     if (!selectedBooking) return;
 
     try {
-      const response = await reservationApi.updateStatus(selectedBooking.id, 'confirmed');
+      await updateReservationIsPaid(selectedBooking.id, true);
       
-      if (response.success) {
-        toast.success("Thanh toán thành công! Phiếu đặt bàn đã được xác nhận.");
-        setShowPaymentModal(false);
-        
-        if (selectedBooking.customer_id) {
-          await fetchReservationsByCustomerId(selectedBooking.customer_id);
-        }
-        
-        setSelectedBooking(null);
-      } else {
-        toast.error(response.message || "Lỗi khi xử lý thanh toán");
+      toast.success("Thanh toán thành công! Phiếu đặt bàn đã được xác nhận.");
+      setShowPaymentModal(false);
+      
+      if (selectedBooking.customer_id) {
+        await fetchReservationsByCustomerId(selectedBooking.customer_id);
       }
+      
+      setSelectedBooking(null);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Lỗi khi xử lý thanh toán";
       toast.error(errorMsg);
@@ -380,7 +376,7 @@ export function BookingManagementPage() {
               fullWidth
               onClick={() => {
                 setSelectedBooking(booking);
-                if (booking.status === "pending") {
+                if (!booking.isPaid) {
                   setShowPaymentModal(true);
                 } else {
                   setShowDetailModal(true);
@@ -501,7 +497,7 @@ export function BookingManagementPage() {
 
               {/* Action Buttons */}
               <div className="flex gap-3">
-                {selectedBooking.status === "confirmed" ? (
+                {selectedBooking.isPaid ? (
                   <>
                     <Button
                       variant="secondary"

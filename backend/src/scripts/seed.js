@@ -315,7 +315,8 @@ async function seedDatabase() {
         number_of_guests: 6,
         deposit_amount: '200000',
         payment_method: 'card',
-        status: 'confirmed', 
+        status: 'confirmed',
+        isPaid: true, 
         special_requests: 'Trang trí bàn sinh nhật, không có cà chua' 
       },
       { 
@@ -327,6 +328,7 @@ async function seedDatabase() {
         deposit_amount: '200000',
         payment_method: 'transfer',
         status: 'pending',
+        isPaid: false,
         special_requests: 'Bàn yên tĩnh, có đèn nến'
       },
       { 
@@ -338,6 +340,7 @@ async function seedDatabase() {
         deposit_amount: '200000',
         payment_method: 'card',
         status: 'completed',
+        isPaid: true,
         special_requests: 'Menu vegetarian'
       },
       { 
@@ -348,7 +351,8 @@ async function seedDatabase() {
         number_of_guests: 2,
         deposit_amount: '200000',
         payment_method: 'transfer',
-        status: 'confirmed'
+        status: 'confirmed',
+        isPaid: true
       }
     ]);
     console.log(`   OK ${reservations.length} reservations\n`);

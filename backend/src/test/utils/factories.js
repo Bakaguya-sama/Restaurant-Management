@@ -36,7 +36,7 @@ async function createLocation(overrides = {}) {
 async function createTable(overrides = {}) {
   const location = overrides.location || (await createLocation());
   const table = new Table({
-    table_number: Math.floor(Math.random() * 1000) + 1,
+    table_number: `${Date.now()}${Math.floor(Math.random() * 100)}`,
     location_id: location._id,
     capacity: overrides.capacity || 4,
     status: overrides.status || 'free',
