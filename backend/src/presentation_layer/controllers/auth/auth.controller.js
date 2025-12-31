@@ -1,4 +1,5 @@
 const AuthService = require('../../../application_layer/auth/auth.service');
+const { CustomerRegisterRequest } = require('../../../domain_layer/auth/register.dto');
 
 class AuthController {
   constructor() {
@@ -9,37 +10,17 @@ class AuthController {
     try {
       const { full_name, email, phone, address, date_of_birth, username, password } = req.body;
 
-      if (!full_name || !email || !phone || !username || !password) {
-        return res.status(400).json({
-          success: false,
-          message: 'Please provide all required fields: full_name, email, phone, username, password'
-        });
-      }
-
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid email format'
-        });
-      }
-
-      if (password.length < 6) {
-        return res.status(400).json({
-          success: false,
-          message: 'Password must be at least 6 characters long'
-        });
-      }
-
-      const result = await this.authService.registerCustomer({
+      const registerRequest = new CustomerRegisterRequest(
         full_name,
-        email,
         phone,
-        address,
-        date_of_birth,
+        password,
         username,
-        password
-      });
+        email,
+        address,
+        date_of_birth
+      );
+
+      const result = await this.authService.registerCustomer(registerRequest);
 
       res.status(201).json({
         success: true,
@@ -47,17 +28,10 @@ class AuthController {
         data: result
       });
     } catch (error) {
-      if (error.message.includes('already exists')) {
-        return res.status(400).json({
-          success: false,
-          message: error.message
-        });
-      }
-
-      res.status(500).json({
+      const statusCode = error.message.includes('already exists') ? 400 : 500;
+      res.status(statusCode).json({
         success: false,
-        message: 'Registration failed',
-        error: error.message
+        message: error.message
       });
     }
   }

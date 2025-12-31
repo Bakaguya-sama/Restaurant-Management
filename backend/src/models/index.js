@@ -4,7 +4,7 @@ const Schema = mongoose.Schema;
 
 const UserSchema = new Schema({
   full_name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
+  email: { type: String, required: false, unique: true, sparse: true },
   phone: { type: String, required: true },
   address: String,
   date_of_birth: Date,
@@ -24,7 +24,8 @@ const UserSchema = new Schema({
 // ==================== STAFF (Discriminator of USER) ====================
 
 const StaffSchema = new Schema({
-  hire_date: { type: Date, default: Date.now }
+  hire_date: { type: Date, default: Date.now },
+  email: { type: String, required: true, unique: true }
 });
 
 // ==================== CUSTOMER (Discriminator of USER) ====================

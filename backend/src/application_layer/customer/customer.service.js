@@ -22,9 +22,11 @@ class CustomerService {
   }
 
   async createCustomer(customerData) {
-    const existingEmail = await this.customerRepository.findByEmail(customerData.email);
-    if (existingEmail) {
-      throw new Error('Email already exists');
+    if (customerData.email) {
+      const existingEmail = await this.customerRepository.findByEmail(customerData.email);
+      if (existingEmail) {
+        throw new Error('Email already exists');
+      }
     }
 
     const customerEntity = new CustomerEntity(customerData);

@@ -4,6 +4,7 @@ import { User, Phone, Mail, Lock, CheckCircle } from "lucide-react";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { toast } from "sonner";
+import { authService } from "../../lib/authService";
 import {
   validateEmail,
   validateVietnamesePhone,
@@ -22,6 +23,7 @@ export function RegisterPage() {
     confirmPassword: "",
   });
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({
     fullName: "",
     phone: "",
@@ -30,7 +32,7 @@ export function RegisterPage() {
     confirmPassword: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validate all fields
@@ -66,11 +68,43 @@ export function RegisterPage() {
       return;
     }
 
-    // Mock registration
-    setShowSuccess(true);
-    setTimeout(() => {
-      navigate("/login");
-    }, 2000);
+    try {
+      setIsLoading(true);
+      
+      const username = form.email 
+        ? form.email.split('@')[0] 
+        : form.phone.replace(/\D/g, '');
+
+      const response = await authService.register({
+        full_name: form.fullName,
+        phone: form.phone,
+        email: form.email,
+        password: form.password,
+        username: username,
+      });
+
+      if (response.success && response.data) {
+        authService.setTokens(
+          response.data.accessToken,
+          response.data.refreshToken
+        );
+        
+        toast.success("Đăng ký thành công!");
+        setShowSuccess(true);
+        
+        setTimeout(() => {
+          navigate("/login");
+        }, 2000);
+      } else {
+        toast.error(response.message || "Đăng ký thất bại");
+      }
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      const errorMessage = error.message || "Đăng ký thất bại. Vui lòng thử lại!";
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (showSuccess) {
@@ -223,8 +257,13 @@ export function RegisterPage() {
               )}
             </div>
 
-            <Button type="submit" fullWidth size="lg">
-              Đăng ký thành viên
+            <Button 
+              type="submit" 
+              fullWidth 
+              size="lg"
+              disabled={isLoading}
+            >
+              {isLoading ? "Đang đăng ký..." : "Đăng ký thành viên"}
             </Button>
 
             <div className="text-center pt-4">

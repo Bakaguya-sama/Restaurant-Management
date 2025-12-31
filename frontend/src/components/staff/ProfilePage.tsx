@@ -233,7 +233,6 @@ export function ProfilePage({ role }: ProfilePageProps) {
     const nameValidation = validateRequired(profileData.fullName, "Họ và tên");
     const emailValidation = validateEmail(profileData.email);
     const phoneValidation = validateVietnamesePhone(profileData.phone);
-    const addressValidation = validateRequired(profileData.address, "Địa chỉ");
 
     if (!nameValidation.isValid) {
       toast.error(nameValidation.error);
@@ -247,11 +246,6 @@ export function ProfilePage({ role }: ProfilePageProps) {
 
     if (!phoneValidation.isValid) {
       toast.error(phoneValidation.error);
-      return;
-    }
-
-    if (!addressValidation.isValid) {
-      toast.error(addressValidation.error);
       return;
     }
 
@@ -474,7 +468,7 @@ export function ProfilePage({ role }: ProfilePageProps) {
                 />
                 {isEditing ? (
                   <Input
-                    label="Ngày sinh"
+                    label="Ngày sinh (tùy chọn)"
                     type="date"
                     value={profileData.dateOfBirth}
                     onChange={(e) =>
@@ -493,7 +487,7 @@ export function ProfilePage({ role }: ProfilePageProps) {
                 )}
                 <div className="md:col-span-2">
                   <Input
-                    label="Địa chỉ"
+                    label="Địa chỉ (tùy chọn)"
                     value={profileData.address}
                     onChange={(e) =>
                       setProfileData({ ...profileData, address: e.target.value })
