@@ -5,6 +5,7 @@ import { Card } from "../../ui/Card";
 import { Modal } from "../../ui/Modal";
 import { Badge } from "../../ui/badge";
 import { useOrderingDishes } from "../../../hooks/useOrderingDishes";
+import { useDishes } from "../../../hooks/useDishes";
 import { useTables } from "../../../hooks/useTables";
 import { useStaff } from "../../../hooks/useStaff";
 import { useImageLoader } from "../../../hooks/useImageLoader";
@@ -87,7 +88,10 @@ export function OrderingPage() {
   const [isProcessingInvoice, setIsProcessingInvoice] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
+  // Load all dishes for order details mapping (không filter theo category)
+  const { dishes: allDishes } = useDishes();
   
+  // Load filtered dishes for menu display
   const { items: filteredItems } = useOrderingDishes(selectedCategory);
   
   
@@ -219,7 +223,7 @@ export function OrderingPage() {
   const currentOrders: OrderItem[] =
     orderType === "table" && currentTableOrder
       ? currentTableOrder.orderDetails.filter((od) => od.status !== "cancelled").map((od) => {
-          const dish = filteredItems.find((d) => d.id === od.dish_id);
+          const dish = allDishes.find((d) => d.id === od.dish_id);
           const statusMap: Record<string, "pending" | "cooking" | "served"> = {
             "pending": "pending",
             "preparing": "cooking",
@@ -236,7 +240,7 @@ export function OrderingPage() {
         })
       : orderType === "takeaway" && selectedTakeawayOrder && takeawayOrdersMap[selectedTakeawayOrder]
       ? takeawayOrdersMap[selectedTakeawayOrder].orderDetails.filter((od) => od.status !== "cancelled").map((od) => {
-          const dish = filteredItems.find((d) => d.id === od.dish_id);
+          const dish = allDishes.find((d) => d.id === od.dish_id);
           const statusMap: Record<string, "pending" | "cooking" | "served"> = {
             "pending": "pending",
             "preparing": "cooking",
@@ -446,9 +450,10 @@ export function OrderingPage() {
         const orderId = currentTableOrder.order._id || currentTableOrder.order.id as string;
         const detailId = orderDetail._id || orderDetail.id as string;
         
+        // ⭐ GỌI API TRƯỚC để validate nguyên liệu
         await updateOrderDetailQuantity(orderId, detailId, newQuantity);
 
-        
+        // ✅ Chỉ update UI nếu API thành công
         const updated = currentTableOrder.orderDetails.map((od) =>
           (od._id || od.id) === currentOrderItem.orderDetailId
             ? { ...od, quantity: newQuantity, line_total: newQuantity * od.unit_price }
@@ -505,9 +510,10 @@ export function OrderingPage() {
         const orderId = takeawayOrder.order._id || takeawayOrder.order.id as string;
         const detailId = orderDetail._id || orderDetail.id as string;
         
+        // ⭐ GỌI API TRƯỚC để validate nguyên liệu
         await updateOrderDetailQuantity(orderId, detailId, newQuantity);
 
-        
+        // ✅ Chỉ update UI nếu API thành công
         const updated = takeawayOrder.orderDetails.map((od) =>
           (od._id || od.id) === currentOrderItem.orderDetailId
             ? { ...od, quantity: newQuantity, line_total: newQuantity * od.unit_price }
@@ -530,7 +536,7 @@ export function OrderingPage() {
       }
     } catch (error: any) {
       console.error("Error updating quantity:", error);
-      toast.error("Không thể cập nhật số lượng");
+      toast.error(error.message || "Không thể cập nhật số lượng");
     }
   };
 
@@ -662,9 +668,7 @@ export function OrderingPage() {
           });
         }
 
-        toast.success(
-          `Đã cập nhật: ${getStatusText(newStatus)}`
-        );
+        toast.success(`Đã cập nhật: ${getStatusText(newStatus)}`);
       } else if (orderType === "takeaway" && selectedTakeawayOrder && takeawayOrdersMap[selectedTakeawayOrder]) {
         const currentOrderItem = currentOrders[index];
         if (!currentOrderItem) return;
@@ -696,9 +700,7 @@ export function OrderingPage() {
           },
         });
 
-        toast.success(
-          `Đã cập nhật: ${getStatusText(newStatus)}`
-        );
+        toast.success(`Đã cập nhật: ${getStatusText(newStatus)}`);
       }
     } catch (error: any) {
       console.error("Error updating status:", error);
@@ -763,6 +765,7 @@ export function OrderingPage() {
         const invoiceData = {
           invoice_number: `INV-${Date.now()}`,
           order_id: orderId,
+          customer_id: latestOrder.customer_id,
           subtotal: latestOrder.subtotal || 0,
           discount_amount: 0,
           tax_amount: latestOrder.tax || 0,
@@ -835,6 +838,7 @@ export function OrderingPage() {
         const invoiceData = {
           invoice_number: `INV-${Date.now()}`,
           order_id: (takeawayOrder.order._id || takeawayOrder.order.id) as string,
+          customer_id: takeawayOrder.order.customer_id,
           subtotal: totalAmount,
           discount_amount: 0,
           tax_amount: 0,
@@ -970,24 +974,46 @@ export function OrderingPage() {
           
           await patchOrderDetailStatus(orderId, detailId, "cancelled");
 
-          
-          const updated = currentTableOrder.orderDetails.map((od) =>
-            (od._id || od.id) === item.orderDetailId
-              ? { ...od, status: "cancelled" as const }
-              : od
-          );
+          // Recalculate order total (backend will exclude cancelled items)
+          try {
+            await fetch(`http://localhost:5000/api/v1/orders/${orderId}/calculate`, { method: 'POST' });
+            // Reload order to get updated totals
+            const updatedOrder = await getOrderById(orderId);
+            const updatedDetails = await getOrderDetails(orderId);
+            
+            const selectedTableObj = tables.find(
+              (t) => t.table_number === selectedTable
+            );
+            if (selectedTableObj) {
+              setTableOrdersMap({
+                ...tableOrdersMap,
+                [selectedTableObj.id]: {
+                  order: updatedOrder,
+                  orderDetails: updatedDetails,
+                },
+              });
+            }
+          } catch (calcError) {
+            console.warn('Could not recalculate order:', calcError);
+            // Fallback to local state update if API fails
+            const updated = currentTableOrder.orderDetails.map((od) =>
+              (od._id || od.id) === item.orderDetailId
+                ? { ...od, status: "cancelled" as const }
+                : od
+            );
 
-          const selectedTableObj = tables.find(
-            (t) => t.table_number === selectedTable
-          );
-          if (selectedTableObj) {
-            setTableOrdersMap({
-              ...tableOrdersMap,
-              [selectedTableObj.id]: {
-                order: currentTableOrder.order,
-                orderDetails: updated,
-              },
-            });
+            const selectedTableObj = tables.find(
+              (t) => t.table_number === selectedTable
+            );
+            if (selectedTableObj) {
+              setTableOrdersMap({
+                ...tableOrdersMap,
+                [selectedTableObj.id]: {
+                  order: currentTableOrder.order,
+                  orderDetails: updated,
+                },
+              });
+            }
           }
           toast.success("Đã hủy món");
         } else if (orderType === "takeaway" && selectedTakeawayOrder && takeawayOrdersMap[selectedTakeawayOrder]) {
@@ -1004,20 +1030,37 @@ export function OrderingPage() {
           
           await patchOrderDetailStatus(orderId, detailId, "cancelled");
 
-          
-          const updated = takeawayOrder.orderDetails.map((od) =>
-            (od._id || od.id) === item.orderDetailId
-              ? { ...od, status: "cancelled" as const }
-              : od
-          );
+          // Recalculate order total (backend will exclude cancelled items)
+          try {
+            await fetch(`http://localhost:5000/api/v1/orders/${orderId}/calculate`, { method: 'POST' });
+            // Reload order to get updated totals
+            const updatedOrder = await getOrderById(orderId);
+            const updatedDetails = await getOrderDetails(orderId);
+            
+            setTakeawayOrdersMap({
+              ...takeawayOrdersMap,
+              [selectedTakeawayOrder]: {
+                order: updatedOrder,
+                orderDetails: updatedDetails,
+              },
+            });
+          } catch (calcError) {
+            console.warn('Could not recalculate order:', calcError);
+            // Fallback to local state update if API fails
+            const updated = takeawayOrder.orderDetails.map((od) =>
+              (od._id || od.id) === item.orderDetailId
+                ? { ...od, status: "cancelled" as const }
+                : od
+            );
 
-          setTakeawayOrdersMap({
-            ...takeawayOrdersMap,
-            [selectedTakeawayOrder]: {
-              order: takeawayOrder.order,
-              orderDetails: updated,
-            },
-          });
+            setTakeawayOrdersMap({
+              ...takeawayOrdersMap,
+              [selectedTakeawayOrder]: {
+                order: takeawayOrder.order,
+                orderDetails: updated,
+              },
+            });
+          }
 
           toast.success("Đã hủy món");
         }
@@ -1327,23 +1370,25 @@ export function OrderingPage() {
                       </Button>
 
                       {}
-                      <select
-                        value={orderItem.status === "cooking" ? "preparing" : orderItem.status}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          const statusMap: Record<string, "pending" | "preparing" | "served"> = {
-                            "pending": "pending",
-                            "preparing": "preparing",
-                            "served": "served",
-                          };
-                          handleUpdateStatus(index, statusMap[value] || "pending");
-                        }}
-                        className="px-2 py-1 text-sm border rounded-lg hover:bg-gray-50 cursor-pointer"
-                      >
-                        <option value="pending">Chờ xử lý</option>
-                        <option value="preparing">Đang nấu</option>
-                        <option value="served">Đã phục vụ</option>
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={orderItem.status === "cooking" ? "preparing" : orderItem.status}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            const statusMap: Record<string, "pending" | "preparing" | "served"> = {
+                              "pending": "pending",
+                              "preparing": "preparing",
+                              "served": "served",
+                            };
+                            handleUpdateStatus(index, statusMap[value] || "pending");
+                          }}
+                          className="px-2 py-1 text-sm border rounded-lg hover:bg-gray-50 cursor-pointer w-full"
+                        >
+                          <option value="pending">Chờ xử lý</option>
+                          <option value="preparing">Đang nấu</option>
+                          <option value="served">Đã phục vụ</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1369,24 +1414,11 @@ export function OrderingPage() {
                 <Button
                   fullWidth
                   className="mt-4"
-                  disabled={
-                    currentOrders.length === 0 ||
-                    !currentOrders
-                      .every((o) => o.status === "served") ||
-                    isProcessingInvoice
-                  }
+                  disabled={currentOrders.length === 0 || isProcessingInvoice}
                   onClick={handleConfirmInvoice}
                 >
                   {isProcessingInvoice ? "Đang xử lý..." : "Xác nhận hóa đơn"}
                 </Button>
-                {currentOrders.length > 0 &&
-                  !currentOrders
-                    .every((o) => o.status === "served") && (
-                    <p className="text-xs text-amber-600 mt-2 text-center">
-                      Tất cả món (trừ món đã hủy) phải ở trạng thái "Đã phục vụ" để xác nhận hóa
-                      đơn
-                    </p>
-                  )}
               </div>
             </>
           )}

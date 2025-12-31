@@ -22,6 +22,8 @@ import { useStaff } from "../../../hooks/useStaff";
 import { useReservations } from "../../../hooks/useReservations";
 import { authService } from "../../../lib/authService";
 import { createOrder } from "../../../lib/orderingPageApi";
+import { reservationApi } from "../../../lib/reservationApi";
+import { generateOrderNumber } from "../../../lib/orderApi";
 
 export function TablesMapPage() {
   const hookResult = useTables();
@@ -256,15 +258,49 @@ export function TablesMapPage() {
     }
 
     try {
+      // Get reservation details to retrieve customer_id
+      const reservationId = bookingCode.trim();
+      let customerId: string | undefined;
+      
+      try {
+        const reservationResponse = await reservationApi.getById(reservationId);
+        if (reservationResponse.success && reservationResponse.data) {
+          customerId = reservationResponse.data.customer_id;
+          console.log("Found customer_id from reservation:", customerId);
+        }
+      } catch (err) {
+        console.warn("Could not fetch reservation details:", err);
+      }
+
+      // Update table status to occupied
       await updateTableStatus(selectedTable.id, "occupied");
       
-      // Use bookingCode as reservation ID
-      const reservationId = bookingCode.trim();
-      
+      // Update reservation status
       try {
         await updateReservationStatus(reservationId, "completed");
       } catch (err) {
         console.error("Error updating reservation status:", err);
+      }
+
+      // Create order with customer_id if available
+      try {
+        const currentUser = await authService.getCurrentUser();
+        const staffId = currentUser.data.id || currentUser.data._id;
+        
+        const orderNumber = generateOrderNumber("dine-in-waiter");
+        await createOrder({
+          order_number: orderNumber,
+          order_type: "dine-in-waiter",
+          order_time: new Date().toISOString(),
+          table_id: selectedTable.id,
+          customer_id: customerId,
+          staff_id: staffId,
+          notes: `Check-in từ đặt bàn ${reservationId}`,
+        });
+        console.log("Order created with customer_id:", customerId);
+      } catch (err) {
+        console.error("Error creating order during check-in:", err);
+        // Don't fail the check-in if order creation fails
       }
       
       toast.success(`Đã check-in khách cho bàn ${selectedTable.table_number}`);
