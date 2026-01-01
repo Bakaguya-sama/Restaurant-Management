@@ -13,13 +13,6 @@ import {
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { Modal } from "../ui/Modal";
-import {
-  mockRewards,
-  mockPromotions,
-  mockPointHistory,
-  mockVoucherHistory,
-  mockCustomers,
-} from "../../lib/mockData";
 import { toast } from "sonner";
 import { copyToClipboard } from "../../lib/clipboard";
 import { PromotionCard } from "./PromotionCard";
@@ -34,48 +27,50 @@ export function MembershipPage() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [showPointsRedemption, setShowPointsRedemption] = useState(false);
   const [pointsToRedeem, setPointsToRedeem] = useState(0);
-  const [currentCustomer, setCurrentCustomer] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [promotions, setPromotions] = useState<any[]>([]);
   const [isLoadingPromotions, setIsLoadingPromotions] = useState(false);
   const [voucherHistory, setVoucherHistory] = useState<any[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [pointHistory, setPointHistory] = useState<any[]>([]);
+  const [currentCustomerData, setCurrentCustomerData] = useState<any>(null);
 
-  // Fetch customer đầu tiên từ API (giống như OrderingPage lấy waiter đầu tiên)
+  // ⭐ Dùng customer từ userProfile (đã đăng nhập)
+  const currentCustomer = currentCustomerData || userProfile;
+
+  // ⭐ Refetch customer data để có total_spent mới nhất
   useEffect(() => {
     const fetchCustomerData = async () => {
+      if (!userProfile) {
+        setIsLoading(false);
+        toast.error("Vui lòng đăng nhập để xem thông tin thành viên");
+        return;
+      }
+
       try {
-        setIsLoading(true);
         const apiBaseUrl =
           (import.meta as any).env?.VITE_API_URL ||
           "http://localhost:5000/api/v1";
-
-        // Lấy danh sách customers
-        const response = await fetch(`${apiBaseUrl}/customers`);
-
-        if (!response.ok) {
-          throw new Error("Không thể tải danh sách khách hàng");
+        
+        const customerId = userProfile._id || userProfile.id;
+        const response = await fetch(`${apiBaseUrl}/customers/${customerId}`);
+        
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data) {
+            setCurrentCustomerData(result.data);
+            console.log("Refreshed customer data:", result.data);
+          }
         }
-
-        const result = await response.json();
-        if (result.success && result.data && result.data.length > 0) {
-          // Lấy customer đầu tiên (hoặc có thể filter theo điều kiện)
-          const firstCustomer = result.data[0];
-          setCurrentCustomer(firstCustomer);
-          console.log("Customer loaded:", firstCustomer);
-        } else {
-          throw new Error("Không tìm thấy khách hàng nào");
-        }
-      } catch (error: any) {
-        console.error("Error fetching customer:", error);
-        toast.error(error.message || "Không thể tải thông tin thành viên");
+      } catch (error) {
+        console.error("Error fetching customer data:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchCustomerData();
-  }, []);
+  }, [userProfile]);
 
   // Fetch promotions từ API
   useEffect(() => {
@@ -127,60 +122,90 @@ export function MembershipPage() {
         const invoicesResult = await invoicesResponse.json();
 
         if (invoicesResult.success && invoicesResult.data) {
-          // Lọc invoices của customer hiện tại
-          const customerInvoices = invoicesResult.data.filter(
-            (inv: any) => inv.order_id?.customer_id === currentCustomer._id
-          );
+          // ⭐ Lọc invoices của customer hiện tại
+          const customerId = currentCustomer._id || currentCustomer.id;
+          console.log("Filtering invoices for customer ID:", customerId);
+          
+          const customerInvoices = invoicesResult.data.filter((inv: any) => {
+            // Check both populated object and string ID
+            const invoiceCustomerId = inv.customer_id?._id || inv.customer_id?.id || inv.customer_id;
+            return invoiceCustomerId === customerId || 
+                   invoiceCustomerId?.toString() === customerId?.toString();
+          });
+          
+          console.log(`Found ${customerInvoices.length} invoices for customer`);
 
           // Fetch invoice_promotions cho mỗi invoice
-          const historyPromises = customerInvoices.map(async (invoice: any) => {
-            try {
-              const ipResponse = await fetch(
-                `${apiBaseUrl}/invoice-promotions/invoice/${invoice._id}`
-              );
-              if (!ipResponse.ok) return null;
-
+          // ⭐ Fetch voucher history từ invoice_promotions (approach tốt hơn)
+          try {
+            const ipResponse = await fetch(
+              `${apiBaseUrl}/invoice-promotions`
+            );
+            
+            if (ipResponse.ok) {
               const ipResult = await ipResponse.json();
-              if (
-                ipResult.success &&
-                ipResult.data &&
-                ipResult.data.length > 0
-              ) {
-                return ipResult.data.map((ip: any) => ({
-                  id: ip._id,
-                  invoiceId: invoice.invoice_number,
-                  voucherCode:
-                    ip.promotion_id?.promo_code ||
-                    ip.promotion_id?.promoCode ||
-                    "N/A",
-                  voucherName:
-                    ip.promotion_id?.promotion_name ||
-                    ip.promotion_id?.name ||
-                    "Khuyến mãi",
-                  // promotion_type may be 'percentage' or 'fixed_amount'
-                  promoType:
-                    ip.promotion_id?.promotion_type ||
-                    ip.promotion_id?.discount_type ||
-                    "fixed_amount",
-                  promoValue:
-                    ip.promotion_id?.discount_value ??
-                    ip.promotion_id?.discountValue ??
-                    ip.discount_applied ??
-                    0,
-                  discountAmount: ip.discount_applied || 0,
-                  usedAt: invoice.invoice_time || invoice.createdAt,
-                }));
+              
+              if (ipResult.success && ipResult.data && ipResult.data.length > 0) {
+                // Filter invoice_promotions của customer hiện tại
+                const customerVouchers = ipResult.data
+                  .filter((ip: any) => {
+                    // Check nếu invoice_id được populate và có customer_id
+                    if (!ip.invoice_id) return false;
+                    
+                    const invoiceCustomerId = 
+                      ip.invoice_id.customer_id?._id?.toString() ||
+                      ip.invoice_id.customer_id?.toString();
+                    
+                    const currentCustomerId =
+                      currentCustomer?._id?.toString() ||
+                      currentCustomer?.id?.toString();
+                    
+                    return invoiceCustomerId === currentCustomerId;
+                  })
+                  .map((ip: any) => ({
+                    id: ip._id,
+                    invoiceId: ip.invoice_id?.invoice_number || "N/A",
+                    voucherCode: ip.promotion_id?.promo_code || "N/A",
+                    voucherName: ip.promotion_id?.name || "Khuyến mãi",
+                    promoType: ip.promotion_id?.promotion_type || "fixed_amount",
+                    promoValue: ip.promotion_id?.discount_value ?? ip.discount_applied ?? 0,
+                    discountAmount: ip.discount_applied || 0,
+                    usedAt: ip.invoice_id?.paid_at || ip.invoice_id?.invoice_date || ip.createdAt,
+                  }))
+                  .sort((a: any, b: any) => 
+                    new Date(b.usedAt).getTime() - new Date(a.usedAt).getTime()
+                  );
+                
+                setVoucherHistory(customerVouchers);
+                console.log("Voucher history loaded:", customerVouchers);
+              } else {
+                setVoucherHistory([]);
               }
-              return null;
-            } catch (err) {
-              return null;
             }
-          });
+          } catch (err) {
+            console.error("Error loading voucher history:", err);
+            setVoucherHistory([]);
+          }
 
-          const historyResults = await Promise.all(historyPromises);
-          const flatHistory = historyResults.filter((h) => h !== null).flat();
-          setVoucherHistory(flatHistory);
-          console.log("Voucher history loaded:", flatHistory);
+          // ⭐ TẠO POINT HISTORY từ invoices đã thanh toán
+          const pointHistoryData = customerInvoices
+            .filter((inv: any) => inv.payment_status === 'paid')
+            .map((inv: any) => {
+              // Tính điểm tích lũy: 1000đ = 1 điểm (hoặc 10% total_amount)
+              const points = Math.floor((inv.total_amount || 0) / 1000);
+              return {
+                id: inv._id || inv.id,
+                type: 'earned',
+                amount: points,
+                description: `Tích điểm từ hóa đơn ${inv.invoice_number}`,
+                invoiceId: inv.invoice_number,
+                date: inv.paid_at || inv.invoice_date || inv.created_at
+              };
+            })
+            .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          
+          setPointHistory(pointHistoryData);
+          console.log("Point history loaded:", pointHistoryData);
         }
       } catch (error: any) {
         console.error("Error fetching voucher history:", error);
@@ -191,26 +216,6 @@ export function MembershipPage() {
 
     fetchVoucherHistory();
   }, [currentCustomer]);
-
-  // Lọc lịch sử điểm theo customer hiện tại
-  const userPointHistory = currentCustomer
-    ? mockPointHistory.filter(
-        (history) =>
-          // Lọc theo invoiceId của customer hoặc theo logic khác
-          // Tạm thời hiển thị tất cả (sẽ update khi có API thực)
-          true
-      )
-    : [];
-
-  // Lọc lịch sử voucher theo customer hiện tại
-  const userVoucherHistory = currentCustomer
-    ? mockVoucherHistory.filter(
-        (history) =>
-          // Lọc theo invoiceId của customer hoặc theo logic khác
-          // Tạm thời hiển thị tất cả (sẽ update khi có API thực)
-          true
-      )
-    : [];
 
   // Tính toán next tier points dựa trên membership level
   const getNextTierPoints = (level: string) => {
@@ -496,17 +501,12 @@ export function MembershipPage() {
                     validUntil: promotion.end_date
                       ? new Date(promotion.end_date).toLocaleDateString("vi-VN")
                       : "",
-                    minOrderAmount: promotion.min_order_value || 0,
+                    minOrderAmount: promotion.minimum_order_amount || promotion.min_order_value || 0,
                     maxDiscountAmount: promotion.max_discount_amount,
                     promotionQuantity: promotion.promotion_quantity,
-                    startDate: promotion.start_date
-                      ? new Date(promotion.start_date).toLocaleDateString(
-                          "vi-VN"
-                        )
-                      : "",
-                    endDate: promotion.end_date
-                      ? new Date(promotion.end_date).toLocaleDateString("vi-VN")
-                      : "",
+                    startDate: promotion.start_date,
+                    endDate: promotion.end_date,
+                    active: promotion.is_active !== false && new Date(promotion.end_date) >= new Date(),
                   }}
                   variant="list"
                 />
@@ -530,29 +530,24 @@ export function MembershipPage() {
           <div className="mb-8">
             <h4 className="mb-4 flex items-center gap-2">
               <Star className="w-5 h-5 text-[#F59E0B]" />
-              Lịch sử điểm
+              Lịch sử tích điểm
             </h4>
             <div className="space-y-3">
-              {userPointHistory.length > 0 ? (
-                userPointHistory.map((history) => (
+              {isLoadingHistory ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-center">
+                    <div className="w-10 h-10 border-4 border-[#625EE8] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                    <p className="text-sm text-gray-600">Đang tải lịch sử...</p>
+                  </div>
+                </div>
+              ) : pointHistory.length > 0 ? (
+                pointHistory.map((history) => (
                   <Card key={history.id} className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-xs ${
-                              history.type === "earned"
-                                ? "bg-green-100 text-green-700"
-                                : history.type === "redeemed"
-                                ? "bg-blue-100 text-blue-700"
-                                : "bg-gray-100 text-gray-700"
-                            }`}
-                          >
-                            {history.type === "earned"
-                              ? "Tích điểm"
-                              : history.type === "redeemed"
-                              ? "Quy đổi"
-                              : "Hết hạn"}
+                          <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs">
+                            Tích điểm
                           </span>
                           {history.invoiceId && (
                             <span className="text-xs text-gray-500">
@@ -567,13 +562,8 @@ export function MembershipPage() {
                           {new Date(history.date).toLocaleString("vi-VN")}
                         </p>
                       </div>
-                      <div
-                        className={`text-lg ${
-                          history.amount > 0 ? "text-green-600" : "text-red-600"
-                        }`}
-                      >
-                        {history.amount > 0 ? "+" : ""}
-                        {history.amount.toLocaleString()}
+                      <div className="text-lg text-green-600">
+                        +{history.amount.toLocaleString()} điểm
                       </div>
                     </div>
                   </Card>
@@ -581,7 +571,7 @@ export function MembershipPage() {
               ) : (
                 <Card className="p-8 text-center">
                   <Star className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">Chưa có lịch sử sử dụng điểm</p>
+                  <p className="text-gray-500">Chưa có lịch sử tích điểm</p>
                 </Card>
               )}
             </div>

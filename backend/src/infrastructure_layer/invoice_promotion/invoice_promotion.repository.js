@@ -14,7 +14,7 @@ class InvoicePromotionRepository {
     }
 
     const invoicePromotions = await InvoicePromotion.find(query)
-      .populate('invoice_id', 'invoice_number total_amount payment_status')
+      .populate('invoice_id', 'invoice_number total_amount payment_status customer_id paid_at invoice_date')
       .populate('promotion_id', 'name promo_code discount_value promotion_type')
       .lean();
 
@@ -23,7 +23,7 @@ class InvoicePromotionRepository {
 
   async findById(id) {
     const invoicePromotion = await InvoicePromotion.findById(id)
-      .populate('invoice_id', 'invoice_number total_amount payment_status')
+      .populate('invoice_id', 'invoice_number total_amount payment_status customer_id paid_at invoice_date')
       .populate('promotion_id', 'name promo_code discount_value promotion_type')
       .lean();
 
@@ -44,7 +44,7 @@ class InvoicePromotionRepository {
 
   async findByPromotionId(promotionId) {
     const invoicePromotions = await InvoicePromotion.find({ promotion_id: promotionId })
-      .populate('invoice_id', 'invoice_number total_amount payment_status')
+      .populate('invoice_id', 'invoice_number total_amount payment_status customer_id paid_at invoice_date')
       .lean();
 
     return invoicePromotions.map(ip => new InvoicePromotionEntity(ip).toJSON());
@@ -55,7 +55,7 @@ class InvoicePromotionRepository {
     await invoicePromotion.save();
 
     const saved = await InvoicePromotion.findById(invoicePromotion._id)
-      .populate('invoice_id', 'invoice_number total_amount payment_status')
+      .populate('invoice_id', 'invoice_number total_amount payment_status customer_id paid_at invoice_date')
       .populate('promotion_id', 'name promo_code discount_value promotion_type')
       .lean();
 
