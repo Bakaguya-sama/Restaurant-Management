@@ -247,6 +247,69 @@ class OrderDetailService {
     }
   }
 
+  /**
+   * Check if ingredients are available for a dish quantity (without deducting)
+   * @param {ObjectId} dishId - Dish ID
+   * @param {number} quantity - Quantity to check
+   * @throws {Error} If ingredients are insufficient
+   */
+  async checkIngredientAvailability(dishId, quantity) {
+    try {
+      // Get all ingredients required for this dish
+      const dishIngredients = await DishIngredient.find({ dish_id: dishId });
+      
+      if (dishIngredients.length === 0) {
+        return; // No ingredients required
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const insufficientIngredients = [];
+      
+      for (const dishIngredient of dishIngredients) {
+        const requiredQuantity = dishIngredient.quantity_required * quantity;
+        
+        const ingredient = await Ingredient.findById(dishIngredient.ingredient_id);
+        if (!ingredient) {
+          continue;
+        }
+
+        // Check if total stock is sufficient
+        if (ingredient.quantity_in_stock < requiredQuantity) {
+          insufficientIngredients.push({
+            name: ingredient.name,
+            required: requiredQuantity,
+            available: ingredient.quantity_in_stock,
+            unit: ingredient.unit
+          });
+          continue;
+        }
+
+        // Check if available batches (not expired) are sufficient
+        const availableBatches = await this.getBatchesWithRemaining(dishIngredient.ingredient_id, today);
+        const totalAvailableInBatches = availableBatches.reduce((sum, batch) => sum + batch.remainingQuantity, 0);
+        
+        if (totalAvailableInBatches < requiredQuantity) {
+          insufficientIngredients.push({
+            name: ingredient.name,
+            required: requiredQuantity,
+            available: totalAvailableInBatches,
+            unit: ingredient.unit
+          });
+        }
+      }
+
+      if (insufficientIngredients.length > 0) {
+        const errorMsg = insufficientIngredients.map(item => 
+          `${item.name}: cần ${item.required}${item.unit}, chỉ còn ${item.available}${item.unit}`
+        ).join('; ');
+        throw new Error(`Nguyên liệu không đủ. ${errorMsg}`);
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async getOrderDetails(orderId) {
     const details = await this.orderDetailRepository.findByOrderId(orderId);
     return details.map(detail => this.formatOrderDetailResponse(detail));
@@ -261,6 +324,13 @@ class OrderDetailService {
     const existingItem = await this.orderDetailRepository.findByOrderIdAndDishId(orderId, itemData.dish_id);
     if (existingItem) {
       throw new Error('This dish is already in the order');
+    }
+
+    // ⭐ KIỂM TRA NGUYÊN LIỆU KHI THÊM MÓN MỚI
+    try {
+      await this.checkIngredientAvailability(itemData.dish_id, itemData.quantity);
+    } catch (error) {
+      throw new Error(`Không thể thêm món: ${error.message}`);
     }
 
     const lineTotal = itemData.quantity * itemData.unit_price;
@@ -287,9 +357,6 @@ class OrderDetailService {
       throw new Error('Order detail not found in this order');
     }
 
-    const oldStatus = detail.status;
-    const newStatus = updateData.status;
-
     const updatedDetail = { ...detail.toObject(), ...updateData };
     
     if (updateData.quantity && updateData.unit_price) {
@@ -300,11 +367,7 @@ class OrderDetailService {
       updatedDetail.line_total = detail.quantity * updateData.unit_price;
     }
 
-    // Check if status is changing to 'preparing' - deduct ingredients
-    if (newStatus && newStatus === 'preparing' && oldStatus !== 'preparing') {
-      console.log(`Order detail ${detailId} status changing from ${oldStatus} to ${newStatus}. Deducting ingredients...`);
-      await this.deductIngredientsForDish(detail.dish_id, detail.quantity, orderId);
-    }
+    // Ingredients will be deducted when creating invoice instead of changing status
 
     const updated = await this.orderDetailRepository.update(detailId, {
       quantity: updateData.quantity,

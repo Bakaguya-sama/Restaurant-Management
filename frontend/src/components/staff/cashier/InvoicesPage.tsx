@@ -108,12 +108,14 @@ export function InvoicesPage() {
       const data = await invoiceApi.getAll();
       const transformedData = data.map((invoice: any) => {
         const items =
-          invoice.order_id?.items?.map((item: any) => ({
-            id: item.id || item._id,
-            name: item.dish_id?.name || "Món ăn",
-            quantity: item.quantity,
-            price: item.unit_price || item.dish_id?.price || 0,
-          })) || [];
+          invoice.order_id?.items
+            ?.filter((item: any) => item.status !== 'cancelled')
+            ?.map((item: any) => ({
+              id: item.id || item._id,
+              name: item.dish_id?.name || "Món ăn",
+              quantity: item.quantity,
+              price: item.unit_price || item.dish_id?.price || 0,
+            })) || [];
 
         // Extract customer ID từ populated object hoặc string
         const getCustomerId = () => {

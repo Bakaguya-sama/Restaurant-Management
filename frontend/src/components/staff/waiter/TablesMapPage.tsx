@@ -22,6 +22,8 @@ import { useStaff } from "../../../hooks/useStaff";
 import { useReservations } from "../../../hooks/useReservations";
 import { authService } from "../../../lib/authService";
 import { createOrder } from "../../../lib/orderingPageApi";
+import { reservationApi } from "../../../lib/reservationApi";
+import { generateOrderNumber } from "../../../lib/orderApi";
 
 export function TablesMapPage() {
   const hookResult = useTables();
@@ -265,7 +267,7 @@ export function TablesMapPage() {
       );
 
       if (!activeReservation) {
-        toast.error("No reservation found with the provided code.");
+        toast.error("Mã đơn đặt bàn không hợp lệ.");
         return;
       }
 
@@ -628,12 +630,16 @@ export function TablesMapPage() {
                 label="Mã đặt bàn"
                 value={bookingCode}
                 onChange={(e) => setBookingCode(e.target.value)}
-                placeholder="Nhập mã đặt bàn (VD: B001)"
+                placeholder="RES-xxx:1234 (mã:code xác thực)"
               />
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-800">
-                  Gợi ý: Quét mã QR trên phiếu đặt bàn hoặc nhập mã thủ công
+                <p className="text-sm text-blue-800 mb-2">
+                  <strong>Format:</strong> RES-xxx:1234
+                </p>
+                <p className="text-xs text-blue-700">
+                  • RES-xxx: Mã đặt bàn<br />
+                  • 1234: Mã xác thực 4 số (nếu có)
                 </p>
               </div>
 

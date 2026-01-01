@@ -288,7 +288,7 @@ async function seedDatabase() {
     // ==================== 5. TABLES ====================
     console.log('5/24 Tạo Tables...');
     const tables = await Table.insertMany([
-      { table_number: 'T01', capacity: 2, location_id: locations[0]._id, status: 'free' },
+      { table_number: 'T01', capacity: 2, location_id: locations[0]._id, status: 'reserved' },
       { table_number: 'T02', capacity: 4, location_id: locations[0]._id, status: 'free' },
       { table_number: 'T03', capacity: 4, location_id: locations[0]._id, status: 'occupied' },
       { table_number: 'T04', capacity: 6, location_id: locations[1]._id, status: 'free' },
@@ -360,10 +360,10 @@ async function seedDatabase() {
     // ==================== 7. RESERVATION DETAILS ====================
     console.log('7/24 Tạo Reservation Details...');
     const reservationDetails = await ReservationDetail.insertMany([
-      { reservation_id: reservations[0]._id, table_id: tables[4]._id },
-      { reservation_id: reservations[1]._id, table_id: tables[7]._id },
-      { reservation_id: reservations[2]._id, table_id: tables[3]._id },
-      { reservation_id: reservations[3]._id, table_id: tables[0]._id }
+      { reservation_id: reservations[0]._id, table_id: tables[7]._id }, // T08 - Phòng VIP B - trống
+      { reservation_id: reservations[1]._id, table_id: tables[9]._id }, // T10 - Phòng VIP A - trống
+      { reservation_id: reservations[2]._id, table_id: tables[3]._id }, // T04 - completed
+      { reservation_id: reservations[3]._id, table_id: tables[0]._id }  // T01 - confirmed
     ]);
     console.log(`   OK ${reservationDetails.length} reservation details\n`);
 
@@ -586,12 +586,14 @@ async function seedDatabase() {
     // ==================== 12. STOCK IMPORT DETAILS ====================
     console.log('12/24 Tạo Stock Import Details...');
     const stockImportDetails = await StockImportDetail.insertMany([
-      { import_id: stockImports[0]._id, ingredient_id: ingredients[0]._id, quantity: 50, unit_price: 350000, line_total: 17500000, expiry_date: new Date('2027-01-01') },
-      { import_id: stockImports[1]._id, ingredient_id: ingredients[1]._id, quantity: 30, unit_price: 450000, line_total: 13500000, expiry_date: new Date('2025-12-29') }, // cá hồi: near expiry
-      { import_id: stockImports[1]._id, ingredient_id: ingredients[2]._id, quantity: 25, unit_price: 280000, line_total: 7000000, expiry_date: new Date('2025-12-20') }, 
-      { import_id: stockImports[2]._id, ingredient_id: ingredients[3]._id, quantity: 15, unit_price: 25000, line_total: 375000, expiry_date: new Date('2027-12-17') },
-      { import_id: stockImports[2]._id, ingredient_id: ingredients[4]._id, quantity: 20, unit_price: 30000, line_total: 600000, expiry_date: new Date('2027-12-18') },
-      { import_id: stockImports[2]._id, ingredient_id: ingredients[5]._id, quantity: 18, unit_price: 20000, line_total: 360000, expiry_date: new Date('2027-12-16') }
+      { import_id: stockImports[0]._id, ingredient_id: ingredients[0]._id, quantity: 50, unit_price: 350000, line_total: 17500000, expiry_date: new Date('2030-01-01') },
+      { import_id: stockImports[1]._id, ingredient_id: ingredients[1]._id, quantity: 100, unit_price: 450000, line_total: 45000000, expiry_date: new Date('2030-12-29') }, // cá hồi: tăng lên 100kg
+      { import_id: stockImports[1]._id, ingredient_id: ingredients[2]._id, quantity: 100, unit_price: 280000, line_total: 28000000, expiry_date: new Date('2030-12-20') }, // tôm sú: tăng lên 100kg, HẠN DÀI
+      { import_id: stockImports[2]._id, ingredient_id: ingredients[3]._id, quantity: 50, unit_price: 25000, line_total: 1250000, expiry_date: new Date('2030-12-17') }, // khoai tây: tăng lên 50kg
+      { import_id: stockImports[2]._id, ingredient_id: ingredients[4]._id, quantity: 50, unit_price: 30000, line_total: 1500000, expiry_date: new Date('2030-12-18') }, // cà chua: tăng lên 50kg
+      { import_id: stockImports[2]._id, ingredient_id: ingredients[5]._id, quantity: 50, unit_price: 20000, line_total: 1000000, expiry_date: new Date('2030-12-16') }, // bơ: tăng lên 50kg
+      { import_id: stockImports[2]._id, ingredient_id: ingredients[6]._id, quantity: 100, unit_price: 120000, line_total: 12000000, expiry_date: new Date('2030-12-17') }, // bơ tươi: tăng lên 100kg, HẠN DÀI
+      { import_id: stockImports[2]._id, ingredient_id: ingredients[7]._id, quantity: 50, unit_price: 15000, line_total: 750000, expiry_date: new Date('2030-12-18') }  // nước mắm: tăng lên 50L
     ]);
     console.log(`   OK ${stockImportDetails.length} import details\n`);
 
@@ -667,16 +669,16 @@ async function seedDatabase() {
       { 
         order_number: 'ORD-001', 
         order_type: 'dine-in-waiter',
-        order_date: new Date('2025-12-11'),
-        order_time: '12:30', 
+        order_date: new Date('2025-12-18'),
+        order_time: '18:30', 
         customer_id: customers[0]._id,
-        status: 'served', 
+        status: 'pending', 
         subtotal: 770000, 
         tax: 77000, 
         total_amount: 847000,
         table_id: tables[2]._id,
         staff_id: staffs[0]._id,
-        notes: 'Khách VIP, phục vụ tận tình'
+        notes: 'Bàn T03 - Khách VIP đang dùng bữa'
       },
       { 
         order_number: 'ORD-002', 
@@ -691,18 +693,6 @@ async function seedDatabase() {
         table_id: tables[1]._id,
         staff_id: staffs[1]._id,
         notes: 'Không thích hành'
-      },
-      { 
-        order_number: 'ORD-003', 
-        order_type: 'dine-in-customer',
-        order_date: new Date('2025-12-11'),
-        order_time: '14:00', 
-        customer_id: customers[3]._id,
-        status: 'completed', 
-        subtotal: 150000, 
-        tax: 15000, 
-        total_amount: 165000,
-        table_id: tables[0]._id
       },
       { 
         order_number: 'ORD-004', 
@@ -722,13 +712,13 @@ async function seedDatabase() {
         order_date: new Date('2025-12-18'),
         order_time: '18:45', 
         customer_id: customers[1]._id,
-        status: 'served', 
+        status: 'pending', 
         subtotal: 520000, 
         tax: 52000, 
         total_amount: 572000,
         table_id: tables[10]._id,
         staff_id: staffs[0]._id,
-        notes: 'Yêu cầu thêm tương ớt'
+        notes: 'Bàn T11 - Yêu cầu thêm tương ớt'
       },
       { 
         order_number: 'ORD-006', 
@@ -736,11 +726,12 @@ async function seedDatabase() {
         order_date: new Date('2025-12-18'),
         order_time: '19:15', 
         customer_id: customers[2]._id,
-        status: 'served', 
+        status: 'pending', 
         subtotal: 245000, 
         tax: 24500, 
         total_amount: 269500,
-        table_id: tables[11]._id
+        table_id: tables[11]._id,
+        notes: 'Bàn T12 - Khách đang dùng bữa'
       },
       { 
         order_number: 'ORD-007', 
@@ -748,13 +739,40 @@ async function seedDatabase() {
         order_date: new Date('2025-12-18'),
         order_time: '20:00', 
         customer_id: customers[4]._id,
-        status: 'served', 
+        status: 'pending', 
         subtotal: 890000, 
         tax: 89000, 
         total_amount: 979000,
         table_id: tables[12]._id,
         staff_id: staffs[1]._id,
-        notes: 'Khách yêu cầu thanh toán'
+        notes: 'Bàn T13 - Khách đang dùng bữa'
+      },
+      { 
+        order_number: 'ORD-008', 
+        order_type: 'dine-in-waiter',
+        order_date: new Date('2025-12-18'),
+        order_time: '18:30', 
+        customer_id: customers[3]._id,
+        status: 'pending', 
+        subtotal: 580000, 
+        tax: 58000, 
+        total_amount: 638000,
+        table_id: tables[4]._id,
+        staff_id: staffs[0]._id,
+        notes: 'Bàn T05 - Khách đang dùng bữa'
+      },
+      { 
+        order_number: 'ORD-009', 
+        order_type: 'dine-in-customer',
+        order_date: new Date('2025-12-18'),
+        order_time: '19:45', 
+        customer_id: customers[2]._id,
+        status: 'pending', 
+        subtotal: 425000, 
+        tax: 42500, 
+        total_amount: 467500,
+        table_id: tables[12]._id,
+        notes: 'Bàn T13 - Khách vừa check-in'
       }
     ]);
     console.log(`   OK ${orders.length} orders\n`);
@@ -767,20 +785,21 @@ async function seedDatabase() {
       { order_id: orders[1]._id, dish_id: dishes[3]._id, quantity: 2, unit_price: 85000, line_total: 170000, status: 'served' },
       { order_id: orders[1]._id, dish_id: dishes[7]._id, quantity: 1, unit_price: 35000, line_total: 35000, special_instructions: 'Không đường', status: 'served' },
       { order_id: orders[1]._id, dish_id: dishes[6]._id, quantity: 1, unit_price: 25000, line_total: 25000, status: 'served' },
-      { order_id: orders[2]._id, dish_id: dishes[3]._id, quantity: 1, unit_price: 85000, line_total: 85000, status: 'served' },
-      { order_id: orders[2]._id, dish_id: dishes[7]._id, quantity: 1, unit_price: 35000, line_total: 35000, status: 'served' },
-      { order_id: orders[3]._id, dish_id: dishes[0]._id, quantity: 1, unit_price: 350000, line_total: 350000, status: 'ready' },
-      { order_id: orders[3]._id, dish_id: dishes[2]._id, quantity: 1, unit_price: 280000, line_total: 280000, status: 'ready' },
-      { order_id: orders[3]._id, dish_id: dishes[6]._id, quantity: 1, unit_price: 25000, line_total: 25000, status: 'ready' },
+      { order_id: orders[2]._id, dish_id: dishes[0]._id, quantity: 1, unit_price: 350000, line_total: 350000, status: 'ready' },
       { order_id: orders[4]._id, dish_id: dishes[1]._id, quantity: 1, unit_price: 420000, line_total: 420000, status: 'served' },
       { order_id: orders[4]._id, dish_id: dishes[4]._id, quantity: 1, unit_price: 95000, line_total: 95000, status: 'served' },
       { order_id: orders[4]._id, dish_id: dishes[6]._id, quantity: 1, unit_price: 25000, line_total: 25000, status: 'served' },
-      { order_id: orders[5]._id, dish_id: dishes[3]._id, quantity: 2, unit_price: 85000, line_total: 170000, status: 'served' },
-      { order_id: orders[5]._id, dish_id: dishes[7]._id, quantity: 2, unit_price: 35000, line_total: 70000, status: 'served' },
-      { order_id: orders[5]._id, dish_id: dishes[6]._id, quantity: 1, unit_price: 25000, line_total: 25000, status: 'served' },
-      { order_id: orders[6]._id, dish_id: dishes[0]._id, quantity: 2, unit_price: 350000, line_total: 700000, status: 'served' },
-      { order_id: orders[6]._id, dish_id: dishes[2]._id, quantity: 1, unit_price: 280000, line_total: 280000, status: 'served' },
-      { order_id: orders[6]._id, dish_id: dishes[5]._id, quantity: 1, unit_price: 110000, line_total: 110000, status: 'served' }
+      { order_id: orders[4]._id, dish_id: dishes[3]._id, quantity: 2, unit_price: 85000, line_total: 170000, status: 'served' },
+      { order_id: orders[4]._id, dish_id: dishes[7]._id, quantity: 2, unit_price: 35000, line_total: 70000, status: 'served' },
+      { order_id: orders[4]._id, dish_id: dishes[6]._id, quantity: 1, unit_price: 25000, line_total: 25000, status: 'served' },
+      { order_id: orders[5]._id, dish_id: dishes[0]._id, quantity: 2, unit_price: 350000, line_total: 700000, status: 'served' },
+      { order_id: orders[5]._id, dish_id: dishes[2]._id, quantity: 1, unit_price: 280000, line_total: 280000, status: 'served' },
+      { order_id: orders[5]._id, dish_id: dishes[5]._id, quantity: 1, unit_price: 110000, line_total: 110000, status: 'served' },
+      { order_id: orders[6]._id, dish_id: dishes[1]._id, quantity: 1, unit_price: 420000, line_total: 420000, status: 'pending' },
+      { order_id: orders[6]._id, dish_id: dishes[4]._id, quantity: 2, unit_price: 95000, line_total: 190000, status: 'pending' },
+      { order_id: orders[7]._id, dish_id: dishes[0]._id, quantity: 1, unit_price: 350000, line_total: 350000, status: 'pending' },
+      { order_id: orders[7]._id, dish_id: dishes[7]._id, quantity: 2, unit_price: 35000, line_total: 70000, status: 'pending' },
+      { order_id: orders[7]._id, dish_id: dishes[6]._id, quantity: 1, unit_price: 25000, line_total: 25000, status: 'pending' }
     ]);
     console.log(`   OK ${orderDetails.length} order details\n`);
 
@@ -788,40 +807,10 @@ async function seedDatabase() {
     console.log('20/24 Tạo Invoices...');
     const invoices = await Invoice.insertMany([
       { 
-        invoice_number: 'INV-001', 
-        order_id: orders[0]._id, 
-        staff_id: staffs[2]._id, 
-        customer_id: customers[0]._id, 
-        invoice_date: new Date('2025-12-11'),
-        subtotal: 770000, 
-        tax: 77000, 
-        discount_amount: 170000, 
-        total_amount: 677000, 
-        payment_method: 'card', 
-        payment_status: 'paid', 
-        points_used: 500,
-        points_earned: 67,
-        paid_at: new Date('2025-12-11')
-      },
-      { 
-        invoice_number: 'INV-002', 
-        order_id: orders[2]._id, 
-        staff_id: staffs[3]._id, 
-        invoice_date: new Date('2025-12-11'),
-        subtotal: 150000, 
-        tax: 15000, 
-        discount_amount: 0, 
-        total_amount: 165000, 
-        payment_method: 'cash', 
-        payment_status: 'paid', 
-        points_used: 0,
-        points_earned: 16,
-        paid_at: new Date('2025-12-11')
-      },
-      { 
         invoice_number: 'INV-003', 
         order_id: orders[1]._id, 
         staff_id: staffs[2]._id, 
+        customer_id: customers[1]._id,
         invoice_date: new Date('2025-12-11'),
         subtotal: 360000, 
         tax: 36000, 
@@ -834,49 +823,20 @@ async function seedDatabase() {
         paid_at: new Date('2025-12-11')
       },
       { 
-        invoice_number: 'INV-004', 
-        order_id: orders[4]._id, 
-        staff_id: staffs[2]._id, 
-        customer_id: customers[1]._id, 
-        invoice_date: new Date('2025-12-18'),
-        subtotal: 520000, 
-        tax: 52000, 
-        discount_amount: 0, 
-        total_amount: 572000, 
-        payment_method: 'cash', 
-        payment_status: 'pending',
-        points_used: 200,
-        points_earned: 57
-      },
-      { 
-        invoice_number: 'INV-005', 
-        order_id: orders[5]._id, 
-        staff_id: staffs[2]._id, 
-        customer_id: customers[2]._id, 
-        invoice_date: new Date('2025-12-18'),
-        subtotal: 245000, 
-        tax: 24500, 
-        discount_amount: 0, 
-        total_amount: 269500, 
-        payment_method: 'cash', 
-        payment_status: 'pending',
-        points_used: 150,
-        points_earned: 26
-      },
-      { 
         invoice_number: 'INV-006', 
-        order_id: orders[6]._id, 
-        staff_id: staffs[3]._id, 
-        customer_id: customers[4]._id, 
-        invoice_date: new Date('2025-12-18'),
-        subtotal: 890000, 
-        tax: 89000, 
+        order_id: orders[2]._id, 
+        staff_id: staffs[2]._id, 
+        customer_id: customers[0]._id, 
+        invoice_date: new Date('2025-12-11'),
+        subtotal: 635000, 
+        tax: 63500, 
         discount_amount: 0, 
-        total_amount: 979000, 
-        payment_method: 'card', 
-        payment_status: 'pending',
+        total_amount: 698500, 
+        payment_method: 'cash', 
+        payment_status: 'paid',
         points_used: 0,
-        points_earned: 97
+        points_earned: 69,
+        paid_at: new Date('2025-12-11')
       }
     ]);
     console.log(`   OK ${invoices.length} invoices\n`);
