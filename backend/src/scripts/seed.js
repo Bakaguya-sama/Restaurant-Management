@@ -659,7 +659,11 @@ async function seedDatabase() {
     const promotions = await Promotion.insertMany([
       { name: 'Giảm 20% Tháng 12', description: 'Giảm 20% toàn bộ hóa đơn trong tháng 12', promotion_type: 'percentage', discount_value: 20, minimum_order_amount: 500000, promo_code: 'DEC20', start_date: new Date('2025-12-01'), end_date: new Date('2025-12-31'), is_active: true, max_uses: 100, current_uses: 5 },
       { name: 'Giảm 150k', description: 'Giảm 150,000đ cho hóa đơn trên 1.5 triệu', promotion_type: 'fixed_amount', discount_value: 150000, minimum_order_amount: 1500000, promo_code: 'SAVE150K', start_date: new Date('2025-12-01'), end_date: new Date('2025-12-31'), is_active: true, max_uses: 50, current_uses: 8 },
-      { name: 'Happy Hour 14h-16h', description: 'Giảm 25% từ 14h-16h hàng ngày', promotion_type: 'percentage', discount_value: 25, minimum_order_amount: 200000, promo_code: 'HAPPY25', start_date: new Date('2025-12-01'), end_date: new Date('2025-12-31'), is_active: true, max_uses: -1, current_uses: 25 }
+      { name: 'Happy Hour 14h-16h', description: 'Giảm 25% từ 14h-16h hàng ngày', promotion_type: 'percentage', discount_value: 25, minimum_order_amount: 200000, promo_code: 'HAPPY25', start_date: new Date('2025-12-01'), end_date: new Date('2025-12-31'), is_active: true, max_uses: -1, current_uses: 25 },
+      // ⭐ Vouchers mới còn hạn 2026
+      { name: 'Tết 2026 - Giảm 30%', description: 'Giảm 30% toàn bộ hóa đơn dịp Tết Nguyên Đán 2026', promotion_type: 'percentage', discount_value: 30, minimum_order_amount: 300000, promo_code: 'TET2026', start_date: new Date('2026-01-01'), end_date: new Date('2026-02-28'), is_active: true, max_uses: 200, current_uses: 0 },
+      { name: 'Khuyến mãi năm mới', description: 'Giảm 200,000đ cho hóa đơn từ 2 triệu', promotion_type: 'fixed_amount', discount_value: 200000, minimum_order_amount: 2000000, promo_code: 'NEWYEAR200K', start_date: new Date('2026-01-01'), end_date: new Date('2026-03-31'), is_active: true, max_uses: 100, current_uses: 0 },
+      { name: 'Giảm 15% cuối tuần', description: 'Giảm 15% cho tất cả hóa đơn cuối tuần (Thứ 7, CN)', promotion_type: 'percentage', discount_value: 15, minimum_order_amount: 250000, promo_code: 'WEEKEND15', start_date: new Date('2026-01-01'), end_date: new Date('2026-12-31'), is_active: true, max_uses: -1, current_uses: 0 }
     ]);
     console.log(`   OK ${promotions.length} promotions\n`);
 

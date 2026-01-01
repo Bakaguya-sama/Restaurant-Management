@@ -296,8 +296,8 @@ class InvoiceService {
       await this.promotionService.incrementPromotionUses(promotionId);
     }
 
-    // Calculate points earned: 10 points per 10,000đ spent
-    const pointsEarned = Math.floor(totalAmount / 10000) * 10;
+    // Calculate points earned: 1 point per 1,000đ spent (round down to nearest 1000)
+    const pointsEarned = Math.floor(totalAmount / 1000);
 
     // Update invoice with points information
     const updateData = {
@@ -329,6 +329,55 @@ class InvoiceService {
         console.error('Failed to award points:', error);
       }
     }
+
+    // ⭐ UPDATE TOTAL SPENDING
+    console.log('=== UPDATE TOTAL_SPENT DEBUG ===');
+    console.log('invoice.customer_id:', invoice.customer_id);
+    console.log('totalAmount:', totalAmount);
+    
+    if (invoice.customer_id && totalAmount > 0) {
+      try {
+        const { Customer } = require('../../models');
+        const customer = await Customer.findById(invoice.customer_id);
+        console.log('Customer found:', customer ? 'YES' : 'NO');
+        
+        if (customer) {
+          const oldTotal = customer.total_spent || 0;
+          customer.total_spent = oldTotal + totalAmount;
+          
+          // ⭐ Auto-update membership level based on total_spent
+          const newTotal = customer.total_spent;
+          let newMembershipLevel = 'regular';
+          
+          if (newTotal >= 50000000) {
+            newMembershipLevel = 'diamond';
+          } else if (newTotal >= 30000000) {
+            newMembershipLevel = 'platinum';
+          } else if (newTotal >= 15000000) {
+            newMembershipLevel = 'gold';
+          } else if (newTotal >= 5000000) {
+            newMembershipLevel = 'silver';
+          } else if (newTotal >= 1000000) {
+            newMembershipLevel = 'bronze';
+          }
+          
+          if (customer.membership_level !== newMembershipLevel) {
+            console.log(`📈 Membership upgrade: ${customer.membership_level} → ${newMembershipLevel}`);
+            customer.membership_level = newMembershipLevel;
+          }
+          
+          await customer.save();
+          console.log(`✅ Updated customer ${invoice.customer_id} total_spent: ${oldTotal} + ${totalAmount} = ${customer.total_spent}, level: ${customer.membership_level}`);
+        } else {
+          console.log('❌ Customer not found!');
+        }
+      } catch (error) {
+        console.error('❌ Failed to update customer total_spent:', error);
+      }
+    } else {
+      console.log('❌ Skipped total_spent update - missing customer_id or totalAmount <= 0');
+    }
+    console.log('=== END UPDATE TOTAL_SPENT DEBUG ===');
 
     return await this.invoiceRepository.findById(id);
   }
