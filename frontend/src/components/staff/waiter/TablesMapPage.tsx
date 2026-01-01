@@ -41,7 +41,7 @@ export function TablesMapPage() {
     error: staffError,
     fetchStaff,
   } = useStaff();
-  const { updateReservationStatus, fetchReservations } = useReservations();
+  const { reservations, updateReservationStatus, fetchReservations } = useReservations();
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [showActionModal, setShowActionModal] = useState(false);
   const [showCheckInModal, setShowCheckInModal] = useState(false);
@@ -256,17 +256,22 @@ export function TablesMapPage() {
     }
 
     try {
-      await updateTableStatus(selectedTable.id, "occupied");
-      
-      // Use bookingCode as reservation ID
       const reservationId = bookingCode.trim();
       
-      try {
-        await updateReservationStatus(reservationId, "completed");
-      } catch (err) {
-        console.error("Error updating reservation status:", err);
+      const activeReservation = reservations.find(
+        (res) =>
+          res.id === reservationId &&
+          res.status === "in_progress"
+      );
+
+      if (!activeReservation) {
+        toast.error("No reservation found with the provided code.");
+        return;
       }
-      
+
+      await updateTableStatus(selectedTable.id, "occupied");
+      await updateReservationStatus(reservationId, "completed");
+
       toast.success(`Đã check-in khách cho bàn ${selectedTable.table_number}`);
     } catch (err) {
       console.error("Error checking in:", err);
