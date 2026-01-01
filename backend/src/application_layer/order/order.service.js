@@ -405,7 +405,9 @@ class OrderService {
 
   async calculateOrderTotal(orderId) {
     const orderDetails = await this.orderDetailRepository.findByOrderId(orderId);
-    const subtotal = orderDetails.reduce((sum, detail) => sum + detail.line_total, 0);
+    // Only calculate from non-cancelled order details
+    const activeDetails = orderDetails.filter(detail => detail.status !== 'cancelled');
+    const subtotal = activeDetails.reduce((sum, detail) => sum + detail.line_total, 0);
     const tax = subtotal * 0.1;
     const totalAmount = subtotal + tax;
 

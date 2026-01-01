@@ -59,6 +59,33 @@ class InvoiceService {
       throw new Error('Invoice already exists for this order');
     }
 
+    // ⭐ TRỪ NGUYÊN LIỆU KHI TẠO HÓA ĐƠN
+    // Get all order details (không bao gồm món cancelled)
+    const { OrderDetail } = require('../../models');
+    const OrderDetailService = require('../orderdetail/orderdetail.service');
+    const orderDetailService = new OrderDetailService();
+    
+    const orderDetails = await OrderDetail.find({ 
+      order_id: invoiceData.order_id,
+      status: { $ne: 'cancelled' }
+    });
+    
+    console.log(`Trừ nguyên liệu cho ${orderDetails.length} món trong order ${invoiceData.order_id}`);
+    
+    // Trừ nguyên liệu cho từng món
+    for (const detail of orderDetails) {
+      try {
+        await orderDetailService.deductIngredientsForDish(
+          detail.dish_id,
+          detail.quantity,
+          invoiceData.order_id
+        );
+      } catch (error) {
+        console.error(`Lỗi khi trừ nguyên liệu cho món ${detail.dish_id}:`, error.message);
+        throw new Error(`Không thể tạo hóa đơn: ${error.message}`);
+      }
+    }
+
     if (!invoiceData.invoice_number) {
       invoiceData.invoice_number = await this.generateInvoiceNumber();
     }

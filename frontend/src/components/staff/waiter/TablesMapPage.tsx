@@ -22,6 +22,8 @@ import { useStaff } from "../../../hooks/useStaff";
 import { useReservations } from "../../../hooks/useReservations";
 import { authService } from "../../../lib/authService";
 import { createOrder } from "../../../lib/orderingPageApi";
+import { reservationApi } from "../../../lib/reservationApi";
+import { generateOrderNumber } from "../../../lib/orderApi";
 
 export function TablesMapPage() {
   const hookResult = useTables();
@@ -256,15 +258,93 @@ export function TablesMapPage() {
     }
 
     try {
+      // ⭐ Tách reservationId và verification code từ input
+      // Format: "RES-xxx" hoặc "RES-xxx:1234" (có thể có verification code)
+      const input = bookingCode.trim();
+      let reservationId: string;
+      let inputVerificationCode: string | undefined;
+      
+      if (input.includes(':')) {
+        const parts = input.split(':');
+        reservationId = parts[0].trim();
+        inputVerificationCode = parts[1]?.trim();
+      } else {
+        reservationId = input;
+      }
+
+      // ⭐ Get reservation details và VALIDATE verification code
+      let customerId: string | undefined;
+      
+      try {
+        const reservationResponse = await reservationApi.getById(reservationId);
+        if (!reservationResponse.success || !reservationResponse.data) {
+          toast.error("Không tìm thấy mã đặt bàn");
+          return;
+        }
+
+        const reservation = reservationResponse.data;
+        
+        // ⭐ KIỂM TRA VERIFICATION CODE
+        if (reservation.verification_code) {
+          if (!inputVerificationCode) {
+            toast.error("Vui lòng nhập mã xác thực. Format: RES-xxx:1234");
+            return;
+          }
+          
+          if (inputVerificationCode !== reservation.verification_code) {
+            toast.error("Mã xác thực không đúng!");
+            return;
+          }
+        }
+        
+        // ⭐ KIỂM TRA TRẠNG THÁI RESERVATION
+        if (reservation.status === 'completed') {
+          toast.error("Đặt bàn này đã được check-in rồi");
+          return;
+        }
+        
+        if (reservation.status === 'cancelled') {
+          toast.error("Đặt bàn này đã bị hủy");
+          return;
+        }
+        
+        customerId = reservation.customer_id;
+        console.log("✓ Verified reservation with customer_id:", customerId);
+      } catch (err) {
+        console.error("Error fetching reservation:", err);
+        toast.error("Không thể xác thực mã đặt bàn");
+        return;
+      }
+
+      // Update table status to occupied
       await updateTableStatus(selectedTable.id, "occupied");
       
-      // Use bookingCode as reservation ID
-      const reservationId = bookingCode.trim();
-      
+      // Update reservation status
       try {
         await updateReservationStatus(reservationId, "completed");
       } catch (err) {
         console.error("Error updating reservation status:", err);
+      }
+
+      // Create order with customer_id if available
+      try {
+        const currentUser = await authService.getCurrentUser();
+        const staffId = currentUser.data.id || currentUser.data._id;
+        
+        const orderNumber = generateOrderNumber("dine-in-waiter");
+        await createOrder({
+          order_number: orderNumber,
+          order_type: "dine-in-waiter",
+          order_time: new Date().toISOString(),
+          table_id: selectedTable.id,
+          customer_id: customerId,
+          staff_id: staffId,
+          notes: `Check-in từ đặt bàn ${reservationId}`,
+        });
+        console.log("Order created with customer_id:", customerId);
+      } catch (err) {
+        console.error("Error creating order during check-in:", err);
+        // Don't fail the check-in if order creation fails
       }
       
       toast.success(`Đã check-in khách cho bàn ${selectedTable.table_number}`);
@@ -623,12 +703,16 @@ export function TablesMapPage() {
                 label="Mã đặt bàn"
                 value={bookingCode}
                 onChange={(e) => setBookingCode(e.target.value)}
-                placeholder="Nhập mã đặt bàn (VD: B001)"
+                placeholder="RES-xxx:1234 (mã:code xác thực)"
               />
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-800">
-                  Gợi ý: Quét mã QR trên phiếu đặt bàn hoặc nhập mã thủ công
+                <p className="text-sm text-blue-800 mb-2">
+                  <strong>Format:</strong> RES-xxx:1234
+                </p>
+                <p className="text-xs text-blue-700">
+                  • RES-xxx: Mã đặt bàn<br />
+                  • 1234: Mã xác thực 4 số (nếu có)
                 </p>
               </div>
 
