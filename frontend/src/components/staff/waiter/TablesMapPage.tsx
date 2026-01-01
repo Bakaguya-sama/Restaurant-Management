@@ -633,7 +633,7 @@ export function TablesMapPage() {
                 placeholder="RES-xxx:1234 (mã:code xác thực)"
               />
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              {/* <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm text-blue-800 mb-2">
                   <strong>Format:</strong> RES-xxx:1234
                 </p>
@@ -641,7 +641,7 @@ export function TablesMapPage() {
                   • RES-xxx: Mã đặt bàn<br />
                   • 1234: Mã xác thực 4 số (nếu có)
                 </p>
-              </div>
+              </div> */}
 
               <div className="flex gap-4">
                 <Button
