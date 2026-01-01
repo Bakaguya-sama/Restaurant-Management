@@ -630,7 +630,7 @@ export function TablesMapPage() {
                 label="Mã đặt bàn"
                 value={bookingCode}
                 onChange={(e) => setBookingCode(e.target.value)}
-                placeholder="RES-xxx:1234 (mã:code xác thực)"
+                placeholder="Nhập mã đặt bàn"
               />
 
               {/* <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
