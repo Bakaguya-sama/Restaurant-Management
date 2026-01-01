@@ -586,12 +586,14 @@ async function seedDatabase() {
     // ==================== 12. STOCK IMPORT DETAILS ====================
     console.log('12/24 Tạo Stock Import Details...');
     const stockImportDetails = await StockImportDetail.insertMany([
-      { import_id: stockImports[0]._id, ingredient_id: ingredients[0]._id, quantity: 50, unit_price: 350000, line_total: 17500000, expiry_date: new Date('2027-01-01') },
-      { import_id: stockImports[1]._id, ingredient_id: ingredients[1]._id, quantity: 30, unit_price: 450000, line_total: 13500000, expiry_date: new Date('2025-12-29') }, // cá hồi: near expiry
-      { import_id: stockImports[1]._id, ingredient_id: ingredients[2]._id, quantity: 25, unit_price: 280000, line_total: 7000000, expiry_date: new Date('2025-12-20') }, 
-      { import_id: stockImports[2]._id, ingredient_id: ingredients[3]._id, quantity: 15, unit_price: 25000, line_total: 375000, expiry_date: new Date('2027-12-17') },
-      { import_id: stockImports[2]._id, ingredient_id: ingredients[4]._id, quantity: 20, unit_price: 30000, line_total: 600000, expiry_date: new Date('2027-12-18') },
-      { import_id: stockImports[2]._id, ingredient_id: ingredients[5]._id, quantity: 18, unit_price: 20000, line_total: 360000, expiry_date: new Date('2027-12-16') }
+      { import_id: stockImports[0]._id, ingredient_id: ingredients[0]._id, quantity: 50, unit_price: 350000, line_total: 17500000, expiry_date: new Date('2030-01-01') },
+      { import_id: stockImports[1]._id, ingredient_id: ingredients[1]._id, quantity: 100, unit_price: 450000, line_total: 45000000, expiry_date: new Date('2030-12-29') }, // cá hồi: tăng lên 100kg
+      { import_id: stockImports[1]._id, ingredient_id: ingredients[2]._id, quantity: 100, unit_price: 280000, line_total: 28000000, expiry_date: new Date('2030-12-20') }, // tôm sú: tăng lên 100kg, HẠN DÀI
+      { import_id: stockImports[2]._id, ingredient_id: ingredients[3]._id, quantity: 50, unit_price: 25000, line_total: 1250000, expiry_date: new Date('2030-12-17') }, // khoai tây: tăng lên 50kg
+      { import_id: stockImports[2]._id, ingredient_id: ingredients[4]._id, quantity: 50, unit_price: 30000, line_total: 1500000, expiry_date: new Date('2030-12-18') }, // cà chua: tăng lên 50kg
+      { import_id: stockImports[2]._id, ingredient_id: ingredients[5]._id, quantity: 50, unit_price: 20000, line_total: 1000000, expiry_date: new Date('2030-12-16') }, // bơ: tăng lên 50kg
+      { import_id: stockImports[2]._id, ingredient_id: ingredients[6]._id, quantity: 100, unit_price: 120000, line_total: 12000000, expiry_date: new Date('2030-12-17') }, // bơ tươi: tăng lên 100kg, HẠN DÀI
+      { import_id: stockImports[2]._id, ingredient_id: ingredients[7]._id, quantity: 50, unit_price: 15000, line_total: 750000, expiry_date: new Date('2030-12-18') }  // nước mắm: tăng lên 50L
     ]);
     console.log(`   OK ${stockImportDetails.length} import details\n`);
 
