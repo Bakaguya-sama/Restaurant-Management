@@ -11,7 +11,6 @@ class ReservationService {
   }
 
   isWithin60Minutes(reservationDate, reservationTime) {
-    // Handle both Date objects and strings for reservationDate
     let dateStr = reservationDate;
     if (reservationDate instanceof Date) {
       const year = reservationDate.getFullYear();
@@ -27,6 +26,22 @@ class ReservationService {
     const timeDifference = reservationDateTime - now;
     const oneHourMs = 60 * 60 * 1000;
     return timeDifference <= oneHourMs && timeDifference > 0;
+  }
+
+  isFutureDateTime(reservationDate, reservationTime) {
+    let dateStr = reservationDate;
+    if (reservationDate instanceof Date) {
+      const year = reservationDate.getFullYear();
+      const month = String(reservationDate.getMonth() + 1).padStart(2, '0');
+      const day = String(reservationDate.getDate()).padStart(2, '0');
+      dateStr = `${year}-${month}-${day}`;
+    }
+
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const [hour, minute] = reservationTime.split(':').map(Number);
+    const reservationDateTime = new Date(year, month - 1, day, hour, minute);
+    const now = new Date();
+    return reservationDateTime > now;
   }
 
   shouldAutoCancelReservation(reservation) {
@@ -167,6 +182,11 @@ class ReservationService {
     if (!validation.isValid) {
       throw new Error(validation.errors.join(', '));
     }
+
+    if (!this.isFutureDateTime(data.reservation_date, data.reservation_time)) {
+      throw new Error('Reservation date and time must be in the future');
+    }
+
     if (!data.details || !Array.isArray(data.details) || data.details.length === 0) {
       throw new Error('Reservation must include at least one table');
     }
@@ -195,7 +215,8 @@ class ReservationService {
         await this.tableRepository.updateStatus(detail.table_id, 'reserved');
       }
     }
-    return this.formatReservationResponse(reservation);
+    const updated = await this.updateStatus(reservation);
+    return this.formatReservationResponse(updated);
   }
 
 

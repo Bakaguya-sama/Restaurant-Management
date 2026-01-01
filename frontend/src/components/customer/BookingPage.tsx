@@ -409,6 +409,21 @@ export function BookingPage() {
                     return;
                   }
 
+                  if (!bookingData.time) {
+                    toast.error("Vui lòng chọn giờ");
+                    return;
+                  }
+
+                  const [year, month, day] = bookingData.date.split('-').map(Number);
+                  const [hour, minute] = bookingData.time.split(':').map(Number);
+                  const reservationDateTime = new Date(year, month - 1, day, hour, minute);
+                  const now = new Date();
+
+                  if (reservationDateTime <= now) {
+                    toast.error("Ngày giờ đặt bàn phải trong tương lai");
+                    return;
+                  }
+
                   // Validate time range (8:00 AM - 8:00 PM)
                   if (bookingData.time) {
                     const [hours, minutes] = bookingData.time
