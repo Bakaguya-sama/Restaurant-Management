@@ -128,6 +128,7 @@ async function createStockImport(items) {
 
   const details = [];
   const noteParts = []; // Collect notes for each item
+  let totalCost = 0; // Track total cost
 
   for (const it of items) {
     let ing;
@@ -154,7 +155,9 @@ async function createStockImport(items) {
     if (!ing)
       throw { status: 404, message: `Ingredient not found: ${it.itemId}` };
 
-    const unitPrice = it.unitPrice || ing.unit_price || 0;
+    // IMPORTANT: Use unitPrice from import request, NOT from ingredient
+    // The ingredient unit_price might be for dishes, not for raw ingredient purchase
+    const unitPrice = it.unitPrice !== undefined ? it.unitPrice : 0;
     const lineTotal = unitPrice * it.quantity;
 
     const detail = new StockImportDetail({
@@ -177,12 +180,16 @@ async function createStockImport(items) {
       quantity: it.quantity,
     });
 
+    // Add to total cost
+    totalCost += lineTotal;
+
     // Add to notes: "Thịt bò: 100kg, Cá hồi: 50kg"
     noteParts.push(`${ing.name}: ${it.quantity}${ing.unit}`);
   }
 
-  // Update notes in the stock import
+  // Update notes and total_cost in the stock import
   stockImport.notes = noteParts.join(", ");
+  stockImport.total_cost = totalCost;
   await stockImport.save();
 
   return { import: stockImport, details };

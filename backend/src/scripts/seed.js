@@ -586,14 +586,19 @@ async function seedDatabase() {
     // ==================== 12. STOCK IMPORT DETAILS ====================
     console.log('12/24 Tạo Stock Import Details...');
     const stockImportDetails = await StockImportDetail.insertMany([
-      { import_id: stockImports[0]._id, ingredient_id: ingredients[0]._id, quantity: 50, unit_price: 350000, line_total: 17500000, expiry_date: new Date('2030-01-01') },
-      { import_id: stockImports[1]._id, ingredient_id: ingredients[1]._id, quantity: 100, unit_price: 450000, line_total: 45000000, expiry_date: new Date('2030-12-29') }, // cá hồi: tăng lên 100kg
-      { import_id: stockImports[1]._id, ingredient_id: ingredients[2]._id, quantity: 100, unit_price: 280000, line_total: 28000000, expiry_date: new Date('2030-12-20') }, // tôm sú: tăng lên 100kg, HẠN DÀI
-      { import_id: stockImports[2]._id, ingredient_id: ingredients[3]._id, quantity: 50, unit_price: 25000, line_total: 1250000, expiry_date: new Date('2030-12-17') }, // khoai tây: tăng lên 50kg
-      { import_id: stockImports[2]._id, ingredient_id: ingredients[4]._id, quantity: 50, unit_price: 30000, line_total: 1500000, expiry_date: new Date('2030-12-18') }, // cà chua: tăng lên 50kg
-      { import_id: stockImports[2]._id, ingredient_id: ingredients[5]._id, quantity: 50, unit_price: 20000, line_total: 1000000, expiry_date: new Date('2030-12-16') }, // bơ: tăng lên 50kg
-      { import_id: stockImports[2]._id, ingredient_id: ingredients[6]._id, quantity: 100, unit_price: 120000, line_total: 12000000, expiry_date: new Date('2030-12-17') }, // bơ tươi: tăng lên 100kg, HẠN DÀI
-      { import_id: stockImports[2]._id, ingredient_id: ingredients[7]._id, quantity: 50, unit_price: 15000, line_total: 750000, expiry_date: new Date('2030-12-18') }  // nước mắm: tăng lên 50L
+      // IMP-001: Lô cũ - giữ nguyên
+      { import_id: stockImports[0]._id, ingredient_id: ingredients[0]._id, quantity: 50, unit_price: 350000, line_total: 17500000, expiry_date: getExpiryDate(30) },
+      
+      // IMP-002: Lô cũ - giữ nguyên
+      { import_id: stockImports[1]._id, ingredient_id: ingredients[1]._id, quantity: 100, unit_price: 450000, line_total: 45000000, expiry_date: getExpiryDate(25) },
+      { import_id: stockImports[1]._id, ingredient_id: ingredients[2]._id, quantity: 100, unit_price: 280000, line_total: 28000000, expiry_date: getExpiryDate(20) },
+      
+      // IMP-003: Lô rau - giữ nguyên  
+      { import_id: stockImports[2]._id, ingredient_id: ingredients[3]._id, quantity: 50, unit_price: 25000, line_total: 1250000, expiry_date: getExpiryDate(15) },
+      { import_id: stockImports[2]._id, ingredient_id: ingredients[4]._id, quantity: 50, unit_price: 30000, line_total: 1500000, expiry_date: getExpiryDate(12) },
+      { import_id: stockImports[2]._id, ingredient_id: ingredients[5]._id, quantity: 50, unit_price: 20000, line_total: 1000000, expiry_date: getExpiryDate(10) },
+      { import_id: stockImports[2]._id, ingredient_id: ingredients[6]._id, quantity: 100, unit_price: 120000, line_total: 12000000, expiry_date: getExpiryDate(20) },
+      { import_id: stockImports[2]._id, ingredient_id: ingredients[7]._id, quantity: 50, unit_price: 15000, line_total: 750000, expiry_date: getExpiryDate(180) }
     ]);
     console.log(`   OK ${stockImportDetails.length} import details\n`);
 
@@ -606,6 +611,49 @@ async function seedDatabase() {
       await ingredient.save();
     }
     console.log(`   OK Đã đồng bộ ${ingredients.length} ingredients\n`);
+
+    // ==================== 12.2. THÊM CÁC LÔ MỚI (hết hạn, sắp hết hạn) ====================
+    console.log('12.2/24 Thêm các lô mới với trạng thái khác nhau...');
+    const newStockImports = await StockImport.insertMany([
+      { 
+        import_number: 'IMP-EXPIRED-001', 
+        staff_id: staffs[4]._id, 
+        supplier_id: suppliers[1]._id,
+        import_date: new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000), // 30 ngày trước
+        total_cost: 2250000, 
+        notes: 'Lô cá hồi cũ - ĐÃ HẾT HẠN', 
+        status: 'completed' 
+      },
+      { 
+        import_number: 'IMP-NEAR-001', 
+        staff_id: staffs[4]._id, 
+        supplier_id: suppliers[2]._id,
+        import_date: new Date(today),
+        total_cost: 1200000, 
+        notes: 'Lô rau sắp hết hạn', 
+        status: 'completed' 
+      }
+    ]);
+    
+    const newStockImportDetails = await StockImportDetail.insertMany([
+      // Lô ĐÃ HẾT HẠN
+      { import_id: newStockImports[0]._id, ingredient_id: ingredients[1]._id, quantity: 5, unit_price: 450000, line_total: 2250000, expiry_date: getExpiryDate(-3) }, // Cá hồi hết hạn 3 ngày
+      
+      // Lô SẮP HẾT HẠN
+      { import_id: newStockImports[1]._id, ingredient_id: ingredients[3]._id, quantity: 10, unit_price: 25000, line_total: 250000, expiry_date: getExpiryDate(5) }, // Khoai tây sắp hết (5 ngày)
+      { import_id: newStockImports[1]._id, ingredient_id: ingredients[4]._id, quantity: 15, unit_price: 30000, line_total: 450000, expiry_date: getExpiryDate(4) }, // Cà chua sắp hết (4 ngày)
+      { import_id: newStockImports[1]._id, ingredient_id: ingredients[5]._id, quantity: 20, unit_price: 20000, line_total: 400000, expiry_date: getExpiryDate(6) }  // Bơ sắp hết (6 ngày)
+    ]);
+    
+    // Cập nhật lại số lượng ingredient
+    for (const detail of newStockImportDetails) {
+      const ing = await Ingredient.findById(detail.ingredient_id);
+      if (ing) {
+        ing.quantity_in_stock = (ing.quantity_in_stock || 0) + detail.quantity;
+        await ing.save();
+      }
+    }
+    console.log(`   OK Thêm ${newStockImports.length} lô mới, ${newStockImportDetails.length} chi tiết\n`);
 
     // ==================== 13. STOCK EXPORTS ====================
     console.log('13/24 Tạo Stock Exports...');
@@ -777,6 +825,34 @@ async function seedDatabase() {
         total_amount: 467500,
         table_id: tables[12]._id,
         notes: 'Bàn T13 - Khách vừa check-in'
+      },
+      { 
+        order_number: 'ORD-010', 
+        order_type: 'dine-in-waiter',
+        order_date: new Date('2026-01-03'),
+        order_time: '18:20', 
+        customer_id: customers[3]._id,
+        status: 'completed', 
+        subtotal: 555000, 
+        tax: 55500, 
+        total_amount: 610500,
+        table_id: tables[8]._id, // Bàn T09
+        staff_id: staffs[0]._id,
+        notes: 'Bàn T09 - Đã dùng xong, chờ thanh toán'
+      },
+      { 
+        order_number: 'ORD-011', 
+        order_type: 'dine-in-waiter',
+        order_date: new Date('2026-01-03'),
+        order_time: '19:00', 
+        customer_id: customers[1]._id,
+        status: 'completed', 
+        subtotal: 730000, 
+        tax: 73000, 
+        total_amount: 803000,
+        table_id: tables[5]._id, // Bàn T06
+        staff_id: staffs[1]._id,
+        notes: 'Bàn T06 - Đã dùng xong, chờ thanh toán'
       }
     ]);
     console.log(`   OK ${orders.length} orders\n`);
@@ -803,13 +879,24 @@ async function seedDatabase() {
       { order_id: orders[6]._id, dish_id: dishes[4]._id, quantity: 2, unit_price: 95000, line_total: 190000, status: 'pending' },
       { order_id: orders[7]._id, dish_id: dishes[0]._id, quantity: 1, unit_price: 350000, line_total: 350000, status: 'pending' },
       { order_id: orders[7]._id, dish_id: dishes[7]._id, quantity: 2, unit_price: 35000, line_total: 70000, status: 'pending' },
-      { order_id: orders[7]._id, dish_id: dishes[6]._id, quantity: 1, unit_price: 25000, line_total: 25000, status: 'pending' }
+      { order_id: orders[7]._id, dish_id: dishes[6]._id, quantity: 1, unit_price: 25000, line_total: 25000, status: 'pending' },
+      
+      // Order details cho bàn T09 (ORD-010) - orders[8] - ĐÃ PHỤC VỤ XONG
+      { order_id: orders[8]._id, dish_id: dishes[2]._id, quantity: 1, unit_price: 280000, line_total: 280000, status: 'served' },
+      { order_id: orders[8]._id, dish_id: dishes[4]._id, quantity: 1, unit_price: 95000, line_total: 95000, status: 'served' },
+      { order_id: orders[8]._id, dish_id: dishes[5]._id, quantity: 1, unit_price: 110000, line_total: 110000, status: 'served' },
+      { order_id: orders[8]._id, dish_id: dishes[7]._id, quantity: 2, unit_price: 35000, line_total: 70000, status: 'served' },
+      
+      // Order details cho bàn T06 (ORD-011) - orders[9] - ĐÃ PHỤC VỤ XONG
+      { order_id: orders[9]._id, dish_id: dishes[0]._id, quantity: 1, unit_price: 350000, line_total: 350000, status: 'served' },
+      { order_id: orders[9]._id, dish_id: dishes[1]._id, quantity: 1, unit_price: 420000, line_total: 420000, status: 'served' }
     ]);
     console.log(`   OK ${orderDetails.length} order details\n`);
 
     // ==================== 20. INVOICES ====================
     console.log('20/24 Tạo Invoices...');
     const invoices = await Invoice.insertMany([
+      // Invoice đã thanh toán (completed orders)
       { 
         invoice_number: 'INV-003', 
         order_id: orders[1]._id, 
@@ -841,9 +928,45 @@ async function seedDatabase() {
         points_used: 0,
         points_earned: 69,
         paid_at: new Date('2025-12-11')
+      },
+      
+      // Invoice CHỜ THANH TOÁN (completed orders - đã dùng xong món, chờ thanh toán)
+      { 
+        invoice_number: 'INV-101', 
+        order_id: orders[8]._id, // ORD-010 - Bàn T09 - ĐÃ DÙNG XONG
+        staff_id: staffs[2]._id, 
+        customer_id: customers[3]._id,
+        invoice_date: new Date('2026-01-03'),
+        subtotal: 555000, 
+        tax: 55500, 
+        discount_amount: 0, 
+        total_amount: 610500, 
+        payment_method: null, 
+        payment_status: 'pending',
+        points_used: 0,
+        points_earned: 0,
+        paid_at: null,
+        notes: 'Waiter đã xác nhận hóa đơn - Khách đang chờ thanh toán'
+      },
+      { 
+        invoice_number: 'INV-102', 
+        order_id: orders[9]._id, // ORD-011 - Bàn T06 - ĐÃ DÙNG XONG
+        staff_id: staffs[2]._id, 
+        customer_id: customers[1]._id,
+        invoice_date: new Date('2026-01-03'),
+        subtotal: 730000, 
+        tax: 73000, 
+        discount_amount: 0, 
+        total_amount: 803000, 
+        payment_method: null, 
+        payment_status: 'pending',
+        points_used: 0,
+        points_earned: 0,
+        paid_at: null,
+        notes: 'Waiter đã xác nhận hóa đơn - Khách đang chờ thanh toán'
       }
     ]);
-    console.log(`   OK ${invoices.length} invoices\n`);
+    console.log(`   OK ${invoices.length} invoices (${invoices.filter(i => i.payment_status === 'pending').length} pending)\n`);
 
     // ==================== 21. INVOICE PROMOTIONS ====================
     console.log('21/24 Tạo Invoice Promotions...');
