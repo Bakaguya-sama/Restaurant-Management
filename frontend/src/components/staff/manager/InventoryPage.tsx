@@ -33,6 +33,7 @@ import {
   deleteSupplier,
   fetchExportHistory,
 } from "../../../lib/inventoryPageApi";
+import { API_BASE_URL } from "../../../lib/api";
 
 export function InventoryPage() {
   // Fetch data from API
@@ -322,6 +323,7 @@ export function InventoryPage() {
           return {
             itemId: importItem.existingItemId!,
             quantity: importItem.quantity,
+            unitPrice: importItem.price, // Include unitPrice for existing items too
             supplierId: selectedSupplier,
             expiryDate:
               importItem.expiryDate || new Date().toISOString().split("T")[0],
@@ -657,6 +659,7 @@ export function InventoryPage() {
                     <th className="text-left p-4">Tên nguyên liệu</th>
                     <th className="text-left p-4">Số lượng</th>
                     <th className="text-left p-4">Đơn vị</th>
+                    <th className="text-left p-4">Nhà cung cấp</th>
                     <th className="text-left p-4">Hạn sử dụng</th>
                     <th className="text-left p-4">Tình trạng hạn sử dụng</th>
                     <th className="text-left p-4">Tình trạng tồn kho</th>
@@ -691,6 +694,7 @@ export function InventoryPage() {
                           </span>
                         </td>
                         <td className="p-4 text-gray-600">{item.unit}</td>
+                        <td className="p-4 text-gray-600">{item.supplierName || "-"}</td>
                         <td className="p-4">
                           {item.expiryDate ? (
                             <div>
@@ -1283,8 +1287,7 @@ export function InventoryPage() {
                             )
                           }
                           className="flex-1"
-                          min="1"
-                          step="1"
+                          min="0"
                           required
                         />
                         <Input
@@ -1300,7 +1303,6 @@ export function InventoryPage() {
                           }
                           className="flex-1"
                           min="0"
-                          step="1000"
                           required
                         />
                         {importItems.length > 1 && (
@@ -1355,8 +1357,7 @@ export function InventoryPage() {
                             )
                           }
                           className="w-24"
-                          min="1"
-                          step="1"
+                          min="0"
                           required
                         />
                         <Input
@@ -1382,7 +1383,6 @@ export function InventoryPage() {
                           }
                           className="w-32"
                           min="0"
-                          step="1000"
                           required
                         />
                         {importItems.length > 1 && (
@@ -1499,8 +1499,7 @@ export function InventoryPage() {
               })
             }
             placeholder="Nhập số lượng"
-            min="1"
-            step="1"
+            min="0"
             required
           />
 

@@ -199,14 +199,15 @@ export interface Invoice {
 // Inventory Types
 export interface InventoryItem {
   id: string;
-  ingredientId: string; // The actual ingredient ID for backend operations
+  ingredientId?: string; // The actual ingredient ID for backend operations
   name: string;
   quantity: number;
-  unit: string;
+  unit?: string;
   expiryDate?: string;
   expiryStatus?: 'valid' | 'near_expiry' | 'expired';
   supplierId?: string;
-  lastUpdated: string;
+  supplierName?: string; // Display name of supplier for batch view
+  lastUpdated?: string;
 }
 
 export interface Supplier {

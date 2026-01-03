@@ -50,19 +50,18 @@ export interface ExportItemsParams {
 // ==================== UTILITY FUNCTIONS ====================
 
 /**
- * Map Ingredient from API to InventoryItem for UI
+ * Map InventoryBatchDTO from API to InventoryItem for UI
  */
-function mapIngredientToInventoryItem(ingredient: Ingredient): InventoryItem {
+function mapBatchDTOToInventoryItem(batch: InventoryBatchDTO): InventoryItem {
   return {
-    id: ingredient.id,
-    ingredientId: ingredient.id,
-    name: ingredient.name,
-    quantity: ingredient.quantity_in_stock,
-    unit: ingredient.unit,
-    expiryDate: ingredient.expiry_date || undefined,
-    expiryStatus: ingredient.expiry_status as 'valid' | 'near_expiry' | 'expired' | undefined,
-    supplierId: ingredient.supplier_id,
-    lastUpdated: ingredient.updatedAt || ingredient.createdAt || new Date().toISOString(),
+    id: batch.id,
+    ingredientId: batch.ingredientId || undefined,
+    name: batch.name || 'Unknown',
+    quantity: batch.quantity,
+    unit: batch.unit || undefined,
+    expiryDate: batch.expiryDate || undefined,
+    supplierName: batch.supplierName || undefined,
+    lastUpdated: batch.lastUpdated || undefined,
   };
 }
 
@@ -79,12 +78,19 @@ export function mapSupplierDTOToSupplier(supplier: SupplierDTO): Supplier {
 }
 
 /**
- * Fetch inventory items from backend API using ingredientApi
+ * Fetch inventory batches (individual lots) from backend API
  */
 export async function fetchInventory(): Promise<InventoryItem[]> {
-  const response = await ingredientApi.getAll();
-  const ingredients = (response?.data || []) as Ingredient[];
-  return ingredients.map(mapIngredientToInventoryItem);
+  const response = await fetch(`${getApiBaseUrl()}/inventory`);
+  
+  if (!response.ok) {
+    throw new Error(`Failed to fetch inventory: ${response.status}`);
+  }
+
+  const json = await response.json();
+  const batches = (json?.data || []) as InventoryBatchDTO[];
+
+  return batches.map(mapBatchDTOToInventoryItem);
 }
 
 /**
