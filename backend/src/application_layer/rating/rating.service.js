@@ -28,15 +28,25 @@ class RatingService {
       throw new Error('Customer not found');
     }
 
+    const invoice = await this.ratingRepository.findInvoiceById(data.invoice_id);
+    if (!invoice) {
+      throw new Error('Invoice not found');
+    }
+
     return await this.ratingRepository.create(data);
   }
 
   async updateRating(id, updateData) {
-    await this.ratingRepository.findById(id);
+    const existingRating = await this.ratingRepository.findById(id);
 
-    if (updateData.score) {
-      const updatedData = { score: updateData.score, description: updateData.description };
-      const ratingEntity = new RatingEntity({ ...updatedData, customer_id: 'temp' });
+    if (updateData.score || updateData.description) {
+      const validationData = { 
+        score: updateData.score || existingRating.score,
+        description: updateData.description,
+        customer_id: existingRating.customer_id,
+        invoice_id: existingRating.invoice_id
+      };
+      const ratingEntity = new RatingEntity(validationData);
       const validation = ratingEntity.validate();
 
       if (!validation.isValid) {

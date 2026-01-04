@@ -1,4 +1,4 @@
-const { Rating, RatingReply } = require('../../models');
+const { Rating, RatingReply, Invoice } = require('../../models');
 const RatingEntity = require('../../domain_layer/rating/rating.entity');
 
 class RatingRepository {
@@ -7,6 +7,10 @@ class RatingRepository {
 
     if (filters.customer_id) {
       query.customer_id = filters.customer_id;
+    }
+
+    if (filters.invoice_id) {
+      query.invoice_id = filters.invoice_id;
     }
 
     if (filters.score) {
@@ -21,7 +25,6 @@ class RatingRepository {
       query.score = { ...query.score, $lte: filters.max_score };
     }
 
-    // Filter by date range
     if (filters.start_date || filters.end_date) {
       query.rating_date = {};
       if (filters.start_date) {
@@ -34,9 +37,9 @@ class RatingRepository {
 
     let queryBuilder = Rating.find(query)
       .populate('customer_id', 'full_name email phone membership_level')
+      .populate('invoice_id', 'invoice_number total_amount invoice_date')
       .sort({ rating_date: -1 });
 
-    // Apply limit if specified
     if (filters.limit) {
       queryBuilder = queryBuilder.limit(parseInt(filters.limit));
     }
@@ -49,6 +52,7 @@ class RatingRepository {
   async findById(id) {
     const rating = await Rating.findById(id)
       .populate('customer_id', 'full_name email phone membership_level')
+      .populate('invoice_id', 'invoice_number total_amount invoice_date')
       .lean();
 
     if (!rating) {
@@ -64,6 +68,7 @@ class RatingRepository {
 
     const savedRating = await Rating.findById(rating._id)
       .populate('customer_id', 'full_name email phone membership_level')
+      .populate('invoice_id', 'invoice_number total_amount invoice_date')
       .lean();
 
     return new RatingEntity(savedRating).toJSON();
@@ -76,6 +81,7 @@ class RatingRepository {
       { new: true, runValidators: true }
     )
       .populate('customer_id', 'full_name email phone membership_level')
+      .populate('invoice_id', 'invoice_number total_amount invoice_date')
       .lean();
 
     if (!rating) {
@@ -163,6 +169,10 @@ class RatingRepository {
       negative,
       by_score: byScore
     };
+  }
+
+  async findInvoiceById(invoiceId) {
+    return await Invoice.findById(invoiceId).lean();
   }
 }
 

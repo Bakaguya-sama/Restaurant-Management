@@ -1,0 +1,16 @@
+@baseUrl = http://localhost:5001/api/v1
+
+### Check if table is available for time range
+GET {{baseUrl}}/reservations/check-availability?table_id=TABLE_ID&reservation_date=2025-12-25&reservation_time=19:00&reservation_checkout_time=21:00
+
+### Check availability - Table available
+GET {{baseUrl}}/reservations/check-availability?table_id=TABLE_ID&reservation_date=2026-01-15&reservation_time=18:00&reservation_checkout_time=20:00
+
+### Check availability - Different date (no conflict)
+GET {{baseUrl}}/reservations/check-availability?table_id=TABLE_ID&reservation_date=2026-02-01&reservation_time=19:00&reservation_checkout_time=21:00
+
+### Check availability - Overlapping time (conflict expected)
+GET {{baseUrl}}/reservations/check-availability?table_id=TABLE_ID&reservation_date=2025-12-25&reservation_time=20:00&reservation_checkout_time=22:00
+
+### Check availability - Missing parameters (should return 400)
+GET {{baseUrl}}/reservations/check-availability?table_id=TABLE_ID&reservation_date=2025-12-25

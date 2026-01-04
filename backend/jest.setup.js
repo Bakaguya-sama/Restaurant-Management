@@ -7,16 +7,30 @@ beforeAll(async () => {
   if (mongoose.connection.readyState === 0) {
     try {
       await mongoose.connect(process.env.MONGODB_URI);
-      const { Floor } = require('./src/models');
-      await Floor.collection.dropIndex('floor_number_1').catch(() => {});
-      await Floor.deleteMany({});
+      // Drop the entire test database to clear all collections and indexes
+      await mongoose.connection.db.dropDatabase();
+      console.log('Test database cleaned and indexes reset');
     } catch (error) {
       console.warn('Setup warning:', error.message);
+    }
+  } else {
+    // If already connected, clean the database
+    try {
+      await mongoose.connection.db.dropDatabase();
+      console.log('Test database cleaned and indexes reset');
+    } catch (error) {
+      console.warn('Cleanup warning:', error.message);
     }
   }
 });
 
 afterAll(async () => {
+  try {
+    await mongoose.connection.db.dropDatabase();
+    console.log('Test database cleaned after tests');
+  } catch (error) {
+    console.warn('Cleanup after error:', error.message);
+  }
   await mongoose.disconnect();
 });
 

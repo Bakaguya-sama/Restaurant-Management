@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Calendar,
   Clock,
@@ -30,6 +31,7 @@ import { toast } from "sonner";
 
 export function BookingManagementPage() {
   const { userProfile } = useAuth();
+  const location = useLocation();
   const { reservations, fetchReservationsByCustomerId, loading, updateReservationIsPaid } = useReservations();
   const [customers, setCustomers] = useState<any[]>([]);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -114,6 +116,21 @@ export function BookingManagementPage() {
       setEnrichedReservations([]);
     }
   }, [reservations]);
+
+  useEffect(() => {
+    const state = location.state as { reservationId?: string } | null;
+    if (state?.reservationId && enrichedReservations.length > 0) {
+      const reservation = enrichedReservations.find((r) => r.id === state.reservationId);
+      if (reservation) {
+        setSelectedBooking(reservation);
+        if (!reservation.isPaid) {
+          setShowPaymentModal(true);
+        } else {
+          setShowDetailModal(true);
+        }
+      }
+    }
+  }, [enrichedReservations, location.state]);
 
   const bookings = enrichedReservations;
 
@@ -352,7 +369,7 @@ export function BookingManagementPage() {
               <div className="text-sm">
                 <span className="text-gray-600">Tiền cọc:</span>
                 <span className="ml-2 font-medium">
-                  {parseInt(booking.deposit_amount || "0").toLocaleString()}đ
+                  {(booking.deposit_amount || 0).toLocaleString()}đ
                 </span>
               </div>
               {/* {booking.bill && (
@@ -486,7 +503,7 @@ export function BookingManagementPage() {
                   <div>
                     <p className="text-sm text-gray-600 mb-1">Tiền đặt cọc</p>
                     <p className="text-xl font-medium text-green-700">
-                      {parseInt(selectedBooking.deposit_amount || "0").toLocaleString()}đ
+                      {(selectedBooking.deposit_amount || 0).toLocaleString()}đ
                     </p>
                   </div>
                   <Badge className="bg-green-100 text-green-700">
@@ -499,14 +516,16 @@ export function BookingManagementPage() {
               <div className="flex gap-3">
                 {selectedBooking.isPaid ? (
                   <>
-                    <Button
-                      variant="secondary"
-                      fullWidth
-                      onClick={() => setShowCancelModal(true)}
-                      className="border-red-500 text-red-600 hover:bg-red-50"
-                    >
-                      Hủy đặt bàn
-                    </Button>
+                    {selectedBooking.status !== 'cancelled' && (
+                      <Button
+                        variant="secondary"
+                        fullWidth
+                        onClick={() => setShowCancelModal(true)}
+                        className="border-red-500 text-red-600 hover:bg-red-50"
+                      >
+                        Hủy đặt bàn
+                      </Button>
+                    )}
                     <Button
                       fullWidth
                       onClick={() => {
@@ -806,7 +825,7 @@ export function BookingManagementPage() {
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Số tiền cọc cần thanh toán</p>
                   <p className="text-2xl font-bold text-orange-700">
-                    {parseInt(selectedBooking.deposit_amount || "0").toLocaleString()}đ
+                    {(selectedBooking.deposit_amount || 0).toLocaleString()}đ
                   </p>
                 </div>
                 <Badge className="bg-orange-100 text-orange-700">

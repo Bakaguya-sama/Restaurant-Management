@@ -2,6 +2,7 @@ import { apiClient, ApiResponse } from './apiClient';
 
 export interface RatingData {
   customer_id: string;
+  invoice_id: string;
   description?: string;
   score: number;
 }
@@ -10,6 +11,7 @@ export interface Rating {
   id: string;
   _id?: string;
   customer_id: string;
+  invoice_id: string;
   description?: string;
   rating_date: string;
   score: number;
@@ -47,12 +49,14 @@ class RatingApi {
 
   async getAll(filters?: {
     customer_id?: string;
+    invoice_id?: string;
     score?: number;
     min_score?: number;
     max_score?: number;
   }): Promise<ApiResponse<Rating[]>> {
     const params = new URLSearchParams();
     if (filters?.customer_id) params.append('customer_id', filters.customer_id);
+    if (filters?.invoice_id) params.append('invoice_id', filters.invoice_id);
     if (filters?.score) params.append('score', String(filters.score));
     if (filters?.min_score) params.append('min_score', String(filters.min_score));
     if (filters?.max_score) params.append('max_score', String(filters.max_score));
@@ -89,6 +93,10 @@ class RatingApi {
 
   async deleteReply(replyId: string): Promise<ApiResponse<void>> {
     return apiClient.delete<void>(`${this.baseEndpoint}/replies/${replyId}`);
+  }
+
+  async getByInvoiceId(invoiceId: string): Promise<ApiResponse<Rating[]>> {
+    return apiClient.get<Rating[]>(`${this.baseEndpoint}/invoice/${invoiceId}`);
   }
 
   async getStatistics(): Promise<ApiResponse<RatingStatistics>> {

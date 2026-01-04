@@ -257,6 +257,11 @@ export function TablesMapPage() {
       return;
     }
 
+    if (!currentUserId) {
+      toast.error("Không thể xác định thông tin nhân viên. Vui lòng thử lại sau.");
+      return;
+    }
+
     try {
       const reservationId = bookingCode.trim();
       
@@ -271,14 +276,31 @@ export function TablesMapPage() {
         return;
       }
 
+      const orderData = {
+        order_number: `ORD-${Date.now()}`,
+        order_type: "dine-in-waiter" as const,
+        order_time: new Date().toISOString(),
+        table_id: selectedTable.id,
+        customer_id: activeReservation.customer_id,
+        staff_id: currentUserId,
+        status: "pending" as const,
+      };
+
+      await createOrder(orderData);
+
       await updateTableStatus(selectedTable.id, "occupied");
       await updateReservationStatus(reservationId, "completed");
 
       toast.success(`Đã check-in khách cho bàn ${selectedTable.table_number}`);
     } catch (err) {
       console.error("Error checking in:", err);
-      const errorMsg =
+      let errorMsg =
         err instanceof Error ? err.message : "Lỗi khi cập nhật trạng thái bàn";
+      
+      if (errorMsg.includes("Payment must be completed first")) {
+        errorMsg = "Khách hàng chưa thanh toán. Vui lòng hoàn tất thanh toán trước khi check-in.";
+      }
+      
       toast.error(`Lỗi: ${errorMsg}`);
       return;
     }

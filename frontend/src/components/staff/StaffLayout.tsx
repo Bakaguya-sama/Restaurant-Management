@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -19,6 +19,10 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import { useStaff } from "../../hooks/useStaff";
+import { useImageLoader } from "../../hooks/useImageLoader";
+
+const PLACEHOLDER_AVATAR = "/placeholder_images/placeholder_avatar_image.png";
 
 const roleNames = {
   manager: "Quản lý",
@@ -26,19 +30,58 @@ const roleNames = {
   waiter: "Phục vụ",
 };
 
+function AvatarImage({ src }: { src: string | null }) {
+  if (src?.startsWith("data:")) {
+    return (
+      <img
+        src={src}
+        alt="Avatar"
+        className="w-full h-full object-cover"
+      />
+    );
+  }
+  
+  const displayImage = useImageLoader(src, PLACEHOLDER_AVATAR);
+  return (
+    <img
+      src={displayImage}
+      alt="Avatar"
+      className="w-full h-full object-cover"
+    />
+  );
+}
+
 export function StaffLayout() {
   const navigate = useNavigate();
   const { logout, userProfile } = useAuth();
+  const { getStaffById } = useStaff();
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   const role = userProfile?.role || "manager";
   
-  // Debug: Log user profile and role
-  React.useEffect(() => {
-    console.log("StaffLayout - userProfile:", userProfile);
-    console.log("StaffLayout - role:", role);
-  }, [userProfile, role]);
+  useEffect(() => {
+    const loadStaffAvatar = async () => {
+      try {
+        if (!userProfile?.id) return;
+        
+        const staffMember = await getStaffById(userProfile.id);
+        if (staffMember?.image_url) {
+          setAvatarUrl(`${staffMember.image_url}?t=${Date.now()}`);
+        } else if (userProfile.image_url) {
+          setAvatarUrl(`${userProfile.image_url}?t=${Date.now()}`);
+        }
+      } catch (error) {
+        console.error("Error loading staff avatar:", error);
+        if (userProfile?.image_url) {
+          setAvatarUrl(`${userProfile.image_url}?t=${Date.now()}`);
+        }
+      }
+    };
+
+    loadStaffAvatar();
+  }, [userProfile?.id]);
 
   const handleLogout = () => {
     logout();
@@ -212,8 +255,12 @@ export function StaffLayout() {
                 onClick={() => setUserDropdownOpen(!userDropdownOpen)}
                 className="flex items-center gap-2 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors"
               >
-                <div className="w-8 h-8 bg-[#625EE8] rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm">{userProfile?.name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'NV'}</span>
+                <div className="w-8 h-8 bg-[#625EE8] rounded-full flex items-center justify-center overflow-hidden">
+                  {avatarUrl ? (
+                    <AvatarImage src={avatarUrl} />
+                  ) : (
+                    <span className="text-white text-sm">{userProfile?.name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'NV'}</span>
+                  )}
                 </div>
                 <span className="text-sm">{userProfile?.name || 'Nhân viên'}</span>
                 <ChevronDown className="w-4 h-4 text-gray-600" />
