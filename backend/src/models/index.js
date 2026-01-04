@@ -411,6 +411,7 @@ module.exports = {
   Rating,
   RatingReply,
   StockExport,
-  StockExportDetail
+  StockExportDetail,
+  PasswordResetToken: require('./PasswordResetToken')
 };
 

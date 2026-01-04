@@ -38,9 +38,7 @@ export function RegisterPage() {
     // Validate all fields
     const nameValidation = validateRequired(form.fullName, "Họ và tên");
     const phoneValidation = validateVietnamesePhone(form.phone);
-    const emailValidation = form.email
-      ? validateEmail(form.email)
-      : { isValid: true };
+    const emailValidation = validateEmail(form.email);
     const passwordValidation = validatePassword(form.password);
     const confirmPasswordValidation = validatePasswordMatch(
       form.password,
@@ -203,7 +201,7 @@ export function RegisterPage() {
 
             <div>
               <Input
-                label="Email (tùy chọn)"
+                label="Email"
                 type="email"
                 placeholder="Nhập địa chỉ email"
                 icon={<Mail className="w-4 h-4" />}
@@ -212,6 +210,7 @@ export function RegisterPage() {
                   setForm({ ...form, email: e.target.value });
                   if (errors.email) setErrors({ ...errors, email: "" });
                 }}
+                required
               />
               {errors.email && (
                 <p className="text-red-500 text-sm mt-1">{errors.email}</p>

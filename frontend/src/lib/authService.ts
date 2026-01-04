@@ -21,6 +21,16 @@ export interface ChangePasswordData {
   newPassword: string;
 }
 
+export interface ForgotPasswordData {
+  email: string;
+}
+
+export interface ResetPasswordData {
+  token: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
 export interface AuthResponse {
   success: boolean;
   message?: string;
@@ -99,6 +109,20 @@ export const authService = {
 
   async changePassword(data: ChangePasswordData): Promise<any> {
     return fetchWithAuth('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async forgotPassword(data: ForgotPasswordData): Promise<any> {
+    return fetchWithAuth('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async resetPassword(data: ResetPasswordData): Promise<any> {
+    return fetchWithAuth('/auth/reset-password', {
       method: 'POST',
       body: JSON.stringify(data),
     });
