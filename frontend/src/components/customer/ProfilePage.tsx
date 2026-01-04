@@ -56,7 +56,7 @@ function AvatarImage({ src }: { src: string | null }) {
 }
 
 export function CustomerProfilePage() {
-  const { userProfile, isAuthenticated } = useAuth();
+  const { userProfile, isAuthenticated, updateProfile } = useAuth();
   const { getCustomerById, updateCustomer } = useCustomers();
   const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -65,6 +65,7 @@ export function CustomerProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const hasJustSavedRef = React.useRef(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [profileData, setProfileData] = useState({
     fullName: "",
@@ -98,6 +99,13 @@ export function CustomerProfilePage() {
           console.log('[CUSTOMER_PROFILE] User not authenticated or no profile in context');
           toast.error("Vui lòng đăng nhập để xem hồ sơ");
           setIsLoadingProfile(false);
+          return;
+        }
+
+        if (hasJustSavedRef.current) {
+          console.log('[CUSTOMER_PROFILE] Skipping refetch after save');
+          setIsLoadingProfile(false);
+          hasJustSavedRef.current = false;
           return;
         }
 
@@ -159,8 +167,10 @@ export function CustomerProfilePage() {
       }
     };
 
-    loadCurrentCustomerProfile();
-  }, [isAuthenticated, userProfile]);
+    if (isAuthenticated && userProfile?.id) {
+      loadCurrentCustomerProfile();
+    }
+  }, [isAuthenticated, userProfile?.id]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -200,26 +210,16 @@ export function CustomerProfilePage() {
     setIsEditing(true);
   };
 
-  const handleUploadAvatar = async (customerId: string): Promise<void> => {
-    if (!avatarFile) return;
+  const handleUploadAvatar = async (customerId: string): Promise<string | null> => {
+    if (!avatarFile) return null;
 
     try {
       const imageUrl = await uploadAvatarImage(avatarFile, customerId);
-      const relativePath = extractRelativePath(imageUrl);
-      await updateCustomer(customerId, {
-        image_url: relativePath,
-      });
-      setAvatarFile(null);
-      if (currentCustomer) {
-        setCurrentCustomer({
-          ...currentCustomer,
-          image_url: relativePath,
-        });
-        setAvatarUrl(relativePath);
-      }
+      return extractRelativePath(imageUrl);
     } catch (uploadError) {
       console.error("[CUSTOMER_PROFILE] Avatar upload failed:", uploadError);
-      toast.error("Ảnh đại diện cập nhật thất bại, nhưng thông tin cá nhân đã lưu");
+      toast.error("Ảnh đại diện cập nhật thất bại, nhưng thông tin cá nhân sẽ được lưu");
+      return null;
     }
   };
 
@@ -251,19 +251,35 @@ export function CustomerProfilePage() {
       setIsSaving(true);
       const isoDateOfBirth = profileData.dateOfBirth ? convertDisplayDateToISO(profileData.dateOfBirth) : "";
       
-      const updatedCustomer = await updateCustomer(currentCustomer.id, {
+      let newImageUrl: string | undefined = undefined;
+
+      if (avatarFile) {
+        const uploadedImageUrl = await handleUploadAvatar(currentCustomer.id);
+        if (uploadedImageUrl) {
+          newImageUrl = uploadedImageUrl;
+        }
+      }
+
+      const updatePayload: any = {
         full_name: profileData.fullName,
         email: profileData.email,
         phone: profileData.phone,
         address: profileData.address,
         date_of_birth: isoDateOfBirth,
-      });
+      };
 
-      if (avatarFile) {
-        await handleUploadAvatar(currentCustomer.id);
+      if (newImageUrl) {
+        updatePayload.image_url = newImageUrl;
       }
 
+      const updatedCustomer = await updateCustomer(currentCustomer.id, updatePayload);
+
       setCurrentCustomer(updatedCustomer);
+      if (updatedCustomer.image_url) {
+        const cacheBustedUrl = `${updatedCustomer.image_url}?t=${Date.now()}`;
+        setAvatarUrl(cacheBustedUrl);
+      }
+      setAvatarFile(null);
       setProfileData({
         fullName: updatedCustomer.full_name || "",
         email: updatedCustomer.email || "",
@@ -272,6 +288,17 @@ export function CustomerProfilePage() {
         dateOfBirth: formatDateDisplay(updatedCustomer.date_of_birth) || "",
         memberSince: updatedCustomer.created_at ? new Date(updatedCustomer.created_at).toISOString().split('T')[0] : "",
       });
+
+      hasJustSavedRef.current = true;
+      const cacheBustedImageUrl = updatedCustomer.image_url ? `${updatedCustomer.image_url}?t=${Date.now()}` : undefined;
+      updateProfile({
+        name: updatedCustomer.full_name,
+        email: updatedCustomer.email,
+        phone: updatedCustomer.phone,
+        address: updatedCustomer.address,
+        image_url: cacheBustedImageUrl,
+      });
+
       toast.success("Cập nhật thông tin thành công!");
       setIsEditing(false);
     } catch (error) {
