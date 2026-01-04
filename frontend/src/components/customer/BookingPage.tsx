@@ -269,7 +269,7 @@ export function BookingPage() {
             </Button>
             <Button
               variant="secondary"
-              onClick={() => navigate("/customer/bills")}
+              onClick={() => navigate("/customer/booking-management", { state: { reservationId: createdReservation?.id } })}
             >
               Xem chi tiết
             </Button>
