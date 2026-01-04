@@ -277,8 +277,13 @@ export function TablesMapPage() {
       toast.success(`Đã check-in khách cho bàn ${selectedTable.table_number}`);
     } catch (err) {
       console.error("Error checking in:", err);
-      const errorMsg =
+      let errorMsg =
         err instanceof Error ? err.message : "Lỗi khi cập nhật trạng thái bàn";
+      
+      if (errorMsg.includes("Payment must be completed first")) {
+        errorMsg = "Khách hàng chưa thanh toán. Vui lòng hoàn tất thanh toán trước khi check-in.";
+      }
+      
       toast.error(`Lỗi: ${errorMsg}`);
       return;
     }

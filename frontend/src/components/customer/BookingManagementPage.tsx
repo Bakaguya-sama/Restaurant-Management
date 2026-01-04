@@ -369,7 +369,7 @@ export function BookingManagementPage() {
               <div className="text-sm">
                 <span className="text-gray-600">Tiền cọc:</span>
                 <span className="ml-2 font-medium">
-                  {parseInt(booking.deposit_amount || "0").toLocaleString()}đ
+                  {(booking.deposit_amount || 0).toLocaleString()}đ
                 </span>
               </div>
               {/* {booking.bill && (
@@ -503,7 +503,7 @@ export function BookingManagementPage() {
                   <div>
                     <p className="text-sm text-gray-600 mb-1">Tiền đặt cọc</p>
                     <p className="text-xl font-medium text-green-700">
-                      {parseInt(selectedBooking.deposit_amount || "0").toLocaleString()}đ
+                      {(selectedBooking.deposit_amount || 0).toLocaleString()}đ
                     </p>
                   </div>
                   <Badge className="bg-green-100 text-green-700">
@@ -825,7 +825,7 @@ export function BookingManagementPage() {
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Số tiền cọc cần thanh toán</p>
                   <p className="text-2xl font-bold text-orange-700">
-                    {parseInt(selectedBooking.deposit_amount || "0").toLocaleString()}đ
+                    {(selectedBooking.deposit_amount || 0).toLocaleString()}đ
                   </p>
                 </div>
                 <Badge className="bg-orange-100 text-orange-700">

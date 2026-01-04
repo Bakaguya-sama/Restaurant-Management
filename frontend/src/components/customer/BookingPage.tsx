@@ -24,7 +24,7 @@ import {
 export function BookingPage() {
   const navigate = useNavigate();
   const { userProfile } = useAuth();
-  const { createReservation, updateReservationStatus } = useReservations();
+  const { createReservation, updateReservationStatus, checkTableAvailability } = useReservations();
   const [step, setStep] = useState(1);
   const [tables, setTables] = useState<Table[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -32,6 +32,8 @@ export function BookingPage() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [availableTableIds, setAvailableTableIds] = useState<Set<string>>(new Set());
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [createdReservation, setCreatedReservation] = useState<Reservation | null>(null);
   const [bookingData, setBookingData] = useState({
     date: "",
@@ -106,6 +108,42 @@ export function BookingPage() {
     }
   }, [userProfile]);
 
+  useEffect(() => {
+    if (step === 2 && bookingData.date && bookingData.time && bookingData.checkoutTime && tables.length > 0) {
+      checkTableAvailabilityForAll();
+    }
+  }, [step, bookingData.date, bookingData.time, bookingData.checkoutTime]);
+
+  const checkTableAvailabilityForAll = async () => {
+    try {
+      setCheckingAvailability(true);
+      const availableIds = new Set<string>();
+
+      for (const table of tables) {
+        if (table.status === "free" || table.status === "reserved") {
+          if (table.capacity >= bookingData.guests) {
+            const result = await checkTableAvailability(
+              table.id,
+              bookingData.date,
+              bookingData.time,
+              bookingData.checkoutTime
+            );
+            if (result?.available) {
+              availableIds.add(table.id);
+            }
+          }
+        }
+      }
+
+      setAvailableTableIds(availableIds);
+    } catch (err) {
+      console.error("Error checking table availability:", err);
+      toast.error("Lỗi khi kiểm tra tính sẵn có của bàn");
+    } finally {
+      setCheckingAvailability(false);
+    }
+  };
+
   const isUserBanned = userProfile?.isBanned ?? false;
 
   const getFloorName = (locationId?: string) => {
@@ -151,7 +189,8 @@ export function BookingPage() {
   const availableTables = tables.filter(
     (t) =>
       (t.status === "free" || t.status === "reserved") &&
-      t.capacity >= bookingData.guests
+      t.capacity >= bookingData.guests &&
+      availableTableIds.has(t.id)
   );
 
   const handleTableSelect = (table: Table) => {
@@ -189,7 +228,7 @@ export function BookingPage() {
         reservation_time: bookingData.time,
         reservation_checkout_time: bookingData.checkoutTime,
         number_of_guests: bookingData.guests,
-        deposit_amount: "200000",
+        deposit_amount: 200000,
         payment_method: backendPaymentMethod,
         special_requests: bookingData.notes,
         status: "confirmed",
@@ -524,6 +563,10 @@ export function BookingPage() {
                   <div className="text-center py-8">
                     <p className="text-gray-500">Đang tải danh sách bàn...</p>
                   </div>
+                ) : checkingAvailability ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">Đang kiểm tra tính sẵn có...</p>
+                  </div>
                 ) : error ? (
                   <div className="text-center py-8">
                     <p className="text-red-500">{error}</p>
@@ -562,7 +605,7 @@ export function BookingPage() {
                 ) : (
                   <div className="text-center py-8">
                     <p className="text-gray-500 mb-2">
-                      Không có bàn phù hợp cho {bookingData.guests} người
+                      Không có bàn phù hợp cho {bookingData.guests} người vào thời gian này
                     </p>
                   </div>
                 )}
@@ -571,7 +614,7 @@ export function BookingPage() {
                 <Button variant="secondary" onClick={() => setStep(1)}>
                   Quay lại
                 </Button>
-                <Button onClick={() => setStep(3)} disabled={!selectedTable || isUserBanned}>
+                <Button onClick={() => setStep(3)} disabled={!selectedTable || isUserBanned || checkingAvailability}>
                   Tiếp tục
                 </Button>
               </div>

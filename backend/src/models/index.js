@@ -79,7 +79,7 @@ const ReservationSchema = new Schema({
   reservation_time: { type: String, required: true }, // "18:30"
   reservation_checkout_time: { type: String, required: true }, // "20:00"
   number_of_guests: { type: Number, required: true },
-  deposit_amount: { type: String, required: true }, // "200000"
+  deposit_amount: { type: Number, required: true }, // "200000"
   payment_method: { type: String, enum: ['card', 'transfer'], required: true , default: 'card' },
   status: { type: String, enum: ['pending', 'confirmed', 'in_progress', 'cancelled', 'completed'], default: 'pending' },
   isPaid: { type: Boolean, default: false },

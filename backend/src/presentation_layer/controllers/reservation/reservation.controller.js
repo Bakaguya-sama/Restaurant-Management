@@ -115,6 +115,31 @@ class ReservationController {
       res.status(400).json({ success: false, data: null, message: error.message });
     }
   }
+
+  async checkTableAvailability(req, res) {
+    try {
+      const { table_id, reservation_date, reservation_time, reservation_checkout_time } = req.query;
+      
+      if (!table_id || !reservation_date || !reservation_time || !reservation_checkout_time) {
+        return res.status(400).json({ 
+          success: false, 
+          data: null, 
+          message: 'Missing required parameters: table_id, reservation_date, reservation_time, reservation_checkout_time' 
+        });
+      }
+
+      const availability = await this.reservationService.checkTableAvailability(
+        table_id,
+        reservation_date,
+        reservation_time,
+        reservation_checkout_time
+      );
+      
+      res.json({ success: true, data: availability, message: 'Table availability checked' });
+    } catch (error) {
+      res.status(400).json({ success: false, data: null, message: error.message });
+    }
+  }
 }
 
 module.exports = ReservationController;

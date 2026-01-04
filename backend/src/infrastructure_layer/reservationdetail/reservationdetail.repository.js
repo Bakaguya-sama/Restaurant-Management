@@ -16,19 +16,52 @@
     return await ReservationDetail.findById(id);
   }
 
-  async findByTableAndTime(table_id, reservation_date, reservation_time) {
+  async findByTableAndTime(table_id, reservation_date, reservation_time, reservation_checkout_time = null) {
     const { Reservation } = require('../../models');
-    const reservations = await Reservation.find({
-      reservation_date,
-      reservation_time
-    });
     
-    for (const reservation of reservations) {
-      const detail = await ReservationDetail.findOne({
-        table_id,
-        reservation_id: reservation._id
-      });
-      if (detail) return detail;
+    let dateStr = reservation_date;
+    if (reservation_date instanceof Date) {
+      const year = reservation_date.getFullYear();
+      const month = String(reservation_date.getMonth() + 1).padStart(2, '0');
+      const day = String(reservation_date.getDate()).padStart(2, '0');
+      dateStr = `${year}-${month}-${day}`;
+    }
+
+    const [newYear, newMonth, newDay] = dateStr.split('-').map(Number);
+    const [newHour, newMinute] = reservation_time.split(':').map(Number);
+    const newStart = new Date(newYear, newMonth - 1, newDay, newHour, newMinute);
+    
+    let newEnd = newStart;
+    if (reservation_checkout_time) {
+      const [checkoutHour, checkoutMinute] = reservation_checkout_time.split(':').map(Number);
+      newEnd = new Date(newYear, newMonth - 1, newDay, checkoutHour, checkoutMinute);
+    }
+
+    const allReservationDetails = await ReservationDetail.find({ table_id });
+
+    for (const detail of allReservationDetails) {
+      const reservation = await Reservation.findById(detail.reservation_id);
+      if (!reservation) continue;
+
+      let existingDateStr = reservation.reservation_date;
+      if (reservation.reservation_date instanceof Date) {
+        const year = reservation.reservation_date.getFullYear();
+        const month = String(reservation.reservation_date.getMonth() + 1).padStart(2, '0');
+        const day = String(reservation.reservation_date.getDate()).padStart(2, '0');
+        existingDateStr = `${year}-${month}-${day}`;
+      }
+
+      if (existingDateStr !== dateStr) continue;
+
+      const [existingHour, existingMinute] = reservation.reservation_time.split(':').map(Number);
+      const existingStart = new Date(newYear, newMonth - 1, newDay, existingHour, existingMinute);
+      
+      const [checkoutHour, checkoutMinute] = reservation.reservation_checkout_time.split(':').map(Number);
+      const existingEnd = new Date(newYear, newMonth - 1, newDay, checkoutHour, checkoutMinute);
+
+      if (newStart < existingEnd && newEnd > existingStart) {
+        return detail;
+      }
     }
     return null;
   }

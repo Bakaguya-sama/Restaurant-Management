@@ -264,6 +264,33 @@ export function useReservations() {
     }
   }, []);
 
+  const checkTableAvailability = useCallback(
+    async (tableId: string, reservationDate: string, reservationTime: string, reservationCheckoutTime: string) => {
+      try {
+        setLoading(true);
+        const response = await reservationApi.checkAvailability(
+          tableId,
+          reservationDate,
+          reservationTime,
+          reservationCheckoutTime
+        );
+        if (response.success && response.data) {
+          return response.data;
+        } else {
+          toast.error('Không thể kiểm tra tính sẵn có');
+          return null;
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Lỗi khi kiểm tra tính sẵn có';
+        toast.error(errorMessage);
+        return null;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
   return {
     reservations,
     loading,
@@ -280,5 +307,6 @@ export function useReservations() {
     addTableToReservation,
     removeTableFromReservation,
     getStatistics,
+    checkTableAvailability,
   };
 }

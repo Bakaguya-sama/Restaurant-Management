@@ -153,7 +153,8 @@ class ReservationService {
     const conflict = await this.reservationDetailRepository.findByTableAndTime(
       tableData.table_id,
       reservation_date,
-      reservation_time
+      reservation_time,
+      reservation.reservation_checkout_time
     );
     if (conflict) throw new Error('Table is already reserved for this time slot');
     await this.reservationDetailRepository.create({
@@ -199,7 +200,8 @@ class ReservationService {
       const conflict = await this.reservationDetailRepository.findByTableAndTime(
         detail.table_id,
         data.reservation_date,
-        data.reservation_time
+        data.reservation_time,
+        data.reservation_checkout_time
       );
       if (conflict) {
         throw new Error('Table is already reserved for this time slot');
@@ -246,7 +248,8 @@ class ReservationService {
         const conflict = await this.reservationDetailRepository.findByTableAndTime(
           detail.table_id,
           data.reservation_date || reservation.reservation_date,
-          data.reservation_time || reservation.reservation_time
+          data.reservation_time || reservation.reservation_time,
+          data.reservation_checkout_time || reservation.reservation_checkout_time
         );
         if (conflict && String(conflict.reservation_id) !== String(id)) {
           throw new Error('Table is already reserved for this time slot');
@@ -282,6 +285,10 @@ class ReservationService {
 
     if (reservation.status === 'pending' && status === 'in_progress') {
       throw new Error('Cannot change status to in_progress from pending. Customer must pay the deposit first.');
+    }
+
+    if (status === 'completed' && !reservation.isPaid) {
+      throw new Error('Cannot check in reservation. Payment must be completed first.');
     }
 
     if (status === 'cancelled' && !entity.canCancel()) {
@@ -323,6 +330,29 @@ class ReservationService {
     }
     await this.reservationDetailRepository.deleteByReservationId(id);
     return await this.reservationRepository.delete(id);
+  }
+
+  async checkTableAvailability(table_id, reservation_date, reservation_time, reservation_checkout_time) {
+    const table = await this.tableRepository.findById(table_id);
+    if (!table) {
+      throw new Error('Table not found');
+    }
+
+    const conflict = await this.reservationDetailRepository.findByTableAndTime(
+      table_id,
+      reservation_date,
+      reservation_time,
+      reservation_checkout_time
+    );
+
+    return {
+      available: !conflict,
+      table_id: table_id,
+      table_number: table.table_number,
+      reservation_date: reservation_date,
+      reservation_time: reservation_time,
+      reservation_checkout_time: reservation_checkout_time
+    };
   }
 
   async formatReservationResponse(reservation) {

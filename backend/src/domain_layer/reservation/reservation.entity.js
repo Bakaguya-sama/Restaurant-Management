@@ -30,8 +30,10 @@ class ReservationEntity {
     if (!this.reservation_checkout_time) {
       errors.push('reservation_checkout_time is required');
     }
-    if (!this.deposit_amount) {
+    if (this.deposit_amount === undefined || this.deposit_amount === null || this.deposit_amount === '') {
       errors.push('deposit_amount is required');
+    } else if (typeof this.deposit_amount !== 'number' || this.deposit_amount < 0) {
+      errors.push('deposit_amount must be a non-negative number');
     }
     if (this.payment_method && !['card', 'transfer'].includes(this.payment_method)) {
       errors.push('payment_method must be one of: card, transfer');
@@ -53,6 +55,9 @@ class ReservationEntity {
     }
     if (this.status && !['pending', 'confirmed', 'in_progress', 'cancelled', 'completed'].includes(this.status)) {
       errors.push('status must be one of: pending, confirmed, in_progress, cancelled, completed');
+    }
+    if (this.isPaid !== undefined && this.isPaid !== null && typeof this.isPaid !== 'boolean') {
+      errors.push('isPaid must be a boolean value');
     }
     return {
       isValid: errors.length === 0,
