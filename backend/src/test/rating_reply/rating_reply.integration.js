@@ -2,7 +2,7 @@ const request = require('supertest');
 const app = require('../../../server');
 const connectDB = require('../../../config/database');
 const mongoose = require('mongoose');
-const { RatingReply, Rating, User, StaffWaiter, Customer, Invoice, Order } = require('../../models');
+const { RatingReply, Rating, User, StaffWaiter, Customer, Invoice, Order, Floor, Location, Table } = require('../../models');
 
 describe('Rating Reply Integration Tests', () => {
   let createdReplyId;
@@ -26,20 +26,71 @@ describe('Rating Reply Integration Tests', () => {
       });
     }
 
+    // Create Floor, Location, and Table for dine-in order
+    let floor = await Floor.findOne({ floor_number: 402 });
+    if (!floor) {
+      floor = await Floor.create({
+        floor_name: 'Second Floor',
+        floor_number: 402,
+        status: 'active'
+      });
+    }
+
+    let location = await Location.findOne({ name: 'Dining Area Reply Test' });
+    if (!location) {
+      location = await Location.create({
+        name: 'Dining Area Reply Test',
+        floor_id: floor._id,
+        description: 'Dining area for reply tests',
+        status: 'active'
+      });
+    }
+
+    let table = await Table.findOne({ table_number: 2, location_id: location._id });
+    if (!table) {
+      table = await Table.create({
+        table_number: 2,
+        location_id: location._id,
+        capacity: 4,
+        status: 'free'
+      });
+    }
+
     // Create test invoice for rating
     let invoice = await Invoice.findOne();
     if (!invoice) {
+      // Create staff first if needed
+      let staff = await StaffWaiter.findOne({ role: 'waiter' });
+      if (!staff) {
+        staff = await StaffWaiter.create({
+          full_name: 'Invoice Staff',
+          username: `invoicestaff${Date.now()}`,
+          email: `invoicestaff${Date.now()}@test.com`,
+          phone: '0900000003',
+          password_hash: 'hashedpassword',
+          role: 'waiter',
+          is_active: true
+        });
+      }
+
       const order = await Order.create({
+        order_number: `TEST-REPLY-${Date.now()}`,
+        order_type: 'dine-in-customer',
+        order_date: new Date(),
+        order_time: '18:00',
         customer_id: customer._id,
-        table_id: null,
-        items: [],
-        notes: 'Test order for rating reply',
-        status: 'completed'
+        table_id: table._id,
+        status: 'completed',
+        subtotal: 300000,
+        tax: 30000,
+        total_amount: 330000,
+        notes: 'Test order for rating reply'
       });
 
       invoice = await Invoice.create({
         order_id: order._id,
         customer_id: customer._id,
+        staff_id: staff._id,
         subtotal: 100000,
         tax: 10000,
         total_amount: 110000,
@@ -60,18 +111,8 @@ describe('Rating Reply Integration Tests', () => {
     }
     testRatingId = rating._id;
 
+    // Note: staff was already created in invoice section above, no need to create again
     let staff = await StaffWaiter.findOne({ role: 'waiter' });
-    if (!staff) {
-      staff = await StaffWaiter.create({
-        full_name: 'Test Staff',
-        username: `teststaff${Date.now()}`,
-        email: `teststaff${Date.now()}@test.com`,
-        phone: '0900000002',
-        password_hash: 'hashedpassword',
-        role: 'waiter',
-        is_active: true
-      });
-    }
     testStaffId = staff._id;
   });
 

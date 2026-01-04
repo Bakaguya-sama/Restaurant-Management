@@ -2,7 +2,7 @@ const request = require('supertest');
 const app = require('../../../server');
 const connectDB = require('../../../config/database');
 const mongoose = require('mongoose');
-const { Rating, RatingReply, User, Customer, StaffWaiter, Invoice, Order } = require('../../models');
+const { Rating, RatingReply, User, Customer, StaffWaiter, Invoice, Order, Floor, Location, Table } = require('../../models');
 
 describe('Rating Integration Tests', () => {
   let createdRatingId;
@@ -10,6 +10,7 @@ describe('Rating Integration Tests', () => {
   let testCustomerId;
   let testStaffId;
   let testInvoiceId;
+  let testTableId;
 
   beforeAll(async () => {
     await connectDB();
@@ -43,6 +44,37 @@ describe('Rating Integration Tests', () => {
     }
     testStaffId = staff._id;
 
+    // Create Floor, Location, and Table for dine-in order
+    let floor = await Floor.findOne({ floor_number: 401 });
+    if (!floor) {
+      floor = await Floor.create({
+        floor_name: 'First Floor',
+        floor_number: 401,
+        status: 'active'
+      });
+    }
+
+    let location = await Location.findOne({ name: 'Dining Area' });
+    if (!location) {
+      location = await Location.create({
+        name: 'Dining Area',
+        floor_id: floor._id,
+        description: 'Main dining area',
+        status: 'active'
+      });
+    }
+
+    let table = await Table.findOne({ table_number: 1, location_id: location._id });
+    if (!table) {
+      table = await Table.create({
+        table_number: 1,
+        location_id: location._id,
+        capacity: 4,
+        status: 'free'
+      });
+    }
+    testTableId = table._id;
+
     let invoice = await Invoice.findOne();
     if (!invoice) {
       const order = await Order.create({
@@ -51,6 +83,7 @@ describe('Rating Integration Tests', () => {
         order_date: new Date(),
         order_time: '19:00',
         customer_id: testCustomerId,
+        table_id: testTableId,
         status: 'completed',
         subtotal: 500000,
         tax: 50000,
