@@ -257,6 +257,11 @@ export function TablesMapPage() {
       return;
     }
 
+    if (!currentUserId) {
+      toast.error("Không thể xác định thông tin nhân viên. Vui lòng thử lại sau.");
+      return;
+    }
+
     try {
       const reservationId = bookingCode.trim();
       
@@ -270,6 +275,18 @@ export function TablesMapPage() {
         toast.error("Mã đơn đặt bàn không hợp lệ.");
         return;
       }
+
+      const orderData = {
+        order_number: `ORD-${Date.now()}`,
+        order_type: "dine-in-waiter" as const,
+        order_time: new Date().toISOString(),
+        table_id: selectedTable.id,
+        customer_id: activeReservation.customer_id,
+        staff_id: currentUserId,
+        status: "pending" as const,
+      };
+
+      await createOrder(orderData);
 
       await updateTableStatus(selectedTable.id, "occupied");
       await updateReservationStatus(reservationId, "completed");
