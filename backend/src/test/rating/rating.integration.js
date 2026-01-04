@@ -2,13 +2,14 @@ const request = require('supertest');
 const app = require('../../../server');
 const connectDB = require('../../../config/database');
 const mongoose = require('mongoose');
-const { Rating, RatingReply, User, Customer, StaffWaiter } = require('../../models');
+const { Rating, RatingReply, User, Customer, StaffWaiter, Invoice, Order } = require('../../models');
 
 describe('Rating Integration Tests', () => {
   let createdRatingId;
   let createdReplyId;
   let testCustomerId;
   let testStaffId;
+  let testInvoiceId;
 
   beforeAll(async () => {
     await connectDB();
@@ -41,6 +42,39 @@ describe('Rating Integration Tests', () => {
       });
     }
     testStaffId = staff._id;
+
+    let invoice = await Invoice.findOne();
+    if (!invoice) {
+      const order = await Order.create({
+        order_number: `TEST-ORD-${Date.now()}`,
+        order_type: 'dine-in-customer',
+        order_date: new Date(),
+        order_time: '19:00',
+        customer_id: testCustomerId,
+        status: 'completed',
+        subtotal: 500000,
+        tax: 50000,
+        total_amount: 550000
+      });
+
+      invoice = await Invoice.create({
+        invoice_number: `TEST-INV-${Date.now()}`,
+        order_id: order._id,
+        staff_id: testStaffId,
+        customer_id: testCustomerId,
+        invoice_date: new Date(),
+        subtotal: 500000,
+        tax: 50000,
+        discount_amount: 0,
+        total_amount: 550000,
+        payment_method: 'cash',
+        payment_status: 'paid',
+        points_used: 0,
+        points_earned: 55,
+        paid_at: new Date()
+      });
+    }
+    testInvoiceId = invoice._id;
   });
 
   afterAll(async () => {
@@ -53,9 +87,10 @@ describe('Rating Integration Tests', () => {
   });
 
   describe('POST /api/v1/ratings - Create Rating', () => {
-    it('should create new rating', async () => {
+    it('should create new rating with invoice_id', async () => {
       const newRating = {
         customer_id: testCustomerId,
+        invoice_id: testInvoiceId,
         score: 5,
         description: 'Excellent service and food quality'
       };
@@ -69,13 +104,30 @@ describe('Rating Integration Tests', () => {
       expect(response.body.data).toHaveProperty('id');
       expect(response.body.data.score).toBe(newRating.score);
       expect(response.body.data.description).toBe(newRating.description);
+      expect(response.body.data.invoice_id).toBe(testInvoiceId.toString());
 
       createdRatingId = response.body.data.id;
+    });
+
+    it('should fail when invoice_id is missing', async () => {
+      const invalidRating = {
+        customer_id: testCustomerId,
+        score: 5,
+        description: 'Missing invoice_id'
+      };
+
+      const response = await request(app)
+        .post('/api/v1/ratings')
+        .send(invalidRating)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
     });
 
     it('should fail when score is out of range', async () => {
       const invalidRating = {
         customer_id: testCustomerId,
+        invoice_id: testInvoiceId,
         score: 6,
         comment: 'Invalid score',
         category: 'food'
@@ -110,6 +162,18 @@ describe('Rating Integration Tests', () => {
       expect(response.body.data).toBeInstanceOf(Array);
     });
 
+    it('should filter by invoice ID', async () => {
+      const response = await request(app)
+        .get(`/api/v1/ratings?invoice_id=${testInvoiceId}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeInstanceOf(Array);
+      if (response.body.data.length > 0) {
+        expect(response.body.data[0].invoice_id).toBe(testInvoiceId.toString());
+      }
+    });
+
     it('should filter by minimum score', async () => {
       const response = await request(app)
         .get('/api/v1/ratings?min_score=4')
@@ -120,6 +184,29 @@ describe('Rating Integration Tests', () => {
       response.body.data.forEach(rating => {
         expect(rating.score).toBeGreaterThanOrEqual(4);
       });
+    });
+  });
+
+  describe('GET /api/v1/ratings/invoice/:invoiceId - Get Ratings by Invoice', () => {
+    it('should return ratings for specific invoice', async () => {
+      const response = await request(app)
+        .get(`/api/v1/ratings/invoice/${testInvoiceId}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeInstanceOf(Array);
+      expect(response.body.count).toBeGreaterThan(0);
+      response.body.data.forEach(rating => {
+        expect(rating.invoice_id).toBe(testInvoiceId.toString());
+      });
+    });
+
+    it('should fail when invoice ID is invalid', async () => {
+      const response = await request(app)
+        .get('/api/v1/ratings/invoice/invalid-id')
+        .expect(500);
+
+      expect(response.body.success).toBe(false);
     });
   });
 

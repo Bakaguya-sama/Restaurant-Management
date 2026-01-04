@@ -2,7 +2,7 @@ const request = require('supertest');
 const app = require('../../../server');
 const connectDB = require('../../../config/database');
 const mongoose = require('mongoose');
-const { RatingReply, Rating, User, StaffWaiter, Customer } = require('../../models');
+const { RatingReply, Rating, User, StaffWaiter, Customer, Invoice, Order } = require('../../models');
 
 describe('Rating Reply Integration Tests', () => {
   let createdReplyId;
@@ -26,10 +26,34 @@ describe('Rating Reply Integration Tests', () => {
       });
     }
 
+    // Create test invoice for rating
+    let invoice = await Invoice.findOne();
+    if (!invoice) {
+      const order = await Order.create({
+        customer_id: customer._id,
+        table_id: null,
+        items: [],
+        notes: 'Test order for rating reply',
+        status: 'completed'
+      });
+
+      invoice = await Invoice.create({
+        order_id: order._id,
+        customer_id: customer._id,
+        subtotal: 100000,
+        tax: 10000,
+        total_amount: 110000,
+        payment_status: 'paid',
+        invoice_number: `TEST-${Date.now()}`,
+        invoice_date: new Date()
+      });
+    }
+
     let rating = await Rating.findOne();
     if (!rating) {
       rating = await Rating.create({
         customer_id: customer._id,
+        invoice_id: invoice._id,
         score: 5,
         description: 'Test rating for reply tests'
       });

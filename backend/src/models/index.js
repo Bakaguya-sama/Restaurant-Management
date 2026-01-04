@@ -337,6 +337,7 @@ const ViolationSchema = new Schema({
 // ==================== RATINGS ====================
 const RatingSchema = new Schema({
   customer_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  invoice_id: { type: Schema.Types.ObjectId, ref: 'Invoice', required: true },
   description: String,
   rating_date: { type: Date, default: Date.now },
   score: { type: Number, required: true, min: 1, max: 5 },

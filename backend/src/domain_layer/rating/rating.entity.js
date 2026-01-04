@@ -2,6 +2,7 @@ class RatingEntity {
   constructor(data) {
     this.id = data._id || data.id;
     this.customer_id = data.customer_id;
+    this.invoice_id = data.invoice_id;
     this.description = data.description;
     this.rating_date = data.rating_date;
     this.score = data.score;
@@ -12,6 +13,10 @@ class RatingEntity {
 
     if (!this.customer_id) {
       errors.push('Customer ID is required');
+    }
+
+    if (!this.invoice_id) {
+      errors.push('Invoice ID is required');
     }
 
     if (!this.score) {
@@ -41,9 +46,11 @@ class RatingEntity {
   }
 
   toJSON() {
+    const invoiceId = this.invoice_id?._id || this.invoice_id?.id || this.invoice_id;
     return {
       id: this.id,
       customer_id: this.customer_id,
+      invoice_id: invoiceId,
       description: this.description,
       rating_date: this.rating_date,
       score: this.score

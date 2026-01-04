@@ -5,6 +5,7 @@ const RatingController = require('../controllers/rating/rating.controller');
 const ratingController = new RatingController();
 
 router.get('/statistics', (req, res) => ratingController.getRatingStatistics(req, res));
+router.get('/invoice/:invoiceId', (req, res) => ratingController.getRatingsByInvoiceId(req, res));
 router.get('/:id/replies', (req, res) => ratingController.getRatingReplies(req, res));
 router.get('/:id', (req, res) => ratingController.getRatingById(req, res));
 router.get('/', (req, res) => ratingController.getAllRatings(req, res));
