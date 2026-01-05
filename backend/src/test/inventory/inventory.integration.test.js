@@ -7,11 +7,14 @@ process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/
 const request = require('supertest');
 const mongoose = require('mongoose');
 const app = require('../../../server');
-const { Ingredient, Supplier, StockImport, StockImportDetail, StockExport, StockExportDetail } = require('../../models');
+const jwt = require('jsonwebtoken');
+const { Ingredient, Supplier, StockImport, StockImportDetail, StockExport, StockExportDetail, User } = require('../../models');
 
 describe('Inventory Integration Tests', () => {
   let supplier; // supplier doc
   let ingredient; // ingredient doc
+  let authToken; // JWT token for authenticated requests
+  let testUser; // test staff user
 
   beforeAll(async () => {
     // Wait for mongoose connection opened by server.js
@@ -26,8 +29,27 @@ describe('Inventory Integration Tests', () => {
       StockImport.deleteMany({}),
       StockImportDetail.deleteMany({}),
       StockExport.deleteMany({}),
-      StockExportDetail.deleteMany({})
+      StockExportDetail.deleteMany({}),
+      User.deleteMany({ email: 'inventory.test@example.com' })
     ]);
+
+    // Create a test manager user for authentication
+    testUser = await User.create({
+      full_name: 'Inventory Test Manager',
+      email: 'inventory.test@example.com',
+      phone: '0987654321',
+      role: 'manager',
+      username: 'inventorytest',
+      password: 'testpassword123'
+    });
+
+    // Generate JWT token
+    const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+    authToken = jwt.sign(
+      { id: testUser._id, role: testUser.role },
+      JWT_SECRET,
+      { expiresIn: '1h' }
+    );
 
     // Create a supplier and ingredient used across tests
     supplier = new Supplier({ name: 'Test Supplier Inc', phone_contact: '0123456789', address: 'Test St' });
@@ -46,7 +68,8 @@ describe('Inventory Integration Tests', () => {
       StockImport.deleteMany({}),
       StockImportDetail.deleteMany({}),
       StockExport.deleteMany({}),
-      StockExportDetail.deleteMany({})
+      StockExportDetail.deleteMany({}),
+      User.deleteMany({ email: 'inventory.test@example.com' })
     ]);
 
     await mongoose.connection.close();
@@ -68,7 +91,10 @@ describe('Inventory Integration Tests', () => {
         ]
       };
 
-      const res = await request(app).post('/api/v1/inventory/import').send(payload);
+      const res = await request(app)
+        .post('/api/v1/inventory/import')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(payload);
       expect(res.status).toBe(201);
       expect(res.body).toHaveProperty('success', true);
       expect(res.body).toHaveProperty('data');
@@ -94,7 +120,10 @@ describe('Inventory Integration Tests', () => {
         ]
       };
 
-      const res = await request(app).post('/api/v1/inventory/import').send(payload);
+      const res = await request(app)
+        .post('/api/v1/inventory/import')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(payload);
       expect(res.status).toBe(400);
       expect(res.body).toHaveProperty('success', false);
       expect(res.body).toHaveProperty('message');
@@ -143,7 +172,10 @@ describe('Inventory Integration Tests', () => {
     test('Valid export should decrement ingredient stock', async () => {
       // Export 1 unit (we have at least 3 after import)
       const payload = { items: [{ itemId: ingredient._id.toString(), quantity: 1, reason: 'Used in kitchen' }] };
-      const res = await request(app).post('/api/v1/inventory/export').send(payload);
+      const res = await request(app)
+        .post('/api/v1/inventory/export')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(payload);
       expect(res.status).toBe(201);
       expect(res.body).toHaveProperty('success', true);
       expect(res.body.data).toHaveProperty('exportId');
@@ -156,7 +188,10 @@ describe('Inventory Integration Tests', () => {
     test('Export more than available should fail', async () => {
       // Try exporting an excessively large quantity
       const payload = { items: [{ itemId: ingredient._id.toString(), quantity: 99999, reason: 'Accidental order' }] };
-      const res = await request(app).post('/api/v1/inventory/export').send(payload);
+      const res = await request(app)
+        .post('/api/v1/inventory/export')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(payload);
       expect(res.status).toBe(400);
       expect(res.body).toHaveProperty('success', false);
       expect(res.body).toHaveProperty('message');
