@@ -142,6 +142,20 @@ export function usePromotions() {
     }
   };
 
+  const resetUses = async (id: string) => {
+    try {
+      setError(null);
+      const response = await promotionApi.resetUses(id);
+      const updated = response.data;
+      setPromotions(promotions.map(p => (p.id === id || p._id === id) ? updated : p));
+      return updated;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to reset promotion uses';
+      setError(message);
+      throw err;
+    }
+  };
+
   return {
     promotions,
     loading,
@@ -156,5 +170,6 @@ export function usePromotions() {
     deletePromotion,
     activatePromotion,
     deactivatePromotion,
+    resetUses,
   };
 }

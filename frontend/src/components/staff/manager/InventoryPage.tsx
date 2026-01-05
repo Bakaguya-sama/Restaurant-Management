@@ -71,6 +71,7 @@ export function InventoryPage() {
     id: string;
     code?: string;
     supplierName?: string;
+    staffName?: string;
     items: Array<{
       name: string;
       quantity: number;
@@ -136,6 +137,7 @@ export function InventoryPage() {
             id: d.id,
             code: d.code || undefined,
             supplierName: d.supplierName || undefined,
+            staffName: d.staffName || undefined,
             items: (d.items || []).map((it: any) => ({
               name: it.name,
               quantity: it.quantity,
@@ -915,6 +917,7 @@ export function InventoryPage() {
                   <tr className="border-b">
                     <th className="text-left p-4">Mã phiếu</th>
                     <th className="text-left p-4">Nhà cung cấp</th>
+                    <th className="text-left p-4">Nhân viên</th>
                     <th className="text-left p-4">Ngày nhập</th>
                     <th className="text-left p-4">Tổng tiền</th>
                     <th className="text-left p-4">Ghi chú</th>
@@ -924,13 +927,13 @@ export function InventoryPage() {
                 <tbody>
                   {importHistoryLoading ? (
                     <tr>
-                      <td colSpan={6} className="p-4 text-center">
+                      <td colSpan={7} className="p-4 text-center">
                         Đang tải...
                       </td>
                     </tr>
                   ) : importHistory.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="p-4 text-center">
+                      <td colSpan={7} className="p-4 text-center">
                         Chưa có lịch sử nhập kho
                       </td>
                     </tr>
@@ -946,6 +949,7 @@ export function InventoryPage() {
                       >
                         <td className="p-4">{h.code || h.id}</td>
                         <td className="p-4">{h.supplierName || "-"}</td>
+                        <td className="p-4">{h.staffName || "-"}</td>
                         <td className="p-4">
                           {new Date(h.date).toLocaleString("vi-VN")}
                         </td>
@@ -983,6 +987,9 @@ export function InventoryPage() {
                 </div>
                 <div className="text-sm text-gray-700">
                   <strong>Nhà cung cấp:</strong> {selectedImportOrder.supplierName || "-"}
+                </div>
+                <div className="text-sm text-gray-700">
+                  <strong>Nhân viên:</strong> {selectedImportOrder.staffName || "-"}
                 </div>
                 <div className="text-sm text-gray-700">
                   <strong>Ngày nhập:</strong>{" "}

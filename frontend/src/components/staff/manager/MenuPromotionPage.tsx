@@ -8,6 +8,7 @@ import {
   X,
   Upload,
   Image as ImageIcon,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Card } from "../../ui/Card";
@@ -122,6 +123,7 @@ export function MenuPromotionPage() {
     deletePromotion,
     activatePromotion,
     deactivatePromotion,
+    resetUses,
   } = usePromotions();
   const [showAddMenuModal, setShowAddMenuModal] = useState(false);
   const [showEditMenuModal, setShowEditMenuModal] = useState(false);
@@ -705,6 +707,28 @@ export function MenuPromotionPage() {
     setShowConfirmModal(true);
   };
 
+  const handleResetPromotionUses = (id: string) => {
+    const promo = promotions.find((p) => p.id === id || (p as any)._id === id);
+    setConfirmTitle(`Làm mới số lượng sử dụng`);
+    setConfirmMessage(`Bạn có chắc muốn đặt lại số lượng sử dụng của khuyến mãi "${promo?.name}" về 0?`);
+    setConfirmText("Làm mới");
+    setConfirmCancelText("Hủy");
+    setConfirmVariant(`info`);
+    setPendingAction(() => async () => {
+      try {
+        const promoId = (promo as any)?._id || promo?.id;
+        if (promoId) {
+          await resetUses(promoId);
+          toast.success("Đã làm mới số lượng sử dụng");
+        }
+      } catch (error) {
+        toast.error("Không thể làm mới số lượng sử dụng");
+        console.error(error);
+      }
+    });
+    setShowConfirmModal(true);
+  };
+
   const isPromoFormValid = () => {
     return (
       promoForm.name.trim() !== "" &&
@@ -1169,6 +1193,21 @@ export function MenuPromotionPage() {
                       </td>
                       <td className="p-4">
                         <div className="flex gap-1">
+                          {promo.max_uses > 0 && promo.current_uses > 0 && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() =>
+                                handleResetPromotionUses(
+                                  ((promo as any)._id || promo.id).toString()
+                                )
+                              }
+                              className="text-orange-600 hover:bg-orange-50"
+                              title="Làm mới số lượng sử dụng"
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="ghost"
