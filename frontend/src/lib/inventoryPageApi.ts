@@ -36,7 +36,8 @@ export interface ImportItemsParams {
 
 export interface ExportItemsParams {
   items: Array<{
-    itemId: string;
+    itemId?: string;      // Optional - for FIFO (cooking)
+    batchId?: string;     // Optional - for specific batch (damage handling)
     quantity: number;
     reason: string;
   }>;

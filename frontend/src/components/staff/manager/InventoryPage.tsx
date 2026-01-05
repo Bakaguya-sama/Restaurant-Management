@@ -199,7 +199,7 @@ export function InventoryPage() {
   ]);
   const [selectedSupplier, setSelectedSupplier] = useState("");
   const [disposeData, setDisposeData] = useState({
-    itemId: "",
+    batchId: "",  // Changed from itemId to batchId
     quantity: 0,
     reason: "expired" as "expired" | "damaged" | "returned",
   });
@@ -367,9 +367,9 @@ export function InventoryPage() {
   };
 
   const handleDispose = async () => {
-    const item = inventory.find((i) => i.ingredientId === disposeData.itemId);
+    const item = inventory.find((i) => i.id === disposeData.batchId);
     if (!item) {
-      toast.error("Vui lòng chọn nguyên liệu");
+      toast.error("Vui lòng chọn lô hàng");
       return;
     }
 
@@ -382,7 +382,7 @@ export function InventoryPage() {
       await exportInventoryItems({
         items: [
           {
-            itemId: disposeData.itemId,
+            batchId: disposeData.batchId,  // Send batchId instead of itemId
             quantity: disposeData.quantity,
             reason: disposeData.reason,
           },
@@ -406,7 +406,7 @@ export function InventoryPage() {
         console.error("refreshHistory failed", e);
       }
       setShowDisposeModal(false);
-      setDisposeData({ itemId: "", quantity: 0, reason: "expired" });
+      setDisposeData({ batchId: "", quantity: 0, reason: "expired" });
     } catch (error: any) {
       toast.error(error.message || "Không thể xuất hủy");
     }
@@ -1471,18 +1471,20 @@ export function InventoryPage() {
       >
         <div className="space-y-4">
           <div>
-            <label className="block mb-2">Chọn nguyên liệu</label>
+            <label className="block mb-2">Chọn lô hàng cụ thể</label>
             <select
-              value={disposeData.itemId}
+              value={disposeData.batchId}
               onChange={(e) =>
-                setDisposeData({ ...disposeData, itemId: e.target.value })
+                setDisposeData({ ...disposeData, batchId: e.target.value })
               }
               className="w-full px-4 py-2 border border-gray-300 rounded-lg"
             >
-              <option value="">Chọn nguyên liệu</option>
+              <option value="">Chọn lô hàng</option>
               {inventory.map((item) => (
-                <option key={item.id} value={item.ingredientId}>
-                  {item.name} (Tồn: {item.quantity} {item.unit})
+                <option key={item.id} value={item.id}>
+                  {item.name} - {item.quantity}{item.unit} 
+                  {item.expiryDate ? ` (HSD: ${new Date(item.expiryDate).toLocaleDateString("vi-VN")})` : ""}
+                  {item.supplierName ? ` - NCC: ${item.supplierName}` : ""}
                 </option>
               ))}
             </select>

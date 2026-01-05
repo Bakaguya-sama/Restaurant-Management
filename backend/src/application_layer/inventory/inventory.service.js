@@ -67,8 +67,9 @@ async function exportItems(items) {
     throw { status: 400, message: "items must be a non-empty array" };
 
   for (const it of items) {
-    if (!it.itemId)
-      throw { status: 400, message: "itemId is required for each item" };
+    // Either itemId or batchId is required
+    if (!it.itemId && !it.batchId)
+      throw { status: 400, message: "itemId or batchId is required for each item" };
     if (!it.quantity || typeof it.quantity !== "number" || it.quantity <= 0)
       throw { status: 400, message: "quantity must be > 0" };
     if (!it.reason)
