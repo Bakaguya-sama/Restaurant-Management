@@ -1,0 +1,57 @@
+# ========================================
+# .dockerignore for Backend
+# ========================================
+# File này chỉ định các file/folder không cần copy vào Docker image
+# Giúp giảm kích thước image và tăng tốc độ build
+
+# Dependencies - sẽ được cài lại trong container
+node_modules
+npm-debug.log
+package-lock.json
+
+# Environment files - sẽ được config qua docker-compose
+.env
+.env.local
+.env.*.local
+
+# Git
+.git
+.gitignore
+.github
+
+# Documentation
+*.md
+README.md
+ARCHITECTURE.md
+TEST_FIXES_LOG.md
+
+# Testing
+test_summary.txt
+jest.config.js
+jest.setup.js
+__tests__
+*.test.js
+*.spec.js
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
