@@ -1480,13 +1480,46 @@ export function InventoryPage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg"
             >
               <option value="">Chọn lô hàng</option>
-              {inventory.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name} - {item.quantity}{item.unit} 
-                  {item.expiryDate ? ` (HSD: ${new Date(item.expiryDate).toLocaleDateString("vi-VN")})` : ""}
-                  {item.supplierName ? ` - NCC: ${item.supplierName}` : ""}
-                </option>
-              ))}
+              {inventory
+                .sort((a, b) => {
+                  // Sort: Expired first, then expiring soon, then normal
+                  const aExpired = a.expiryDate && isExpired(a.expiryDate);
+                  const bExpired = b.expiryDate && isExpired(b.expiryDate);
+                  const aExpiring = a.expiryDate && isExpiringSoon(a.expiryDate) && !aExpired;
+                  const bExpiring = b.expiryDate && isExpiringSoon(b.expiryDate) && !bExpired;
+                  
+                  if (aExpired && !bExpired) return -1;
+                  if (!aExpired && bExpired) return 1;
+                  if (aExpiring && !bExpiring) return -1;
+                  if (!aExpiring && bExpiring) return 1;
+                  return 0;
+                })
+                .map((item) => {
+                  const expiryDateStr = item.expiryDate 
+                    ? new Date(item.expiryDate).toLocaleDateString("vi-VN")
+                    : "Không có HSD";
+                  const daysLeft = item.expiryDate ? getDaysUntilExpiry(item.expiryDate) : null;
+                  
+                  let prefix = "✓ ";
+                  let expiryStatus = "";
+                  
+                  if (daysLeft !== null) {
+                    if (daysLeft < 0) {
+                      prefix = "🔴 ";
+                      expiryStatus = " - ⚠️ ĐÃ HẾT HẠN";
+                    } else if (daysLeft <= 7) {
+                      prefix = "🟡 ";
+                      expiryStatus = ` - ⏰ Còn ${daysLeft} ngày`;
+                    }
+                  }
+                  
+                  return (
+                    <option key={item.id} value={item.id}>
+                      {prefix}{item.name} | SL: {item.quantity}{item.unit} | HSD: {expiryDateStr}{expiryStatus}
+                      {item.supplierName ? ` | NCC: ${item.supplierName}` : ""}
+                    </option>
+                  );
+                })}
             </select>
           </div>
 
