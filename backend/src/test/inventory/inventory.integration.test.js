@@ -8,6 +8,7 @@ const request = require('supertest');
 const mongoose = require('mongoose');
 const app = require('../../../server');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const { Ingredient, Supplier, StockImport, StockImportDetail, StockExport, StockExportDetail, User } = require('../../models');
 
 describe('Inventory Integration Tests', () => {
@@ -34,13 +35,14 @@ describe('Inventory Integration Tests', () => {
     ]);
 
     // Create a test manager user for authentication
+    const hashedPassword = await bcrypt.hash('testpassword123', 10);
     testUser = await User.create({
       full_name: 'Inventory Test Manager',
       email: 'inventory.test@example.com',
       phone: '0987654321',
       role: 'manager',
       username: 'inventorytest',
-      password: 'testpassword123'
+      password_hash: hashedPassword
     });
 
     // Generate JWT token
