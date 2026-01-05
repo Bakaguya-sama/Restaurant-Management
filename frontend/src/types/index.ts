@@ -222,17 +222,31 @@ export interface Supplier {
 export interface Promotion {
   id?: string;
   _id?: string;
-  name: string;
-  promotion_type: 'percentage' | 'fixed_amount';
-  discount_value: number;
-  minimum_order_amount: number;
+  name?: string;
+  description?: string;
+  promotion_type?: 'percentage' | 'fixed_amount';
+  discount_value?: number;
+  minimum_order_amount?: number;
+  max_discount_amount?: number;
   promo_code?: string;
-  start_date: string;
-  end_date: string;
-  is_active: boolean;
-  max_uses: number;
-  current_uses: number;
+  code?: string;
+  start_date?: string;
+  end_date?: string;
+  is_active?: boolean;
+  active?: boolean;
+  max_uses?: number;
+  current_uses?: number;
+  promotion_quantity?: number;
   created_at?: string;
+  // Display properties
+  discountType?: 'percentage' | 'fixed_amount';
+  discountValue?: number;
+  minOrderAmount?: number;
+  maxDiscountAmount?: number;
+  promotionQuantity?: number;
+  startDate?: string;
+  endDate?: string;
+  validUntil?: string;
 }
 
 // Violation Types

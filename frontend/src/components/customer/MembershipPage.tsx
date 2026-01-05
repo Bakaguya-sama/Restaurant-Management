@@ -488,7 +488,7 @@ export function MembershipPage() {
                   key={promotion._id || promotion.id}
                   promotion={{
                     id: promotion._id || promotion.id,
-                    title: promotion.promotion_name || promotion.title,
+                    name: promotion.promotion_name || promotion.title,
                     description: promotion.description || "",
                     code: promotion.promo_code || promotion.code,
                     // prefer `promotion_type` (backend uses this); fallback to discount_type
