@@ -68,10 +68,6 @@ class AuthService {
       throw new Error('Tài khoản đã bị vô hiệu hóa');
     }
 
-    if (user.role === 'customer' && user.isBanned) {
-      throw new Error('Tài khoản đã bị khóa');
-    }
-
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
       throw new Error('Tài khoản hoặc mật khẩu không đúng');
