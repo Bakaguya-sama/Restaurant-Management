@@ -295,7 +295,7 @@ class InvoiceService {
 
     let pointsEarned = 0;
     if (pointsUsed === 0) {
-      pointsEarned = Math.floor((invoice.subtotal + invoice.tax) / 10000) * 10;
+      pointsEarned = Math.floor((invoice.subtotal + invoice.tax) / 100) * 10;
     }
 
     const updateData = {
