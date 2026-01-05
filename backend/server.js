@@ -2,8 +2,23 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
+const fs = require('fs');
 const connectDB = require('./config/database');
 
+const envPath = path.join(__dirname, '.env');
+const envExamplePath = path.join(__dirname, '.env.example');
+
+if (!fs.existsSync(envPath)) {
+  if (fs.existsSync(envExamplePath)) {
+    const exampleContent = fs.readFileSync(envExamplePath, 'utf8');
+    fs.writeFileSync(envPath, exampleContent);
+    console.log('Created .env file from .env.example');
+  } else {
+    console.warn('.env.example not found. Please create .env file manually.');
+  }
+}
+
+dotenv.config();
 
 const authRouter = require('./src/presentation_layer/routes/auth.routes');
 const inventoryRouter = require('./src/presentation_layer/routes/inventory.routes');
@@ -29,16 +44,20 @@ const dishesUploadsRouter = require('./src/presentation_layer/routes/dishes-uplo
 const avatarsUploadsRouter = require('./src/presentation_layer/routes/avatars-uploads.routes');
 const dashboardRouter = require('./src/presentation_layer/routes/dashboard.routes');
 
-// Load environment variables
-dotenv.config();
-
 const app = express();
 
 // Connect to MongoDB
 connectDB();
 
 // Middleware
-app.use(cors());
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

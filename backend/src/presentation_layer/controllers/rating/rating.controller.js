@@ -9,6 +9,7 @@ class RatingController {
     try {
       const filters = {
         customer_id: req.query.customer_id,
+        invoice_id: req.query.invoice_id,
         score: req.query.score,
         min_score: req.query.min_score,
         max_score: req.query.max_score
@@ -145,6 +146,36 @@ class RatingController {
       });
     } catch (error) {
       res.status(404).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  async getRatingsByInvoiceId(req, res) {
+    try {
+      const { invoiceId } = req.params;
+
+      if (!invoiceId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invoice ID is required'
+        });
+      }
+
+      const filters = {
+        invoice_id: invoiceId
+      };
+
+      const ratings = await this.ratingService.getAllRatings(filters);
+
+      res.status(200).json({
+        success: true,
+        count: ratings.length,
+        data: ratings
+      });
+    } catch (error) {
+      res.status(500).json({
         success: false,
         message: error.message
       });

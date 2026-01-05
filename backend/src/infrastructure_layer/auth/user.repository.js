@@ -34,10 +34,15 @@ class UserRepository {
   async createCustomer(data) {
     const { full_name, email, phone, address, date_of_birth, username, password } = data;
     
+    if (!email) {
+      throw new Error('Email is required to create an account');
+    }
+    
     const passwordHash = await bcrypt.hash(password, 10);
     
     const customerData = {
       full_name,
+      email: email.toLowerCase().trim(),
       phone,
       username,
       password_hash: passwordHash,
@@ -49,7 +54,6 @@ class UserRepository {
       is_active: true
     };
     
-    if (email) customerData.email = email;
     if (address) customerData.address = address;
     if (date_of_birth) customerData.date_of_birth = date_of_birth;
     

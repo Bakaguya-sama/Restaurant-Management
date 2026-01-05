@@ -1,0 +1,61 @@
+# ========================================
+# .dockerignore for Frontend
+# ========================================
+# File này chỉ định các file/folder không cần copy vào Docker image
+
+# Dependencies - sẽ được cài lại trong container
+node_modules
+npm-debug.log
+package-lock.json
+
+# Build output
+dist
+build
+.next
+out
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Git
+.git
+.gitignore
+.github
+
+# Documentation
+*.md
+README.md
+MIGRATION_SUMMARY.md
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage
+.nyc_output
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Vercel
+.vercel
+vercel.json

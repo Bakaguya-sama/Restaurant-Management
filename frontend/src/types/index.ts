@@ -118,7 +118,7 @@ export interface Reservation {
   reservation_time: string;
   reservation_checkout_time: string;
   number_of_guests: number;
-  deposit_amount: string;
+  deposit_amount: number;
   payment_method: 'card' | 'transfer';
   status: ReservationStatus;
   special_requests?: string;
@@ -133,10 +133,11 @@ export interface ReservationData {
   reservation_time: string;
   reservation_checkout_time: string;
   number_of_guests: number;
-  deposit_amount?: string;
+  deposit_amount?: number;
   payment_method?: 'card' | 'transfer';
   status?: ReservationStatus;
   special_requests?: string;
+  isPaid?: boolean;
   details: ReservationDetailData[];
 }
 

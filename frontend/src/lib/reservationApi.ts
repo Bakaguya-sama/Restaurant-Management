@@ -63,4 +63,14 @@ export const reservationApi = {
 
   removeTable: (id: string, tableId: string) =>
     apiClient.delete(`/reservations/${id}/remove-table/${tableId}`),
+
+  checkAvailability: (tableId: string, reservationDate: string, reservationTime: string, reservationCheckoutTime: string) =>
+    apiClient.get<{
+      available: boolean;
+      table_id: string;
+      table_number: string;
+      reservation_date: string;
+      reservation_time: string;
+      reservation_checkout_time: string;
+    }>(`/reservations/check-availability?table_id=${tableId}&reservation_date=${reservationDate}&reservation_time=${reservationTime}&reservation_checkout_time=${reservationCheckoutTime}`),
 };

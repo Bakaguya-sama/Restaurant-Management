@@ -6,6 +6,7 @@ const reservationController = new ReservationController();
 
 // Specific routes must come BEFORE generic :id routes
 router.get('/statistics', (req, res) => reservationController.getReservationStatistics(req, res));
+router.get('/check-availability', (req, res) => reservationController.checkTableAvailability(req, res));
 router.get('/customer/:customerId', (req, res) => reservationController.getReservationsByCustomerId(req, res));
 router.get('/table/:tableId', (req, res) => reservationController.getReservationsByTableId(req, res));
 

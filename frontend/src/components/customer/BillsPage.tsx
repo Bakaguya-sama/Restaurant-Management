@@ -69,24 +69,26 @@ export function BillsPage() {
       }
 
       
-      let customerRating = null;
-      let ratingReply = null;
+      let customerRatings: any = {};
       try {
         const ratingsResponse = await ratingApi.getAll({ customer_id: currentUserId });
         if (ratingsResponse.success && ratingsResponse.data && ratingsResponse.data.length > 0) {
-          
           const ratings = ratingsResponse.data;
-          customerRating = ratings.sort((a: any, b: any) => {
-            const dateA = new Date(a.rating_date || a.created_at).getTime();
-            const dateB = new Date(b.rating_date || b.created_at).getTime();
-            return dateB - dateA;
-          })[0];
-
           
-          const ratingId = (customerRating as any)._id || customerRating.id;
-          const repliesResponse = await ratingApi.getReplies(ratingId);
-          if (repliesResponse.success && repliesResponse.data && repliesResponse.data.length > 0) {
-            ratingReply = repliesResponse.data[0];
+          for (const rating of ratings) {
+            const invoiceId = rating.invoice_id;
+            if (invoiceId) {
+              const ratingId = rating._id || rating.id;
+              const repliesResponse = await ratingApi.getReplies(ratingId);
+              const reply = repliesResponse.success && repliesResponse.data && repliesResponse.data.length > 0 ? repliesResponse.data[0] : null;
+              
+              customerRatings[invoiceId] = {
+                description: rating.description,
+                score: rating.score,
+                reply_text: reply?.reply_text,
+                reply_date: reply?.reply_date
+              };
+            }
           }
         }
       } catch (error) {
@@ -97,15 +99,15 @@ export function BillsPage() {
         const invoiceObj = invoice._id ? invoice : invoice;
         const orderItems = invoiceObj.order_id?.items || [];
         const invoiceId = invoiceObj._id || invoiceObj.id;
+        const invoiceRating = customerRatings[invoiceId];
         
-        // Calculate discount breakdown
         const totalDiscount = invoiceObj.discount_amount || 0;
         const pointsUsed = invoiceObj.points_used || 0;
-        const pointsDiscount = pointsUsed * 1; // 1 point = 1 in currency
+        const pointsDiscount = pointsUsed * 1;
         const voucherDiscount = Math.max(0, totalDiscount - pointsDiscount);
         
         return {
-          id: invoiceObj.invoice_number || invoiceId,
+          id: invoiceId,
           date: new Date(invoiceObj.created_at).toISOString().split("T")[0],
           time: new Date(invoiceObj.created_at).toLocaleTimeString("vi-VN", {
             hour: "2-digit",
@@ -121,9 +123,9 @@ export function BillsPage() {
           })),
           subtotal: invoiceObj.subtotal,
           tax: invoiceObj.tax,
-          discount: totalDiscount, // Total discount for display
-          voucherDiscount: voucherDiscount, // Voucher portion
-          pointsDiscount: pointsDiscount, // Points portion
+          discount: totalDiscount,
+          voucherDiscount: voucherDiscount,
+          pointsDiscount: pointsDiscount,
           total: invoiceObj.total_amount,
           status: invoiceObj.payment_status,
           createdAt: invoiceObj.created_at,
@@ -134,9 +136,9 @@ export function BillsPage() {
           orderId: invoiceObj.order_id?._id,
           invoiceId: invoiceId,
           
-          feedback: invoiceObj.payment_status === 'paid' && customerRating ? customerRating.description : null,
-          feedbackReply: invoiceObj.payment_status === 'paid' && ratingReply ? ratingReply.reply_text : null,
-          feedbackReplyDate: invoiceObj.payment_status === 'paid' && ratingReply ? ratingReply.reply_date : null,
+          feedback: invoiceObj.payment_status === 'paid' && invoiceRating ? invoiceRating.description : null,
+          feedbackReply: invoiceObj.payment_status === 'paid' && invoiceRating ? invoiceRating.reply_text : null,
+          feedbackReplyDate: invoiceObj.payment_status === 'paid' && invoiceRating ? invoiceRating.reply_date : null,
         };
       });
 
@@ -374,9 +376,17 @@ export function BillsPage() {
       return;
     }
 
+    if (!selectedBill) {
+      toast.error("Không tìm thấy hóa đơn");
+      return;
+    }
+
     try {
+      const invoiceId = selectedBill._id || selectedBill.id;
+      
       await ratingApi.create({
         customer_id: customerId,
+        invoice_id: invoiceId,
         description: feedback,
         score: 5
       });
@@ -384,7 +394,6 @@ export function BillsPage() {
       toast.success("Cảm ơn bạn đã gửi đánh giá!");
       setShowFeedbackModal(false);
       setFeedback("");
-      
       
       await fetchInvoices();
     } catch (error: any) {

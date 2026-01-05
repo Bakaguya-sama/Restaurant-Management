@@ -6,6 +6,12 @@ GET {{baseUrl}}/ratings
 ### Get Ratings by Customer
 GET {{baseUrl}}/ratings?customer_id=PUT_CUSTOMER_ID_HERE
 
+### Get Ratings by Invoice
+GET {{baseUrl}}/ratings?invoice_id=PUT_INVOICE_ID_HERE
+
+### Get Ratings by Invoice (dedicated endpoint)
+GET {{baseUrl}}/ratings/invoice/PUT_INVOICE_ID_HERE
+
 ### Get Ratings by Score
 GET {{baseUrl}}/ratings?score=5
 
@@ -27,6 +33,7 @@ Content-Type: application/json
 
 {
   "customer_id": "PUT_CUSTOMER_ID_HERE",
+  "invoice_id": "PUT_INVOICE_ID_HERE",
   "score": 5,
   "description": "Excellent service and delicious food! Will definitely come back."
 }
@@ -37,14 +44,7 @@ Content-Type: application/json
 
 {
   "customer_id": "PUT_CUSTOMER_ID_HERE",
-  "score": 2,
-  "description": "Food was cold and service was slow."
-}
-
-### Update Rating
-PUT {{baseUrl}}/ratings/PUT_RATING_ID_HERE
-Content-Type: application/json
-
+  "invoice_id": "PUT_INVOICE_ID_HERE",
 {
   "score": 4,
   "description": "Good service overall, but food could be better."

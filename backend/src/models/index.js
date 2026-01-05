@@ -79,7 +79,7 @@ const ReservationSchema = new Schema({
   reservation_time: { type: String, required: true }, // "18:30"
   reservation_checkout_time: { type: String, required: true }, // "20:00"
   number_of_guests: { type: Number, required: true },
-  deposit_amount: { type: String, required: true }, // "200000"
+  deposit_amount: { type: Number, required: true }, // "200000"
   payment_method: { type: String, enum: ['card', 'transfer'], required: true , default: 'card' },
   status: { type: String, enum: ['pending', 'confirmed', 'in_progress', 'cancelled', 'completed'], default: 'pending' },
   isPaid: { type: Boolean, default: false },
@@ -337,6 +337,7 @@ const ViolationSchema = new Schema({
 // ==================== RATINGS ====================
 const RatingSchema = new Schema({
   customer_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  invoice_id: { type: Schema.Types.ObjectId, ref: 'Invoice', required: true },
   description: String,
   rating_date: { type: Date, default: Date.now },
   score: { type: Number, required: true, min: 1, max: 5 },
@@ -410,6 +411,7 @@ module.exports = {
   Rating,
   RatingReply,
   StockExport,
-  StockExportDetail
+  StockExportDetail,
+  PasswordResetToken: require('./PasswordResetToken')
 };
 

@@ -50,7 +50,7 @@ function AvatarImage({ src }: { src: string | null }) {
 }
 
 export function ProfilePage({ role }: ProfilePageProps) {
-  const { userProfile, isAuthenticated } = useAuth();
+  const { userProfile, isAuthenticated, updateProfile } = useAuth();
   const { getStaffById, updateStaff } = useStaff();
   const [currentStaff, setCurrentStaff] = useState<Staff | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -59,6 +59,7 @@ export function ProfilePage({ role }: ProfilePageProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const hasJustSavedRef = React.useRef(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [profileData, setProfileData] = useState({
     fullName: "",
@@ -95,6 +96,13 @@ export function ProfilePage({ role }: ProfilePageProps) {
           console.log('[STAFF_PROFILE] User not authenticated or no profile in context');
           toast.error("Vui lòng đăng nhập để xem hồ sơ");
           setIsLoadingProfile(false);
+          return;
+        }
+
+        if (hasJustSavedRef.current) {
+          console.log('[STAFF_PROFILE] Skipping refetch after save');
+          setIsLoadingProfile(false);
+          hasJustSavedRef.current = false;
           return;
         }
 
@@ -161,8 +169,10 @@ export function ProfilePage({ role }: ProfilePageProps) {
       }
     };
 
-    loadCurrentStaffProfile();
-  }, [isAuthenticated, userProfile]);
+    if (isAuthenticated && userProfile?.id) {
+      loadCurrentStaffProfile();
+    }
+  }, [isAuthenticated, userProfile?.id]);
 
   const getRoleLabel = (role: string): string => {
     switch (role) {
@@ -253,37 +263,60 @@ export function ProfilePage({ role }: ProfilePageProps) {
 
     try {
       setIsSaving(true);
-      await updateStaff(currentStaff.id, {
+      let newImageUrl: string | undefined = undefined;
+
+      if (avatarFile) {
+        try {
+          const imageUrl = await uploadAvatarImage(avatarFile, currentStaff.id);
+          newImageUrl = extractRelativePath(imageUrl);
+        } catch (uploadError) {
+          console.error("Avatar upload failed:", uploadError);
+          toast.error("Ảnh đại diện cập nhật thất bại, nhưng thông tin cá nhân sẽ được lưu");
+        }
+      }
+
+      const updatePayload: any = {
         full_name: profileData.fullName,
         email: profileData.email,
         phone: profileData.phone,
         address: profileData.address,
         date_of_birth: profileData.dateOfBirth,
         hire_date: profileData.joinDate,
-      });
+      };
 
-      if (avatarFile) {
-        try {
-          const imageUrl = await uploadAvatarImage(avatarFile, currentStaff.id);
-          const relativePath = extractRelativePath(imageUrl);
-          await updateStaff(currentStaff.id, {
-            image_url: relativePath,
-          });
-          setAvatarFile(null);
-        } catch (uploadError) {
-          console.error("Avatar upload failed:", uploadError);
-          toast.error("Ảnh đại diện cập nhật thất bại, nhưng thông tin cá nhân đã lưu");
-        }
+      if (newImageUrl) {
+        updatePayload.image_url = newImageUrl;
       }
+
+      const updatedStaff = await updateStaff(currentStaff.id, updatePayload);
+
+      setCurrentStaff(updatedStaff);
+      if (updatedStaff.image_url) {
+        const cacheBustedUrl = `${updatedStaff.image_url}?t=${Date.now()}`;
+        setAvatarUrl(cacheBustedUrl);
+      }
+      setAvatarFile(null);
 
       setProfileData(prev => ({
         ...prev,
-        dateOfBirth: formatDateDisplay(profileData.dateOfBirth),
-        joinDate: formatDateDisplay(profileData.joinDate),
+        dateOfBirth: formatDateDisplay(updatedStaff.date_of_birth),
+        joinDate: formatDateDisplay(updatedStaff.hire_date),
       }));
+
+      hasJustSavedRef.current = true;
+      const cacheBustedImageUrl = updatedStaff.image_url ? `${updatedStaff.image_url}?t=${Date.now()}` : undefined;
+      updateProfile({
+        name: updatedStaff.full_name,
+        email: updatedStaff.email,
+        phone: updatedStaff.phone,
+        address: updatedStaff.address,
+        image_url: cacheBustedImageUrl,
+      });
+
       toast.success("Cập nhật thông tin thành công!");
       setIsEditing(false);
     } catch (error) {
+      console.error("Error saving profile:", error);
       toast.error("Cập nhật thông tin thất bại!");
     } finally {
       setIsSaving(false);
@@ -312,7 +345,6 @@ export function ProfilePage({ role }: ProfilePageProps) {
   };
 
   const handleChangePassword = async () => {
-    // Check authentication first
     if (!isAuthenticated || !userProfile) {
       toast.error("Vui lòng đăng nhập để đổi mật khẩu");
       return;
