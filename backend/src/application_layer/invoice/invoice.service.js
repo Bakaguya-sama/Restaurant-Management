@@ -130,7 +130,7 @@ class InvoiceService {
       }
     }
 
-    const taxRate = invoiceData.tax_rate || 0;
+    const taxRate = invoiceData.tax_rate !== undefined ? invoiceData.tax_rate : 10;
     const totals = new InvoiceEntity({}).calculateTotals(
       invoiceData.subtotal,
       taxRate,
@@ -294,6 +294,11 @@ class InvoiceService {
       
       // Increment promotion usage count
       await this.promotionService.incrementPromotionUses(promotionId);
+    }
+
+    // Apply points discount to total amount
+    if (pointsUsed > 0) {
+      totalAmount = totalAmount - pointsUsed;
     }
 
     // Calculate points earned: 1 point per 1,000đ spent (round down to nearest 1000)

@@ -257,12 +257,11 @@ export function InvoicesPage() {
     // base invoice discount (e.g., voucher applied by customer)
     let baseDiscount = selectedInvoice.discount || 0;
 
-    // cashier selected promotion discount (only allowed if customer hasn't selected voucher/points)
+    // cashier selected promotion discount (only allowed if customer hasn't selected voucher from app)
     let promotionDiscount = 0;
     if (
       cashierSelectedPromotion &&
-      !selectedInvoice.customerSelectedVoucher &&
-      selectedInvoice.customerSelectedPoints === 0
+      !selectedInvoice.customerSelectedVoucher
     ) {
       if (cashierSelectedPromotion.promotion_type === "fixed_amount") {
         promotionDiscount = cashierSelectedPromotion.discount_value;
@@ -290,8 +289,7 @@ export function InvoicesPage() {
   // compute promotion discount for display
   const promotionDiscount =
     cashierSelectedPromotion &&
-    !selectedInvoice?.customerSelectedVoucher &&
-    selectedInvoice?.customerSelectedPoints === 0
+    !selectedInvoice?.customerSelectedVoucher
       ? cashierSelectedPromotion.promotion_type === "fixed_amount"
         ? cashierSelectedPromotion.discount_value
         : (selectedInvoice?.subtotal || 0) *
@@ -630,9 +628,8 @@ export function InvoicesPage() {
                       </div>
                     </div>
 
-                    {/* Cashier can select promotion if customer hasn't selected */}
+                    {/* Cashier can select promotion if customer hasn't selected voucher from app */}
                     {!selectedInvoice.customerSelectedVoucher &&
-                      selectedInvoice.customerSelectedPoints === 0 &&
                       availablePromotions.length > 0 && (
                         <div className="mb-6">
                           <h4 className="mb-3 flex items-center gap-2">
@@ -721,9 +718,41 @@ export function InvoicesPage() {
                         </div>
                       )}
 
-                    {/* Points apply section (only when customer hasn't used points) */}
-                    {!selectedInvoice.customerSelectedVoucher &&
-                      selectedInvoice.customerSelectedPoints === 0 && (
+                    {/* Points section */}
+                    {!selectedInvoice.customerSelectedVoucher && (
+                      selectedInvoice.customerSelectedPoints > 0 ? (
+                        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="flex items-center gap-2 mb-2">
+                                <Gift className="w-5 h-5 text-green-600" />
+                                Đã áp dụng điểm
+                              </h4>
+                              <p className="text-sm text-gray-700">
+                                {selectedInvoice.customerSelectedPoints.toLocaleString()} điểm = -{selectedInvoice.pointsDiscount.toLocaleString()}đ
+                              </p>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => {
+                                const updated = {
+                                  ...selectedInvoice,
+                                  customerSelectedPoints: 0,
+                                  pointsDiscount: 0,
+                                };
+                                setSelectedInvoice(updated);
+                                setInvoices((prev) =>
+                                  prev.map((inv) => (inv.id === updated.id ? updated : inv))
+                                );
+                                setCashierPointsToUse("");
+                              }}
+                            >
+                              Hủy
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
                         <div className="mb-6">
                           <h4 className="mb-3 flex items-center gap-2">
                             <Gift className="w-5 h-5 text-green-600" />
@@ -761,11 +790,11 @@ export function InvoicesPage() {
                             1000 điểm = 1000đ. Điểm tối thiểu 1000.
                           </p>
                         </div>
-                      )}
+                      )
+                    )}
 
-                    {/* Payment Method - Only if customer hasn't selected voucher/points */}
-                    {!selectedInvoice.customerSelectedVoucher &&
-                      selectedInvoice.customerSelectedPoints === 0 && (
+                    {/* Payment Method - Always show unless customer selected voucher from app */}
+                    {!selectedInvoice.customerSelectedVoucher && (
                         <div className="mb-6">
                           <h4 className="mb-3">Phương thức thanh toán</h4>
                           <div className="grid grid-cols-3 gap-3">
@@ -807,8 +836,7 @@ export function InvoicesPage() {
                       )}
 
                     {paymentMethod === "cash" &&
-                      !selectedInvoice.customerSelectedVoucher &&
-                      selectedInvoice.customerSelectedPoints === 0 && (
+                      !selectedInvoice.customerSelectedVoucher && (
                         <div className="mb-6">
                           <Input
                             label="Tiền khách đưa"
