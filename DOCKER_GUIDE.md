@@ -24,7 +24,28 @@ docker-compose up -d
   - Tạo network và volumes
   - Khởi động tất cả containers
 
-### 2. Xem logs của tất cả services
+### 2. Seed dữ liệu mẫu (BẮT BUỘC cho lần đầu)
+
+```bash
+docker-compose exec backend npm run seed
+```
+
+- ⚠️ **QUAN TRỌNG**: Database sẽ trống sau khi khởi động lần đầu
+- Lệnh này tạo dữ liệu mẫu bao gồm:
+  - 6 nhân viên (waiter, cashier, manager)
+  - 6 khách hàng
+  - 13 bàn ăn, 8 món ăn, 10 nguyên liệu
+  - Đơn hàng, hóa đơn, và dữ liệu test khác
+- **Tài khoản test được tạo**:
+  - Manager: `minh.manager@restaurant.vn` / `password123`
+  - Waiter: `hung.waiter@restaurant.vn` / `password123`
+  - Customer: `tuan.nguyen@gmail.com` / `password123`
+
+### 3. Truy cập ứng dụng
+
+Sau khi seed xong, bạn có thể đăng nhập tại http://localhost:5173
+
+### 4. Xem logs của tất cả services
 
 ```bash
 docker-compose logs -f
@@ -32,7 +53,7 @@ docker-compose logs -f
 
 - `-f`: Follow mode, hiển thị logs real-time
 
-### 3. Xem logs của một service cụ thể
+### 5. Xem logs của một service cụ thể
 
 ```bash
 # Xem logs backend
@@ -45,7 +66,7 @@ docker-compose logs -f frontend
 docker-compose logs -f mongodb
 ```
 
-### 4. Kiểm tra trạng thái các containers
+### 6. Kiểm tra trạng thái các containers
 
 ```bash
 docker-compose ps
@@ -198,6 +219,12 @@ docker-compose exec mongodb mongorestore /data/backup
 ```bash
 docker-compose exec backend npm run seed
 ```
+
+**Chú ý**:
+
+- Lệnh này sẽ **XÓA TẤT CẢ** dữ liệu hiện có và tạo lại từ đầu
+- Chỉ chạy khi muốn reset database về trạng thái ban đầu
+- Xem danh sách tài khoản test trong output sau khi seed xong
 
 ## 🔄 Development Workflow
 
