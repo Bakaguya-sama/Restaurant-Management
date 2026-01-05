@@ -34,7 +34,8 @@ exports.listInventory = async (req, res) => {
 exports.importItems = async (req, res) => {
   try {
     const { items } = req.body;
-    const result = await inventoryService.importItems(items);
+    const staffId = req.user?._id; // Get _id from auth middleware (user object)
+    const result = await inventoryService.importItems(items, staffId);
     return res
       .status(201)
       .json({ success: true, data: result, message: "Import recorded" });
@@ -53,7 +54,8 @@ exports.importItems = async (req, res) => {
 exports.exportItems = async (req, res) => {
   try {
     const { items } = req.body;
-    const result = await inventoryService.exportItems(items);
+    const staffId = req.user?._id; // Get _id from auth middleware (user object)
+    const result = await inventoryService.exportItems(items, staffId);
     return res
       .status(201)
       .json({ success: true, data: result, message: "Export recorded" });

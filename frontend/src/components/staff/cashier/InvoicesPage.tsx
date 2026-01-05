@@ -307,7 +307,7 @@ export function InvoicesPage() {
       toast.error("Số tiền không đủ!");
       return;
     }
-const pointsEarned = Math.floor((selectedInvoice.subtotal + selectedInvoice.tax) / 100) * 10;
+    const pointsEarned = Math.floor(totalAmount / 10);
 
     const pointsUsed = selectedInvoice.customerSelectedPoints || 0;
 
@@ -725,12 +725,11 @@ const pointsEarned = Math.floor((selectedInvoice.subtotal + selectedInvoice.tax)
                       )}
 
                     {/* Points apply section */}
-                    {(
-                        <div className="mb-6">
-                          <h4 className="mb-3 flex items-center gap-2">
-                            <Gift className="w-5 h-5 text-green-600" />
-                            Sử dụng điểm khách hàng
-                          </h4>
+                    <div className="mb-6">
+                      <h4 className="mb-3 flex items-center gap-2">
+                        <Gift className="w-5 h-5 text-green-600" />
+                        Sử dụng điểm khách hàng
+                      </h4>
                           <div className="flex items-center gap-3">
                             <div className="text-sm text-gray-600">
                               Hiện có:{" "}
@@ -763,7 +762,6 @@ const pointsEarned = Math.floor((selectedInvoice.subtotal + selectedInvoice.tax)
                             1000 điểm = 1000đ. Điểm tối thiểu 1000.
                           </p>
                         </div>
-                      )}
 
                     {/* Payment Method */}
                     <div className="mb-6">

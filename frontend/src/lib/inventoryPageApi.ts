@@ -36,7 +36,8 @@ export interface ImportItemsParams {
 
 export interface ExportItemsParams {
   items: Array<{
-    itemId: string;
+    itemId?: string;      // Optional - for FIFO (cooking)
+    batchId?: string;     // Optional - for specific batch (damage handling)
     quantity: number;
     reason: string;
   }>;
@@ -115,11 +116,18 @@ export async function fetchSuppliers(): Promise<Supplier[]> {
 export async function importInventoryItems(
   params: ImportItemsParams
 ): Promise<void> {
+  const token = localStorage.getItem('accessToken');
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
   const response = await fetch(`${getApiBaseUrl()}/inventory/import`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers,
     body: JSON.stringify(params),
   });
 
@@ -135,11 +143,18 @@ export async function importInventoryItems(
 export async function exportInventoryItems(
   params: ExportItemsParams
 ): Promise<void> {
+  const token = localStorage.getItem('accessToken');
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
   const response = await fetch(`${getApiBaseUrl()}/inventory/export`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers,
     body: JSON.stringify(params),
   });
 

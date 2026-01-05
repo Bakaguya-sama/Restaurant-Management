@@ -105,7 +105,7 @@ async function getBatches({ low = false, expiring = false }) {
   return StockImportDetail.aggregate(pipeline);
 }
 
-async function createStockImport(items) {
+async function createStockImport(items, staffId = null) {
   const importNumber = `IMP-${Date.now()}`;
 
   // Validate supplier exists
@@ -122,6 +122,7 @@ async function createStockImport(items) {
     import_number: importNumber,
     supplier_id: items[0].supplierId,
     supplier_name: supplier.name,
+    staff_id: staffId, // Manager who imports
     status: "completed",
   });
   await stockImport.save();
@@ -200,6 +201,7 @@ async function createStockExport(items, staffId = null) {
   const stockExport = new StockExport({
     export_number: exportNumber,
     notes: items.map((i) => i.reason).join("; "),
+    staff_id: staffId, // Manager who handles damaged goods
     status: "completed",
   });
   await stockExport.save();
@@ -207,34 +209,60 @@ async function createStockExport(items, staffId = null) {
   const details = [];
 
   for (const it of items) {
-    const ing = await Ingredient.findById(it.itemId);
-    if (!ing)
-      throw { status: 404, message: `Ingredient not found: ${it.itemId}` };
+    let ing;
+    let batches = [];
 
-    if ((ing.quantity_in_stock || 0) < it.quantity)
-      throw { status: 400, message: `Insufficient stock for ${ing.name}` };
+    // If batchId is provided, export from that specific batch
+    if (it.batchId && mongoose.Types.ObjectId.isValid(it.batchId)) {
+      const batch = await StockImportDetail.findById(it.batchId);
+      if (!batch)
+        throw { status: 404, message: `Batch not found: ${it.batchId}` };
 
-    const unitPrice = ing.unit_price || 0;
-    const lineTotal = unitPrice * it.quantity;
+      ing = await Ingredient.findById(batch.ingredient_id);
+      if (!ing)
+        throw { status: 404, message: `Ingredient not found for batch: ${it.batchId}` };
 
-    // Deduct quantity from batches using FIFO (oldest first)
-    let remainingQty = it.quantity;
-    const batches = await StockImportDetail.find({
-      ingredient_id: ing._id,
-    }).sort({ expiry_date: 1, _id: 1 }); // Sort by expiry date then by ID (FIFO)
-
-    // Calculate remaining for each batch and filter > 0
-    const batchesWithRemaining = [];
-    for (const batch of batches) {
+      // Calculate remaining for this specific batch
       const exports = await StockExportDetail.find({ batch_id: batch._id });
       const totalExported = exports.reduce((sum, e) => sum + (e.quantity || 0), 0);
       const remaining = batch.quantity - totalExported;
-      if (remaining > 0) {
-        batchesWithRemaining.push({ batch, remaining });
+
+      if (remaining < it.quantity)
+        throw { status: 400, message: `Insufficient stock in batch. Available: ${remaining}${ing.unit}` };
+
+      batches = [{ batch, remaining }];
+    }
+    // Otherwise, use FIFO for normal cooking operations
+    else if (it.itemId) {
+      ing = await Ingredient.findById(it.itemId);
+      if (!ing)
+        throw { status: 404, message: `Ingredient not found: ${it.itemId}` };
+
+      if ((ing.quantity_in_stock || 0) < it.quantity)
+        throw { status: 400, message: `Insufficient stock for ${ing.name}` };
+
+      // Deduct quantity from batches using FIFO (oldest expiry first)
+      const allBatches = await StockImportDetail.find({
+        ingredient_id: ing._id,
+      }).sort({ expiry_date: 1, _id: 1 }); // Sort by expiry date then by ID (FIFO)
+
+      // Calculate remaining for each batch and filter > 0
+      const batchesWithRemaining = [];
+      for (const batch of allBatches) {
+        const exports = await StockExportDetail.find({ batch_id: batch._id });
+        const totalExported = exports.reduce((sum, e) => sum + (e.quantity || 0), 0);
+        const remaining = batch.quantity - totalExported;
+        if (remaining > 0) {
+          batchesWithRemaining.push({ batch, remaining });
+        }
       }
+      batches = batchesWithRemaining;
     }
 
-    for (const { batch, remaining } of batchesWithRemaining) {
+    const unitPrice = ing.unit_price || 0;
+    let remainingQty = it.quantity;
+
+    for (const { batch, remaining } of batches) {
       if (remainingQty <= 0) break;
 
       const deductQty = Math.min(remaining, remainingQty);
@@ -347,6 +375,7 @@ async function getImports() {
       code: imp.import_number,
       supplierId: imp.supplier_id ? imp.supplier_id.toString() : null,
       supplierName,
+      staffId: imp.staff_id ? imp.staff_id.toString() : null,
       items,
       date: imp.import_date || imp.created_at,
       total,

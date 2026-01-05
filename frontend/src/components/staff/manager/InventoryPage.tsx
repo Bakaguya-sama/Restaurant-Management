@@ -71,6 +71,7 @@ export function InventoryPage() {
     id: string;
     code?: string;
     supplierName?: string;
+    staffName?: string;
     items: Array<{
       name: string;
       quantity: number;
@@ -136,6 +137,7 @@ export function InventoryPage() {
             id: d.id,
             code: d.code || undefined,
             supplierName: d.supplierName || undefined,
+            staffName: d.staffName || undefined,
             items: (d.items || []).map((it: any) => ({
               name: it.name,
               quantity: it.quantity,
@@ -199,7 +201,7 @@ export function InventoryPage() {
   ]);
   const [selectedSupplier, setSelectedSupplier] = useState("");
   const [disposeData, setDisposeData] = useState({
-    itemId: "",
+    batchId: "",  // Changed from itemId to batchId
     quantity: 0,
     reason: "expired" as "expired" | "damaged" | "returned",
   });
@@ -367,9 +369,9 @@ export function InventoryPage() {
   };
 
   const handleDispose = async () => {
-    const item = inventory.find((i) => i.ingredientId === disposeData.itemId);
+    const item = inventory.find((i) => i.id === disposeData.batchId);
     if (!item) {
-      toast.error("Vui lòng chọn nguyên liệu");
+      toast.error("Vui lòng chọn lô hàng");
       return;
     }
 
@@ -382,7 +384,7 @@ export function InventoryPage() {
       await exportInventoryItems({
         items: [
           {
-            itemId: disposeData.itemId,
+            batchId: disposeData.batchId,  // Send batchId instead of itemId
             quantity: disposeData.quantity,
             reason: disposeData.reason,
           },
@@ -406,7 +408,7 @@ export function InventoryPage() {
         console.error("refreshHistory failed", e);
       }
       setShowDisposeModal(false);
-      setDisposeData({ itemId: "", quantity: 0, reason: "expired" });
+      setDisposeData({ batchId: "", quantity: 0, reason: "expired" });
     } catch (error: any) {
       toast.error(error.message || "Không thể xuất hủy");
     }
@@ -915,6 +917,7 @@ export function InventoryPage() {
                   <tr className="border-b">
                     <th className="text-left p-4">Mã phiếu</th>
                     <th className="text-left p-4">Nhà cung cấp</th>
+                    <th className="text-left p-4">Nhân viên</th>
                     <th className="text-left p-4">Ngày nhập</th>
                     <th className="text-left p-4">Tổng tiền</th>
                     <th className="text-left p-4">Ghi chú</th>
@@ -924,13 +927,13 @@ export function InventoryPage() {
                 <tbody>
                   {importHistoryLoading ? (
                     <tr>
-                      <td colSpan={6} className="p-4 text-center">
+                      <td colSpan={7} className="p-4 text-center">
                         Đang tải...
                       </td>
                     </tr>
                   ) : importHistory.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="p-4 text-center">
+                      <td colSpan={7} className="p-4 text-center">
                         Chưa có lịch sử nhập kho
                       </td>
                     </tr>
@@ -946,6 +949,7 @@ export function InventoryPage() {
                       >
                         <td className="p-4">{h.code || h.id}</td>
                         <td className="p-4">{h.supplierName || "-"}</td>
+                        <td className="p-4">{h.staffName || "-"}</td>
                         <td className="p-4">
                           {new Date(h.date).toLocaleString("vi-VN")}
                         </td>
@@ -983,6 +987,9 @@ export function InventoryPage() {
                 </div>
                 <div className="text-sm text-gray-700">
                   <strong>Nhà cung cấp:</strong> {selectedImportOrder.supplierName || "-"}
+                </div>
+                <div className="text-sm text-gray-700">
+                  <strong>Nhân viên:</strong> {selectedImportOrder.staffName || "-"}
                 </div>
                 <div className="text-sm text-gray-700">
                   <strong>Ngày nhập:</strong>{" "}
@@ -1471,20 +1478,55 @@ export function InventoryPage() {
       >
         <div className="space-y-4">
           <div>
-            <label className="block mb-2">Chọn nguyên liệu</label>
+            <label className="block mb-2">Chọn lô hàng cụ thể</label>
             <select
-              value={disposeData.itemId}
+              value={disposeData.batchId}
               onChange={(e) =>
-                setDisposeData({ ...disposeData, itemId: e.target.value })
+                setDisposeData({ ...disposeData, batchId: e.target.value })
               }
               className="w-full px-4 py-2 border border-gray-300 rounded-lg"
             >
-              <option value="">Chọn nguyên liệu</option>
-              {inventory.map((item) => (
-                <option key={item.id} value={item.ingredientId}>
-                  {item.name} (Tồn: {item.quantity} {item.unit})
-                </option>
-              ))}
+              <option value="">Chọn lô hàng</option>
+              {inventory
+                .sort((a, b) => {
+                  // Sort: Expired first, then expiring soon, then normal
+                  const aExpired = a.expiryDate && isExpired(a.expiryDate);
+                  const bExpired = b.expiryDate && isExpired(b.expiryDate);
+                  const aExpiring = a.expiryDate && isExpiringSoon(a.expiryDate) && !aExpired;
+                  const bExpiring = b.expiryDate && isExpiringSoon(b.expiryDate) && !bExpired;
+                  
+                  if (aExpired && !bExpired) return -1;
+                  if (!aExpired && bExpired) return 1;
+                  if (aExpiring && !bExpiring) return -1;
+                  if (!aExpiring && bExpiring) return 1;
+                  return 0;
+                })
+                .map((item) => {
+                  const expiryDateStr = item.expiryDate 
+                    ? new Date(item.expiryDate).toLocaleDateString("vi-VN")
+                    : "Không có HSD";
+                  const daysLeft = item.expiryDate ? getDaysUntilExpiry(item.expiryDate) : null;
+                  
+                  let prefix = "✓ ";
+                  let expiryStatus = "";
+                  
+                  if (daysLeft !== null) {
+                    if (daysLeft < 0) {
+                      prefix = "🔴 ";
+                      expiryStatus = " - ⚠️ ĐÃ HẾT HẠN";
+                    } else if (daysLeft <= 7) {
+                      prefix = "🟡 ";
+                      expiryStatus = ` - ⏰ Còn ${daysLeft} ngày`;
+                    }
+                  }
+                  
+                  return (
+                    <option key={item.id} value={item.id}>
+                      {prefix}{item.name} | SL: {item.quantity}{item.unit} | HSD: {expiryDateStr}{expiryStatus}
+                      {item.supplierName ? ` | NCC: ${item.supplierName}` : ""}
+                    </option>
+                  );
+                })}
             </select>
           </div>
 

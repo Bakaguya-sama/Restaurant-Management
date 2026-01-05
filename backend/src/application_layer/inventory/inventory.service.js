@@ -33,7 +33,7 @@ async function listInventory({ lowStock = false, expiring = false }) {
   return batches.map(mapBatch);
 }
 
-async function importItems(items) {
+async function importItems(items, staffId = null) {
   // validations same as previous controller
   if (!Array.isArray(items) || items.length === 0)
     throw { status: 400, message: "items must be a non-empty array" };
@@ -58,17 +58,18 @@ async function importItems(items) {
       };
   }
 
-  const result = await inventoryRepo.createStockImport(items);
+  const result = await inventoryRepo.createStockImport(items, staffId);
   return { importId: result.import._id, details: result.details };
 }
 
-async function exportItems(items) {
+async function exportItems(items, staffId = null) {
   if (!Array.isArray(items) || items.length === 0)
     throw { status: 400, message: "items must be a non-empty array" };
 
   for (const it of items) {
-    if (!it.itemId)
-      throw { status: 400, message: "itemId is required for each item" };
+    // Either itemId or batchId is required
+    if (!it.itemId && !it.batchId)
+      throw { status: 400, message: "itemId or batchId is required for each item" };
     if (!it.quantity || typeof it.quantity !== "number" || it.quantity <= 0)
       throw { status: 400, message: "quantity must be > 0" };
     if (!it.reason)
@@ -78,7 +79,7 @@ async function exportItems(items) {
       };
   }
 
-  const result = await inventoryRepo.createStockExport(items);
+  const result = await inventoryRepo.createStockExport(items, staffId);
   return { exportId: result.export._id, details: result.details };
 }
 
@@ -149,6 +150,7 @@ async function listImports() {
     code: i.code,
     supplierId: i.supplierId,
     supplierName: i.supplierName,
+    staffName: i.staffId || null,
     items: (i.items || []).map((it) => ({
       name: it.name,
       quantity: it.quantity,

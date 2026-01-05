@@ -38,4 +38,6 @@ export const promotionApi = {
   activate: (id: string) => apiClient.patch<Promotion>(`/promotions/${id}/activate`, {}),
 
   deactivate: (id: string) => apiClient.patch<Promotion>(`/promotions/${id}/deactivate`, {}),
+
+  resetUses: (id: string) => apiClient.patch<Promotion>(`/promotions/${id}/reset-uses`, {}),
 };

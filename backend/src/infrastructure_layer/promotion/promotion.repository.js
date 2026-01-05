@@ -122,6 +122,17 @@ class PromotionRepository {
     return await this.syncPromotionState(promotion);
   }
 
+  async resetUses(id) {
+    const promotion = await Promotion.findByIdAndUpdate(
+      id,
+      { current_uses: 0 },
+      { new: true }
+    );
+    
+    if (!promotion) return null;
+    return await this.syncPromotionState(promotion);
+  }
+
   async getStatistics() {
     const totalPromotions = await Promotion.countDocuments();
     const activePromotions = await Promotion.countDocuments({ is_active: true });

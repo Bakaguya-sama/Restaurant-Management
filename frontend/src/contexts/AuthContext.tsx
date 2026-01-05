@@ -4,6 +4,7 @@ import { authService } from "../lib/authService";
 
 interface UserProfile {
   id: string;
+  _id?: string; // MongoDB ID
   name: string;
   email: string;
   phone: string;

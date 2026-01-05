@@ -187,6 +187,22 @@ class PromotionController {
       });
     }
   }
+
+  async resetPromotionUses(req, res) {
+    try {
+      const promotion = await this.promotionService.resetPromotionUses(req.params.id);
+      
+      res.status(200).json({
+        success: true,
+        data: promotion
+      });
+    } catch (error) {
+      res.status(404).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
 }
 
 module.exports = PromotionController;

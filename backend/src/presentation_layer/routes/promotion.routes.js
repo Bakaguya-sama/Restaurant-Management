@@ -24,4 +24,6 @@ router.patch('/:id/activate', (req, res) => promotionController.activatePromotio
 
 router.patch('/:id/deactivate', (req, res) => promotionController.deactivatePromotion(req, res));
 
+router.patch('/:id/reset-uses', (req, res) => promotionController.resetPromotionUses(req, res));
+
 module.exports = router;
