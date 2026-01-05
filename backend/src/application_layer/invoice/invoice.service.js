@@ -293,7 +293,7 @@ class InvoiceService {
 
     let pointsEarned = 0;
     if (pointsUsed === 0) {
-      pointsEarned = Math.floor((invoice.subtotal + invoice.tax) / 100) * 10;
+      pointsEarned = Math.floor(totalAmount / 10);
     }
 
     const updateData = {
@@ -309,31 +309,53 @@ class InvoiceService {
     await this.invoiceRepository.update(id, updateData);
 
     
-    if (invoice.customer_id && pointsUsed > 0) {
+    // Extract customer ID (handle both populated object and string ID)
+    const customerId = invoice.customer_id?._id || invoice.customer_id?.id || invoice.customer_id;
+    
+    if (customerId && pointsUsed > 0) {
       try {
-        await this.pointsService.redeemCustomerPoints(invoice.customer_id, pointsUsed);
+        await this.pointsService.redeemCustomerPoints(customerId, pointsUsed);
       } catch (error) {
         console.error('Failed to redeem points:', error);
       }
     }
 
-    if (invoice.customer_id && pointsEarned > 0 && pointsUsed === 0) {
+    if (customerId && pointsEarned > 0 && pointsUsed === 0) {
       try {
-        await this.pointsService.awardCustomerPoints(invoice.customer_id, pointsEarned);
+        await this.pointsService.awardCustomerPoints(customerId, pointsEarned);
       } catch (error) {
         console.error('Failed to award points:', error);
       }
     }
 
     
-    if (invoice.customer_id && totalAmount > 0) {
+    if (customerId && totalAmount > 0) {
+      console.log('📊 Updating customer total_spent:', {
+        customerId: customerId,
+        invoiceId: id,
+        totalAmount: totalAmount
+      });
+      
       try {
         const { Customer } = require('../../models');
-        const customer = await Customer.findById(invoice.customer_id);
+        const customer = await Customer.findById(customerId);
         
         if (customer) {
           const oldTotal = customer.total_spent || 0;
           customer.total_spent = oldTotal + totalAmount;
+          
+          console.log('✅ Customer total_spent updated:', {
+            customerId: customer._id,
+            oldTotal: oldTotal,
+            addedAmount: totalAmount,
+            newTotal: customer.total_spent
+          });
+          console.log('✅ Customer total_spent updated:', {
+            customerId: customer._id,
+            oldTotal: oldTotal,
+            addedAmount: totalAmount,
+            newTotal: customer.total_spent
+          });
           
           const newTotal = customer.total_spent;
           let newMembershipLevel = 'regular';
@@ -352,15 +374,27 @@ class InvoiceService {
           
           if (customer.membership_level !== newMembershipLevel) {
             customer.membership_level = newMembershipLevel;
+            console.log('🎖️ Membership level upgraded:', {
+              customerId: customer._id,
+              oldLevel: customer.membership_level,
+              newLevel: newMembershipLevel,
+              totalSpent: newTotal
+            });
           }
           
           await customer.save();
+          console.log('💾 Customer saved successfully');
         } else {
+          console.log('⚠️ Customer not found with ID:', customerId);
         }
       } catch (error) {
-        console.error('Failed to update customer total_spent:', error);
+        console.error('❌ Failed to update customer total_spent:', error);
       }
     } else {
+      console.log('⚠️ Skipping total_spent update:', {
+        hasCustomerId: !!customerId,
+        totalAmount: totalAmount
+      });
     }
 
     return await this.invoiceRepository.findById(id);
