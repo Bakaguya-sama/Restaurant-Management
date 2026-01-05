@@ -40,32 +40,36 @@ import { useImageLoader } from "../../../hooks/useImageLoader";
 
 const PLACEHOLDER_IMAGE = "/placeholder_images/placeholder_dish_image.jpg";
 
-// Helper component for grid item images
+const addCacheBuster = (url: string): string => {
+  if (!url || url.startsWith("data:")) return url;
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}t=${Date.now()}`;
+};
+
 function GridItemImage({ imageUrl }: { imageUrl: string }) {
   const displayImage = useImageLoader(imageUrl, PLACEHOLDER_IMAGE);
   return (
     <img
-      src={displayImage}
+      src={addCacheBuster(displayImage)}
       alt="Dish"
       className="w-full h-48 object-cover"
     />
   );
 }
 
-// Helper component for modal preview images
 function ModalImagePreview({ imageUrl }: { imageUrl: string }) {
-  const displayImage = useImageLoader(imageUrl, PLACEHOLDER_IMAGE);
+  const isDataUri = imageUrl?.startsWith("data:");
+  const displayImage = isDataUri ? imageUrl : useImageLoader(imageUrl, PLACEHOLDER_IMAGE);
 
   return (
     <img
-      src={displayImage}
+      src={addCacheBuster(displayImage)}
       alt="Preview"
       className="w-full h-48 object-cover rounded-lg"
     />
   );
 }
 
-// Helper component for view modal images
 function ViewModalImage({
   dishName,
   imageUrl,
@@ -77,7 +81,7 @@ function ViewModalImage({
 
   return (
     <img
-      src={displayImage}
+      src={addCacheBuster(displayImage)}
       alt={dishName}
       className="w-full h-96 object-cover rounded-lg"
     />
@@ -93,6 +97,7 @@ export function MenuPromotionPage() {
     updateDish,
     deleteDish,
     toggleDishAvailability,
+    fetchDishes,
   } = useDishes();
 
   const {
@@ -296,6 +301,7 @@ export function MenuPromotionPage() {
       }
 
       toast.success("Thêm món ăn thành công!");
+      await fetchDishes();
       setShowAddMenuModal(false);
       setMenuForm({
         id: "",
@@ -415,6 +421,7 @@ export function MenuPromotionPage() {
       }
 
       toast.success("Cập nhật món ăn thành công!");
+      await fetchDishes();
       setShowEditMenuModal(false);
       setEditingDish(null);
       setMenuForm({
@@ -827,7 +834,6 @@ export function MenuPromotionPage() {
       return matchesSearch && matchesCategory;
     });
 
-  // Debug: Check for unavailable dishes
   const unavailableDishes = filteredMenuItems.filter(d => !d.is_available);
   if (unavailableDishes.length > 0) {
     console.warn("Unavailable dishes found:", unavailableDishes.map(d => ({ id: d.id, name: d.name, is_available: d.is_available })));

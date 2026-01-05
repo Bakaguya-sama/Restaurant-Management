@@ -125,7 +125,8 @@ class OrderController {
       if (notes !== undefined) updateData.notes = notes;
 
       const updated = await this.orderService.updateOrder(req.params.id, updateData);
-      const formatted = this.orderService.formatOrderResponse(updated);
+      const calculated = await this.orderService.calculateOrderTotal(req.params.id);
+      const formatted = this.orderService.formatOrderResponse(calculated);
 
       res.json({
         success: true,
@@ -174,7 +175,8 @@ class OrderController {
       }
 
       const order = await this.orderService.updateOrder(req.params.id, { status });
-      const formatted = this.orderService.formatOrderResponse(order);
+      const calculated = await this.orderService.calculateOrderTotal(req.params.id);
+      const formatted = this.orderService.formatOrderResponse(calculated);
 
       res.json({
         success: true,

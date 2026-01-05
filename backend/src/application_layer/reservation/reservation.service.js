@@ -306,6 +306,13 @@ class ReservationService {
       }
     }
 
+    if (status === 'completed') {
+      const details = await this.reservationDetailRepository.findAll({ reservation_id: id });
+      for (const detail of details) {
+        await this.tableRepository.updateStatus(detail.table_id, 'occupied');
+      }
+    }
+
     return this.formatReservationResponse(updated);
   }
 
