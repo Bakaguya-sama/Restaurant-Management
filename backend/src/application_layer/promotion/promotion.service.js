@@ -140,6 +140,14 @@ class PromotionService {
     return promotion;
   }
 
+  async resetPromotionUses(id) {
+    const promotion = await this.promotionRepository.resetUses(id);
+    if (!promotion) {
+      throw new Error('Promotion not found');
+    }
+    return promotion;
+  }
+
   async getPromotionStatistics() {
     return await this.promotionRepository.getStatistics();
   }
