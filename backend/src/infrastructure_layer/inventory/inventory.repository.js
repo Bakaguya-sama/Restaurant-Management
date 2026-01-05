@@ -105,7 +105,7 @@ async function getBatches({ low = false, expiring = false }) {
   return StockImportDetail.aggregate(pipeline);
 }
 
-async function createStockImport(items) {
+async function createStockImport(items, staffId = null) {
   const importNumber = `IMP-${Date.now()}`;
 
   // Validate supplier exists
@@ -122,6 +122,7 @@ async function createStockImport(items) {
     import_number: importNumber,
     supplier_id: items[0].supplierId,
     supplier_name: supplier.name,
+    staff_id: staffId, // Manager who imports
     status: "completed",
   });
   await stockImport.save();
@@ -200,6 +201,7 @@ async function createStockExport(items, staffId = null) {
   const stockExport = new StockExport({
     export_number: exportNumber,
     notes: items.map((i) => i.reason).join("; "),
+    staff_id: staffId, // Manager who handles damaged goods
     status: "completed",
   });
   await stockExport.save();
@@ -373,6 +375,7 @@ async function getImports() {
       code: imp.import_number,
       supplierId: imp.supplier_id ? imp.supplier_id.toString() : null,
       supplierName,
+      staffId: imp.staff_id ? imp.staff_id.toString() : null,
       items,
       date: imp.import_date || imp.created_at,
       total,

@@ -107,7 +107,7 @@ class OrderDetailService {
     }
   }
 
-  async deductIngredientsForDish(dishId, quantity, orderId = null) {
+  async deductIngredientsForDish(dishId, quantity, orderId = null, staffId = null) {
     try {
       // Get all ingredients required for this dish
       const dishIngredients = await DishIngredient.find({ dish_id: dishId });
@@ -171,7 +171,7 @@ class OrderDetailService {
       const exportNumber = `EXP-COOKING-${Date.now()}`;
       const stockExport = new StockExport({
         export_number: exportNumber,
-        staff_id: null,
+        staff_id: staffId, // Waiter/staff who creates the order
         export_date: new Date(),
         total_cost: 0,
         notes: `Xuất nguyên liệu cho món ăn (Order: ${orderId || 'N/A'})`,

@@ -78,7 +78,8 @@ class InvoiceService {
         await orderDetailService.deductIngredientsForDish(
           detail.dish_id,
           detail.quantity,
-          invoiceData.order_id
+          invoiceData.order_id,
+          invoiceData.staff_id // Pass staff_id from invoice
         );
       } catch (error) {
         console.error(`Lỗi khi trừ nguyên liệu cho món ${detail.dish_id}:`, error.message);

@@ -146,13 +146,14 @@ class OrderService {
    * @param {String} orderId - Order ID for logging
    * @param {Object} session - MongoDB session for transaction
    */
-  async executeInventoryDeduction(deductionPlan, orderId, session) {
+  async executeInventoryDeduction(deductionPlan, orderId, session, staffId = null) {
     // Create StockExport record
     const exportNumber = `EXP-ORDER-${Date.now()}`;
     const stockExport = new StockExport({
       export_number: exportNumber,
       export_date: new Date(),
       notes: `Auto deduction for order ${orderId}`,
+      staff_id: staffId, // Waiter who creates the order
       status: 'completed'
     });
     
@@ -326,7 +327,8 @@ class OrderService {
         }
 
         // Step 4: Deduct inventory (without transaction)
-        await this.executeInventoryDeduction(validation.deductionPlan, order._id, null);
+        // Use staff_id from order (waiter who created the order)
+        await this.executeInventoryDeduction(validation.deductionPlan, order._id, null, orderData.staff_id);
 
         return order;
       } else {
