@@ -59,8 +59,6 @@ class InvoiceService {
       throw new Error('Invoice already exists for this order');
     }
 
-    // ⭐ TRỪ NGUYÊN LIỆU KHI TẠO HÓA ĐƠN
-    // Get all order details (không bao gồm món cancelled)
     const { OrderDetail } = require('../../models');
     const OrderDetailService = require('../orderdetail/orderdetail.service');
     const orderDetailService = new OrderDetailService();
@@ -70,9 +68,8 @@ class InvoiceService {
       status: { $ne: 'cancelled' }
     });
     
-    console.log(`Trừ nguyên liệu cho ${orderDetails.length} món trong order ${invoiceData.order_id}`);
     
-    // Trừ nguyên liệu cho từng món
+
     for (const detail of orderDetails) {
       try {
         await orderDetailService.deductIngredientsForDish(
@@ -310,7 +307,7 @@ class InvoiceService {
 
     await this.invoiceRepository.update(id, updateData);
 
-    // Redeem points if used
+    
     if (invoice.customer_id && pointsUsed > 0) {
       try {
         await this.pointsService.redeemCustomerPoints(invoice.customer_id, pointsUsed);
@@ -353,22 +350,17 @@ class InvoiceService {
           }
           
           if (customer.membership_level !== newMembershipLevel) {
-            console.log(`📈 Membership upgrade: ${customer.membership_level} → ${newMembershipLevel}`);
             customer.membership_level = newMembershipLevel;
           }
           
           await customer.save();
-          console.log(`✅ Updated customer ${invoice.customer_id} total_spent: ${oldTotal} + ${totalAmount} = ${customer.total_spent}, level: ${customer.membership_level}`);
         } else {
-          console.log('❌ Customer not found!');
         }
       } catch (error) {
-        console.error('❌ Failed to update customer total_spent:', error);
+        console.error('Failed to update customer total_spent:', error);
       }
     } else {
-      console.log('❌ Skipped total_spent update - missing customer_id or totalAmount <= 0');
     }
-    console.log('=== END UPDATE TOTAL_SPENT DEBUG ===');
 
     return await this.invoiceRepository.findById(id);
   }
