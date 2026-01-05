@@ -262,14 +262,12 @@ class InvoiceService {
     let discountAmount = invoice.discount_amount || 0;
     let totalAmount = invoice.total_amount;
 
-    // Apply promotion if provided
     if (promotionId) {
       const promotion = await this.promotionService.getPromotionById(promotionId);
       if (!promotion) {
         throw new Error('Promotion not found');
       }
 
-      // Check if promotion can be used
       const promotionEntity = require('../../domain_layer/promotion/promotion.entity');
       const promoEntity = new promotionEntity(promotion);
       
@@ -285,21 +283,21 @@ class InvoiceService {
         throw new Error(`Minimum order amount is ${promotion.minimum_order_amount}`);
       }
 
-      // Calculate discount
       discountAmount = promoEntity.calculateDiscount(invoice.subtotal);
-      totalAmount = invoice.subtotal + invoice.tax - discountAmount;
+      totalAmount = invoice.subtotal + invoice.tax - discountAmount - (pointsUsed || 0);
 
-      // Add promotion to invoice
       await this.invoiceRepository.addPromotion(id, promotionId, discountAmount);
       
-      // Increment promotion usage count
       await this.promotionService.incrementPromotionUses(promotionId);
+    } else {
+      totalAmount = invoice.subtotal + invoice.tax - (pointsUsed || 0);
     }
 
-    // Calculate points earned: 1 point per 1,000đ spent (round down to nearest 1000)
-    const pointsEarned = Math.floor(totalAmount / 1000);
+    let pointsEarned = 0;
+    if (pointsUsed === 0) {
+      pointsEarned = Math.floor((invoice.subtotal + invoice.tax) / 10000) * 10;
+    }
 
-    // Update invoice with points information
     const updateData = {
       payment_method: paymentMethod,
       payment_status: 'paid',
@@ -321,7 +319,6 @@ class InvoiceService {
       }
     }
 
-    // Award points to customer when invoice is paid WITHOUT using any points
     if (invoice.customer_id && pointsEarned > 0 && pointsUsed === 0) {
       try {
         await this.pointsService.awardCustomerPoints(invoice.customer_id, pointsEarned);
@@ -330,22 +327,16 @@ class InvoiceService {
       }
     }
 
-    // ⭐ UPDATE TOTAL SPENDING
-    console.log('=== UPDATE TOTAL_SPENT DEBUG ===');
-    console.log('invoice.customer_id:', invoice.customer_id);
-    console.log('totalAmount:', totalAmount);
     
     if (invoice.customer_id && totalAmount > 0) {
       try {
         const { Customer } = require('../../models');
         const customer = await Customer.findById(invoice.customer_id);
-        console.log('Customer found:', customer ? 'YES' : 'NO');
         
         if (customer) {
           const oldTotal = customer.total_spent || 0;
           customer.total_spent = oldTotal + totalAmount;
           
-          // ⭐ Auto-update membership level based on total_spent
           const newTotal = customer.total_spent;
           let newMembershipLevel = 'regular';
           
