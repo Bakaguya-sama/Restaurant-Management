@@ -16,7 +16,6 @@ class OrderDetailService {
     const batch = await StockImportDetail.findById(batchId);
     if (!batch) return 0;
 
-    // Calculate total exported from this batch
     const exports = await StockExportDetail.find({ batch_id: batchId });
     const totalExported = exports.reduce((sum, e) => sum + (e.quantity || 0), 0);
     
@@ -39,7 +38,6 @@ class OrderDetailService {
       ]
     }).sort({ expiry_date: 1, _id: 1 });
 
-    // Calculate remaining for each batch
     const batchesWithRemaining = [];
     for (const batch of batches) {
       const remaining = await this.getBatchRemainingQuantity(batch._id);
@@ -56,21 +54,16 @@ class OrderDetailService {
 
   async updateOrderTotalsAndNotes(orderId) {
     try {
-      // Get all order details for this order
       const orderDetails = await this.orderDetailRepository.findByOrderId(orderId);
       
-      // Filter out cancelled items
       const activeDetails = orderDetails.filter(detail => detail.status !== 'cancelled');
       
-      // Calculate subtotal from active order details only
       const subtotal = activeDetails.reduce((sum, detail) => sum + detail.line_total, 0);
       
-      // Calculate tax (assuming 10% tax rate, adjust as needed)
-      const taxRate = 0; // Change to 0.1 for 10% tax if needed
+      const taxRate = 0; 
       const tax = subtotal * taxRate;
       const total_amount = subtotal + tax;
       
-      // Build notes from active order details with dish names and special instructions
       const dishIds = activeDetails.map(detail => detail.dish_id);
       const dishes = await Dish.find({ _id: { $in: dishIds } });
       const dishMap = {};
@@ -84,15 +77,12 @@ class OrderDetailService {
         if (detail.special_instructions && detail.special_instructions.trim() !== '') {
           line += ` (${detail.special_instructions})`;
         }
-        console.log(`Detail: ${dishName}, special_instructions: "${detail.special_instructions}"`);
         return line;
       });
       
       const notes = notesLines.length > 0 ? notesLines.join(', ') : '';
       
-      console.log(`Building notes for order ${orderId}: ${notes}`);
       
-      // Update the order
       await Order.findByIdAndUpdate(orderId, {
         subtotal,
         tax,
@@ -100,20 +90,16 @@ class OrderDetailService {
         notes
       });
       
-      console.log(`Updated order ${orderId}: subtotal=${subtotal}, tax=${tax}, total=${total_amount}, notes="${notes}"`);
     } catch (error) {
       console.error('Error updating order totals and notes:', error);
-      // Don't throw error to avoid breaking the main operation
     }
   }
 
   async deductIngredientsForDish(dishId, quantity, orderId = null, staffId = null) {
     try {
-      // Get all ingredients required for this dish
       const dishIngredients = await DishIngredient.find({ dish_id: dishId });
       
       if (dishIngredients.length === 0) {
-        console.log(`No ingredients found for dish ${dishId}`);
         return;
       }
 
@@ -205,12 +191,12 @@ class OrderDetailService {
           const deductQty = Math.min(batch.remainingQuantity, remainingQty);
           remainingQty -= deductQty;
           
-          // ⭐ THAY ĐỔI: KHÔNG trừ batch.quantity nữa
+          
           // Chỉ tạo StockExportDetail để ghi lại đã xuất
           const exportDetail = new StockExportDetail({
             export_id: stockExport._id,
             ingredient_id: dishIngredient.ingredient_id,
-            batch_id: batch._id, // ⭐ Link to batch
+            batch_id: batch._id, 
             quantity: deductQty,
             unit_price: batch.unit_price,
             line_total: deductQty * batch.unit_price
@@ -219,7 +205,6 @@ class OrderDetailService {
           
           totalCost += deductQty * batch.unit_price;
           
-          console.log(`  Trừ ${deductQty} ${ingredient.unit} từ lô ${batch._id} (còn lại: ${batch.remainingQuantity - deductQty})`);
         }
 
         // Update ingredient stock
@@ -232,14 +217,12 @@ class OrderDetailService {
           }
         );
 
-        console.log(`✓ Đã trừ ${requiredQuantity} ${ingredient.unit} của ${ingredient.name} cho món ${dishId}`);
       }
 
       // Cập nhật tổng chi phí xuất kho
       stockExport.total_cost = totalCost;
       await stockExport.save();
 
-      console.log(`✓ Hoàn tất trừ nguyên liệu. Mã xuất kho: ${exportNumber}, Tổng chi phí: ${totalCost}`);
       
     } catch (error) {
       console.error('Error deducting ingredients:', error);
@@ -377,7 +360,6 @@ class OrderDetailService {
       status: updateData.status
     });
 
-    console.log(`Updated order detail ${detailId}, special_instructions: "${updated.special_instructions}"`);
 
     // Update order totals and notes after updating item
     await this.updateOrderTotalsAndNotes(orderId);

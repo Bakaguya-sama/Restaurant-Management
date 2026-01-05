@@ -112,10 +112,6 @@ class CustomerService {
       throw new Error('Invalid credentials');
     }
 
-    if (customer.isBanned) {
-      throw new Error('Account is banned');
-    }
-
     const isMatch = await bcrypt.compare(password, customer.password_hash);
     if (!isMatch) {
       throw new Error('Invalid credentials');

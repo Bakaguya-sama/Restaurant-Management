@@ -191,8 +191,8 @@ export function MembershipPage() {
           const pointHistoryData = customerInvoices
             .filter((inv: any) => inv.payment_status === 'paid')
             .map((inv: any) => {
-              // Tính điểm tích lũy: 1000đ = 1 điểm (hoặc 10% total_amount)
-              const points = Math.floor((inv.total_amount || 0) / 1000);
+              // Tính điểm tích lũy: 10đ = 1 điểm (total_amount / 10)
+              const points = Math.floor((inv.total_amount || 0) / 10);
               return {
                 id: inv._id || inv.id,
                 type: 'earned',

@@ -17,7 +17,7 @@ async function createCustomer(overrides = {}) {
 async function createFloor(overrides = {}) {
   const floor = new Floor({
     floor_name: `Floor ${Date.now()}`,
-    floor_number: Math.floor(Math.random() * 1000) + 1,
+    floor_number: parseInt(Date.now().toString().slice(-4)) + Math.floor(Math.random() * 10000),
     ...overrides,
   });
   return await floor.save();

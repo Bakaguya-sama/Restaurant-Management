@@ -18,9 +18,7 @@ class OrderController {
       if (table_id) filters.table_id = table_id;
       if (staff_id) filters.staff_id = staff_id;
 
-      console.log('getAllOrders filters:', filters);
       const orders = await this.orderService.getAllOrders(filters);
-      console.log('getAllOrders result:', orders);
       const formattedOrders = orders.map(order => this.orderService.formatOrderResponse(order));
 
       res.json({
@@ -81,7 +79,7 @@ class OrderController {
         table_id,
         customer_id,
         staff_id,
-        orderItems // Pass orderItems to service for inventory validation
+        orderItems 
       };
 
       const order = await this.orderService.createOrder(orderData);
@@ -93,7 +91,6 @@ class OrderController {
         message: 'Order created successfully'
       });
     } catch (error) {
-      // Handle INSUFFICIENT_INVENTORY error
       if (error.status === 400 && error.message === 'INSUFFICIENT_INVENTORY') {
         return res.status(400).json({
           success: false,
@@ -125,7 +122,8 @@ class OrderController {
       if (notes !== undefined) updateData.notes = notes;
 
       const updated = await this.orderService.updateOrder(req.params.id, updateData);
-      const formatted = this.orderService.formatOrderResponse(updated);
+      const calculated = await this.orderService.calculateOrderTotal(req.params.id);
+      const formatted = this.orderService.formatOrderResponse(calculated);
 
       res.json({
         success: true,
@@ -174,7 +172,8 @@ class OrderController {
       }
 
       const order = await this.orderService.updateOrder(req.params.id, { status });
-      const formatted = this.orderService.formatOrderResponse(order);
+      const calculated = await this.orderService.calculateOrderTotal(req.params.id);
+      const formatted = this.orderService.formatOrderResponse(calculated);
 
       res.json({
         success: true,
