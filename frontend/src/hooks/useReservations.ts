@@ -145,13 +145,14 @@ export function useReservations() {
           );
           return response.data;
         } else {
-          setError('Không thể cập nhật trạng thái');
-          toast.error('Không thể cập nhật trạng thái');
+          const errorMsg = 'Không thể cập nhật trạng thái';
+          setError(errorMsg);
+          throw new Error(errorMsg);
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Lỗi khi cập nhật trạng thái';
         setError(errorMessage);
-        toast.error(errorMessage);
+        throw err;
       } finally {
         setLoading(false);
       }

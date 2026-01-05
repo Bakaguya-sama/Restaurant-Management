@@ -29,7 +29,7 @@ export function TablesMapPage() {
   const hookResult = useTables();
   console.log("useTables hook result:", hookResult);
   console.log("updateTableStatus type:", typeof hookResult.updateTableStatus);
-  const { tables, loading, error, setTables, updateTableStatus } = hookResult;
+  const { tables, loading, error, setTables, updateTableStatus, fetchTables } = hookResult;
   const { locations } = useLocations();
   const {
     customers,
@@ -262,6 +262,7 @@ export function TablesMapPage() {
       return;
     }
 
+    let checkInSuccess = false;
     try {
       const reservationId = bookingCode.trim();
       
@@ -288,10 +289,9 @@ export function TablesMapPage() {
 
       await createOrder(orderData);
 
-      await updateTableStatus(selectedTable.id, "occupied");
       await updateReservationStatus(reservationId, "completed");
 
-      toast.success(`Đã check-in khách cho bàn ${selectedTable.table_number}`);
+      checkInSuccess = true;
     } catch (err) {
       console.error("Error checking in:", err);
       let errorMsg =
@@ -302,13 +302,18 @@ export function TablesMapPage() {
       }
       
       toast.error(`Lỗi: ${errorMsg}`);
+      checkInSuccess = false;
       return;
     }
 
-    setShowCheckInModal(false);
-    setShowActionModal(false);
-    setSelectedTable(null);
-    setBookingCode("");
+    if (checkInSuccess) {
+      toast.success(`Đã check-in khách cho bàn ${selectedTable.table_number}`);
+      await fetchTables();
+      setShowCheckInModal(false);
+      setShowActionModal(false);
+      setSelectedTable(null);
+      setBookingCode("");
+    }
   };
 
   const handleCleanTable = async () => {
