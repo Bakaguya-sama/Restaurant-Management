@@ -1,0 +1,249 @@
+# ========================================
+# Docker Compose Configuration
+# Restaurant Management System
+# ========================================
+# File này định nghĩa và cấu hình tất cả các services cần thiết
+# để chạy ứng dụng quản lý nhà hàng trong môi trường Docker
+
+version: "3.8" # Phiên bản Docker Compose syntax được sử dụng
+
+# ========================================
+# SERVICES - Các dịch vụ của ứng dụng
+# ========================================
+services:
+  # ========================================
+  # MongoDB Database Service
+  # ========================================
+  # Service cơ sở dữ liệu MongoDB để lưu trữ dữ liệu của ứng dụng
+  mongodb:
+    image: mongo:7.0 # Sử dụng MongoDB phiên bản 7.0 từ Docker Hub
+    container_name: restaurant-mongodb # Đặt tên cụ thể cho container
+    restart: unless-stopped # Tự động khởi động lại container khi có lỗi (trừ khi dừng thủ công)
+
+    # Cổng kết nối
+    ports:
+      - "27017:27017" # Map cổng 27017 của host với cổng 27017 của container
+        # Format: "host_port:container_port"
+
+    # Biến môi trường để cấu hình MongoDB
+    environment:
+      # Tên người dùng root của MongoDB
+      MONGO_INITDB_ROOT_USERNAME: admin
+      # Mật khẩu cho người dùng root
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+      # Tên database khởi tạo mặc định
+      MONGO_INITDB_DATABASE: restaurant_management
+
+    # Volume để lưu trữ dữ liệu bền vững
+    volumes:
+      # Lưu trữ dữ liệu MongoDB vào volume, đảm bảo dữ liệu không bị mất khi container bị xóa
+      - mongodb_data:/data/db
+      # Lưu trữ các file cấu hình MongoDB
+      - mongodb_config:/data/configdb
+
+    # Mạng nội bộ để các services giao tiếp với nhau
+    networks:
+      - restaurant-network
+
+    # Healthcheck để kiểm tra MongoDB đã sẵn sàng chưa
+    healthcheck:
+      # Lệnh kiểm tra kết nối đến MongoDB
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      # Thời gian chờ giữa các lần kiểm tra
+      interval: 10s
+      # Timeout cho mỗi lần kiểm tra
+      timeout: 5s
+      # Số lần thử lại trước khi đánh dấu là unhealthy
+      retries: 5
+      # Thời gian chờ trước khi bắt đầu healthcheck
+      start_period: 40s
+
+  # ========================================
+  # Backend API Service
+  # ========================================
+  # Service Node.js Express API server
+  backend:
+    # Build từ Dockerfile trong thư mục backend
+    build:
+      context: ./backend # Thư mục chứa source code và Dockerfile
+      dockerfile: Dockerfile # Tên file Dockerfile (có thể tạo sau)
+
+    container_name: restaurant-backend # Tên container
+    restart: unless-stopped # Tự động khởi động lại khi có lỗi
+
+    # Cổng kết nối API
+    ports:
+      - "5000:5000" # Map cổng 5000 của host với cổng 5000 của container
+
+    # Biến môi trường cho backend
+    environment:
+      # URI kết nối MongoDB (sử dụng tên service 'mongodb' thay vì localhost)
+      MONGODB_URI: mongodb://admin:admin123@mongodb:27017/restaurant_management?authSource=admin
+      # Secret key để mã hóa JWT token
+      JWT_SECRET: your-secret-key-change-in-production
+      # Secret key cho refresh token
+      JWT_REFRESH_SECRET: your-refresh-secret-key-change-in-production
+      # URL của frontend (để cấu hình CORS)
+      FRONTEND_URL: http://localhost:5173
+      # URL của backend
+      BACKEND_URL: http://localhost:5000
+      # Môi trường chạy
+      NODE_ENV: development
+      # Cổng server lắng nghe
+      PORT: 5000
+      # Cấu hình email (thay đổi theo thông tin thực tế)
+      EMAIL_SERVICE: gmail
+      EMAIL_USER: noreply.restaurantmanagement@gmail.com
+      EMAIL_PASSWORD: yszjwxjhindhgnan
+
+    # Volumes để sync code và lưu trữ uploads
+    volumes:
+      # Mount source code để hỗ trợ hot-reload khi development
+      - ./backend:/app
+      # Mount node_modules riêng trong container để tránh conflict với host
+      - /app/node_modules
+      # Mount thư mục uploads để lưu trữ hình ảnh và file
+      - ./backend/uploads:/app/uploads
+
+    # Working directory trong container
+    working_dir: /app
+
+    # Phụ thuộc vào MongoDB - đợi MongoDB khởi động trước
+    depends_on:
+      mongodb:
+        # Chỉ khởi động backend khi MongoDB đã healthy
+        condition: service_healthy
+
+    # Mạng nội bộ
+    networks:
+      - restaurant-network
+
+    # Lệnh khởi động server
+    command: npm run dev # Sử dụng nodemon để tự động reload khi có thay đổi
+
+  # ========================================
+  # Frontend Service
+  # ========================================
+  # Service React + Vite frontend
+  frontend:
+    # Build từ Dockerfile trong thư mục frontend
+    build:
+      context: ./frontend # Thư mục chứa source code frontend
+      dockerfile: Dockerfile # Tên file Dockerfile (có thể tạo sau)
+
+    container_name: restaurant-frontend # Tên container
+    restart: unless-stopped # Tự động khởi động lại khi có lỗi
+
+    # Cổng kết nối
+    ports:
+      - "5173:5173" # Map cổng 5173 của host với cổng 5173 của container (Vite default port)
+
+    # Biến môi trường cho frontend
+    environment:
+      # URL của backend API (bao gồm prefix /api/v1)
+      VITE_API_URL: http://localhost:5000/api/v1
+      # Bật HMR (Hot Module Replacement) cho Vite
+      VITE_HMR_HOST: localhost
+
+    # Volumes để sync code
+    volumes:
+      # Mount source code để hỗ trợ hot-reload
+      - ./frontend:/app
+      # Mount node_modules riêng trong container
+      - /app/node_modules
+
+    # Working directory trong container
+    working_dir: /app
+
+    # Phụ thuộc vào backend
+    depends_on:
+      - backend
+
+    # Mạng nội bộ
+    networks:
+      - restaurant-network
+
+    # Lệnh khởi động Vite dev server
+    command: npm run dev -- --host 0.0.0.0 # --host 0.0.0.0 để Vite lắng nghe tất cả network interfaces
+
+  # ========================================
+  # Mongo Express (Optional)
+  # ========================================
+  # Web UI để quản lý MongoDB - hữu ích cho development
+  mongo-express:
+    image: mongo-express:latest # Image Mongo Express từ Docker Hub
+    container_name: restaurant-mongo-express # Tên container
+    restart: unless-stopped # Tự động khởi động lại
+
+    # Cổng kết nối
+    ports:
+      - "8081:8081" # Map cổng 8081 của host với cổng 8081 của container
+
+    # Biến môi trường cho Mongo Express
+    environment:
+      # Username đăng nhập MongoDB (phải khớp với MONGO_INITDB_ROOT_USERNAME)
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      # Password đăng nhập MongoDB (phải khớp với MONGO_INITDB_ROOT_PASSWORD)
+      ME_CONFIG_MONGODB_ADMINPASSWORD: admin123
+      # URL kết nối MongoDB
+      ME_CONFIG_MONGODB_URL: mongodb://admin:admin123@mongodb:27017/
+      # Username đăng nhập web UI của Mongo Express
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      # Password đăng nhập web UI của Mongo Express
+      ME_CONFIG_BASICAUTH_PASSWORD: admin123
+
+    # Phụ thuộc vào MongoDB
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+    # Mạng nội bộ
+    networks:
+      - restaurant-network
+
+# ========================================
+# NETWORKS - Mạng nội bộ
+# ========================================
+# Định nghĩa các mạng để các container giao tiếp với nhau
+networks:
+  restaurant-network:
+    driver: bridge # Sử dụng bridge driver - mạng ảo riêng cho các container
+    # Bridge network cho phép các container giao tiếp với nhau thông qua tên service
+
+# ========================================
+# VOLUMES - Lưu trữ dữ liệu bền vững
+# ========================================
+# Định nghĩa các volumes để lưu trữ dữ liệu không bị mất khi container bị xóa
+volumes:
+  # Volume lưu trữ dữ liệu MongoDB
+  mongodb_data:
+    driver: local # Lưu trữ trên ổ đĩa local của host
+  # Volume lưu trữ config MongoDB
+  mongodb_config:
+    driver: local
+# ========================================
+# HƯỚNG DẪN SỬ DỤNG
+# ========================================
+# 1. Khởi động tất cả services:
+#    docker-compose up -d
+#
+# 2. Khởi động và xem logs:
+#    docker-compose up
+#
+# 3. Dừng tất cả services:
+#    docker-compose down
+#
+# 4. Dừng và xóa volumes (xóa dữ liệu):
+#    docker-compose down -v
+#
+# 5. Rebuild images:
+#    docker-compose up --build
+#
+# 6. Xem logs của một service cụ thể:
+#    docker-compose logs -f backend
+#
+# 7. Truy cập các services:
+#    - Frontend: http://localhost:5173
+#    - Backend API: http://localhost:5000
+#    - Mongo Express: http://localhost:8081 (admin/admin123)
+#    - MongoDB: mongodb://localhost:27017

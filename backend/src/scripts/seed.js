@@ -1,23 +1,48 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-const fs = require('fs');
-const path = require('path');
-require('dotenv').config();
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+const fs = require("fs");
+const path = require("path");
+require("dotenv").config();
 
 const {
-  User, StaffWaiter, StaffCashier, StaffManager, Customer, Floor, Location, Table, Reservation, ReservationDetail, Complaint,
-  Supplier, Ingredient, StockImport, StockImportDetail, Dish, DishIngredient,
-  StockExport, StockExportDetail,
-  Order, OrderDetail, Promotion, Invoice, InvoicePromotion,
-  Violation, Rating, RatingReply
-} = require('../models');
+  User,
+  StaffWaiter,
+  StaffCashier,
+  StaffManager,
+  Customer,
+  Floor,
+  Location,
+  Table,
+  Reservation,
+  ReservationDetail,
+  Complaint,
+  Supplier,
+  Ingredient,
+  StockImport,
+  StockImportDetail,
+  Dish,
+  DishIngredient,
+  StockExport,
+  StockExportDetail,
+  Order,
+  OrderDetail,
+  Promotion,
+  Invoice,
+  InvoicePromotion,
+  Violation,
+  Rating,
+  RatingReply,
+} = require("../models");
 
 async function connectDB() {
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/restaurant_management');
-    console.log('MongoDB Connected');
+    await mongoose.connect(
+      process.env.MONGODB_URI ||
+        "mongodb://localhost:27017/restaurant_management"
+    );
+    console.log("MongoDB Connected");
   } catch (error) {
-    console.error('Connection Error:', error.message);
+    console.error("Connection Error:", error.message);
     process.exit(1);
   }
 }
@@ -25,140 +50,188 @@ async function connectDB() {
 async function seedDatabase() {
   try {
     await connectDB();
-    console.log('\nBẮT ĐẦU SEED DATABASE...\n');
-    
+    console.log("\nBẮT ĐẦU SEED DATABASE...\n");
+
     // XÓA UPLOADS FOLDER
-    console.log('Xóa thư mục uploads...');
-    const uploadsDir = path.join(__dirname, '../../uploads');
-    if (fs.existsSync(uploadsDir)) {
-      fs.rmSync(uploadsDir, { recursive: true, force: true });
-      console.log('Đã xóa thư mục uploads');
-    }
-    // Tạo lại thư mục uploads và các thư mục con
-    const subdirs = ['avatars', 'dishes'];
-    subdirs.forEach(subdir => {
+    console.log("Dọn dẹp thư mục uploads...");
+    const uploadsDir = path.join(__dirname, "../../uploads");
+
+    // Xóa nội dung bên trong thư mục uploads thay vì xóa cả thư mục
+    // (tránh lỗi EBUSY khi thư mục được mount từ Docker volume)
+    const subdirs = ["avatars", "dishes"];
+    subdirs.forEach((subdir) => {
       const dirPath = path.join(uploadsDir, subdir);
-      if (!fs.existsSync(dirPath)) {
+      if (fs.existsSync(dirPath)) {
+        // Xóa tất cả files trong thư mục con
+        const files = fs.readdirSync(dirPath);
+        files.forEach((file) => {
+          const filePath = path.join(dirPath, file);
+          if (fs.statSync(filePath).isFile()) {
+            fs.unlinkSync(filePath);
+          }
+        });
+      } else {
+        // Tạo thư mục nếu chưa tồn tại
         fs.mkdirSync(dirPath, { recursive: true });
       }
     });
-    console.log('Đã tạo lại thư mục uploads\n');
-    
+    console.log("Đã dọn dẹp thư mục uploads\n");
+
     // XÓA DỮ LIỆU CŨ
-    console.log('Xóa dữ liệu cũ...');
+    console.log("Xóa dữ liệu cũ...");
     // Ensure all models are loaded; fail fast if any missing
     const modelsToCheck = {
-      User, StaffWaiter, StaffCashier, StaffManager, Customer, Floor, Location, Table, Reservation, ReservationDetail, Complaint,
-      Supplier, Ingredient, StockImport, StockImportDetail, StockExport, StockExportDetail, Dish, DishIngredient,
-      Order, OrderDetail, Promotion, Invoice, InvoicePromotion,
-      Violation, Rating, RatingReply
+      User,
+      StaffWaiter,
+      StaffCashier,
+      StaffManager,
+      Customer,
+      Floor,
+      Location,
+      Table,
+      Reservation,
+      ReservationDetail,
+      Complaint,
+      Supplier,
+      Ingredient,
+      StockImport,
+      StockImportDetail,
+      StockExport,
+      StockExportDetail,
+      Dish,
+      DishIngredient,
+      Order,
+      OrderDetail,
+      Promotion,
+      Invoice,
+      InvoicePromotion,
+      Violation,
+      Rating,
+      RatingReply,
     };
-    const missing = Object.entries(modelsToCheck).filter(([, v]) => !v).map(([k]) => k);
-    if (missing.length) throw new Error(`Missing model(s): ${missing.join(', ')}`);
+    const missing = Object.entries(modelsToCheck)
+      .filter(([, v]) => !v)
+      .map(([k]) => k);
+    if (missing.length)
+      throw new Error(`Missing model(s): ${missing.join(", ")}`);
     await Promise.all([
       User.deleteMany({}),
-      Floor.deleteMany({}), Location.deleteMany({}), Table.deleteMany({}), 
-      Reservation.deleteMany({}), ReservationDetail.deleteMany({}), Complaint.deleteMany({}),
+      Floor.deleteMany({}),
+      Location.deleteMany({}),
+      Table.deleteMany({}),
+      Reservation.deleteMany({}),
+      ReservationDetail.deleteMany({}),
+      Complaint.deleteMany({}),
       Supplier.deleteMany({}),
-      Ingredient.deleteMany({}), StockImport.deleteMany({}), StockImportDetail.deleteMany({}), StockExport.deleteMany({}), StockExportDetail.deleteMany({}),
-      Dish.deleteMany({}), DishIngredient.deleteMany({}),
-      Order.deleteMany({}), OrderDetail.deleteMany({}),
-      Promotion.deleteMany({}), Invoice.deleteMany({}), InvoicePromotion.deleteMany({}),
-      Violation.deleteMany({}), Rating.deleteMany({}), RatingReply.deleteMany({})
+      Ingredient.deleteMany({}),
+      StockImport.deleteMany({}),
+      StockImportDetail.deleteMany({}),
+      StockExport.deleteMany({}),
+      StockExportDetail.deleteMany({}),
+      Dish.deleteMany({}),
+      DishIngredient.deleteMany({}),
+      Order.deleteMany({}),
+      OrderDetail.deleteMany({}),
+      Promotion.deleteMany({}),
+      Invoice.deleteMany({}),
+      InvoicePromotion.deleteMany({}),
+      Violation.deleteMany({}),
+      Rating.deleteMany({}),
+      RatingReply.deleteMany({}),
     ]);
-    console.log('Đã xóa dữ liệu cũ\n');
+    console.log("Đã xóa dữ liệu cũ\n");
 
-    const password = await bcrypt.hash('password123', 10);
-    
+    const password = await bcrypt.hash("password123", 10);
+
     // ==================== 1. STAFF ====================
-    console.log('1/24 Tạo Staff...');
+    console.log("1/24 Tạo Staff...");
     const waiterData = [
-      { 
-        full_name: 'Nguyễn Văn Hùng', 
-        email: 'hung.waiter@restaurant.vn', 
-        phone: '0901234567', 
-        address: '123 Đường Cách Mạng Tháng 8, Q.1, TP.HCM',
-        date_of_birth: new Date('1995-05-15'),
-        hire_date: new Date('2022-03-10'),
-        role: 'waiter', 
-        image_url: '/placeholder_images/placeholder_avatar_image.png', 
-        username: 'hung.waiter', 
+      {
+        full_name: "Nguyễn Văn Hùng",
+        email: "hung.waiter@restaurant.vn",
+        phone: "0901234567",
+        address: "123 Đường Cách Mạng Tháng 8, Q.1, TP.HCM",
+        date_of_birth: new Date("1995-05-15"),
+        hire_date: new Date("2022-03-10"),
+        role: "waiter",
+        image_url: "/placeholder_images/placeholder_avatar_image.png",
+        username: "hung.waiter",
         password_hash: password,
-        is_active: true
+        is_active: true,
       },
-      { 
-        full_name: 'Trần Thị Mai', 
-        email: 'mai.waiter@restaurant.vn', 
-        phone: '0901234568', 
-        address: '456 Đường Lê Lợi, Q.1, TP.HCM',
-        date_of_birth: new Date('1998-08-22'),
-        hire_date: new Date('2023-01-15'),
-        role: 'waiter', 
-        image_url: '/placeholder_images/placeholder_avatar_image.png', 
-        username: 'mai.waiter', 
+      {
+        full_name: "Trần Thị Mai",
+        email: "mai.waiter@restaurant.vn",
+        phone: "0901234568",
+        address: "456 Đường Lê Lợi, Q.1, TP.HCM",
+        date_of_birth: new Date("1998-08-22"),
+        hire_date: new Date("2023-01-15"),
+        role: "waiter",
+        image_url: "/placeholder_images/placeholder_avatar_image.png",
+        username: "mai.waiter",
         password_hash: password,
-        is_active: true
-      }
+        is_active: true,
+      },
     ];
-    
+
     const cashierData = [
-      { 
-        full_name: 'Lê Văn Nam', 
-        email: 'nam.cashier@restaurant.vn', 
-        phone: '0901234569', 
-        address: '789 Đường Nguyễn Huệ, Q.1, TP.HCM',
-        date_of_birth: new Date('1992-12-08'),
-        hire_date: new Date('2021-06-20'),
-        role: 'cashier', 
-        image_url: '/placeholder_images/placeholder_avatar_image.png', 
-        username: 'nam.cashier', 
+      {
+        full_name: "Lê Văn Nam",
+        email: "nam.cashier@restaurant.vn",
+        phone: "0901234569",
+        address: "789 Đường Nguyễn Huệ, Q.1, TP.HCM",
+        date_of_birth: new Date("1992-12-08"),
+        hire_date: new Date("2021-06-20"),
+        role: "cashier",
+        image_url: "/placeholder_images/placeholder_avatar_image.png",
+        username: "nam.cashier",
         password_hash: password,
-        is_active: true
+        is_active: true,
       },
-      { 
-        full_name: 'Phạm Thị Lan', 
-        email: 'lan.cashier@restaurant.vn', 
-        phone: '0901234570', 
-        address: '321 Đường Pasteur, Q.1, TP.HCM',
-        date_of_birth: new Date('1996-03-18'),
-        hire_date: new Date('2022-09-05'),
-        role: 'cashier', 
-        image_url: '/placeholder_images/placeholder_avatar_image.png', 
-        username: 'lan.cashier', 
+      {
+        full_name: "Phạm Thị Lan",
+        email: "lan.cashier@restaurant.vn",
+        phone: "0901234570",
+        address: "321 Đường Pasteur, Q.1, TP.HCM",
+        date_of_birth: new Date("1996-03-18"),
+        hire_date: new Date("2022-09-05"),
+        role: "cashier",
+        image_url: "/placeholder_images/placeholder_avatar_image.png",
+        username: "lan.cashier",
         password_hash: password,
-        is_active: true
-      }
+        is_active: true,
+      },
     ];
-    
+
     const managerData = [
-      { 
-        full_name: 'Đỗ Văn Minh', 
-        email: 'minh.manager@restaurant.vn', 
-        phone: '0901234571', 
-        address: '654 Đường Võ Văn Tần, Q.3, TP.HCM',
-        date_of_birth: new Date('1988-07-25'),
-        hire_date: new Date('2020-01-10'),
-        role: 'manager', 
-        image_url: '/placeholder_images/placeholder_avatar_image.png', 
-        username: 'minh.manager', 
+      {
+        full_name: "Đỗ Văn Minh",
+        email: "minh.manager@restaurant.vn",
+        phone: "0901234571",
+        address: "654 Đường Võ Văn Tần, Q.3, TP.HCM",
+        date_of_birth: new Date("1988-07-25"),
+        hire_date: new Date("2020-01-10"),
+        role: "manager",
+        image_url: "/placeholder_images/placeholder_avatar_image.png",
+        username: "minh.manager",
         password_hash: password,
-        is_active: true
+        is_active: true,
       },
-      { 
-        full_name: 'Vũ Thị Hoa', 
-        email: 'hoa.manager@restaurant.vn', 
-        phone: '0901234572', 
-        address: '987 Đường Trần Quốc Thảo, Q.3, TP.HCM',
-        date_of_birth: new Date('1990-11-02'),
-        hire_date: new Date('2019-05-15'),
-        role: 'manager', 
-        image_url: '/placeholder_images/placeholder_avatar_image.png', 
-        username: 'hoa.manager', 
+      {
+        full_name: "Vũ Thị Hoa",
+        email: "hoa.manager@restaurant.vn",
+        phone: "0901234572",
+        address: "987 Đường Trần Quốc Thảo, Q.3, TP.HCM",
+        date_of_birth: new Date("1990-11-02"),
+        hire_date: new Date("2019-05-15"),
+        role: "manager",
+        image_url: "/placeholder_images/placeholder_avatar_image.png",
+        username: "hoa.manager",
         password_hash: password,
-        is_active: true
-      }
+        is_active: true,
+      },
     ];
-    
+
     const waiters = await StaffWaiter.insertMany(waiterData);
     const cashiers = await StaffCashier.insertMany(cashierData);
     const managers = await StaffManager.insertMany(managerData);
@@ -166,446 +239,621 @@ async function seedDatabase() {
     console.log(`   OK ${staffs.length} staff\n`);
 
     // ==================== 2. CUSTOMERS ====================
-    console.log('2/24 Tạo Customers...');
+    console.log("2/24 Tạo Customers...");
     const customers = await Customer.insertMany([
-      { 
-        full_name: 'Nguyễn Minh Tuấn', 
-        email: 'tuan.nguyen@gmail.com', 
-        phone: '0912345678', 
-        address: '100 Đường Đông Khởi, Q.1, TP.HCM',
-        date_of_birth: new Date('1990-03-10'),
-        membership_level: 'diamond', 
-        points: 5000, 
-        total_spent: 50000000, 
-        image_url: '/placeholder_images/placeholder_avatar_image.png',
-        role: 'customer',
-        username: 'tuan.customer',
+      {
+        full_name: "Nguyễn Minh Tuấn",
+        email: "tuan.nguyen@gmail.com",
+        phone: "0912345678",
+        address: "100 Đường Đông Khởi, Q.1, TP.HCM",
+        date_of_birth: new Date("1990-03-10"),
+        membership_level: "diamond",
+        points: 5000,
+        total_spent: 50000000,
+        image_url: "/placeholder_images/placeholder_avatar_image.png",
+        role: "customer",
+        username: "tuan.customer",
         password_hash: password,
         is_active: true,
-        isBanned: false
-      },
-      { 
-        full_name: 'Trần Thu Hương', 
-        email: 'huong.tran@gmail.com', 
-        phone: '0912345679', 
-        address: '200 Đường Hàm Nghi, Q.1, TP.HCM',
-        date_of_birth: new Date('1992-07-22'),
-        membership_level: 'platinum', 
-        points: 3000, 
-        total_spent: 30000000, 
-        image_url: '/placeholder_images/placeholder_avatar_image.png',
-        role: 'customer',
-        username: 'huong.customer',
-        password_hash: password,
-        is_active: true,
-        isBanned: false
-      },
-      { 
-        full_name: 'Lê Quang Huy', 
-        email: 'huy.le@gmail.com', 
-        phone: '0912345680', 
-        address: '300 Đường Tôn Đức Thắng, Q.1, TP.HCM',
-        date_of_birth: new Date('1988-11-14'),
-        membership_level: 'gold', 
-        points: 1800, 
-        total_spent: 15000000, 
-        image_url: '/placeholder_images/placeholder_avatar_image.png',
-        role: 'customer',
-        username: 'huy.customer',
-        password_hash: password,
-        is_active: true,
-        isBanned: false
-      },
-      { 
-        full_name: 'Phạm Thị Nga', 
-        email: 'nga.pham@gmail.com', 
-        phone: '0912345681', 
-        address: '400 Đường Ngô Đức Kế, Q.1, TP.HCM',
-        date_of_birth: new Date('1995-05-30'),
-        membership_level: 'silver', 
-        points: 800, 
-        total_spent: 5000000, 
-        image_url: '/placeholder_images/placeholder_avatar_image.png',
-        role: 'customer',
-        username: 'nga.customer',
-        password_hash: password,
-        is_active: true,
-        isBanned: false
-      },
-      { 
-        full_name: 'Võ Văn Khoa', 
-        email: 'khoa.vo@gmail.com', 
-        phone: '0912345682', 
-        address: '500 Đường Trần Hưng Đạo, Q.5, TP.HCM',
-        date_of_birth: new Date('1993-09-18'),
-        membership_level: 'bronze', 
-        points: 300, 
-        total_spent: 2000000, 
-        image_url: '/placeholder_images/placeholder_avatar_image.png',
-        role: 'customer',
-        username: 'khoa.customer',
-        password_hash: password,
-        is_active: true,
-        isBanned: false
+        isBanned: false,
       },
       {
-        full_name: 'Hoàng Văn Sơn',
-        email: 'son.hoang@gmail.com',
-        phone: '0912345683',
-        address: '600 Đường Ba Tháng Hai, Q.10, TP.HCM',
-        date_of_birth: new Date('1994-12-12'),
-        membership_level: 'regular',
-        points: 50,
-        total_spent: 500000,
-        image_url: '/placeholder_images/placeholder_avatar_image.png',
-        role: 'customer',
-        username: 'son.customer',
+        full_name: "Trần Thu Hương",
+        email: "huong.tran@gmail.com",
+        phone: "0912345679",
+        address: "200 Đường Hàm Nghi, Q.1, TP.HCM",
+        date_of_birth: new Date("1992-07-22"),
+        membership_level: "platinum",
+        points: 3000,
+        total_spent: 30000000,
+        image_url: "/placeholder_images/placeholder_avatar_image.png",
+        role: "customer",
+        username: "huong.customer",
         password_hash: password,
         is_active: true,
-        isBanned: false
-      }
+        isBanned: false,
+      },
+      {
+        full_name: "Lê Quang Huy",
+        email: "huy.le@gmail.com",
+        phone: "0912345680",
+        address: "300 Đường Tôn Đức Thắng, Q.1, TP.HCM",
+        date_of_birth: new Date("1988-11-14"),
+        membership_level: "gold",
+        points: 1800,
+        total_spent: 15000000,
+        image_url: "/placeholder_images/placeholder_avatar_image.png",
+        role: "customer",
+        username: "huy.customer",
+        password_hash: password,
+        is_active: true,
+        isBanned: false,
+      },
+      {
+        full_name: "Phạm Thị Nga",
+        email: "nga.pham@gmail.com",
+        phone: "0912345681",
+        address: "400 Đường Ngô Đức Kế, Q.1, TP.HCM",
+        date_of_birth: new Date("1995-05-30"),
+        membership_level: "silver",
+        points: 800,
+        total_spent: 5000000,
+        image_url: "/placeholder_images/placeholder_avatar_image.png",
+        role: "customer",
+        username: "nga.customer",
+        password_hash: password,
+        is_active: true,
+        isBanned: false,
+      },
+      {
+        full_name: "Võ Văn Khoa",
+        email: "khoa.vo@gmail.com",
+        phone: "0912345682",
+        address: "500 Đường Trần Hưng Đạo, Q.5, TP.HCM",
+        date_of_birth: new Date("1993-09-18"),
+        membership_level: "bronze",
+        points: 300,
+        total_spent: 2000000,
+        image_url: "/placeholder_images/placeholder_avatar_image.png",
+        role: "customer",
+        username: "khoa.customer",
+        password_hash: password,
+        is_active: true,
+        isBanned: false,
+      },
+      {
+        full_name: "Hoàng Văn Sơn",
+        email: "son.hoang@gmail.com",
+        phone: "0912345683",
+        address: "600 Đường Ba Tháng Hai, Q.10, TP.HCM",
+        date_of_birth: new Date("1994-12-12"),
+        membership_level: "regular",
+        points: 50,
+        total_spent: 500000,
+        image_url: "/placeholder_images/placeholder_avatar_image.png",
+        role: "customer",
+        username: "son.customer",
+        password_hash: password,
+        is_active: true,
+        isBanned: false,
+      },
     ]);
     console.log(`   OK ${customers.length} customers\n`);
 
     // ==================== 3. FLOORS & LOCATIONS ====================
-    console.log('3/24 Tạo Floors...');
+    console.log("3/24 Tạo Floors...");
     const floors = await Floor.insertMany([
-      { floor_name: 'Tầng 1 - Khu trong nhà', floor_number: 1, description: 'Khu vực ăn trong nhà' },
-      { floor_name: 'Tầng 2 - VIP', floor_number: 2, description: 'Khu vực VIP riêng tư' }
+      {
+        floor_name: "Tầng 1 - Khu trong nhà",
+        floor_number: 1,
+        description: "Khu vực ăn trong nhà",
+      },
+      {
+        floor_name: "Tầng 2 - VIP",
+        floor_number: 2,
+        description: "Khu vực VIP riêng tư",
+      },
     ]);
     console.log(`   OK ${floors.length} floors\n`);
 
-    console.log('4/24 Tạo Locations...');
+    console.log("4/24 Tạo Locations...");
     const locations = await Location.insertMany([
-      { name: 'Trong nhà phía trước', floor_id: floors[0]._id, description: 'Phía trước cửa chính' },
-      { name: 'Trong nhà phía sau', floor_id: floors[0]._id, description: 'Phía sau nhà hàng' },
-      { name: 'Sân ngoài trời', floor_id: floors[0]._id, description: 'Bàn ngoài trời' },
-      { name: 'Phòng VIP A', floor_id: floors[1]._id, description: 'Phòng riêng VIP A' },
-      { name: 'Phòng VIP B', floor_id: floors[1]._id, description: 'Phòng riêng VIP B' }
+      {
+        name: "Trong nhà phía trước",
+        floor_id: floors[0]._id,
+        description: "Phía trước cửa chính",
+      },
+      {
+        name: "Trong nhà phía sau",
+        floor_id: floors[0]._id,
+        description: "Phía sau nhà hàng",
+      },
+      {
+        name: "Sân ngoài trời",
+        floor_id: floors[0]._id,
+        description: "Bàn ngoài trời",
+      },
+      {
+        name: "Phòng VIP A",
+        floor_id: floors[1]._id,
+        description: "Phòng riêng VIP A",
+      },
+      {
+        name: "Phòng VIP B",
+        floor_id: floors[1]._id,
+        description: "Phòng riêng VIP B",
+      },
     ]);
     console.log(`   OK ${locations.length} locations\n`);
 
     // ==================== 5. TABLES ====================
-    console.log('5/24 Tạo Tables...');
+    console.log("5/24 Tạo Tables...");
     const tables = await Table.insertMany([
-      { table_number: 'T01', capacity: 2, location_id: locations[0]._id, status: 'reserved' },
-      { table_number: 'T02', capacity: 4, location_id: locations[0]._id, status: 'free' },
-      { table_number: 'T03', capacity: 4, location_id: locations[0]._id, status: 'occupied' },
-      { table_number: 'T04', capacity: 6, location_id: locations[1]._id, status: 'free' },
-      { table_number: 'T05', capacity: 8, location_id: locations[3]._id, status: 'occupied' },
-      { table_number: 'T06', capacity: 4, location_id: locations[1]._id, status: 'free' },
-      { table_number: 'T07', capacity: 2, location_id: locations[2]._id, status: 'free' },
-      { table_number: 'T08', capacity: 6, location_id: locations[4]._id, status: 'free' },
-      { table_number: 'T09', capacity: 4, location_id: locations[0]._id, status: 'dirty' },
-      { table_number: 'T10', capacity: 10, location_id: locations[3]._id, status: 'free' },
-      { table_number: 'T11', capacity: 4, location_id: locations[0]._id, status: 'occupied' },
-      { table_number: 'T12', capacity: 2, location_id: locations[1]._id, status: 'occupied' },
-      { table_number: 'T13', capacity: 6, location_id: locations[0]._id, status: 'occupied' }
+      {
+        table_number: "T01",
+        capacity: 2,
+        location_id: locations[0]._id,
+        status: "reserved",
+      },
+      {
+        table_number: "T02",
+        capacity: 4,
+        location_id: locations[0]._id,
+        status: "free",
+      },
+      {
+        table_number: "T03",
+        capacity: 4,
+        location_id: locations[0]._id,
+        status: "occupied",
+      },
+      {
+        table_number: "T04",
+        capacity: 6,
+        location_id: locations[1]._id,
+        status: "free",
+      },
+      {
+        table_number: "T05",
+        capacity: 8,
+        location_id: locations[3]._id,
+        status: "occupied",
+      },
+      {
+        table_number: "T06",
+        capacity: 4,
+        location_id: locations[1]._id,
+        status: "free",
+      },
+      {
+        table_number: "T07",
+        capacity: 2,
+        location_id: locations[2]._id,
+        status: "free",
+      },
+      {
+        table_number: "T08",
+        capacity: 6,
+        location_id: locations[4]._id,
+        status: "free",
+      },
+      {
+        table_number: "T09",
+        capacity: 4,
+        location_id: locations[0]._id,
+        status: "dirty",
+      },
+      {
+        table_number: "T10",
+        capacity: 10,
+        location_id: locations[3]._id,
+        status: "free",
+      },
+      {
+        table_number: "T11",
+        capacity: 4,
+        location_id: locations[0]._id,
+        status: "occupied",
+      },
+      {
+        table_number: "T12",
+        capacity: 2,
+        location_id: locations[1]._id,
+        status: "occupied",
+      },
+      {
+        table_number: "T13",
+        capacity: 6,
+        location_id: locations[0]._id,
+        status: "occupied",
+      },
     ]);
     console.log(`   OK ${tables.length} tables\n`);
 
     // ==================== 6. RESERVATIONS ====================
-    console.log('6/24 Tạo Reservations...');
+    console.log("6/24 Tạo Reservations...");
     const reservations = await Reservation.insertMany([
-      { 
-        customer_id: customers[0]._id, 
-        reservation_date: new Date('2025-12-15'), 
-        reservation_time: '19:00',
-        reservation_checkout_time: '21:00',
+      {
+        customer_id: customers[0]._id,
+        reservation_date: new Date("2025-12-15"),
+        reservation_time: "19:00",
+        reservation_checkout_time: "21:00",
         number_of_guests: 6,
-        deposit_amount: '200000',
-        payment_method: 'card',
-        status: 'confirmed',
-        isPaid: true, 
-        special_requests: 'Trang trí bàn sinh nhật, không có cà chua' 
-      },
-      { 
-        customer_id: customers[2]._id, 
-        reservation_date: new Date('2025-12-16'), 
-        reservation_time: '20:00',
-        reservation_checkout_time: '22:00',
-        number_of_guests: 8,
-        deposit_amount: '200000',
-        payment_method: 'transfer',
-        status: 'pending',
-        isPaid: false,
-        special_requests: 'Bàn yên tĩnh, có đèn nến'
-      },
-      { 
-        customer_id: customers[1]._id, 
-        reservation_date: new Date('2025-12-14'), 
-        reservation_time: '18:30',
-        reservation_checkout_time: '20:30',
-        number_of_guests: 4,
-        deposit_amount: '200000',
-        payment_method: 'card',
-        status: 'completed',
+        deposit_amount: "200000",
+        payment_method: "card",
+        status: "confirmed",
         isPaid: true,
-        special_requests: 'Menu vegetarian'
+        special_requests: "Trang trí bàn sinh nhật, không có cà chua",
       },
-      { 
-        customer_id: customers[4]._id, 
-        reservation_date: new Date('2025-12-18'), 
-        reservation_time: '12:00',
-        reservation_checkout_time: '14:00',
+      {
+        customer_id: customers[2]._id,
+        reservation_date: new Date("2025-12-16"),
+        reservation_time: "20:00",
+        reservation_checkout_time: "22:00",
+        number_of_guests: 8,
+        deposit_amount: "200000",
+        payment_method: "transfer",
+        status: "pending",
+        isPaid: false,
+        special_requests: "Bàn yên tĩnh, có đèn nến",
+      },
+      {
+        customer_id: customers[1]._id,
+        reservation_date: new Date("2025-12-14"),
+        reservation_time: "18:30",
+        reservation_checkout_time: "20:30",
+        number_of_guests: 4,
+        deposit_amount: "200000",
+        payment_method: "card",
+        status: "completed",
+        isPaid: true,
+        special_requests: "Menu vegetarian",
+      },
+      {
+        customer_id: customers[4]._id,
+        reservation_date: new Date("2025-12-18"),
+        reservation_time: "12:00",
+        reservation_checkout_time: "14:00",
         number_of_guests: 2,
-        deposit_amount: '200000',
-        payment_method: 'transfer',
-        status: 'confirmed',
-        isPaid: true
-      }
+        deposit_amount: "200000",
+        payment_method: "transfer",
+        status: "confirmed",
+        isPaid: true,
+      },
     ]);
     console.log(`   OK ${reservations.length} reservations\n`);
 
     // ==================== 7. RESERVATION DETAILS ====================
-    console.log('7/24 Tạo Reservation Details...');
+    console.log("7/24 Tạo Reservation Details...");
     const reservationDetails = await ReservationDetail.insertMany([
       { reservation_id: reservations[0]._id, table_id: tables[7]._id }, // T08 - Phòng VIP B - trống
       { reservation_id: reservations[1]._id, table_id: tables[9]._id }, // T10 - Phòng VIP A - trống
       { reservation_id: reservations[2]._id, table_id: tables[3]._id }, // T04 - completed
-      { reservation_id: reservations[3]._id, table_id: tables[0]._id }  // T01 - confirmed
+      { reservation_id: reservations[3]._id, table_id: tables[0]._id }, // T01 - confirmed
     ]);
     console.log(`   OK ${reservationDetails.length} reservation details\n`);
 
     // ==================== 8. COMPLAINTS ====================
-    console.log('8/24 Tạo Complaints...');
+    console.log("8/24 Tạo Complaints...");
     const complaints = await Complaint.insertMany([
-      { 
-        customer_id: customers[3]._id, 
-        subject: 'Thịt quá cứng', 
-        description: 'Miếng thịt bò trong bát cơm quá cứng, không thể ăn được', 
-        category: 'food', 
-        status: 'resolved', 
-        priority: 'high', 
-        assigned_to_staff_id: staffs[4]._id, 
-        resolution: 'Đã đổi thịt mới và giảm 30% giá' 
+      {
+        customer_id: customers[3]._id,
+        subject: "Thịt quá cứng",
+        description: "Miếng thịt bò trong bát cơm quá cứng, không thể ăn được",
+        category: "food",
+        status: "resolved",
+        priority: "high",
+        assigned_to_staff_id: staffs[4]._id,
+        resolution: "Đã đổi thịt mới và giảm 30% giá",
       },
-      { 
-        customer_id: customers[1]._id, 
-        subject: 'Phục vụ chậm', 
-        description: 'Chờ đợi 50 phút để được phục vụ, quá lâu', 
-        category: 'service', 
-        status: 'in_progress', 
-        priority: 'medium', 
-        assigned_to_staff_id: staffs[4]._id 
+      {
+        customer_id: customers[1]._id,
+        subject: "Phục vụ chậm",
+        description: "Chờ đợi 50 phút để được phục vụ, quá lâu",
+        category: "service",
+        status: "in_progress",
+        priority: "medium",
+        assigned_to_staff_id: staffs[4]._id,
       },
-      { 
-        customer_id: customers[4]._id, 
-        subject: 'Bàn bị bẩn', 
-        description: 'Tìm thấy dầu mỡ trên bàn ăn', 
-        category: 'cleanliness', 
-        status: 'resolved', 
-        priority: 'high', 
-        assigned_to_staff_id: staffs[5]._id, 
-        resolution: 'Vệ sinh lại ngay và tặng nước uống'
-      }
+      {
+        customer_id: customers[4]._id,
+        subject: "Bàn bị bẩn",
+        description: "Tìm thấy dầu mỡ trên bàn ăn",
+        category: "cleanliness",
+        status: "resolved",
+        priority: "high",
+        assigned_to_staff_id: staffs[5]._id,
+        resolution: "Vệ sinh lại ngay và tặng nước uống",
+      },
     ]);
     console.log(`   OK ${complaints.length} complaints\n`);
 
     // ==================== 9. SUPPLIERS ====================
-    console.log('9/24 Tạo Suppliers...');
+    console.log("9/24 Tạo Suppliers...");
     const suppliers = await Supplier.insertMany([
-      { name: 'Meat Pro', phone_contact: '0906-111-222', address: '123 Meat St, HCMC' },
-      { name: 'Seafood Vietnam', phone_contact: '0906-333-444', address: '45 Ocean Ave, Da Nang' },
-      { name: 'Dalat Farm', phone_contact: '0906-555-666', address: '12 Dalat Rd, Lam Dong' },
-      { name: 'Metro', phone_contact: '0906-777-888', address: 'Metro Wholesale' },
-      { name: 'Phú Quốc', phone_contact: '0906-999-000', address: 'Phu Quoc Island' },
-      { name: 'Lộc Trời', phone_contact: '0906-111-333', address: 'Loc Troi HQ' }
+      {
+        name: "Meat Pro",
+        phone_contact: "0906-111-222",
+        address: "123 Meat St, HCMC",
+      },
+      {
+        name: "Seafood Vietnam",
+        phone_contact: "0906-333-444",
+        address: "45 Ocean Ave, Da Nang",
+      },
+      {
+        name: "Dalat Farm",
+        phone_contact: "0906-555-666",
+        address: "12 Dalat Rd, Lam Dong",
+      },
+      {
+        name: "Metro",
+        phone_contact: "0906-777-888",
+        address: "Metro Wholesale",
+      },
+      {
+        name: "Phú Quốc",
+        phone_contact: "0906-999-000",
+        address: "Phu Quoc Island",
+      },
+      {
+        name: "Lộc Trời",
+        phone_contact: "0906-111-333",
+        address: "Loc Troi HQ",
+      },
     ]);
     console.log(`   OK ${suppliers.length} suppliers\n`);
 
     // ==================== 10. INGREDIENTS ====================
-    console.log('10/24 Tạo Ingredients...');
-    
+    console.log("10/24 Tạo Ingredients...");
+
     // Helper function to calculate relative expiry dates
     const getExpiryDate = (daysFromNow) => {
       const date = new Date();
       date.setDate(date.getDate() + daysFromNow);
       return date;
     };
-    
+
     const ingredients = await Ingredient.insertMany([
-      { 
-        name: 'Thịt bò Úc', 
-        unit: 'kg', 
-        quantity_in_stock: 0, 
-        minimum_quantity: 20, 
-        unit_price: 350000, 
+      {
+        name: "Thịt bò Úc",
+        unit: "kg",
+        quantity_in_stock: 0,
+        minimum_quantity: 20,
+        unit_price: 350000,
         supplier_id: suppliers[0]._id,
         expiry_date: getExpiryDate(18), // 18 days from now
-        stock_status: 'available',
-        expiry_status: 'valid'
+        stock_status: "available",
+        expiry_status: "valid",
       },
-      { 
-        name: 'Cá hồi Na Uy', 
-        unit: 'kg', 
-        quantity_in_stock: 0, 
-        minimum_quantity: 10, 
-        unit_price: 450000, 
+      {
+        name: "Cá hồi Na Uy",
+        unit: "kg",
+        quantity_in_stock: 0,
+        minimum_quantity: 10,
+        unit_price: 450000,
         supplier_id: suppliers[1]._id,
         expiry_date: getExpiryDate(-3), // 3 days ago (already expired)
-        stock_status: 'available',
-        expiry_status: 'valid'
+        stock_status: "available",
+        expiry_status: "valid",
       },
-      { 
-        name: 'Tôm sú', 
-        unit: 'kg', 
-        quantity_in_stock: 0, 
-        minimum_quantity: 15, 
-        unit_price: 280000, 
+      {
+        name: "Tôm sú",
+        unit: "kg",
+        quantity_in_stock: 0,
+        minimum_quantity: 15,
+        unit_price: 280000,
         supplier_id: suppliers[1]._id,
         expiry_date: getExpiryDate(8), // 8 days from now (near expiry)
-        stock_status: 'low_stock',
-        expiry_status: 'near_expiry'
+        stock_status: "low_stock",
+        expiry_status: "near_expiry",
       },
-      { 
-        name: 'Rau xà lách', 
-        unit: 'kg', 
-        quantity_in_stock: 0, 
-        minimum_quantity: 10, 
-        unit_price: 25000, 
+      {
+        name: "Rau xà lách",
+        unit: "kg",
+        quantity_in_stock: 0,
+        minimum_quantity: 10,
+        unit_price: 25000,
         supplier_id: suppliers[2]._id,
         expiry_date: getExpiryDate(19), // 19 days from now
-        stock_status: 'available',
-        expiry_status: 'valid'
+        stock_status: "available",
+        expiry_status: "valid",
       },
-      { 
-        name: 'Cà chua', 
-        unit: 'kg', 
+      {
+        name: "Cà chua",
+        unit: "kg",
         quantity_in_stock: 0,
-        minimum_quantity: 10, 
-        unit_price: 30000, 
+        minimum_quantity: 10,
+        unit_price: 30000,
         supplier_id: suppliers[2]._id,
         expiry_date: getExpiryDate(21), // 21 days from now
-        stock_status: 'available',
-        expiry_status: 'valid'
+        stock_status: "available",
+        expiry_status: "valid",
       },
-      { 
-        name: 'Hành tây', 
-        unit: 'kg', 
+      {
+        name: "Hành tây",
+        unit: "kg",
         quantity_in_stock: 0,
-        minimum_quantity: 8, 
-        unit_price: 20000, 
+        minimum_quantity: 8,
+        unit_price: 20000,
         supplier_id: suppliers[2]._id,
         expiry_date: getExpiryDate(20), // 20 days from now
-        stock_status: 'low_stock',
-        expiry_status: 'valid'
+        stock_status: "low_stock",
+        expiry_status: "valid",
       },
-      { 
-        name: 'Bơ', 
-        unit: 'kg', 
-        quantity_in_stock: 0, 
-        minimum_quantity: 5, 
-        unit_price: 120000, 
+      {
+        name: "Bơ",
+        unit: "kg",
+        quantity_in_stock: 0,
+        minimum_quantity: 5,
+        unit_price: 120000,
         supplier_id: suppliers[3]._id,
         expiry_date: getExpiryDate(22), // 22 days from now
-        stock_status: 'available',
-        expiry_status: 'valid'
+        stock_status: "available",
+        expiry_status: "valid",
       },
-      { 
-        name: 'Nước mắm', 
-        unit: 'l', 
-        quantity_in_stock: 0, 
-        minimum_quantity: 10, 
-        unit_price: 45000, 
+      {
+        name: "Nước mắm",
+        unit: "l",
+        quantity_in_stock: 0,
+        minimum_quantity: 10,
+        unit_price: 45000,
         supplier_id: suppliers[4]._id,
         expiry_date: getExpiryDate(168), // 6 months from now
-        stock_status: 'available',
-        expiry_status: 'valid'
+        stock_status: "available",
+        expiry_status: "valid",
       },
-      { 
-        name: 'Gạo Japonica', 
-        unit: 'kg', 
-        quantity_in_stock: 0, 
-        minimum_quantity: 50, 
-        unit_price: 35000, 
+      {
+        name: "Gạo Japonica",
+        unit: "kg",
+        quantity_in_stock: 0,
+        minimum_quantity: 50,
+        unit_price: 35000,
         supplier_id: suppliers[5]._id,
         expiry_date: getExpiryDate(77), // ~2.5 months from now
-        stock_status: 'available',
-        expiry_status: 'valid'
+        stock_status: "available",
+        expiry_status: "valid",
       },
-      { 
-        name: 'Dầu ô liu', 
-        unit: 'l', 
-        quantity_in_stock: 0, 
-        minimum_quantity: 5, 
-        unit_price: 180000, 
+      {
+        name: "Dầu ô liu",
+        unit: "l",
+        quantity_in_stock: 0,
+        minimum_quantity: 5,
+        unit_price: 180000,
         supplier_id: suppliers[3]._id,
         expiry_date: getExpiryDate(9), // 9 days from now (near expiry)
-        stock_status: 'out_of_stock',
-        expiry_status: 'near_expiry'
-      }
+        stock_status: "out_of_stock",
+        expiry_status: "near_expiry",
+      },
     ]);
     console.log(`   OK ${ingredients.length} ingredients\n`);
 
     // ==================== 11. STOCK IMPORTS ====================
-    console.log('11/24 Tạo Stock Imports...');
-    
+    console.log("11/24 Tạo Stock Imports...");
+
     // Generate dates relative to current date
     const today = new Date();
     const import1Date = new Date(today);
-    import1Date.setDate(today.getDate() - 27); 
-    
+    import1Date.setDate(today.getDate() - 27);
+
     const import2Date = new Date(today);
-    import2Date.setDate(today.getDate() - 23); 
-    
+    import2Date.setDate(today.getDate() - 23);
+
     const import3Date = new Date(today);
-    import3Date.setDate(today.getDate() - 18); 
-    
+    import3Date.setDate(today.getDate() - 18);
+
     const stockImports = await StockImport.insertMany([
-      { 
-        import_number: 'IMP-001', 
-        staff_id: staffs[4]._id, 
+      {
+        import_number: "IMP-001",
+        staff_id: staffs[4]._id,
         supplier_id: suppliers[0]._id,
-        import_date: import1Date, 
-        total_cost: 17500000, 
-        notes: 'Nhập 50kg thịt bò Úc chất lượng cao', 
-        status: 'completed' 
+        import_date: import1Date,
+        total_cost: 17500000,
+        notes: "Nhập 50kg thịt bò Úc chất lượng cao",
+        status: "completed",
       },
-      { 
-        import_number: 'IMP-002', 
-        staff_id: staffs[4]._id, 
+      {
+        import_number: "IMP-002",
+        staff_id: staffs[4]._id,
         supplier_id: suppliers[1]._id,
-        import_date: import2Date, 
-        total_cost: 20500000, 
-        notes: 'Nhập cá hồi và tôm sú', 
-        status: 'completed' 
+        import_date: import2Date,
+        total_cost: 20500000,
+        notes: "Nhập cá hồi và tôm sú",
+        status: "completed",
       },
-      { 
-        import_number: 'IMP-003', 
-        staff_id: staffs[4]._id, 
+      {
+        import_number: "IMP-003",
+        staff_id: staffs[4]._id,
         supplier_id: suppliers[2]._id,
-        import_date: import3Date, 
-        total_cost: 3500000, 
-        notes: 'Rau tươi hàng ngày', 
-        status: 'completed' 
-      }
+        import_date: import3Date,
+        total_cost: 3500000,
+        notes: "Rau tươi hàng ngày",
+        status: "completed",
+      },
     ]);
     console.log(`   OK ${stockImports.length} stock imports\n`);
 
     // ==================== 12. STOCK IMPORT DETAILS ====================
-    console.log('12/24 Tạo Stock Import Details...');
+    console.log("12/24 Tạo Stock Import Details...");
     const stockImportDetails = await StockImportDetail.insertMany([
       // IMP-001: Lô cũ - giữ nguyên
-      { import_id: stockImports[0]._id, ingredient_id: ingredients[0]._id, quantity: 50, unit_price: 350000, line_total: 17500000, expiry_date: getExpiryDate(30) },
-      
+      {
+        import_id: stockImports[0]._id,
+        ingredient_id: ingredients[0]._id,
+        quantity: 50,
+        unit_price: 350000,
+        line_total: 17500000,
+        expiry_date: getExpiryDate(30),
+      },
+
       // IMP-002: Lô cũ - giữ nguyên
-      { import_id: stockImports[1]._id, ingredient_id: ingredients[1]._id, quantity: 100, unit_price: 450000, line_total: 45000000, expiry_date: getExpiryDate(25) },
-      { import_id: stockImports[1]._id, ingredient_id: ingredients[2]._id, quantity: 100, unit_price: 280000, line_total: 28000000, expiry_date: getExpiryDate(20) },
-      
-      // IMP-003: Lô rau - giữ nguyên  
-      { import_id: stockImports[2]._id, ingredient_id: ingredients[3]._id, quantity: 50, unit_price: 25000, line_total: 1250000, expiry_date: getExpiryDate(15) },
-      { import_id: stockImports[2]._id, ingredient_id: ingredients[4]._id, quantity: 50, unit_price: 30000, line_total: 1500000, expiry_date: getExpiryDate(12) },
-      { import_id: stockImports[2]._id, ingredient_id: ingredients[5]._id, quantity: 50, unit_price: 20000, line_total: 1000000, expiry_date: getExpiryDate(10) },
-      { import_id: stockImports[2]._id, ingredient_id: ingredients[6]._id, quantity: 100, unit_price: 120000, line_total: 12000000, expiry_date: getExpiryDate(20) },
-      { import_id: stockImports[2]._id, ingredient_id: ingredients[7]._id, quantity: 50, unit_price: 15000, line_total: 750000, expiry_date: getExpiryDate(180) }
+      {
+        import_id: stockImports[1]._id,
+        ingredient_id: ingredients[1]._id,
+        quantity: 100,
+        unit_price: 450000,
+        line_total: 45000000,
+        expiry_date: getExpiryDate(25),
+      },
+      {
+        import_id: stockImports[1]._id,
+        ingredient_id: ingredients[2]._id,
+        quantity: 100,
+        unit_price: 280000,
+        line_total: 28000000,
+        expiry_date: getExpiryDate(20),
+      },
+
+      // IMP-003: Lô rau - giữ nguyên
+      {
+        import_id: stockImports[2]._id,
+        ingredient_id: ingredients[3]._id,
+        quantity: 50,
+        unit_price: 25000,
+        line_total: 1250000,
+        expiry_date: getExpiryDate(15),
+      },
+      {
+        import_id: stockImports[2]._id,
+        ingredient_id: ingredients[4]._id,
+        quantity: 50,
+        unit_price: 30000,
+        line_total: 1500000,
+        expiry_date: getExpiryDate(12),
+      },
+      {
+        import_id: stockImports[2]._id,
+        ingredient_id: ingredients[5]._id,
+        quantity: 50,
+        unit_price: 20000,
+        line_total: 1000000,
+        expiry_date: getExpiryDate(10),
+      },
+      {
+        import_id: stockImports[2]._id,
+        ingredient_id: ingredients[6]._id,
+        quantity: 100,
+        unit_price: 120000,
+        line_total: 12000000,
+        expiry_date: getExpiryDate(20),
+      },
+      {
+        import_id: stockImports[2]._id,
+        ingredient_id: ingredients[7]._id,
+        quantity: 50,
+        unit_price: 15000,
+        line_total: 750000,
+        expiry_date: getExpiryDate(180),
+      },
     ]);
     console.log(`   OK ${stockImportDetails.length} import details\n`);
 
     // Update ingredient quantities from batches
-    console.log('12.1/24 Đồng bộ số lượng ingredient từ batches...');
+    console.log("12.1/24 Đồng bộ số lượng ingredient từ batches...");
     for (const ingredient of ingredients) {
-      const batches = stockImportDetails.filter(d => d.ingredient_id.toString() === ingredient._id.toString());
+      const batches = stockImportDetails.filter(
+        (d) => d.ingredient_id.toString() === ingredient._id.toString()
+      );
       const totalQty = batches.reduce((sum, b) => sum + b.quantity, 0);
       ingredient.quantity_in_stock = totalQty;
       await ingredient.save();
@@ -613,38 +861,66 @@ async function seedDatabase() {
     console.log(`   OK Đã đồng bộ ${ingredients.length} ingredients\n`);
 
     // ==================== 12.2. THÊM CÁC LÔ MỚI (hết hạn, sắp hết hạn) ====================
-    console.log('12.2/24 Thêm các lô mới với trạng thái khác nhau...');
+    console.log("12.2/24 Thêm các lô mới với trạng thái khác nhau...");
     const newStockImports = await StockImport.insertMany([
-      { 
-        import_number: 'IMP-EXPIRED-001', 
-        staff_id: staffs[4]._id, 
+      {
+        import_number: "IMP-EXPIRED-001",
+        staff_id: staffs[4]._id,
         supplier_id: suppliers[1]._id,
         import_date: new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000), // 30 ngày trước
-        total_cost: 2250000, 
-        notes: 'Lô cá hồi cũ - ĐÃ HẾT HẠN', 
-        status: 'completed' 
+        total_cost: 2250000,
+        notes: "Lô cá hồi cũ - ĐÃ HẾT HẠN",
+        status: "completed",
       },
-      { 
-        import_number: 'IMP-NEAR-001', 
-        staff_id: staffs[4]._id, 
+      {
+        import_number: "IMP-NEAR-001",
+        staff_id: staffs[4]._id,
         supplier_id: suppliers[2]._id,
         import_date: new Date(today),
-        total_cost: 1200000, 
-        notes: 'Lô rau sắp hết hạn', 
-        status: 'completed' 
-      }
+        total_cost: 1200000,
+        notes: "Lô rau sắp hết hạn",
+        status: "completed",
+      },
     ]);
-    
+
     const newStockImportDetails = await StockImportDetail.insertMany([
       // Lô ĐÃ HẾT HẠN
-      { import_id: newStockImports[0]._id, ingredient_id: ingredients[1]._id, quantity: 5, unit_price: 450000, line_total: 2250000, expiry_date: getExpiryDate(-3) }, // Cá hồi hết hạn 3 ngày
-      
+      {
+        import_id: newStockImports[0]._id,
+        ingredient_id: ingredients[1]._id,
+        quantity: 5,
+        unit_price: 450000,
+        line_total: 2250000,
+        expiry_date: getExpiryDate(-3),
+      }, // Cá hồi hết hạn 3 ngày
+
       // Lô SẮP HẾT HẠN
-      { import_id: newStockImports[1]._id, ingredient_id: ingredients[3]._id, quantity: 10, unit_price: 25000, line_total: 250000, expiry_date: getExpiryDate(5) }, // Khoai tây sắp hết (5 ngày)
-      { import_id: newStockImports[1]._id, ingredient_id: ingredients[4]._id, quantity: 15, unit_price: 30000, line_total: 450000, expiry_date: getExpiryDate(4) }, // Cà chua sắp hết (4 ngày)
-      { import_id: newStockImports[1]._id, ingredient_id: ingredients[5]._id, quantity: 20, unit_price: 20000, line_total: 400000, expiry_date: getExpiryDate(6) }  // Bơ sắp hết (6 ngày)
+      {
+        import_id: newStockImports[1]._id,
+        ingredient_id: ingredients[3]._id,
+        quantity: 10,
+        unit_price: 25000,
+        line_total: 250000,
+        expiry_date: getExpiryDate(5),
+      }, // Khoai tây sắp hết (5 ngày)
+      {
+        import_id: newStockImports[1]._id,
+        ingredient_id: ingredients[4]._id,
+        quantity: 15,
+        unit_price: 30000,
+        line_total: 450000,
+        expiry_date: getExpiryDate(4),
+      }, // Cà chua sắp hết (4 ngày)
+      {
+        import_id: newStockImports[1]._id,
+        ingredient_id: ingredients[5]._id,
+        quantity: 20,
+        unit_price: 20000,
+        line_total: 400000,
+        expiry_date: getExpiryDate(6),
+      }, // Bơ sắp hết (6 ngày)
     ]);
-    
+
     // Cập nhật lại số lượng ingredient
     for (const detail of newStockImportDetails) {
       const ing = await Ingredient.findById(detail.ingredient_id);
@@ -653,402 +929,807 @@ async function seedDatabase() {
         await ing.save();
       }
     }
-    console.log(`   OK Thêm ${newStockImports.length} lô mới, ${newStockImportDetails.length} chi tiết\n`);
+    console.log(
+      `   OK Thêm ${newStockImports.length} lô mới, ${newStockImportDetails.length} chi tiết\n`
+    );
 
     // ==================== 13. STOCK EXPORTS ====================
-    console.log('13/24 Tạo Stock Exports...');
+    console.log("13/24 Tạo Stock Exports...");
     const stockExports = await StockExport.insertMany([
-      { export_number: 'EXP-001', staff_id: staffs[4]._id, export_date: new Date('2025-12-12'), total_cost: 1750000, notes: 'Xuất cho sự kiện', status: 'completed' },
-      { export_number: 'EXP-002', staff_id: staffs[5]._id, export_date: new Date('2025-12-13'), total_cost: 360000, notes: 'Đơn mang đi', status: 'completed' }
+      {
+        export_number: "EXP-001",
+        staff_id: staffs[4]._id,
+        export_date: new Date("2025-12-12"),
+        total_cost: 1750000,
+        notes: "Xuất cho sự kiện",
+        status: "completed",
+      },
+      {
+        export_number: "EXP-002",
+        staff_id: staffs[5]._id,
+        export_date: new Date("2025-12-13"),
+        total_cost: 360000,
+        notes: "Đơn mang đi",
+        status: "completed",
+      },
     ]);
     console.log(`   OK ${stockExports.length} stock exports\n`);
 
     // ==================== 14. STOCK EXPORT DETAILS ====================
-    console.log('14/24 Tạo Stock Export Details...');
+    console.log("14/24 Tạo Stock Export Details...");
     const stockExportDetails = await StockExportDetail.insertMany([
-      { export_id: stockExports[0]._id, ingredient_id: ingredients[0]._id, quantity: 5, unit_price: 350000, line_total: 1750000 },
-      { export_id: stockExports[0]._id, ingredient_id: ingredients[3]._id, quantity: 2, unit_price: 25000, line_total: 50000 },
-      { export_id: stockExports[1]._id, ingredient_id: ingredients[6]._id, quantity: 3, unit_price: 120000, line_total: 360000 }
+      {
+        export_id: stockExports[0]._id,
+        ingredient_id: ingredients[0]._id,
+        quantity: 5,
+        unit_price: 350000,
+        line_total: 1750000,
+      },
+      {
+        export_id: stockExports[0]._id,
+        ingredient_id: ingredients[3]._id,
+        quantity: 2,
+        unit_price: 25000,
+        line_total: 50000,
+      },
+      {
+        export_id: stockExports[1]._id,
+        ingredient_id: ingredients[6]._id,
+        quantity: 3,
+        unit_price: 120000,
+        line_total: 360000,
+      },
     ]);
     console.log(`   OK ${stockExportDetails.length} stock export details\n`);
 
     // ==================== 15. DISHES ====================
-    console.log('15/24 Tạo Dishes...');
+    console.log("15/24 Tạo Dishes...");
     const dishes = await Dish.insertMany([
-      { name: 'Bò bít tết Úc', description: 'Bò Úc nướng chín vừa, kèm khoai tây chiên vàng, salad rau tươi và sốt tiêu đen', category: 'main_course', price: 350000, is_available: true, image_url: '/placeholder_images/placeholder_dish_image.jpg' },
-      { name: 'Cá hồi nướng chanh bơ', description: 'Cá hồi Na Uy nướng lửa, kèm bơ tươi, chanh và rau thơm', category: 'main_course', price: 420000, is_available: true, image_url: '/placeholder_images/placeholder_dish_image.jpg' },
-      { name: 'Tôm sú nướng bơ tỏi', description: 'Tôm sú to tươi, nướng bơ tỏi thơm phức, kèm bánh mì nướng', category: 'main_course', price: 280000, is_available: true, image_url: '/placeholder_images/placeholder_dish_image.jpg' },
-      { name: 'Salad rau xà lách tươi', description: 'Rau xà lách, cà chua, bơ tươi, sốt dầu giấm balsamic', category: 'appetizer', price: 85000, is_available: true, image_url: '/placeholder_images/placeholder_dish_image.jpg' },
-      { name: 'Gỏi tôm', description: 'Tôm sú, nước mắm chua cay vừa vặn, kèm rau sống', category: 'appetizer', price: 120000, is_available: true, image_url: '/placeholder_images/placeholder_dish_image.jpg' },
-      { name: 'Tiramisu', description: 'Bánh Tiramisu truyền thống Ý, kem mịn mềm', category: 'dessert', price: 95000, is_available: true, image_url: '/placeholder_images/placeholder_dish_image.jpg' },
-      { name: 'Coca Cola', description: 'Nước ngọt Coca Cola lạnh mát', category: 'beverage', price: 25000, is_available: true, image_url: '/placeholder_images/placeholder_dish_image.jpg' },
-      { name: 'Nước cam vắt tươi', description: 'Nước cam tươi vắt 100%, không đường', category: 'beverage', price: 35000, is_available: true, image_url: '/placeholder_images/placeholder_dish_image.jpg' }
+      {
+        name: "Bò bít tết Úc",
+        description:
+          "Bò Úc nướng chín vừa, kèm khoai tây chiên vàng, salad rau tươi và sốt tiêu đen",
+        category: "main_course",
+        price: 350000,
+        is_available: true,
+        image_url: "/placeholder_images/placeholder_dish_image.jpg",
+      },
+      {
+        name: "Cá hồi nướng chanh bơ",
+        description: "Cá hồi Na Uy nướng lửa, kèm bơ tươi, chanh và rau thơm",
+        category: "main_course",
+        price: 420000,
+        is_available: true,
+        image_url: "/placeholder_images/placeholder_dish_image.jpg",
+      },
+      {
+        name: "Tôm sú nướng bơ tỏi",
+        description:
+          "Tôm sú to tươi, nướng bơ tỏi thơm phức, kèm bánh mì nướng",
+        category: "main_course",
+        price: 280000,
+        is_available: true,
+        image_url: "/placeholder_images/placeholder_dish_image.jpg",
+      },
+      {
+        name: "Salad rau xà lách tươi",
+        description: "Rau xà lách, cà chua, bơ tươi, sốt dầu giấm balsamic",
+        category: "appetizer",
+        price: 85000,
+        is_available: true,
+        image_url: "/placeholder_images/placeholder_dish_image.jpg",
+      },
+      {
+        name: "Gỏi tôm",
+        description: "Tôm sú, nước mắm chua cay vừa vặn, kèm rau sống",
+        category: "appetizer",
+        price: 120000,
+        is_available: true,
+        image_url: "/placeholder_images/placeholder_dish_image.jpg",
+      },
+      {
+        name: "Tiramisu",
+        description: "Bánh Tiramisu truyền thống Ý, kem mịn mềm",
+        category: "dessert",
+        price: 95000,
+        is_available: true,
+        image_url: "/placeholder_images/placeholder_dish_image.jpg",
+      },
+      {
+        name: "Coca Cola",
+        description: "Nước ngọt Coca Cola lạnh mát",
+        category: "beverage",
+        price: 25000,
+        is_available: true,
+        image_url: "/placeholder_images/placeholder_dish_image.jpg",
+      },
+      {
+        name: "Nước cam vắt tươi",
+        description: "Nước cam tươi vắt 100%, không đường",
+        category: "beverage",
+        price: 35000,
+        is_available: true,
+        image_url: "/placeholder_images/placeholder_dish_image.jpg",
+      },
     ]);
     console.log(`   OK ${dishes.length} dishes\n`);
 
     // ==================== 16. DISH INGREDIENTS ====================
-    console.log('16/24 Tạo Dish Ingredients...');
+    console.log("16/24 Tạo Dish Ingredients...");
     const dishIngredients = await DishIngredient.insertMany([
-      { dish_id: dishes[0]._id, ingredient_id: ingredients[0]._id, quantity_required: 0.25, unit: 'kg' },
-      { dish_id: dishes[0]._id, ingredient_id: ingredients[3]._id, quantity_required: 0.05, unit: 'kg' },
-      { dish_id: dishes[1]._id, ingredient_id: ingredients[1]._id, quantity_required: 0.2, unit: 'kg' },
-      { dish_id: dishes[1]._id, ingredient_id: ingredients[6]._id, quantity_required: 0.03, unit: 'kg' },
-      { dish_id: dishes[2]._id, ingredient_id: ingredients[2]._id, quantity_required: 0.15, unit: 'kg' },
-      { dish_id: dishes[2]._id, ingredient_id: ingredients[6]._id, quantity_required: 0.02, unit: 'kg' },
-      { dish_id: dishes[3]._id, ingredient_id: ingredients[3]._id, quantity_required: 0.1, unit: 'kg' },
-      { dish_id: dishes[3]._id, ingredient_id: ingredients[4]._id, quantity_required: 0.05, unit: 'kg' },
-      { dish_id: dishes[4]._id, ingredient_id: ingredients[2]._id, quantity_required: 0.1, unit: 'kg' },
-      { dish_id: dishes[4]._id, ingredient_id: ingredients[7]._id, quantity_required: 0.05, unit: 'l' }
+      {
+        dish_id: dishes[0]._id,
+        ingredient_id: ingredients[0]._id,
+        quantity_required: 0.25,
+        unit: "kg",
+      },
+      {
+        dish_id: dishes[0]._id,
+        ingredient_id: ingredients[3]._id,
+        quantity_required: 0.05,
+        unit: "kg",
+      },
+      {
+        dish_id: dishes[1]._id,
+        ingredient_id: ingredients[1]._id,
+        quantity_required: 0.2,
+        unit: "kg",
+      },
+      {
+        dish_id: dishes[1]._id,
+        ingredient_id: ingredients[6]._id,
+        quantity_required: 0.03,
+        unit: "kg",
+      },
+      {
+        dish_id: dishes[2]._id,
+        ingredient_id: ingredients[2]._id,
+        quantity_required: 0.15,
+        unit: "kg",
+      },
+      {
+        dish_id: dishes[2]._id,
+        ingredient_id: ingredients[6]._id,
+        quantity_required: 0.02,
+        unit: "kg",
+      },
+      {
+        dish_id: dishes[3]._id,
+        ingredient_id: ingredients[3]._id,
+        quantity_required: 0.1,
+        unit: "kg",
+      },
+      {
+        dish_id: dishes[3]._id,
+        ingredient_id: ingredients[4]._id,
+        quantity_required: 0.05,
+        unit: "kg",
+      },
+      {
+        dish_id: dishes[4]._id,
+        ingredient_id: ingredients[2]._id,
+        quantity_required: 0.1,
+        unit: "kg",
+      },
+      {
+        dish_id: dishes[4]._id,
+        ingredient_id: ingredients[7]._id,
+        quantity_required: 0.05,
+        unit: "l",
+      },
     ]);
     console.log(`   OK ${dishIngredients.length} dish-ingredient links\n`);
 
     // ==================== 17. PROMOTIONS ====================
-    console.log('17/24 Tạo Promotions...');
+    console.log("17/24 Tạo Promotions...");
     const promotions = await Promotion.insertMany([
-      { name: 'Giảm 20% Tháng 12', description: 'Giảm 20% toàn bộ hóa đơn trong tháng 12', promotion_type: 'percentage', discount_value: 20, minimum_order_amount: 500000, promo_code: 'DEC20', start_date: new Date('2025-12-01'), end_date: new Date('2025-12-31'), is_active: true, max_uses: 100, current_uses: 5 },
-      { name: 'Giảm 150k', description: 'Giảm 150,000đ cho hóa đơn trên 1.5 triệu', promotion_type: 'fixed_amount', discount_value: 150000, minimum_order_amount: 1500000, promo_code: 'SAVE150K', start_date: new Date('2025-12-01'), end_date: new Date('2025-12-31'), is_active: true, max_uses: 50, current_uses: 8 },
-      { name: 'Happy Hour 14h-16h', description: 'Giảm 25% từ 14h-16h hàng ngày', promotion_type: 'percentage', discount_value: 25, minimum_order_amount: 200000, promo_code: 'HAPPY25', start_date: new Date('2025-12-01'), end_date: new Date('2025-12-31'), is_active: true, max_uses: -1, current_uses: 25 },
+      {
+        name: "Giảm 20% Tháng 12",
+        description: "Giảm 20% toàn bộ hóa đơn trong tháng 12",
+        promotion_type: "percentage",
+        discount_value: 20,
+        minimum_order_amount: 500000,
+        promo_code: "DEC20",
+        start_date: new Date("2025-12-01"),
+        end_date: new Date("2025-12-31"),
+        is_active: true,
+        max_uses: 100,
+        current_uses: 5,
+      },
+      {
+        name: "Giảm 150k",
+        description: "Giảm 150,000đ cho hóa đơn trên 1.5 triệu",
+        promotion_type: "fixed_amount",
+        discount_value: 150000,
+        minimum_order_amount: 1500000,
+        promo_code: "SAVE150K",
+        start_date: new Date("2025-12-01"),
+        end_date: new Date("2025-12-31"),
+        is_active: true,
+        max_uses: 50,
+        current_uses: 8,
+      },
+      {
+        name: "Happy Hour 14h-16h",
+        description: "Giảm 25% từ 14h-16h hàng ngày",
+        promotion_type: "percentage",
+        discount_value: 25,
+        minimum_order_amount: 200000,
+        promo_code: "HAPPY25",
+        start_date: new Date("2025-12-01"),
+        end_date: new Date("2025-12-31"),
+        is_active: true,
+        max_uses: -1,
+        current_uses: 25,
+      },
       // ⭐ Vouchers mới còn hạn 2026
-      { name: 'Tết 2026 - Giảm 30%', description: 'Giảm 30% toàn bộ hóa đơn dịp Tết Nguyên Đán 2026', promotion_type: 'percentage', discount_value: 30, minimum_order_amount: 300000, promo_code: 'TET2026', start_date: new Date('2026-01-01'), end_date: new Date('2026-02-28'), is_active: true, max_uses: 200, current_uses: 0 },
-      { name: 'Khuyến mãi năm mới', description: 'Giảm 200,000đ cho hóa đơn từ 2 triệu', promotion_type: 'fixed_amount', discount_value: 200000, minimum_order_amount: 2000000, promo_code: 'NEWYEAR200K', start_date: new Date('2026-01-01'), end_date: new Date('2026-03-31'), is_active: true, max_uses: 100, current_uses: 0 },
-      { name: 'Giảm 15% cuối tuần', description: 'Giảm 15% cho tất cả hóa đơn cuối tuần (Thứ 7, CN)', promotion_type: 'percentage', discount_value: 15, minimum_order_amount: 250000, promo_code: 'WEEKEND15', start_date: new Date('2026-01-01'), end_date: new Date('2026-12-31'), is_active: true, max_uses: -1, current_uses: 0 }
+      {
+        name: "Tết 2026 - Giảm 30%",
+        description: "Giảm 30% toàn bộ hóa đơn dịp Tết Nguyên Đán 2026",
+        promotion_type: "percentage",
+        discount_value: 30,
+        minimum_order_amount: 300000,
+        promo_code: "TET2026",
+        start_date: new Date("2026-01-01"),
+        end_date: new Date("2026-02-28"),
+        is_active: true,
+        max_uses: 200,
+        current_uses: 0,
+      },
+      {
+        name: "Khuyến mãi năm mới",
+        description: "Giảm 200,000đ cho hóa đơn từ 2 triệu",
+        promotion_type: "fixed_amount",
+        discount_value: 200000,
+        minimum_order_amount: 2000000,
+        promo_code: "NEWYEAR200K",
+        start_date: new Date("2026-01-01"),
+        end_date: new Date("2026-03-31"),
+        is_active: true,
+        max_uses: 100,
+        current_uses: 0,
+      },
+      {
+        name: "Giảm 15% cuối tuần",
+        description: "Giảm 15% cho tất cả hóa đơn cuối tuần (Thứ 7, CN)",
+        promotion_type: "percentage",
+        discount_value: 15,
+        minimum_order_amount: 250000,
+        promo_code: "WEEKEND15",
+        start_date: new Date("2026-01-01"),
+        end_date: new Date("2026-12-31"),
+        is_active: true,
+        max_uses: -1,
+        current_uses: 0,
+      },
     ]);
     console.log(`   OK ${promotions.length} promotions\n`);
 
     // ==================== 18. ORDERS ====================
-    console.log('18/24 Tạo Orders...');
+    console.log("18/24 Tạo Orders...");
     const orders = await Order.insertMany([
-      { 
-        order_number: 'ORD-001', 
-        order_type: 'dine-in-waiter',
-        order_date: new Date('2025-12-18'),
-        order_time: '18:30', 
+      {
+        order_number: "ORD-001",
+        order_type: "dine-in-waiter",
+        order_date: new Date("2025-12-18"),
+        order_time: "18:30",
         customer_id: customers[0]._id,
-        status: 'pending', 
-        subtotal: 770000, 
-        tax: 77000, 
+        status: "pending",
+        subtotal: 770000,
+        tax: 77000,
         total_amount: 847000,
         table_id: tables[2]._id,
         staff_id: staffs[0]._id,
-        notes: 'Bàn T03 - Khách VIP đang dùng bữa'
+        notes: "Bàn T03 - Khách VIP đang dùng bữa",
       },
-      { 
-        order_number: 'ORD-002', 
-        order_type: 'dine-in-waiter',
-        order_date: new Date('2025-12-11'),
-        order_time: '13:15', 
+      {
+        order_number: "ORD-002",
+        order_type: "dine-in-waiter",
+        order_date: new Date("2025-12-11"),
+        order_time: "13:15",
         customer_id: customers[1]._id,
-        status: 'completed', 
-        subtotal: 360000, 
-        tax: 36000, 
+        status: "completed",
+        subtotal: 360000,
+        tax: 36000,
         total_amount: 396000,
         table_id: tables[1]._id,
         staff_id: staffs[1]._id,
-        notes: 'Không thích hành'
+        notes: "Không thích hành",
       },
-      { 
-        order_number: 'ORD-004', 
-        order_type: 'takeaway-customer',
-        order_date: new Date('2025-12-11'),
-        order_time: '15:30', 
+      {
+        order_number: "ORD-004",
+        order_type: "takeaway-customer",
+        order_date: new Date("2025-12-11"),
+        order_time: "15:30",
         customer_id: customers[0]._id,
-        status: 'completed', 
-        subtotal: 635000, 
-        tax: 63500, 
+        status: "completed",
+        subtotal: 635000,
+        tax: 63500,
         total_amount: 698500,
-        notes: 'Đóng gói chắc chắn'
+        notes: "Đóng gói chắc chắn",
       },
-      { 
-        order_number: 'ORD-005', 
-        order_type: 'dine-in-waiter',
-        order_date: new Date('2025-12-18'),
-        order_time: '18:45', 
+      {
+        order_number: "ORD-005",
+        order_type: "dine-in-waiter",
+        order_date: new Date("2025-12-18"),
+        order_time: "18:45",
         customer_id: customers[1]._id,
-        status: 'pending', 
-        subtotal: 520000, 
-        tax: 52000, 
+        status: "pending",
+        subtotal: 520000,
+        tax: 52000,
         total_amount: 572000,
         table_id: tables[10]._id,
         staff_id: staffs[0]._id,
-        notes: 'Bàn T11 - Yêu cầu thêm tương ớt'
+        notes: "Bàn T11 - Yêu cầu thêm tương ớt",
       },
-      { 
-        order_number: 'ORD-006', 
-        order_type: 'dine-in-customer',
-        order_date: new Date('2025-12-18'),
-        order_time: '19:15', 
+      {
+        order_number: "ORD-006",
+        order_type: "dine-in-customer",
+        order_date: new Date("2025-12-18"),
+        order_time: "19:15",
         customer_id: customers[2]._id,
-        status: 'pending', 
-        subtotal: 245000, 
-        tax: 24500, 
+        status: "pending",
+        subtotal: 245000,
+        tax: 24500,
         total_amount: 269500,
         table_id: tables[11]._id,
-        notes: 'Bàn T12 - Khách đang dùng bữa'
+        notes: "Bàn T12 - Khách đang dùng bữa",
       },
-      { 
-        order_number: 'ORD-007', 
-        order_type: 'dine-in-waiter',
-        order_date: new Date('2025-12-18'),
-        order_time: '20:00', 
+      {
+        order_number: "ORD-007",
+        order_type: "dine-in-waiter",
+        order_date: new Date("2025-12-18"),
+        order_time: "20:00",
         customer_id: customers[4]._id,
-        status: 'pending', 
-        subtotal: 890000, 
-        tax: 89000, 
+        status: "pending",
+        subtotal: 890000,
+        tax: 89000,
         total_amount: 979000,
         table_id: tables[12]._id,
         staff_id: staffs[1]._id,
-        notes: 'Bàn T13 - Khách đang dùng bữa'
+        notes: "Bàn T13 - Khách đang dùng bữa",
       },
-      { 
-        order_number: 'ORD-008', 
-        order_type: 'dine-in-waiter',
-        order_date: new Date('2025-12-18'),
-        order_time: '18:30', 
+      {
+        order_number: "ORD-008",
+        order_type: "dine-in-waiter",
+        order_date: new Date("2025-12-18"),
+        order_time: "18:30",
         customer_id: customers[3]._id,
-        status: 'pending', 
-        subtotal: 580000, 
-        tax: 58000, 
+        status: "pending",
+        subtotal: 580000,
+        tax: 58000,
         total_amount: 638000,
         table_id: tables[4]._id,
         staff_id: staffs[0]._id,
-        notes: 'Bàn T05 - Khách đang dùng bữa'
+        notes: "Bàn T05 - Khách đang dùng bữa",
       },
-      { 
-        order_number: 'ORD-009', 
-        order_type: 'dine-in-customer',
-        order_date: new Date('2025-12-18'),
-        order_time: '19:45', 
+      {
+        order_number: "ORD-009",
+        order_type: "dine-in-customer",
+        order_date: new Date("2025-12-18"),
+        order_time: "19:45",
         customer_id: customers[2]._id,
-        status: 'pending', 
-        subtotal: 425000, 
-        tax: 42500, 
+        status: "pending",
+        subtotal: 425000,
+        tax: 42500,
         total_amount: 467500,
         table_id: tables[12]._id,
-        notes: 'Bàn T13 - Khách vừa check-in'
+        notes: "Bàn T13 - Khách vừa check-in",
       },
-      { 
-        order_number: 'ORD-010', 
-        order_type: 'dine-in-waiter',
-        order_date: new Date('2026-01-03'),
-        order_time: '18:20', 
+      {
+        order_number: "ORD-010",
+        order_type: "dine-in-waiter",
+        order_date: new Date("2026-01-03"),
+        order_time: "18:20",
         customer_id: customers[3]._id,
-        status: 'completed', 
-        subtotal: 555000, 
-        tax: 55500, 
+        status: "completed",
+        subtotal: 555000,
+        tax: 55500,
         total_amount: 610500,
         table_id: tables[8]._id, // Bàn T09
         staff_id: staffs[0]._id,
-        notes: 'Bàn T09 - Đã dùng xong, chờ thanh toán'
+        notes: "Bàn T09 - Đã dùng xong, chờ thanh toán",
       },
-      { 
-        order_number: 'ORD-011', 
-        order_type: 'dine-in-waiter',
-        order_date: new Date('2026-01-03'),
-        order_time: '19:00', 
+      {
+        order_number: "ORD-011",
+        order_type: "dine-in-waiter",
+        order_date: new Date("2026-01-03"),
+        order_time: "19:00",
         customer_id: customers[1]._id,
-        status: 'completed', 
-        subtotal: 730000, 
-        tax: 73000, 
+        status: "completed",
+        subtotal: 730000,
+        tax: 73000,
         total_amount: 803000,
         table_id: tables[5]._id, // Bàn T06
         staff_id: staffs[1]._id,
-        notes: 'Bàn T06 - Đã dùng xong, chờ thanh toán'
-      }
+        notes: "Bàn T06 - Đã dùng xong, chờ thanh toán",
+      },
     ]);
     console.log(`   OK ${orders.length} orders\n`);
 
     // ==================== 19. ORDER DETAILS ====================
-    console.log('19/24 Tạo Order Details...');
+    console.log("19/24 Tạo Order Details...");
     const orderDetails = await OrderDetail.insertMany([
-      { order_id: orders[0]._id, dish_id: dishes[0]._id, quantity: 1, unit_price: 350000, line_total: 350000, status: 'served' },
-      { order_id: orders[0]._id, dish_id: dishes[1]._id, quantity: 1, unit_price: 420000, line_total: 420000, status: 'served' },
-      { order_id: orders[1]._id, dish_id: dishes[3]._id, quantity: 2, unit_price: 85000, line_total: 170000, status: 'served' },
-      { order_id: orders[1]._id, dish_id: dishes[7]._id, quantity: 1, unit_price: 35000, line_total: 35000, special_instructions: 'Không đường', status: 'served' },
-      { order_id: orders[1]._id, dish_id: dishes[6]._id, quantity: 1, unit_price: 25000, line_total: 25000, status: 'served' },
-      { order_id: orders[2]._id, dish_id: dishes[0]._id, quantity: 1, unit_price: 350000, line_total: 350000, status: 'ready' },
-      { order_id: orders[4]._id, dish_id: dishes[1]._id, quantity: 1, unit_price: 420000, line_total: 420000, status: 'served' },
-      { order_id: orders[4]._id, dish_id: dishes[4]._id, quantity: 1, unit_price: 95000, line_total: 95000, status: 'served' },
-      { order_id: orders[4]._id, dish_id: dishes[6]._id, quantity: 1, unit_price: 25000, line_total: 25000, status: 'served' },
-      { order_id: orders[4]._id, dish_id: dishes[3]._id, quantity: 2, unit_price: 85000, line_total: 170000, status: 'served' },
-      { order_id: orders[4]._id, dish_id: dishes[7]._id, quantity: 2, unit_price: 35000, line_total: 70000, status: 'served' },
-      { order_id: orders[4]._id, dish_id: dishes[6]._id, quantity: 1, unit_price: 25000, line_total: 25000, status: 'served' },
-      { order_id: orders[5]._id, dish_id: dishes[0]._id, quantity: 2, unit_price: 350000, line_total: 700000, status: 'served' },
-      { order_id: orders[5]._id, dish_id: dishes[2]._id, quantity: 1, unit_price: 280000, line_total: 280000, status: 'served' },
-      { order_id: orders[5]._id, dish_id: dishes[5]._id, quantity: 1, unit_price: 110000, line_total: 110000, status: 'served' },
-      { order_id: orders[6]._id, dish_id: dishes[1]._id, quantity: 1, unit_price: 420000, line_total: 420000, status: 'pending' },
-      { order_id: orders[6]._id, dish_id: dishes[4]._id, quantity: 2, unit_price: 95000, line_total: 190000, status: 'pending' },
-      { order_id: orders[7]._id, dish_id: dishes[0]._id, quantity: 1, unit_price: 350000, line_total: 350000, status: 'pending' },
-      { order_id: orders[7]._id, dish_id: dishes[7]._id, quantity: 2, unit_price: 35000, line_total: 70000, status: 'pending' },
-      { order_id: orders[7]._id, dish_id: dishes[6]._id, quantity: 1, unit_price: 25000, line_total: 25000, status: 'pending' },
-      
+      {
+        order_id: orders[0]._id,
+        dish_id: dishes[0]._id,
+        quantity: 1,
+        unit_price: 350000,
+        line_total: 350000,
+        status: "served",
+      },
+      {
+        order_id: orders[0]._id,
+        dish_id: dishes[1]._id,
+        quantity: 1,
+        unit_price: 420000,
+        line_total: 420000,
+        status: "served",
+      },
+      {
+        order_id: orders[1]._id,
+        dish_id: dishes[3]._id,
+        quantity: 2,
+        unit_price: 85000,
+        line_total: 170000,
+        status: "served",
+      },
+      {
+        order_id: orders[1]._id,
+        dish_id: dishes[7]._id,
+        quantity: 1,
+        unit_price: 35000,
+        line_total: 35000,
+        special_instructions: "Không đường",
+        status: "served",
+      },
+      {
+        order_id: orders[1]._id,
+        dish_id: dishes[6]._id,
+        quantity: 1,
+        unit_price: 25000,
+        line_total: 25000,
+        status: "served",
+      },
+      {
+        order_id: orders[2]._id,
+        dish_id: dishes[0]._id,
+        quantity: 1,
+        unit_price: 350000,
+        line_total: 350000,
+        status: "ready",
+      },
+      {
+        order_id: orders[4]._id,
+        dish_id: dishes[1]._id,
+        quantity: 1,
+        unit_price: 420000,
+        line_total: 420000,
+        status: "served",
+      },
+      {
+        order_id: orders[4]._id,
+        dish_id: dishes[4]._id,
+        quantity: 1,
+        unit_price: 95000,
+        line_total: 95000,
+        status: "served",
+      },
+      {
+        order_id: orders[4]._id,
+        dish_id: dishes[6]._id,
+        quantity: 1,
+        unit_price: 25000,
+        line_total: 25000,
+        status: "served",
+      },
+      {
+        order_id: orders[4]._id,
+        dish_id: dishes[3]._id,
+        quantity: 2,
+        unit_price: 85000,
+        line_total: 170000,
+        status: "served",
+      },
+      {
+        order_id: orders[4]._id,
+        dish_id: dishes[7]._id,
+        quantity: 2,
+        unit_price: 35000,
+        line_total: 70000,
+        status: "served",
+      },
+      {
+        order_id: orders[4]._id,
+        dish_id: dishes[6]._id,
+        quantity: 1,
+        unit_price: 25000,
+        line_total: 25000,
+        status: "served",
+      },
+      {
+        order_id: orders[5]._id,
+        dish_id: dishes[0]._id,
+        quantity: 2,
+        unit_price: 350000,
+        line_total: 700000,
+        status: "served",
+      },
+      {
+        order_id: orders[5]._id,
+        dish_id: dishes[2]._id,
+        quantity: 1,
+        unit_price: 280000,
+        line_total: 280000,
+        status: "served",
+      },
+      {
+        order_id: orders[5]._id,
+        dish_id: dishes[5]._id,
+        quantity: 1,
+        unit_price: 110000,
+        line_total: 110000,
+        status: "served",
+      },
+      {
+        order_id: orders[6]._id,
+        dish_id: dishes[1]._id,
+        quantity: 1,
+        unit_price: 420000,
+        line_total: 420000,
+        status: "pending",
+      },
+      {
+        order_id: orders[6]._id,
+        dish_id: dishes[4]._id,
+        quantity: 2,
+        unit_price: 95000,
+        line_total: 190000,
+        status: "pending",
+      },
+      {
+        order_id: orders[7]._id,
+        dish_id: dishes[0]._id,
+        quantity: 1,
+        unit_price: 350000,
+        line_total: 350000,
+        status: "pending",
+      },
+      {
+        order_id: orders[7]._id,
+        dish_id: dishes[7]._id,
+        quantity: 2,
+        unit_price: 35000,
+        line_total: 70000,
+        status: "pending",
+      },
+      {
+        order_id: orders[7]._id,
+        dish_id: dishes[6]._id,
+        quantity: 1,
+        unit_price: 25000,
+        line_total: 25000,
+        status: "pending",
+      },
+
       // Order details cho bàn T09 (ORD-010) - orders[8] - ĐÃ PHỤC VỤ XONG
-      { order_id: orders[8]._id, dish_id: dishes[2]._id, quantity: 1, unit_price: 280000, line_total: 280000, status: 'served' },
-      { order_id: orders[8]._id, dish_id: dishes[4]._id, quantity: 1, unit_price: 95000, line_total: 95000, status: 'served' },
-      { order_id: orders[8]._id, dish_id: dishes[5]._id, quantity: 1, unit_price: 110000, line_total: 110000, status: 'served' },
-      { order_id: orders[8]._id, dish_id: dishes[7]._id, quantity: 2, unit_price: 35000, line_total: 70000, status: 'served' },
-      
+      {
+        order_id: orders[8]._id,
+        dish_id: dishes[2]._id,
+        quantity: 1,
+        unit_price: 280000,
+        line_total: 280000,
+        status: "served",
+      },
+      {
+        order_id: orders[8]._id,
+        dish_id: dishes[4]._id,
+        quantity: 1,
+        unit_price: 95000,
+        line_total: 95000,
+        status: "served",
+      },
+      {
+        order_id: orders[8]._id,
+        dish_id: dishes[5]._id,
+        quantity: 1,
+        unit_price: 110000,
+        line_total: 110000,
+        status: "served",
+      },
+      {
+        order_id: orders[8]._id,
+        dish_id: dishes[7]._id,
+        quantity: 2,
+        unit_price: 35000,
+        line_total: 70000,
+        status: "served",
+      },
+
       // Order details cho bàn T06 (ORD-011) - orders[9] - ĐÃ PHỤC VỤ XONG
-      { order_id: orders[9]._id, dish_id: dishes[0]._id, quantity: 1, unit_price: 350000, line_total: 350000, status: 'served' },
-      { order_id: orders[9]._id, dish_id: dishes[1]._id, quantity: 1, unit_price: 420000, line_total: 420000, status: 'served' }
+      {
+        order_id: orders[9]._id,
+        dish_id: dishes[0]._id,
+        quantity: 1,
+        unit_price: 350000,
+        line_total: 350000,
+        status: "served",
+      },
+      {
+        order_id: orders[9]._id,
+        dish_id: dishes[1]._id,
+        quantity: 1,
+        unit_price: 420000,
+        line_total: 420000,
+        status: "served",
+      },
     ]);
     console.log(`   OK ${orderDetails.length} order details\n`);
 
     // ==================== 20. INVOICES ====================
-    console.log('20/24 Tạo Invoices...');
+    console.log("20/24 Tạo Invoices...");
     const invoices = await Invoice.insertMany([
       // Invoice đã thanh toán (completed orders)
-      { 
-        invoice_number: 'INV-003', 
-        order_id: orders[1]._id, 
-        staff_id: staffs[2]._id, 
+      {
+        invoice_number: "INV-003",
+        order_id: orders[1]._id,
+        staff_id: staffs[2]._id,
         customer_id: customers[1]._id,
-        invoice_date: new Date('2025-12-11'),
-        subtotal: 360000, 
-        tax: 36000, 
-        discount_amount: 0, 
-        total_amount: 396000, 
-        payment_method: 'e-wallet', 
-        payment_status: 'paid',
+        invoice_date: new Date("2025-12-11"),
+        subtotal: 360000,
+        tax: 36000,
+        discount_amount: 0,
+        total_amount: 396000,
+        payment_method: "e-wallet",
+        payment_status: "paid",
         points_used: 0,
         points_earned: 39,
-        paid_at: new Date('2025-12-11')
+        paid_at: new Date("2025-12-11"),
       },
-      { 
-        invoice_number: 'INV-006', 
-        order_id: orders[2]._id, 
-        staff_id: staffs[2]._id, 
-        customer_id: customers[0]._id, 
-        invoice_date: new Date('2025-12-11'),
-        subtotal: 635000, 
-        tax: 63500, 
-        discount_amount: 0, 
-        total_amount: 698500, 
-        payment_method: 'cash', 
-        payment_status: 'paid',
+      {
+        invoice_number: "INV-006",
+        order_id: orders[2]._id,
+        staff_id: staffs[2]._id,
+        customer_id: customers[0]._id,
+        invoice_date: new Date("2025-12-11"),
+        subtotal: 635000,
+        tax: 63500,
+        discount_amount: 0,
+        total_amount: 698500,
+        payment_method: "cash",
+        payment_status: "paid",
         points_used: 0,
         points_earned: 69,
-        paid_at: new Date('2025-12-11')
+        paid_at: new Date("2025-12-11"),
       },
-      
+
       // Invoice CHỜ THANH TOÁN (completed orders - đã dùng xong món, chờ thanh toán)
-      { 
-        invoice_number: 'INV-101', 
+      {
+        invoice_number: "INV-101",
         order_id: orders[8]._id, // ORD-010 - Bàn T09 - ĐÃ DÙNG XONG
-        staff_id: staffs[2]._id, 
+        staff_id: staffs[2]._id,
         customer_id: customers[3]._id,
-        invoice_date: new Date('2026-01-03'),
-        subtotal: 555000, 
-        tax: 55500, 
-        discount_amount: 0, 
-        total_amount: 610500, 
-        payment_method: null, 
-        payment_status: 'pending',
+        invoice_date: new Date("2026-01-03"),
+        subtotal: 555000,
+        tax: 55500,
+        discount_amount: 0,
+        total_amount: 610500,
+        payment_method: null,
+        payment_status: "pending",
         points_used: 0,
         points_earned: 0,
         paid_at: null,
-        notes: 'Waiter đã xác nhận hóa đơn - Khách đang chờ thanh toán'
+        notes: "Waiter đã xác nhận hóa đơn - Khách đang chờ thanh toán",
       },
-      { 
-        invoice_number: 'INV-102', 
+      {
+        invoice_number: "INV-102",
         order_id: orders[9]._id, // ORD-011 - Bàn T06 - ĐÃ DÙNG XONG
-        staff_id: staffs[2]._id, 
+        staff_id: staffs[2]._id,
         customer_id: customers[1]._id,
-        invoice_date: new Date('2026-01-03'),
-        subtotal: 730000, 
-        tax: 73000, 
-        discount_amount: 0, 
-        total_amount: 803000, 
-        payment_method: null, 
-        payment_status: 'pending',
+        invoice_date: new Date("2026-01-03"),
+        subtotal: 730000,
+        tax: 73000,
+        discount_amount: 0,
+        total_amount: 803000,
+        payment_method: null,
+        payment_status: "pending",
         points_used: 0,
         points_earned: 0,
         paid_at: null,
-        notes: 'Waiter đã xác nhận hóa đơn - Khách đang chờ thanh toán'
-      }
+        notes: "Waiter đã xác nhận hóa đơn - Khách đang chờ thanh toán",
+      },
     ]);
-    console.log(`   OK ${invoices.length} invoices (${invoices.filter(i => i.payment_status === 'pending').length} pending)\n`);
+    console.log(
+      `   OK ${invoices.length} invoices (${
+        invoices.filter((i) => i.payment_status === "pending").length
+      } pending)\n`
+    );
 
     // ==================== 21. INVOICE PROMOTIONS ====================
-    console.log('21/24 Tạo Invoice Promotions...');
+    console.log("21/24 Tạo Invoice Promotions...");
     const invoicePromotions = await InvoicePromotion.insertMany([
-      { invoice_id: invoices[0]._id, promotion_id: promotions[0]._id, discount_applied: 170000 }
+      {
+        invoice_id: invoices[0]._id,
+        promotion_id: promotions[0]._id,
+        discount_applied: 170000,
+      },
     ]);
     console.log(`   OK ${invoicePromotions.length} invoice promotions\n`);
 
     // ==================== 22. VIOLATIONS ====================
-    console.log('22/24 Tạo Violations...');
+    console.log("22/24 Tạo Violations...");
     const violations = await Violation.insertMany([
-      { 
-        customer_id: customers[1]._id, 
-        description: 'Khách gọi 3 lần để hủy đặt bàn mà không thông báo trước', 
-        violation_date: new Date('2025-12-01'),
-        violation_type: 'late_cancel'
+      {
+        customer_id: customers[1]._id,
+        description: "Khách gọi 3 lần để hủy đặt bàn mà không thông báo trước",
+        violation_date: new Date("2025-12-01"),
+        violation_type: "late_cancel",
       },
       {
         customer_id: customers[4]._id,
-        description: 'Không có mặt vào giờ đặt bàn, đã hủy phòng VIP',
-        violation_date: new Date('2025-12-05'),
-        violation_type: 'no_show'
-      }
+        description: "Không có mặt vào giờ đặt bàn, đã hủy phòng VIP",
+        violation_date: new Date("2025-12-05"),
+        violation_type: "no_show",
+      },
     ]);
     console.log(`   OK ${violations.length} violations\n`);
 
     // ==================== 23. RATINGS & REPLIES ====================
-    console.log('23/24 Tạo Ratings...');
+    console.log("23/24 Tạo Ratings...");
     const ratings = await Rating.insertMany([
-      { 
+      {
         customer_id: customers[0]._id,
         invoice_id: invoices[1]._id,
-        description: 'Thức ăn tuyệt vời, phục vụ rất tốt, sẽ quay lại!', 
-        rating_date: new Date('2025-12-11'),
-        score: 5
+        description: "Thức ăn tuyệt vời, phục vụ rất tốt, sẽ quay lại!",
+        rating_date: new Date("2025-12-11"),
+        score: 5,
       },
-      { 
+      {
         customer_id: customers[1]._id,
         invoice_id: invoices[0]._id,
-        description: 'Thức ăn ngon nhưng chờ đợi lâu, cải thiện tốc độ', 
-        rating_date: new Date('2025-12-10'),
-        score: 3
+        description: "Thức ăn ngon nhưng chờ đợi lâu, cải thiện tốc độ",
+        rating_date: new Date("2025-12-10"),
+        score: 3,
       },
-      { 
+      {
         customer_id: customers[2]._id,
         invoice_id: invoices[2]._id,
-        description: 'Bình thường, không có gì đặc biệt, giá hơi cao', 
-        rating_date: new Date('2025-12-09'),
-        score: 3
+        description: "Bình thường, không có gì đặc biệt, giá hơi cao",
+        rating_date: new Date("2025-12-09"),
+        score: 3,
       },
-      { 
+      {
         customer_id: customers[3]._id,
         invoice_id: invoices[3]._id,
-        description: 'Rất tốt, được xử lý khiếu nại một cách chuyên nghiệp!', 
-        rating_date: new Date('2025-12-08'),
-        score: 4
-      }
+        description: "Rất tốt, được xử lý khiếu nại một cách chuyên nghiệp!",
+        rating_date: new Date("2025-12-08"),
+        score: 4,
+      },
     ]);
     console.log(`   OK ${ratings.length} ratings\n`);
 
-    console.log('24/24 Tạo Replies...');
+    console.log("24/24 Tạo Replies...");
     const ratingReplies = await RatingReply.insertMany([
-      { 
-        rating_id: ratings[0]._id, 
-        staff_id: staffs[4]._id, 
-        reply_text: 'Cảm ơn bạn rất nhiều! Chúng tôi sẽ tiếp tục cải thiện!', 
-        reply_date: new Date('2025-12-11')
+      {
+        rating_id: ratings[0]._id,
+        staff_id: staffs[4]._id,
+        reply_text: "Cảm ơn bạn rất nhiều! Chúng tôi sẽ tiếp tục cải thiện!",
+        reply_date: new Date("2025-12-11"),
       },
-      { 
-        rating_id: ratings[1]._id, 
-        staff_id: staffs[5]._id, 
-        reply_text: 'Xin lỗi vì chờ đợi lâu, chúng tôi đã tối ưu hóa quy trình', 
-        reply_date: new Date('2025-12-11')
-      }
+      {
+        rating_id: ratings[1]._id,
+        staff_id: staffs[5]._id,
+        reply_text: "Xin lỗi vì chờ đợi lâu, chúng tôi đã tối ưu hóa quy trình",
+        reply_date: new Date("2025-12-11"),
+      },
     ]);
     console.log(`   OK ${ratingReplies.length} replies\n`);
 
     // TỔNG KẾT
-    console.log('\n========================================');
-    console.log('SEED DATABASE HOÀN TẤT!');
-    console.log('========================================');
-    console.log('TỔNG KẾT DỮ LIỆU:');
+    console.log("\n========================================");
+    console.log("SEED DATABASE HOÀN TẤT!");
+    console.log("========================================");
+    console.log("TỔNG KẾT DỮ LIỆU:");
     console.log(`   1. Staff: ${staffs.length}`);
     console.log(`   2. Customers: ${customers.length}`);
     console.log(`   3. Floors: ${floors.length}`);
@@ -1073,22 +1754,21 @@ async function seedDatabase() {
     console.log(`   22. Violations: ${violations.length}`);
     console.log(`   23. Ratings: ${ratings.length}`);
     console.log(`   24. Rating Replies: ${ratingReplies.length}`);
-    console.log('========================================');
-    console.log('Test Accounts:');
-    console.log('   Waiter: hung.waiter@restaurant.vn / password123');
-    console.log('   Cashier: nam.cashier@restaurant.vn / password123');
-    console.log('   Manager: minh.manager@restaurant.vn / password123');
-    console.log('   Customer (Diamond): tuan.nguyen@gmail.com / password123');
-    console.log('   Customer (Regular): hoang.son@gmail.com / password123');
-    console.log('========================================\n');
-
+    console.log("========================================");
+    console.log("Test Accounts:");
+    console.log("   Waiter: hung.waiter@restaurant.vn / password123");
+    console.log("   Cashier: nam.cashier@restaurant.vn / password123");
+    console.log("   Manager: minh.manager@restaurant.vn / password123");
+    console.log("   Customer (Diamond): tuan.nguyen@gmail.com / password123");
+    console.log("   Customer (Regular): hoang.son@gmail.com / password123");
+    console.log("========================================\n");
   } catch (error) {
-    console.error('LỖI:', error.message);
+    console.error("LỖI:", error.message);
     console.error(error.stack);
     process.exit(1);
   } finally {
     await mongoose.connection.close();
-    console.log('Đã đóng kết nối database');
+    console.log("Đã đóng kết nối database");
     process.exit(0);
   }
 }
