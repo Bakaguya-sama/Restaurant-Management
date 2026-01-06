@@ -137,14 +137,17 @@ export function BillsPage() {
         const invoiceRating = customerRatings[invoiceId];
         const invoicePromotion = invoicePromotions[invoiceId];
         
-        const totalDiscount = invoiceObj.discount_amount || 0;
+        // Calculate discounts
         const pointsUsed = invoiceObj.points_used || 0;
         const pointsDiscount = pointsUsed * 1;
         
-        // Use invoice_promotion data if available, otherwise calculate from discount_amount
-        const voucherDiscount = invoicePromotion?.discountAmount || Math.max(0, totalDiscount - pointsDiscount);
+        // Voucher discount from invoice_promotion or from discount_amount
+        const voucherDiscount = invoicePromotion?.discountAmount || invoiceObj.discount_amount || 0;
         const voucherCode = invoicePromotion?.voucherCode || null;
         const promotionId = invoicePromotion?.promotionId || null;
+        
+        // Total discount is voucher + points
+        const totalDiscount = voucherDiscount + pointsDiscount;
         
         return {
           id: invoiceId,
