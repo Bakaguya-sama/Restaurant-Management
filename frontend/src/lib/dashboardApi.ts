@@ -12,6 +12,12 @@ export interface DashboardStatistics {
       total: number;
       status: string;
     }>;
+    pagination?: {
+      currentPage: number;
+      totalPages: number;
+      totalItems: number;
+      itemsPerPage: number;
+    };
   };
   topDishes: Array<{
     name: string;
@@ -70,9 +76,11 @@ export const dashboardApi = {
   /**
    * Get dashboard statistics by date range
    * @param range - 'today', 'week', or 'month'
+   * @param page - Page number for invoice list (default: 1)
+   * @param limit - Items per page (default: 5)
    */
-  getStatistics: (range: 'today' | 'week' | 'month' = 'week') =>
-    apiClient.get<DashboardStatistics>(`/dashboard/statistics?range=${range}`),
+  getStatistics: (range: 'today' | 'week' | 'month' = 'week', page: number = 1, limit: number = 5) =>
+    apiClient.get<DashboardStatistics>(`/dashboard/statistics?range=${range}&page=${page}&limit=${limit}`),
 
   /**
    * Get inventory alerts (low stock and expiring items)
