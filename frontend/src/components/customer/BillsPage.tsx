@@ -68,6 +68,31 @@ export function BillsPage() {
         return;
       }
 
+      // Fetch invoice_promotions to get voucher details
+      let invoicePromotions: any = {};
+      try {
+        const apiBaseUrl = (import.meta as any).env?.VITE_API_URL || "http://localhost:5000/api/v1";
+        const ipResponse = await fetch(`${apiBaseUrl}/invoice-promotions`);
+        if (ipResponse.ok) {
+          const ipResult = await ipResponse.json();
+          if (ipResult.success && ipResult.data) {
+            // Map invoice_promotions by invoice_id
+            ipResult.data.forEach((ip: any) => {
+              const invId = ip.invoice_id?._id || ip.invoice_id?.id || ip.invoice_id;
+              if (invId) {
+                invoicePromotions[invId] = {
+                  promotionId: ip.promotion_id?._id || ip.promotion_id?.id || ip.promotion_id,
+                  voucherCode: ip.promotion_id?.promo_code || null,
+                  discountAmount: ip.discount_applied || 0
+                };
+              }
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching invoice promotions:", error);
+      }
+      
       
       let customerRatings: any = {};
       try {
@@ -100,11 +125,16 @@ export function BillsPage() {
         const orderItems = invoiceObj.order_id?.items || [];
         const invoiceId = invoiceObj._id || invoiceObj.id;
         const invoiceRating = customerRatings[invoiceId];
+        const invoicePromotion = invoicePromotions[invoiceId];
         
         const totalDiscount = invoiceObj.discount_amount || 0;
         const pointsUsed = invoiceObj.points_used || 0;
         const pointsDiscount = pointsUsed * 1;
-        const voucherDiscount = Math.max(0, totalDiscount - pointsDiscount);
+        
+        // Use invoice_promotion data if available, otherwise calculate from discount_amount
+        const voucherDiscount = invoicePromotion?.discountAmount || Math.max(0, totalDiscount - pointsDiscount);
+        const voucherCode = invoicePromotion?.voucherCode || null;
+        const promotionId = invoicePromotion?.promotionId || null;
         
         return {
           id: invoiceId,
@@ -129,8 +159,9 @@ export function BillsPage() {
           total: invoiceObj.total_amount,
           status: invoiceObj.payment_status,
           createdAt: invoiceObj.created_at,
-          voucherCode: null,
-          voucherUsed: null,
+          voucherCode: voucherCode,
+          voucherUsed: voucherCode,
+          promotionId: promotionId,
           pointsUsed: pointsUsed,
           paymentMethod: invoiceObj.payment_method,
           orderId: invoiceObj.order_id?._id,
@@ -208,6 +239,7 @@ export function BillsPage() {
         ...updatedBills[billIndex],
         voucherDiscount: voucherDiscount,
         voucherCode: voucher.promo_code,
+        promotionId: voucher._id || voucher.id,
         discount: totalDiscount, 
         total:
           updatedBills[billIndex].subtotal +
@@ -248,10 +280,8 @@ export function BillsPage() {
     }
 
     setAppliedVoucher(promo);
-    setVoucherCode(promo.promo_code || "");
     const updatedBills = [...allBills];
     const billIndex = updatedBills.findIndex((b) => b.id === selectedBill.id);
-    
     
     const totalDiscount = voucherDiscount + updatedBills[billIndex].pointsDiscount;
     
@@ -259,7 +289,8 @@ export function BillsPage() {
       ...updatedBills[billIndex],
       voucherDiscount: voucherDiscount,
       voucherCode: promo.promo_code,
-      discount: totalDiscount, 
+      promotionId: promo._id || promo.id,
+      discount: totalDiscount,
       total:
         updatedBills[billIndex].subtotal +
         updatedBills[billIndex].tax -
@@ -267,6 +298,7 @@ export function BillsPage() {
     };
     setAllBills(updatedBills);
     setSelectedBill(updatedBills[billIndex]);
+    setVoucherCode(promo.promo_code);
     setShowVoucherModal(false);
     toast.success("Áp dụng voucher thành công!");
   };
@@ -340,7 +372,7 @@ export function BillsPage() {
         await invoiceApi.markAsPaid(
           selectedBill.invoiceId, 
           mappedPaymentMethod,
-          null,
+          selectedBill.promotionId || null,
           selectedBill.pointsUsed || 0
         );
         
@@ -359,6 +391,8 @@ export function BillsPage() {
       setPaymentMethod(null);
       setPointsToUse(0);
       setShowVoucherSection(false);
+      setAppliedVoucher(null);
+      setVoucherCode("");
     } catch (error: any) {
       console.error("Payment error:", error);
       toast.error(error.message || "Thanh toán thất bại");
@@ -949,7 +983,10 @@ export function BillsPage() {
       {/* Payment Modal */}
       <Modal
         isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
+        onClose={() => {
+          setShowPaymentModal(false);
+          setPaymentMethod(null);
+        }}
         title="Thanh toán hóa đơn"
       >
         <div className="space-y-6">

@@ -259,7 +259,7 @@ export function MembershipPage() {
     bronze: { name: "Đồng", color: "from-amber-600 to-amber-800", icon: "🥉" },
   };
 
-  const currentTier = tierConfig[memberData.tier as keyof typeof tierConfig];
+  const currentTier = tierConfig[memberData.tier as keyof typeof tierConfig] || tierConfig.bronze;
   const progress = (memberData.points / memberData.nextTierPoints) * 100;
 
   const handleCopyCode = async (code: string) => {

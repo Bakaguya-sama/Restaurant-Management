@@ -967,17 +967,23 @@ export function InvoicesPage() {
                           <td className="py-3 px-4">
                             <span
                               className={`px-2 py-1 rounded-full text-xs ${
-                                invoice.paymentMethod === "online"
+                                invoice.paymentMethod === "transfer" || invoice.paymentMethod === "online"
                                   ? "bg-blue-100 text-blue-700"
                                   : invoice.paymentMethod === "card"
                                   ? "bg-purple-100 text-purple-700"
+                                  : invoice.paymentMethod === "e-wallet"
+                                  ? "bg-indigo-100 text-indigo-700"
                                   : "bg-green-100 text-green-700"
                               }`}
                             >
-                              {invoice.paymentMethod === "online"
+                              {invoice.paymentMethod === "transfer"
+                                ? "Chuyển khoản"
+                                : invoice.paymentMethod === "online"
                                 ? "Online"
                                 : invoice.paymentMethod === "card"
                                 ? "Thẻ"
+                                : invoice.paymentMethod === "e-wallet"
+                                ? "Ví điện tử"
                                 : "Tiền mặt"}
                             </span>
                           </td>
@@ -1032,6 +1038,22 @@ export function InvoicesPage() {
                     viewInvoice.paidAt || viewInvoice.createdAt
                   ).toLocaleString("vi-VN")}
                 </p>
+                {viewInvoice.paymentMethod && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    Phương thức:{" "}
+                    <span className="font-medium">
+                      {viewInvoice.paymentMethod === "transfer"
+                        ? "Chuyển khoản"
+                        : viewInvoice.paymentMethod === "online"
+                        ? "Online"
+                        : viewInvoice.paymentMethod === "card"
+                        ? "Thẻ"
+                        : viewInvoice.paymentMethod === "e-wallet"
+                        ? "Ví điện tử"
+                        : "Tiền mặt"}
+                    </span>
+                  </p>
+                )}
               </div>
               <Badge className="bg-green-100 text-green-700">
                 Đã thanh toán
