@@ -291,10 +291,9 @@ class InvoiceService {
       totalAmount = invoice.subtotal + invoice.tax - (pointsUsed || 0);
     }
 
-    let pointsEarned = 0;
-    if (pointsUsed === 0) {
-      pointsEarned = Math.floor(totalAmount / 10);
-    }
+    // Calculate points earned based on actual amount paid (after using points)
+    // Customer earns points on money they actually spend
+    const pointsEarned = Math.floor(totalAmount / 10);
 
     const updateData = {
       payment_method: paymentMethod,
@@ -308,7 +307,6 @@ class InvoiceService {
 
     await this.invoiceRepository.update(id, updateData);
 
-    
     // Extract customer ID (handle both populated object and string ID)
     const customerId = invoice.customer_id?._id || invoice.customer_id?.id || invoice.customer_id;
     
@@ -320,7 +318,8 @@ class InvoiceService {
       }
     }
 
-    if (customerId && pointsEarned > 0 && pointsUsed === 0) {
+    // Always award points if customer made a purchase (even if they used points)
+    if (customerId && pointsEarned > 0) {
       try {
         await this.pointsService.awardCustomerPoints(customerId, pointsEarned);
       } catch (error) {
