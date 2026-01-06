@@ -42,8 +42,7 @@ export function BillsPage() {
   const [loading, setLoading] = useState(true);
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
-
-  const customerPoints = 1500;
+  const [customerPoints, setCustomerPoints] = useState(0);
 
   const fetchInvoices = async () => {
     try {
@@ -59,6 +58,17 @@ export function BillsPage() {
       }
 
       setCustomerId(currentUserId);
+
+      // Fetch customer data to get current points
+      try {
+        const customerResponse = await customerApi.getById(currentUserId);
+        if (customerResponse.success && customerResponse.data) {
+          setCustomerPoints(customerResponse.data.points || 0);
+        }
+      } catch (error) {
+        console.error("Error fetching customer points:", error);
+        setCustomerPoints(0);
+      }
 
       const invoicesResponse = await invoiceApi.getByCustomerId(currentUserId);
       
