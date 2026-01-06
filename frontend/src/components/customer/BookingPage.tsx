@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar, Clock, Users, CreditCard, CheckCircle } from "lucide-react";
-import { QRCodeSVG } from 'qrcode.react';
+import { QRCodeSVG } from "qrcode.react";
 import { Button } from "../ui/Button";
 import { Input, Textarea } from "../ui/Input";
 import { Card } from "../ui/Card";
@@ -9,7 +9,13 @@ import { customerApi } from "../../lib/customerApi";
 import { tableApi } from "../../lib/tableApi";
 import { locationApi } from "../../lib/locationApi";
 import { floorApi } from "../../lib/floorApi";
-import { Table, Reservation, ReservationData, Floor, Location } from "../../types";
+import {
+  Table,
+  Reservation,
+  ReservationData,
+  Floor,
+  Location,
+} from "../../types";
 import type { Customer } from "../../lib/customerApi";
 import { useReservations } from "../../hooks/useReservations";
 import { useFloors } from "../../hooks/useFloors";
@@ -24,7 +30,8 @@ import {
 export function BookingPage() {
   const navigate = useNavigate();
   const { userProfile } = useAuth();
-  const { createReservation, updateReservationStatus, checkTableAvailability } = useReservations();
+  const { createReservation, updateReservationStatus, checkTableAvailability } =
+    useReservations();
   const [step, setStep] = useState(1);
   const [tables, setTables] = useState<Table[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -32,9 +39,12 @@ export function BookingPage() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [availableTableIds, setAvailableTableIds] = useState<Set<string>>(new Set());
+  const [availableTableIds, setAvailableTableIds] = useState<Set<string>>(
+    new Set()
+  );
   const [checkingAvailability, setCheckingAvailability] = useState(false);
-  const [createdReservation, setCreatedReservation] = useState<Reservation | null>(null);
+  const [createdReservation, setCreatedReservation] =
+    useState<Reservation | null>(null);
   const [bookingData, setBookingData] = useState({
     date: "",
     time: "",
@@ -47,13 +57,20 @@ export function BookingPage() {
   });
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'card' | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"wallet" | "card" | null>(
+    null
+  );
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [tablesResponse, customersResponse, floorsResponse, locationsResponse] = await Promise.all([
+        const [
+          tablesResponse,
+          customersResponse,
+          floorsResponse,
+          locationsResponse,
+        ] = await Promise.all([
           tableApi.getAll(),
           customerApi.getAll({ isBanned: false }),
           floorApi.getAll(),
@@ -84,9 +101,9 @@ export function BookingPage() {
           setLocations(locationsResponse.data);
           console.log("Locations loaded:", locationsResponse.data);
         }
-
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "Lỗi khi tải dữ liệu";
+        const errorMessage =
+          err instanceof Error ? err.message : "Lỗi khi tải dữ liệu";
         setError(errorMessage);
         toast.error(errorMessage);
       } finally {
@@ -109,7 +126,13 @@ export function BookingPage() {
   }, [userProfile]);
 
   useEffect(() => {
-    if (step === 2 && bookingData.date && bookingData.time && bookingData.checkoutTime && tables.length > 0) {
+    if (
+      step === 2 &&
+      bookingData.date &&
+      bookingData.time &&
+      bookingData.checkoutTime &&
+      tables.length > 0
+    ) {
       checkTableAvailabilityForAll();
     }
   }, [step, bookingData.date, bookingData.time, bookingData.checkoutTime]);
@@ -148,41 +171,51 @@ export function BookingPage() {
 
   const getFloorName = (locationId?: string) => {
     if (!locationId) return "N/A";
-    
-    const location = locations.find((l) => l.id === locationId || (l as any)._id === locationId);
+
+    const location = locations.find(
+      (l) => l.id === locationId || (l as any)._id === locationId
+    );
     if (!location) {
-      console.warn(`Location not found for ID: ${locationId}. Available locations:`, locations);
+      console.warn(
+        `Location not found for ID: ${locationId}. Available locations:`,
+        locations
+      );
       return "N/A";
     }
-    
+
     const floorId = location.floor_id || (location as any).floor;
     if (!floorId) {
       console.warn(`Floor ID not found for location:`, location);
       return "N/A";
     }
-    
-    const floor = floors.find((f) => f.id === floorId || (f as any)._id === floorId);
+
+    const floor = floors.find(
+      (f) => f.id === floorId || (f as any)._id === floorId
+    );
     if (!floor) {
-      console.warn(`Floor not found for ID: ${floorId}. Available floors:`, floors);
+      console.warn(
+        `Floor not found for ID: ${floorId}. Available floors:`,
+        floors
+      );
       return floorId;
     }
-    
+
     return floor.floor_name || "N/A";
   };
 
   const formatDateTime = (date?: string, time?: string) => {
     if (!date || !time) return "N/A";
-    
+
     let formattedDate = date;
     if (date.includes("T")) {
       formattedDate = date.split("T")[0];
     }
-    
+
     let formattedTime = time;
     if (time.includes(":")) {
       formattedTime = time.split(":").slice(0, 2).join(":");
     }
-    
+
     return `${formattedDate} ${formattedTime}`;
   };
 
@@ -220,7 +253,8 @@ export function BookingPage() {
     }
 
     try {
-      const backendPaymentMethod = paymentMethod === 'wallet' ? 'transfer' : 'card';
+      const backendPaymentMethod =
+        paymentMethod === "wallet" ? "transfer" : "card";
 
       const reservationData: ReservationData = {
         customer_id: userProfile.id,
@@ -245,7 +279,8 @@ export function BookingPage() {
         setShowSuccess(true);
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Lỗi khi tạo đặt bàn";
+      const errorMessage =
+        err instanceof Error ? err.message : "Lỗi khi tạo đặt bàn";
       toast.error(errorMessage);
     }
   };
@@ -276,12 +311,17 @@ export function BookingPage() {
               </div>
             </div>
             <p className="text-gray-600 mb-2 text-center">Mã đặt bàn</p>
-            <p className="text-2xl mb-4 text-center font-semibold">{createdReservation?.id || "BOOKING-001"}</p>
+            <p className="text-2xl mb-4 text-center font-semibold">
+              {createdReservation?.id || "BOOKING-001"}
+            </p>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-gray-600">Ngày giờ</p>
                 <p>
-                  {formatDateTime(createdReservation?.reservation_date, createdReservation?.reservation_time)}
+                  {formatDateTime(
+                    createdReservation?.reservation_date,
+                    createdReservation?.reservation_time
+                  )}
                 </p>
               </div>
               <div>
@@ -308,7 +348,11 @@ export function BookingPage() {
             </Button>
             <Button
               variant="secondary"
-              onClick={() => navigate("/customer/booking-management", { state: { reservationId: createdReservation?.id } })}
+              onClick={() =>
+                navigate("/customer/booking-management", {
+                  state: { reservationId: createdReservation?.id },
+                })
+              }
             >
               Xem chi tiết
             </Button>
@@ -328,7 +372,7 @@ export function BookingPage() {
       </div>
 
       {/* Blacklist Warning */}
-      {isUserBanned && (
+      {isUserBanned ? (
         <Card className="p-6 mb-6 border-red-300 bg-red-50">
           <div className="flex items-start gap-3">
             <div className="flex-1">
@@ -343,9 +387,9 @@ export function BookingPage() {
             </div>
           </div>
         </Card>
-      )}
-
-      {/* Progress Steps */}
+      ) : (
+        <>
+          {/* Progress Steps */}
           <div className="flex items-center justify-center mb-12">
             {["Chọn thời gian", "Chọn bàn", "Thông tin", "Thanh toán"].map(
               (label, index) => (
@@ -414,7 +458,10 @@ export function BookingPage() {
                   icon={<Clock className="w-4 h-4" />}
                   value={bookingData.checkoutTime}
                   onChange={(e) =>
-                    setBookingData({ ...bookingData, checkoutTime: e.target.value })
+                    setBookingData({
+                      ...bookingData,
+                      checkoutTime: e.target.value,
+                    })
                   }
                   min="08:00"
                   max="20:00"
@@ -453,9 +500,19 @@ export function BookingPage() {
                     return;
                   }
 
-                  const [year, month, day] = bookingData.date.split('-').map(Number);
-                  const [hour, minute] = bookingData.time.split(':').map(Number);
-                  const reservationDateTime = new Date(year, month - 1, day, hour, minute);
+                  const [year, month, day] = bookingData.date
+                    .split("-")
+                    .map(Number);
+                  const [hour, minute] = bookingData.time
+                    .split(":")
+                    .map(Number);
+                  const reservationDateTime = new Date(
+                    year,
+                    month - 1,
+                    day,
+                    hour,
+                    minute
+                  );
                   const now = new Date();
 
                   if (reservationDateTime <= now) {
@@ -506,19 +563,20 @@ export function BookingPage() {
                     const [resHours, resMinutes] = bookingData.time
                       .split(":")
                       .map(Number);
-                    const [checkoutHours, checkoutMinutes] = bookingData.checkoutTime
-                      .split(":")
-                      .map(Number);
-                    
+                    const [checkoutHours, checkoutMinutes] =
+                      bookingData.checkoutTime.split(":").map(Number);
+
                     const resTimeInMinutes = resHours * 60 + resMinutes;
-                    const checkoutTimeInMinutes = checkoutHours * 60 + checkoutMinutes;
-                    const timeDifference = checkoutTimeInMinutes - resTimeInMinutes;
-                    
+                    const checkoutTimeInMinutes =
+                      checkoutHours * 60 + checkoutMinutes;
+                    const timeDifference =
+                      checkoutTimeInMinutes - resTimeInMinutes;
+
                     if (timeDifference <= 0) {
                       toast.error("Giờ kết thúc phải sau giờ đặt bàn");
                       return;
                     }
-                    
+
                     if (timeDifference > 3 * 60) {
                       toast.error("Thời gian giữ bàn tối đa là 3 giờ");
                       return;
@@ -547,7 +605,12 @@ export function BookingPage() {
 
                   setStep(2);
                 }}
-                disabled={!bookingData.date || !bookingData.time || !bookingData.checkoutTime || isUserBanned}
+                disabled={
+                  !bookingData.date ||
+                  !bookingData.time ||
+                  !bookingData.checkoutTime ||
+                  isUserBanned
+                }
               >
                 Tiếp tục
               </Button>
@@ -565,12 +628,14 @@ export function BookingPage() {
                   </div>
                 ) : checkingAvailability ? (
                   <div className="text-center py-8">
-                    <p className="text-gray-500">Đang kiểm tra tính sẵn có...</p>
+                    <p className="text-gray-500">
+                      Đang kiểm tra tính sẵn có...
+                    </p>
                   </div>
                 ) : error ? (
                   <div className="text-center py-8">
                     <p className="text-red-500">{error}</p>
-                    <Button 
+                    <Button
                       className="mt-4"
                       onClick={() => window.location.reload()}
                     >
@@ -594,7 +659,9 @@ export function BookingPage() {
                       >
                         <div className="text-center">
                           <p className="mb-1">{table.table_number}</p>
-                          <p className="text-sm text-gray-600">{getFloorName(table.location_id)}</p>
+                          <p className="text-sm text-gray-600">
+                            {getFloorName(table.location_id)}
+                          </p>
                           <p className="text-xs text-gray-500">
                             {table.capacity} chỗ ngồi
                           </p>
@@ -605,7 +672,8 @@ export function BookingPage() {
                 ) : (
                   <div className="text-center py-8">
                     <p className="text-gray-500 mb-2">
-                      Không có bàn phù hợp cho {bookingData.guests} người vào thời gian này
+                      Không có bàn phù hợp cho {bookingData.guests} người vào
+                      thời gian này
                     </p>
                   </div>
                 )}
@@ -614,7 +682,12 @@ export function BookingPage() {
                 <Button variant="secondary" onClick={() => setStep(1)}>
                   Quay lại
                 </Button>
-                <Button onClick={() => setStep(3)} disabled={!selectedTable || isUserBanned || checkingAvailability}>
+                <Button
+                  onClick={() => setStep(3)}
+                  disabled={
+                    !selectedTable || isUserBanned || checkingAvailability
+                  }
+                >
                   Tiếp tục
                 </Button>
               </div>
@@ -663,7 +736,9 @@ export function BookingPage() {
                 </Button>
                 <Button
                   onClick={() => setStep(4)}
-                  disabled={!bookingData.name || !bookingData.phone || isUserBanned}
+                  disabled={
+                    !bookingData.name || !bookingData.phone || isUserBanned
+                  }
                 >
                   Tiếp tục
                 </Button>
@@ -685,41 +760,45 @@ export function BookingPage() {
 
                 <div className="space-y-4 mb-6">
                   <div className="grid grid-cols-2 gap-4">
-                    <button 
-                      onClick={() => setPaymentMethod('wallet')}
+                    <button
+                      onClick={() => setPaymentMethod("wallet")}
                       disabled={isUserBanned}
                       className={`p-4 border-2 rounded-lg text-left transition cursor-pointer ${
                         isUserBanned
-                          ? 'opacity-50 cursor-not-allowed'
-                          : paymentMethod === 'wallet'
-                          ? 'border-[#625EE8] bg-blue-50 hover:bg-blue-100'
-                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                          ? "opacity-50 cursor-not-allowed"
+                          : paymentMethod === "wallet"
+                          ? "border-[#625EE8] bg-blue-50 hover:bg-blue-100"
+                          : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                       }`}
                     >
-                      <CreditCard className={`w-6 h-6 mb-2 ${
-                        paymentMethod === 'wallet'
-                          ? 'text-[#625EE8]'
-                          : 'text-gray-600'
-                      }`} />
+                      <CreditCard
+                        className={`w-6 h-6 mb-2 ${
+                          paymentMethod === "wallet"
+                            ? "text-[#625EE8]"
+                            : "text-gray-600"
+                        }`}
+                      />
                       <p>Ví điện tử</p>
                       <p className="text-sm text-gray-600">MoMo, ZaloPay</p>
                     </button>
-                    <button 
-                      onClick={() => setPaymentMethod('card')}
+                    <button
+                      onClick={() => setPaymentMethod("card")}
                       disabled={isUserBanned}
                       className={`p-4 border-2 rounded-lg text-left transition cursor-pointer ${
                         isUserBanned
-                          ? 'opacity-50 cursor-not-allowed'
-                          : paymentMethod === 'card'
-                          ? 'border-[#625EE8] bg-blue-50 hover:bg-blue-100'
-                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                          ? "opacity-50 cursor-not-allowed"
+                          : paymentMethod === "card"
+                          ? "border-[#625EE8] bg-blue-50 hover:bg-blue-100"
+                          : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                       }`}
                     >
-                      <CreditCard className={`w-6 h-6 mb-2 ${
-                        paymentMethod === 'card'
-                          ? 'text-[#625EE8]'
-                          : 'text-gray-600'
-                      }`} />
+                      <CreditCard
+                        className={`w-6 h-6 mb-2 ${
+                          paymentMethod === "card"
+                            ? "text-[#625EE8]"
+                            : "text-gray-600"
+                        }`}
+                      />
                       <p>Thẻ ngân hàng</p>
                       <p className="text-sm text-gray-600">ATM, Visa, Master</p>
                     </button>
@@ -738,7 +817,8 @@ export function BookingPage() {
                     <div className="flex justify-between">
                       <span className="text-gray-600">Bàn số:</span>
                       <span>
-                        {selectedTable?.table_number} - {getFloorName(selectedTable?.location_id)}
+                        {selectedTable?.table_number} -{" "}
+                        {getFloorName(selectedTable?.location_id)}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -756,7 +836,7 @@ export function BookingPage() {
                 <Button variant="secondary" onClick={() => setStep(3)}>
                   Quay lại
                 </Button>
-                <Button 
+                <Button
                   onClick={handleConfirmBooking}
                   disabled={!paymentMethod || isUserBanned}
                 >
@@ -765,6 +845,8 @@ export function BookingPage() {
               </div>
             </div>
           )}
-        </div>
-      );
-    }
+        </>
+      )}
+    </div>
+  );
+}
