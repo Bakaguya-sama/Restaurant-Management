@@ -205,8 +205,13 @@ export function BillsPage() {
     );
     if (voucher) {
       
-      const availableUses = (voucher.max_uses || 0) - (voucher.current_uses || 0);
-      if (availableUses <= 0) {
+      // Check if promotion has available uses (unlimited if max_uses = -1)
+      if (
+        voucher.max_uses !== undefined &&
+        voucher.max_uses !== -1 &&
+        voucher.current_uses !== undefined &&
+        voucher.current_uses >= voucher.max_uses
+      ) {
         toast.error("Đã hết lượt sử dụng cho mã khuyến mãi này");
         return;
       }
@@ -257,8 +262,13 @@ export function BillsPage() {
 
   const handleSelectPromotion = (promo: Promotion) => {
     
-    const availableUses = (promo.max_uses || 0) - (promo.current_uses || 0);
-    if (availableUses <= 0) {
+    // Check if promotion has available uses (unlimited if max_uses = -1)
+    if (
+      promo.max_uses !== undefined &&
+      promo.max_uses !== -1 &&
+      promo.current_uses !== undefined &&
+      promo.current_uses >= promo.max_uses
+    ) {
       toast.error("Đã hết lượt sử dụng cho mã khuyến mãi này");
       return;
     }
@@ -940,7 +950,20 @@ export function BillsPage() {
                 <p className="text-center text-gray-500 py-4">Không có khuyến mãi nào</p>
               ) : (
                 promotions
-                  .filter((p) => p.is_active && ((p.max_uses || 0) - (p.current_uses || 0)) > 0)
+                  .filter((p) => {
+                    if (!p.is_active) return false;
+                    
+                    // Check minimum order amount
+                    if (p.minimum_order_amount && selectedBill) {
+                      const orderTotal = selectedBill.subtotal + selectedBill.tax;
+                      if (orderTotal < p.minimum_order_amount) return false;
+                    }
+                    
+                    // Unlimited promotions (max_uses = -1) are always available
+                    if (p.max_uses === -1) return true;
+                    // Limited promotions must have uses remaining
+                    return p.max_uses !== undefined && p.current_uses !== undefined && p.current_uses < p.max_uses;
+                  })
                   .map((promo) => (
                     <div
                       key={promo.id || promo._id}
@@ -964,7 +987,9 @@ export function BillsPage() {
                           {new Date(promo.end_date).toLocaleDateString("vi-VN")}
                         </p>
                         <p className="text-xs text-gray-500">
-                          Còn {(promo.max_uses || 0) - (promo.current_uses || 0)} lượt
+                          {promo.max_uses === -1 
+                            ? "Không giới hạn"
+                            : `Còn ${(promo.max_uses || 0) - (promo.current_uses || 0)} lượt`}
                         </p>
                       </div>
                       {promo.minimum_order_amount > 0 && (
