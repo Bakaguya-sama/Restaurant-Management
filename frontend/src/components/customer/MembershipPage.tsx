@@ -220,6 +220,7 @@ export function MembershipPage() {
   // Tính toán next tier points dựa trên membership level
   const getNextTierPoints = (level: string) => {
     const tierMap: Record<string, number> = {
+      regular: 1000,
       bronze: 1000,
       silver: 2000,
       gold: 5000,
@@ -235,10 +236,10 @@ export function MembershipPage() {
       currentCustomer?.name ||
       userProfile?.name ||
       "Khách hàng",
-    tier: currentCustomer?.membership_level || "bronze",
+    tier: currentCustomer?.membership_level || "regular",
     points: currentCustomer?.points || 0,
     nextTierPoints: getNextTierPoints(
-      currentCustomer?.membership_level || "bronze"
+      currentCustomer?.membership_level || "regular"
     ),
     totalSpent: currentCustomer?.total_spent || 0,
   };
@@ -257,9 +258,10 @@ export function MembershipPage() {
     gold: { name: "Vàng", color: "from-yellow-400 to-yellow-600", icon: "👑" },
     silver: { name: "Bạc", color: "from-gray-300 to-gray-500", icon: "🥈" },
     bronze: { name: "Đồng", color: "from-amber-600 to-amber-800", icon: "🥉" },
+    regular: { name: "Thành viên", color: "from-gray-400 to-gray-600", icon: "⭐" },
   };
 
-  const currentTier = tierConfig[memberData.tier as keyof typeof tierConfig] || tierConfig.bronze;
+  const currentTier = tierConfig[memberData.tier as keyof typeof tierConfig] || tierConfig.regular;
   const progress = (memberData.points / memberData.nextTierPoints) * 100;
 
   const handleCopyCode = async (code: string) => {
