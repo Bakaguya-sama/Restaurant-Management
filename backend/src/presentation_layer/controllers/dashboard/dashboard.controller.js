@@ -15,11 +15,11 @@ class DashboardController {
 
   /**
    * Get dashboard statistics by date range
-   * Query params: range (today, week, month)
+   * Query params: range (today, week, month), page (for invoice list), limit (items per page)
    */
   async getDashboardStatistics(req, res) {
     try {
-      const { range = 'week' } = req.query;
+      const { range = 'week', page = 1, limit = 5 } = req.query;
       
       // Calculate date range
       const endDate = new Date();
@@ -41,7 +41,7 @@ class DashboardController {
       }
 
       // Fetch all statistics
-      const invoiceStats = await this.getInvoiceStatsByRange(startDate, endDate);
+      const invoiceStats = await this.getInvoiceStatsByRange(startDate, endDate, parseInt(page), parseInt(limit));
       const topDishes = await this.getTopDishes(startDate, endDate, 5);
       const lowDishes = await this.getLowDishes(startDate, endDate, 2);
       const damagedItems = []; // Empty for now - need inventory log
@@ -212,8 +212,19 @@ class DashboardController {
   }
 
   // Helper methods
-  async getInvoiceStatsByRange(startDate, endDate) {
+  async getInvoiceStatsByRange(startDate, endDate, page = 1, limit = 5) {
     try {
+      const skip = (page - 1) * limit;
+      
+      // Get total count for pagination
+      const totalCount = await Invoice.countDocuments({
+        payment_status: 'paid',
+        invoice_date: {
+          $gte: startDate,
+          $lte: endDate
+        }
+      });
+      
       const invoices = await Invoice.find({
         payment_status: 'paid',
         invoice_date: {
@@ -222,8 +233,10 @@ class DashboardController {
         }
       })
       .populate('customer_id', 'full_name')
+      .populate('order_id')
       .sort({ invoice_date: -1 })
-      .limit(5)
+      .skip(skip)
+      .limit(limit)
       .lean();
 
       const totalRevenue = await Invoice.aggregate([
@@ -245,23 +258,44 @@ class DashboardController {
         }
       ]);
 
-      const list = (invoices || []).map(inv => ({
-        id: inv.invoice_number || inv._id.toString(),
-        date: inv.invoice_date ? inv.invoice_date.toISOString().replace('T', ' ').substring(0, 16) : '',
-        customer: inv.customer_id?.full_name || 'Guest',
-        items: 0,
-        total: inv.total_amount || 0,
-        status: inv.payment_status || 'pending'
+      // Get order details for each invoice to count items
+      const list = await Promise.all((invoices || []).map(async (inv) => {
+        let totalItems = 0;
+        
+        if (inv.order_id?._id) {
+          // Query OrderDetail to count total items for this order
+          const orderDetails = await OrderDetail.find({ 
+            order_id: inv.order_id._id,
+            status: { $ne: 'cancelled' }
+          }).lean();
+          
+          totalItems = orderDetails.reduce((sum, detail) => sum + (detail.quantity || 0), 0);
+        }
+        
+        return {
+          id: inv.invoice_number || inv._id.toString(),
+          date: inv.invoice_date ? inv.invoice_date.toISOString().replace('T', ' ').substring(0, 16) : '',
+          customer: inv.customer_id?.full_name || 'Guest',
+          items: totalItems,
+          total: inv.total_amount || 0,
+          status: inv.payment_status || 'pending'
+        };
       }));
 
       return {
         count: totalRevenue[0]?.count || 0,
         revenue: totalRevenue[0]?.total || 0,
-        list
+        list,
+        pagination: {
+          currentPage: page,
+          totalPages: Math.ceil(totalCount / limit),
+          totalItems: totalCount,
+          itemsPerPage: limit
+        }
       };
     } catch (error) {
       console.error('Error getting invoice stats:', error);
-      return { count: 0, revenue: 0, list: [] };
+      return { count: 0, revenue: 0, list: [], pagination: { currentPage: 1, totalPages: 0, totalItems: 0, itemsPerPage: limit } };
     }
   }
 

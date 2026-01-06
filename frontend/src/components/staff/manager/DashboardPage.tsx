@@ -22,6 +22,8 @@ export function ManagerDashboard() {
   const [inventoryAlerts, setInventoryAlerts] = useState<InventoryAlert[]>([]);
   const [customerStats, setCustomerStats] = useState<CustomerStatistics | null>(null);
   const [recentFeedback, setRecentFeedback] = useState<Feedback[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   // Calculate date range for filtering
   const getDateRange = () => {
@@ -64,19 +66,22 @@ export function ManagerDashboard() {
   // Fetch dashboard data
   useEffect(() => {
     fetchDashboardData();
-  }, [dateRange]);
+  }, [dateRange, currentPage]);
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
       const [statsResponse, alertsResponse, customerResponse, feedbackResponse] = await Promise.all([
-        dashboardApi.getStatistics(dateRange),
+        dashboardApi.getStatistics(dateRange, currentPage, 5),
         dashboardApi.getInventoryAlerts(),
         dashboardApi.getCustomerStatistics(),
         dashboardApi.getRecentFeedback(5, dateRange)
       ]);
 
       setDashboardData(statsResponse.data);
+      if (statsResponse.data?.invoices?.pagination) {
+        setTotalPages(statsResponse.data.invoices.pagination.totalPages);
+      }
       setInventoryAlerts(alertsResponse.data || []);
       setCustomerStats(customerResponse.data || { total: 0, vip: 0, new: 0, returning: 0, avgSpending: 0 });
       setRecentFeedback(feedbackResponse.data || []);
@@ -410,7 +415,10 @@ export function ManagerDashboard() {
         <div className="flex gap-3">
           <select
             value={dateRange}
-            onChange={(e) => setDateRange(e.target.value as "today" | "week" | "month")}
+            onChange={(e) => {
+              setDateRange(e.target.value as "today" | "week" | "month");
+              setCurrentPage(1); // Reset to page 1 when changing date range
+            }}
             className="px-4 py-2 border border-gray-300 rounded-lg h-10"
             disabled={loading}
           >
@@ -614,6 +622,31 @@ export function ManagerDashboard() {
               </tbody>
             </table>
           </div>
+          
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-4">
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                Trước
+              </Button>
+              <span className="text-sm text-gray-600">
+                Trang {currentPage} / {totalPages}
+              </span>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Sau
+              </Button>
+            </div>
+          )}
         </Card>
 
         {/* 4. Báo cáo thống kê món ăn */}

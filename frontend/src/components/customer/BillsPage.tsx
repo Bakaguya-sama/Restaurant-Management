@@ -42,8 +42,7 @@ export function BillsPage() {
   const [loading, setLoading] = useState(true);
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
-
-  const customerPoints = 1500;
+  const [customerPoints, setCustomerPoints] = useState(0);
 
   const fetchInvoices = async () => {
     try {
@@ -60,6 +59,17 @@ export function BillsPage() {
 
       setCustomerId(currentUserId);
 
+      // Fetch customer data to get current points
+      try {
+        const customerResponse = await customerApi.getById(currentUserId);
+        if (customerResponse.success && customerResponse.data) {
+          setCustomerPoints(customerResponse.data.points || 0);
+        }
+      } catch (error) {
+        console.error("Error fetching customer points:", error);
+        setCustomerPoints(0);
+      }
+
       const invoicesResponse = await invoiceApi.getByCustomerId(currentUserId);
       
       if (!invoicesResponse.success || !invoicesResponse.data) {
@@ -68,6 +78,31 @@ export function BillsPage() {
         return;
       }
 
+      // Fetch invoice_promotions to get voucher details
+      let invoicePromotions: any = {};
+      try {
+        const apiBaseUrl = (import.meta as any).env?.VITE_API_URL || "http://localhost:5000/api/v1";
+        const ipResponse = await fetch(`${apiBaseUrl}/invoice-promotions`);
+        if (ipResponse.ok) {
+          const ipResult = await ipResponse.json();
+          if (ipResult.success && ipResult.data) {
+            // Map invoice_promotions by invoice_id
+            ipResult.data.forEach((ip: any) => {
+              const invId = ip.invoice_id?._id || ip.invoice_id?.id || ip.invoice_id;
+              if (invId) {
+                invoicePromotions[invId] = {
+                  promotionId: ip.promotion_id?._id || ip.promotion_id?.id || ip.promotion_id,
+                  voucherCode: ip.promotion_id?.promo_code || null,
+                  discountAmount: ip.discount_applied || 0
+                };
+              }
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching invoice promotions:", error);
+      }
+      
       
       let customerRatings: any = {};
       try {
@@ -100,11 +135,19 @@ export function BillsPage() {
         const orderItems = invoiceObj.order_id?.items || [];
         const invoiceId = invoiceObj._id || invoiceObj.id;
         const invoiceRating = customerRatings[invoiceId];
+        const invoicePromotion = invoicePromotions[invoiceId];
         
-        const totalDiscount = invoiceObj.discount_amount || 0;
+        // Calculate discounts
         const pointsUsed = invoiceObj.points_used || 0;
         const pointsDiscount = pointsUsed * 1;
-        const voucherDiscount = Math.max(0, totalDiscount - pointsDiscount);
+        
+        // Voucher discount from invoice_promotion or from discount_amount
+        const voucherDiscount = invoicePromotion?.discountAmount || invoiceObj.discount_amount || 0;
+        const voucherCode = invoicePromotion?.voucherCode || null;
+        const promotionId = invoicePromotion?.promotionId || null;
+        
+        // Total discount is voucher + points
+        const totalDiscount = voucherDiscount + pointsDiscount;
         
         return {
           id: invoiceId,
@@ -129,8 +172,9 @@ export function BillsPage() {
           total: invoiceObj.total_amount,
           status: invoiceObj.payment_status,
           createdAt: invoiceObj.created_at,
-          voucherCode: null,
-          voucherUsed: null,
+          voucherCode: voucherCode,
+          voucherUsed: voucherCode,
+          promotionId: promotionId,
           pointsUsed: pointsUsed,
           paymentMethod: invoiceObj.payment_method,
           orderId: invoiceObj.order_id?._id,
@@ -174,8 +218,13 @@ export function BillsPage() {
     );
     if (voucher) {
       
-      const availableUses = (voucher.max_uses || 0) - (voucher.current_uses || 0);
-      if (availableUses <= 0) {
+      // Check if promotion has available uses (unlimited if max_uses = -1)
+      if (
+        voucher.max_uses !== undefined &&
+        voucher.max_uses !== -1 &&
+        voucher.current_uses !== undefined &&
+        voucher.current_uses >= voucher.max_uses
+      ) {
         toast.error("Đã hết lượt sử dụng cho mã khuyến mãi này");
         return;
       }
@@ -208,6 +257,7 @@ export function BillsPage() {
         ...updatedBills[billIndex],
         voucherDiscount: voucherDiscount,
         voucherCode: voucher.promo_code,
+        promotionId: voucher._id || voucher.id,
         discount: totalDiscount, 
         total:
           updatedBills[billIndex].subtotal +
@@ -225,8 +275,13 @@ export function BillsPage() {
 
   const handleSelectPromotion = (promo: Promotion) => {
     
-    const availableUses = (promo.max_uses || 0) - (promo.current_uses || 0);
-    if (availableUses <= 0) {
+    // Check if promotion has available uses (unlimited if max_uses = -1)
+    if (
+      promo.max_uses !== undefined &&
+      promo.max_uses !== -1 &&
+      promo.current_uses !== undefined &&
+      promo.current_uses >= promo.max_uses
+    ) {
       toast.error("Đã hết lượt sử dụng cho mã khuyến mãi này");
       return;
     }
@@ -248,10 +303,8 @@ export function BillsPage() {
     }
 
     setAppliedVoucher(promo);
-    setVoucherCode(promo.promo_code || "");
     const updatedBills = [...allBills];
     const billIndex = updatedBills.findIndex((b) => b.id === selectedBill.id);
-    
     
     const totalDiscount = voucherDiscount + updatedBills[billIndex].pointsDiscount;
     
@@ -259,7 +312,8 @@ export function BillsPage() {
       ...updatedBills[billIndex],
       voucherDiscount: voucherDiscount,
       voucherCode: promo.promo_code,
-      discount: totalDiscount, 
+      promotionId: promo._id || promo.id,
+      discount: totalDiscount,
       total:
         updatedBills[billIndex].subtotal +
         updatedBills[billIndex].tax -
@@ -267,6 +321,7 @@ export function BillsPage() {
     };
     setAllBills(updatedBills);
     setSelectedBill(updatedBills[billIndex]);
+    setVoucherCode(promo.promo_code);
     setShowVoucherModal(false);
     toast.success("Áp dụng voucher thành công!");
   };
@@ -340,7 +395,7 @@ export function BillsPage() {
         await invoiceApi.markAsPaid(
           selectedBill.invoiceId, 
           mappedPaymentMethod,
-          null,
+          selectedBill.promotionId || null,
           selectedBill.pointsUsed || 0
         );
         
@@ -359,6 +414,8 @@ export function BillsPage() {
       setPaymentMethod(null);
       setPointsToUse(0);
       setShowVoucherSection(false);
+      setAppliedVoucher(null);
+      setVoucherCode("");
     } catch (error: any) {
       console.error("Payment error:", error);
       toast.error(error.message || "Thanh toán thất bại");
@@ -906,7 +963,20 @@ export function BillsPage() {
                 <p className="text-center text-gray-500 py-4">Không có khuyến mãi nào</p>
               ) : (
                 promotions
-                  .filter((p) => p.is_active && ((p.max_uses || 0) - (p.current_uses || 0)) > 0)
+                  .filter((p) => {
+                    if (!p.is_active) return false;
+                    
+                    // Check minimum order amount
+                    if (p.minimum_order_amount && selectedBill) {
+                      const orderTotal = selectedBill.subtotal + selectedBill.tax;
+                      if (orderTotal < p.minimum_order_amount) return false;
+                    }
+                    
+                    // Unlimited promotions (max_uses = -1) are always available
+                    if (p.max_uses === -1) return true;
+                    // Limited promotions must have uses remaining
+                    return p.max_uses !== undefined && p.current_uses !== undefined && p.current_uses < p.max_uses;
+                  })
                   .map((promo) => (
                     <div
                       key={promo.id || promo._id}
@@ -930,7 +1000,9 @@ export function BillsPage() {
                           {new Date(promo.end_date).toLocaleDateString("vi-VN")}
                         </p>
                         <p className="text-xs text-gray-500">
-                          Còn {(promo.max_uses || 0) - (promo.current_uses || 0)} lượt
+                          {promo.max_uses === -1 
+                            ? "Không giới hạn"
+                            : `Còn ${(promo.max_uses || 0) - (promo.current_uses || 0)} lượt`}
                         </p>
                       </div>
                       {promo.minimum_order_amount > 0 && (
@@ -949,7 +1021,10 @@ export function BillsPage() {
       {/* Payment Modal */}
       <Modal
         isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
+        onClose={() => {
+          setShowPaymentModal(false);
+          setPaymentMethod(null);
+        }}
         title="Thanh toán hóa đơn"
       >
         <div className="space-y-6">
