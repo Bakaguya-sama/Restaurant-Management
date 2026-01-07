@@ -307,9 +307,8 @@ export function InvoicesPage() {
       toast.error("Số tiền không đủ!");
       return;
     }
-    const pointsEarned = Math.floor(totalAmount / 10);
-
     const pointsUsed = selectedInvoice.customerSelectedPoints || 0;
+    let pointsEarned = 0;
 
     const paymentMethodMap: { [key: string]: string } = {
       cash: 'cash',
@@ -319,12 +318,17 @@ export function InvoicesPage() {
 
     try {
       const promotionId = cashierSelectedPromotion?.id || null;
-      await invoiceApi.markAsPaid(
+      const paymentResponse = await invoiceApi.markAsPaid(
         selectedInvoice.id, 
         paymentMethodMap[paymentMethod] || 'cash',
         promotionId,
         pointsUsed
       );
+      
+      if (paymentResponse && paymentResponse.points_earned !== undefined) {
+        pointsEarned = paymentResponse.points_earned;
+      }
+      
       await fetchInvoices();
 
       setInvoices((prev) =>
@@ -360,7 +364,7 @@ export function InvoicesPage() {
           {change > 0 && (
             <p className="text-sm">Tiền thừa: {change.toLocaleString()}đ</p>
           )}
-          {pointsEarned > 0 && (
+          {pointsEarned > 0 && pointsUsed === 0 && (
             <p className="text-sm text-green-600">
               +{pointsEarned} điểm tích lũy
             </p>

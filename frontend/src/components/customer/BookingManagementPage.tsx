@@ -123,7 +123,7 @@ export function BookingManagementPage() {
       const reservation = enrichedReservations.find((r) => r.id === state.reservationId);
       if (reservation) {
         setSelectedBooking(reservation);
-        if (!reservation.isPaid) {
+        if (!reservation.isPaid && reservation.status !== 'cancelled') {
           setShowPaymentModal(true);
         } else {
           setShowDetailModal(true);
@@ -282,9 +282,11 @@ export function BookingManagementPage() {
         
         setShowCancelModal(false);
         setShowDetailModal(false);
+        setShowPaymentModal(false);
         
-        if (selectedBooking.customer_id) {
-          await fetchReservationsByCustomerId(selectedBooking.customer_id);
+        const customerId = selectedBooking.customer_id || userProfile?.id;
+        if (customerId) {
+          await fetchReservationsByCustomerId(customerId);
         }
         
         setSelectedBooking(null);
@@ -393,7 +395,7 @@ export function BookingManagementPage() {
               fullWidth
               onClick={() => {
                 setSelectedBooking(booking);
-                if (!booking.isPaid) {
+                if (!booking.isPaid && booking.status !== 'cancelled') {
                   setShowPaymentModal(true);
                 } else {
                   setShowDetailModal(true);
@@ -421,13 +423,13 @@ export function BookingManagementPage() {
           setSelectedBooking(null);
           setShowVoucherSection(false);
         }}
-        title={`Chi tiết đặt bàn
-        `}
+        title={`Chi tiết đặt bàn`}
         size="lg"
       >
         {selectedBooking ? (
           /* Hiển thị chi tiết hóa đơn */
           <div className="space-y-6">
+            
             {/* Bill Info */}
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <div>
@@ -498,16 +500,16 @@ export function BookingManagementPage() {
               )}
 
               {/* Deposit Information */}
-              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className={`p-4 border rounded-lg ${selectedBooking.isPaid ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600 mb-1">Tiền đặt cọc</p>
-                    <p className="text-xl font-medium text-green-700">
+                    <p className={`text-xl font-medium ${selectedBooking.isPaid ? 'text-green-700' : 'text-gray-700'}`}>
                       {(selectedBooking.deposit_amount || 0).toLocaleString()}đ
                     </p>
                   </div>
-                  <Badge className="bg-green-100 text-green-700">
-                    Đã thanh toán
+                  <Badge className={selectedBooking.isPaid ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}>
+                    {selectedBooking.isPaid ? 'Đã thanh toán' : 'Chưa thanh toán'}
                   </Badge>
                 </div>
               </div>
@@ -549,229 +551,13 @@ export function BookingManagementPage() {
                 )}
               </div>
             </div>
-
-            {/* Booking Details */}
-            {/* <div className="border rounded-lg p-4 bg-blue-50">
-              <h4 className="mb-3 flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-[#625EE8]" />
-                Thông tin đặt bàn
-              </h4>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="col-span-2 pb-3 mb-3 border-b border-blue-200">
-                  <p className="text-gray-600 text-xs mb-1">Mã phiếu đặt bàn</p>
-                  <p className="font-bold text-xl text-[#625EE8]">
-                    {selectedBooking.id}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-600">Số người:</p>
-                  <p className="font-medium">{selectedBooking.guests} người</p>
-                </div>
-                <div>
-                  <p className="text-gray-600">Giờ đặt:</p>
-                  <p className="font-medium">{selectedBooking.reservation_time}</p>
-                </div>
-                {selectedBooking.notes && (
-                  <div className="col-span-2">
-                    <p className="text-gray-600">Ghi chú:</p>
-                    <p className="font-medium">{selectedBooking.notes}</p>
-                  </div>
-                )}
-                <div className="col-span-2 pt-2 border-t border-blue-200">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">
-                      Tiền cọc đã thanh toán:
-                    </span>
-                    <span className="font-medium text-[#625EE8]">
-                      {selectedBooking.depositAmount.toLocaleString()}đ
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div> */}
-
-            {/* Items List */}
-            {/* <div>
-              <h4 className="mb-3">Món đã gọi</h4>
-              <div className="space-y-3">
-                {selectedBooking.bill.items.map((item: any) => (
-                  <div
-                    key={item.id}
-                    className="flex items-start gap-4 p-3 bg-gray-50 rounded-lg"
-                  >
-                    <Utensils className="w-5 h-5 text-gray-400 mt-1" />
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h4 className="text-sm mb-1">{item.name}</h4>
-                          {item.notes && (
-                            <p className="text-xs text-gray-600">
-                              Ghi chú: {item.notes}
-                            </p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm mb-1">
-                            {item.price.toLocaleString()}đ x {item.quantity}
-                          </p>
-                          <p className="text-[#625EE8] text-sm">
-                            {(item.price * item.quantity).toLocaleString()}đ
-                          </p>
-                        </div>
-                      </div>
-                      {item.status && (
-                        <Badge className={getItemStatusColor(item.status)}>
-                          {getItemStatusText(item.status)}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div> */}
-
-            {/* Bill Summary */}
-            {/* <div className="border-t pt-4 space-y-2">
-              <div className="flex justify-between text-gray-600">
-                <span>Tạm tính:</span>
-                <span>{selectedBooking.bill.subtotal.toLocaleString()}đ</span>
-              </div>
-              <div className="flex justify-between text-gray-600">
-                <span>Thuế VAT (10%):</span>
-                <span>{selectedBooking.bill.tax.toLocaleString()}đ</span>
-              </div>
-              {selectedBooking.bill.voucherDiscount > 0 && (
-                <div className="flex justify-between text-green-600">
-                  <span>Giảm giá (Voucher):</span>
-                  <span>
-                    -{selectedBooking.bill.voucherDiscount.toLocaleString()}đ
-                  </span>
-                </div>
-              )}
-              {selectedBooking.bill.pointsDiscount > 0 && (
-                <div className="flex justify-between text-green-600">
-                  <span>Giảm giá (Điểm):</span>
-                  <span>
-                    -{selectedBooking.bill.pointsDiscount.toLocaleString()}đ
-                  </span>
-                </div>
-              )}
-              <div className="flex justify-between text-xl pt-2 border-t">
-                <span>Tổng cộng:</span>
-                <span className="text-[#625EE8]">
-                  {selectedBooking.bill.total.toLocaleString()}đ
-                </span>
-              </div>
-            </div> */}
           </div>
         ) : (
           ""
         )}
       </Modal>
 
-      {/* Feedback Modal */}
-      {/* <Modal
-        isOpen={showFeedbackModal}
-        onClose={() => setShowFeedbackModal(false)}
-        title="Gửi đánh giá"
-      >
-        <div className="space-y-6">
-          <div>
-            <label className="block mb-3 text-center">
-              Bạn đánh giá thế nào về dịch vụ của chúng tôi?
-            </label>
-            <div className="flex justify-center gap-2">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  onClick={() => setRating(star)}
-                  className="transition-transform hover:scale-110"
-                >
-                  <Star
-                    className={`w-10 h-10 ${
-                      star <= rating
-                        ? "fill-yellow-400 text-yellow-400"
-                        : "text-gray-300"
-                    }`}
-                  />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="block mb-2">Chia sẻ cảm nhận của bạn</label>
-            <Textarea
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
-              placeholder="Món ăn ngon, phục vụ tận tình..."
-              rows={4}
-            />
-          </div>
-
-          <div className="flex gap-4">
-            <Button
-              variant="secondary"
-              fullWidth
-              onClick={() => setShowFeedbackModal(false)}
-            >
-              Bỏ qua
-            </Button>
-            <Button fullWidth onClick={handleSubmitFeedback}>
-              Gửi đánh giá
-            </Button>
-          </div>
-        </div>
-      </Modal> */}
-
-      {/* Cancel Booking Modal */}
-      <Modal
-        isOpen={showCancelModal}
-        onClose={() => setShowCancelModal(false)}
-        title="Xác nhận hủy đặt bàn"
-      >
-        <div className="space-y-6">
-          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-sm text-gray-700">
-              Bạn có chắc chắn muốn hủy phiếu đặt bàn{" "}
-              <span className="font-bold">{selectedBooking?.id}</span>?
-            </p>
-          </div>
-
-          {/* <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm flex-shrink-0 mt-0.5">
-                i
-              </div>
-              <div className="text-sm text-gray-700">
-                <p className="font-medium mb-2">Chính sách hoàn tiền:</p>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>Tiền cọc sẽ được hoàn lại 100%</li>
-                  <li>Thời gian xử lý: 3-5 ngày làm việc</li>
-                  <li>Tiền sẽ được hoàn về phương thức thanh toán ban đầu</li>
-                </ul>
-              </div>
-            </div>
-          </div> */}
-
-          <div className="flex gap-4">
-            <Button
-              variant="secondary"
-              fullWidth
-              onClick={() => setShowCancelModal(false)}
-            >
-              Giữ lại phiếu đặt
-            </Button>
-            <Button
-              fullWidth
-              onClick={handleCancelBooking}
-              className="bg-red-500 hover:bg-red-600"
-            >
-              Xác nhận hủy
-            </Button>
-          </div>
-        </div>
-      </Modal>
+      
 
       {/* Payment Modal - For pending status (unpaid deposit) */}
       <Modal
@@ -860,12 +646,10 @@ export function BookingManagementPage() {
               <Button
                 variant="secondary"
                 fullWidth
-                onClick={() => {
-                  setShowPaymentModal(false);
-                  setSelectedBooking(null);
-                }}
+                onClick={() => setShowCancelModal(true)}
+                className="border-red-500 text-red-600 hover:bg-red-50"
               >
-                Để sau
+                Hủy đặt bàn
               </Button>
               <Button
                 fullWidth
@@ -876,6 +660,55 @@ export function BookingManagementPage() {
             </div>
           </div>
         ) : null}
+      </Modal>
+
+      {/* Cancel Booking Modal */}
+      <Modal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        title="Xác nhận hủy đặt bàn"
+      >
+        <div className="space-y-6">
+          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-sm text-gray-700">
+              Bạn có chắc chắn muốn hủy phiếu đặt bàn{" "}
+              <span className="font-bold">{selectedBooking?.id}</span>?
+            </p>
+          </div>
+
+          {/* <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm flex-shrink-0 mt-0.5">
+                i
+              </div>
+              <div className="text-sm text-gray-700">
+                <p className="font-medium mb-2">Chính sách hoàn tiền:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Tiền cọc sẽ được hoàn lại 100%</li>
+                  <li>Thời gian xử lý: 3-5 ngày làm việc</li>
+                  <li>Tiền sẽ được hoàn về phương thức thanh toán ban đầu</li>
+                </ul>
+              </div>
+            </div>
+          </div> */}
+
+          <div className="flex gap-4">
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={() => setShowCancelModal(false)}
+            >
+              Giữ lại phiếu đặt
+            </Button>
+            <Button
+              fullWidth
+              onClick={handleCancelBooking}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Xác nhận hủy
+            </Button>
+          </div>
+        </div>
       </Modal>
         </>
       )}
