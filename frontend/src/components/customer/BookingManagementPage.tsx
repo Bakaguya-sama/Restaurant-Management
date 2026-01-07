@@ -282,6 +282,7 @@ export function BookingManagementPage() {
         
         setShowCancelModal(false);
         setShowDetailModal(false);
+        setShowPaymentModal(false);
         
         if (selectedBooking.customer_id) {
           await fetchReservationsByCustomerId(selectedBooking.customer_id);
@@ -724,55 +725,6 @@ export function BookingManagementPage() {
         </div>
       </Modal> */}
 
-      {/* Cancel Booking Modal */}
-      <Modal
-        isOpen={showCancelModal}
-        onClose={() => setShowCancelModal(false)}
-        title="Xác nhận hủy đặt bàn"
-      >
-        <div className="space-y-6">
-          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-sm text-gray-700">
-              Bạn có chắc chắn muốn hủy phiếu đặt bàn{" "}
-              <span className="font-bold">{selectedBooking?.id}</span>?
-            </p>
-          </div>
-
-          {/* <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm flex-shrink-0 mt-0.5">
-                i
-              </div>
-              <div className="text-sm text-gray-700">
-                <p className="font-medium mb-2">Chính sách hoàn tiền:</p>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>Tiền cọc sẽ được hoàn lại 100%</li>
-                  <li>Thời gian xử lý: 3-5 ngày làm việc</li>
-                  <li>Tiền sẽ được hoàn về phương thức thanh toán ban đầu</li>
-                </ul>
-              </div>
-            </div>
-          </div> */}
-
-          <div className="flex gap-4">
-            <Button
-              variant="secondary"
-              fullWidth
-              onClick={() => setShowCancelModal(false)}
-            >
-              Giữ lại phiếu đặt
-            </Button>
-            <Button
-              fullWidth
-              onClick={handleCancelBooking}
-              className="bg-red-500 hover:bg-red-600"
-            >
-              Xác nhận hủy
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
       {/* Payment Modal - For pending status (unpaid deposit) */}
       <Modal
         isOpen={showPaymentModal}
@@ -860,12 +812,10 @@ export function BookingManagementPage() {
               <Button
                 variant="secondary"
                 fullWidth
-                onClick={() => {
-                  setShowPaymentModal(false);
-                  setSelectedBooking(null);
-                }}
+                onClick={() => setShowCancelModal(true)}
+                className="border-red-500 text-red-600 hover:bg-red-50"
               >
-                Để sau
+                Hủy đặt bàn
               </Button>
               <Button
                 fullWidth
@@ -876,6 +826,55 @@ export function BookingManagementPage() {
             </div>
           </div>
         ) : null}
+      </Modal>
+
+      {/* Cancel Booking Modal */}
+      <Modal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        title="Xác nhận hủy đặt bàn"
+      >
+        <div className="space-y-6">
+          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-sm text-gray-700">
+              Bạn có chắc chắn muốn hủy phiếu đặt bàn{" "}
+              <span className="font-bold">{selectedBooking?.id}</span>?
+            </p>
+          </div>
+
+          {/* <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm flex-shrink-0 mt-0.5">
+                i
+              </div>
+              <div className="text-sm text-gray-700">
+                <p className="font-medium mb-2">Chính sách hoàn tiền:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Tiền cọc sẽ được hoàn lại 100%</li>
+                  <li>Thời gian xử lý: 3-5 ngày làm việc</li>
+                  <li>Tiền sẽ được hoàn về phương thức thanh toán ban đầu</li>
+                </ul>
+              </div>
+            </div>
+          </div> */}
+
+          <div className="flex gap-4">
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={() => setShowCancelModal(false)}
+            >
+              Giữ lại phiếu đặt
+            </Button>
+            <Button
+              fullWidth
+              onClick={handleCancelBooking}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Xác nhận hủy
+            </Button>
+          </div>
+        </div>
       </Modal>
         </>
       )}
