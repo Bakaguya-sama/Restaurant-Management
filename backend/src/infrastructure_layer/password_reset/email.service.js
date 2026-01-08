@@ -1,13 +1,23 @@
-const nodemailer = require('nodemailer');
+const nodemailer = require("nodemailer");
 
 class EmailService {
   constructor() {
+    console.log("[EmailService] Initializing with:", {
+      service: process.env.EMAIL_SERVICE || "gmail",
+      user: process.env.EMAIL_USER ? "SET" : "MISSING",
+      pass: process.env.EMAIL_PASSWORD ? "SET" : "MISSING",
+    });
+
     this.transporter = nodemailer.createTransport({
-      service: process.env.EMAIL_SERVICE || 'gmail',
+      service: process.env.EMAIL_SERVICE || "gmail",
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
-      }
+        pass: process.env.EMAIL_PASSWORD,
+      },
+      // Prevent hanging on connection issues
+      connectionTimeout: 10000, // 10 seconds
+      greetingTimeout: 10000, // 10 seconds
+      socketTimeout: 15000, // 15 seconds
     });
   }
 
@@ -15,22 +25,31 @@ class EmailService {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: toEmail,
-      subject: 'Mã xác nhận đặt lại mật khẩu - Nhà hàng',
-      html: this.getPasswordResetEmailTemplate(code, userName)
+      subject: "Mã xác nhận đặt lại mật khẩu - Nhà hàng",
+      html: this.getPasswordResetEmailTemplate(code, userName),
     };
 
     return this.transporter.sendMail(mailOptions);
   }
 
   async sendPasswordResetLink(toEmail, resetLink, userName) {
+    console.log(`[EmailService] Sending password reset email to: ${toEmail}`);
+
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: toEmail,
-      subject: 'Đặt lại mật khẩu - Nhà hàng',
-      html: this.getPasswordResetLinkEmailTemplate(resetLink, userName)
+      subject: "Đặt lại mật khẩu - Nhà hàng",
+      html: this.getPasswordResetLinkEmailTemplate(resetLink, userName),
     };
 
-    return this.transporter.sendMail(mailOptions);
+    try {
+      const info = await this.transporter.sendMail(mailOptions);
+      console.log(`[EmailService] Email sent successfully:`, info.messageId);
+      return info;
+    } catch (error) {
+      console.error(`[EmailService] Failed to send email:`, error.message);
+      throw new Error(`Không thể gửi email: ${error.message}`);
+    }
   }
 
   getPasswordResetEmailTemplate(code, userName) {
