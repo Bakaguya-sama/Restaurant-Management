@@ -44,6 +44,8 @@ export function BookingManagementPage() {
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [showVoucherSection, setShowVoucherSection] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showLateCancelWarningModal, setShowLateCancelWarningModal] =
+    useState(false);
   const [feedback, setFeedback] = useState("");
   const [enrichedReservations, setEnrichedReservations] = useState<any[]>([]);
 
@@ -322,6 +324,19 @@ export function BookingManagementPage() {
     }
   };
 
+  const handleOpenCancelModal = () => {
+    if (selectedBooking?.status === "in_progress") {
+      setShowLateCancelWarningModal(true);
+    } else {
+      setShowCancelModal(true);
+    }
+  };
+
+  const handleProceedAfterWarning = () => {
+    setShowLateCancelWarningModal(false);
+    setShowCancelModal(true);
+  };
+
   const handlePaymentComplete = async () => {
     if (!selectedBooking) return;
 
@@ -575,7 +590,7 @@ export function BookingManagementPage() {
                           <Button
                             variant="secondary"
                             fullWidth
-                            onClick={() => setShowCancelModal(true)}
+                            onClick={handleOpenCancelModal}
                             className="border-red-500 text-red-600 hover:bg-red-50"
                           >
                             Hủy đặt bàn
@@ -714,7 +729,7 @@ export function BookingManagementPage() {
                   <Button
                     variant="secondary"
                     fullWidth
-                    onClick={() => setShowCancelModal(true)}
+                    onClick={handleOpenCancelModal}
                     className="border-red-500 text-red-600 hover:bg-red-50"
                   >
                     Hủy đặt bàn
@@ -771,6 +786,55 @@ export function BookingManagementPage() {
                   className="bg-red-500 hover:bg-red-600"
                 >
                   Xác nhận hủy
+                </Button>
+              </div>
+            </div>
+          </Modal>
+
+          {/* Late Cancel Warning Modal */}
+          <Modal
+            isOpen={showLateCancelWarningModal}
+            onClose={() => setShowLateCancelWarningModal(false)}
+            title="Cảnh báo: Hủy đặt bàn trễ"
+          >
+            <div className="space-y-6">
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-gray-700 mb-3">
+                  Phiếu đặt bàn của bạn đang ở trạng thái{" "}
+                  <span className="font-bold text-orange-700">
+                    "Sắp đến giờ hẹn"
+                  </span>
+                  . Nếu bạn hủy đặt bàn bây giờ:
+                </p>
+                <ul className="list-disc list-inside space-y-2 text-sm text-gray-700">
+                  <li>
+                    Hệ thống sẽ ghi nhận một{" "}
+                    <span className="font-bold text-red-600">vi phạm</span> trên
+                    tài khoản của bạn
+                  </li>
+                  <li>
+                    Tiền cọc sẽ được hoàn lại trong vòng 3-5 ngày làm việc
+                  </li>
+                  <li>
+                    Các vi phạm có thể ảnh hưởng đến các đặt bàn trong tương lai
+                  </li>
+                </ul>
+              </div>
+
+              <div className="flex gap-4">
+                <Button
+                  variant="secondary"
+                  fullWidth
+                  onClick={() => setShowLateCancelWarningModal(false)}
+                >
+                  Giữ lại phiếu đặt
+                </Button>
+                <Button
+                  fullWidth
+                  onClick={handleProceedAfterWarning}
+                  className="bg-red-500 hover:bg-red-600"
+                >
+                  Tiếp tục hủy
                 </Button>
               </div>
             </div>
