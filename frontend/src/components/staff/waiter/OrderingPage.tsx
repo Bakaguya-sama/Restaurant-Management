@@ -33,8 +33,8 @@ import { invoiceApi } from "../../../lib/invoiceApi";
 
 const PLACEHOLDER_IMAGE = "/placeholder_images/placeholder_dish_image.jpg";
 
-function DishImage({ imageUrl }: { imageUrl: string }) {
-  const displayImage = useImageLoader(imageUrl, PLACEHOLDER_IMAGE);
+function DishImage({ imageUrl }: { imageUrl?: string }) {
+  const displayImage = useImageLoader(imageUrl || PLACEHOLDER_IMAGE, PLACEHOLDER_IMAGE);
   return (
     <img
       src={displayImage}
@@ -170,12 +170,14 @@ export function OrderingPage() {
     try {
       const pendingOrders = await getPendingTakeawayOrders();
       
-      if (pendingOrders && pendingOrders.length > 0) {
-        console.log(`Found ${pendingOrders.length} pending takeaway orders`);
+      const activeOrders = pendingOrders?.filter((order) => order.status !== "cancelled") || [];
+      
+      if (activeOrders && activeOrders.length > 0) {
+        console.log(`Found ${activeOrders.length} pending takeaway orders`);
         
         const newOrdersMap: Record<string, TableOrder> = {};
         
-        for (const order of pendingOrders) {
+        for (const order of activeOrders) {
           const orderId = order._id || order.id;
           if (!orderId) {
             console.warn('Order ID is undefined for takeaway order:', order);
@@ -1086,6 +1088,33 @@ export function OrderingPage() {
     }
   };
 
+  const handleCancelTakeawayOrder = async (orderId: string) => {
+    try {
+      const takeawayOrder = takeawayOrdersMap[orderId];
+      if (!takeawayOrder) {
+        toast.error("Không tìm thấy đơn hàng");
+        return;
+      }
+
+      const orderDatabaseId = takeawayOrder.order._id || takeawayOrder.order.id as string;
+      await patchOrderStatus(orderDatabaseId, "cancelled");
+
+      const newMap = { ...takeawayOrdersMap };
+      delete newMap[orderId];
+      setTakeawayOrdersMap(newMap);
+
+      if (selectedTakeawayOrder === orderId) {
+        const remainingOrderIds = Object.keys(newMap);
+        setSelectedTakeawayOrder(remainingOrderIds.length > 0 ? remainingOrderIds[0] : null);
+      }
+
+      toast.success("Đã hủy đơn mang về");
+    } catch (error: any) {
+      console.error("Error cancelling takeaway order:", error);
+      toast.error(`Không thể hủy đơn: ${error.message || "Lỗi không xác định"}`);
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <ConfirmationModal
@@ -1218,27 +1247,46 @@ export function OrderingPage() {
                     const activeOrderDetails = takeawayOrder?.orderDetails?.filter((od) => od.status !== "cancelled") || [];
                     const hasOrders = activeOrderDetails.length > 0;
                     return (
-                      <button
-                        key={orderId}
-                        onClick={() => setSelectedTakeawayOrder(orderId)}
-                        className={`p-4 rounded-lg border-2 transition-all ${
-                          selectedTakeawayOrder === orderId
-                            ? "bg-[#625EE8] text-white border-[#625EE8] shadow-lg scale-105"
-                            : hasOrders
-                            ? "bg-green-50 text-green-700 border-green-400 hover:border-green-500 hover:bg-green-100"
-                            : "bg-white text-gray-700 border-gray-300 hover:border-[#625EE8] hover:bg-blue-50"
-                        }`}
-                      >
-                        <div className="text-center">
-                          <RiTakeawayLine className="w-6 h-6 mx-auto mb-1" />
-                          <span className="text-xs">{takeawayOrder?.order?.order_number || orderId}</span>
-                          {hasOrders && (
-                            <span className="block text-xs mt-1">
-                              ({activeOrderDetails.length} món)
-                            </span>
-                          )}
-                        </div>
-                      </button>
+                      <div key={orderId} className="relative">
+                        <button
+                          onClick={() => setSelectedTakeawayOrder(orderId)}
+                          className={`p-4 rounded-lg border-2 transition-all w-full ${
+                            selectedTakeawayOrder === orderId
+                              ? "bg-[#625EE8] text-white border-[#625EE8] shadow-lg scale-105"
+                              : hasOrders
+                              ? "bg-green-50 text-green-700 border-green-400 hover:border-green-500 hover:bg-green-100"
+                              : "bg-white text-gray-700 border-gray-300 hover:border-[#625EE8] hover:bg-blue-50"
+                          }`}
+                        >
+                          <div className="text-center">
+                            <RiTakeawayLine className="w-6 h-6 mx-auto mb-1" />
+                            <span className="text-xs">{takeawayOrder?.order?.order_number || orderId}</span>
+                            {hasOrders && (
+                              <span className="block text-xs mt-1">
+                                ({activeOrderDetails.length} món)
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmTitle("Xác nhận hủy đơn mang về");
+                            setConfirmMessage(`Bạn có chắc muốn hủy đơn ${takeawayOrder?.order?.order_number || orderId}?`);
+                            setConfirmText("Xác nhận hủy");
+                            setConfirmCancelText("Hủy");
+                            setConfirmVariant("warning");
+                            setPendingAction(() => async () => {
+                              await handleCancelTakeawayOrder(orderId);
+                            });
+                            setShowConfirmModal(true);
+                          }}
+                          className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-lg transition-all"
+                          title="Hủy đơn mang về"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
