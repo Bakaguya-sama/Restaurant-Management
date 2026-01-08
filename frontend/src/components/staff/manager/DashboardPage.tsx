@@ -12,15 +12,26 @@ import {
 import { Card } from "../../ui/Card";
 import { Button } from "../../ui/Button";
 import { Badge } from "../../ui/badge";
-import { dashboardApi, DashboardStatistics, InventoryAlert, CustomerStatistics, Feedback } from "../../../lib/dashboardApi";
+import {
+  dashboardApi,
+  DashboardStatistics,
+  InventoryAlert,
+  CustomerStatistics,
+  Feedback,
+} from "../../../lib/dashboardApi";
 import { toast } from "sonner";
 
 export function ManagerDashboard() {
-  const [dateRange, setDateRange] = useState<"today" | "week" | "month">("week");
+  const [dateRange, setDateRange] = useState<"today" | "week" | "month">(
+    "week"
+  );
   const [loading, setLoading] = useState(true);
-  const [dashboardData, setDashboardData] = useState<DashboardStatistics | null>(null);
+  const [dashboardData, setDashboardData] =
+    useState<DashboardStatistics | null>(null);
   const [inventoryAlerts, setInventoryAlerts] = useState<InventoryAlert[]>([]);
-  const [customerStats, setCustomerStats] = useState<CustomerStatistics | null>(null);
+  const [customerStats, setCustomerStats] = useState<CustomerStatistics | null>(
+    null
+  );
   const [recentFeedback, setRecentFeedback] = useState<Feedback[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -29,36 +40,36 @@ export function ManagerDashboard() {
   const getDateRange = () => {
     const endDate = new Date();
     const startDate = new Date();
-    
+
     switch (dateRange) {
-      case 'today':
+      case "today":
         startDate.setHours(0, 0, 0, 0);
         endDate.setHours(23, 59, 59, 999);
         break;
-      case 'week':
+      case "week":
         startDate.setDate(endDate.getDate() - 7);
         break;
-      case 'month':
+      case "month":
         startDate.setMonth(endDate.getMonth() - 1);
         break;
     }
-    
+
     return { startDate, endDate };
   };
 
   // Filter inventory alerts by date range
   const getFilteredAlerts = (status: string) => {
-    const { startDate, endDate } = getDateRange();
-    
-    return inventoryAlerts.filter(item => {
+    return inventoryAlerts.filter((item) => {
       if (item.status !== status) return false;
-      
-      // For expired items, check if expiry date is within the selected date range
-      if (status === 'expired' && item.expiryDate) {
-        const expiryDate = new Date(item.expiryDate);
-        return expiryDate >= startDate && expiryDate <= endDate;
+
+      // For expired items, show ALL expired items regardless of date range
+      // because expired items need to be addressed immediately
+      if (status === "expired") {
+        return true;
       }
-      
+
+      // For other statuses (low, expiring), show all as well
+      // since these are current alerts that need attention
       return true;
     });
   };
@@ -71,11 +82,16 @@ export function ManagerDashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [statsResponse, alertsResponse, customerResponse, feedbackResponse] = await Promise.all([
+      const [
+        statsResponse,
+        alertsResponse,
+        customerResponse,
+        feedbackResponse,
+      ] = await Promise.all([
         dashboardApi.getStatistics(dateRange, currentPage, 5),
         dashboardApi.getInventoryAlerts(),
         dashboardApi.getCustomerStatistics(),
-        dashboardApi.getRecentFeedback(5, dateRange)
+        dashboardApi.getRecentFeedback(5, dateRange),
       ]);
 
       setDashboardData(statsResponse.data);
@@ -83,7 +99,15 @@ export function ManagerDashboard() {
         setTotalPages(statsResponse.data.invoices.pagination.totalPages);
       }
       setInventoryAlerts(alertsResponse.data || []);
-      setCustomerStats(customerResponse.data || { total: 0, vip: 0, new: 0, returning: 0, avgSpending: 0 });
+      setCustomerStats(
+        customerResponse.data || {
+          total: 0,
+          vip: 0,
+          new: 0,
+          returning: 0,
+          avgSpending: 0,
+        }
+      );
       setRecentFeedback(feedbackResponse.data || []);
     } catch (error: any) {
       console.error("Failed to fetch dashboard data:", error);
@@ -95,10 +119,16 @@ export function ManagerDashboard() {
         lowDishes: [],
         damagedItems: [],
         bookings: { count: 0, guests: 0 },
-        newCustomers: 0
+        newCustomers: 0,
       });
       setInventoryAlerts([]);
-      setCustomerStats({ total: 0, vip: 0, new: 0, returning: 0, avgSpending: 0 });
+      setCustomerStats({
+        total: 0,
+        vip: 0,
+        new: 0,
+        returning: 0,
+        avgSpending: 0,
+      });
       setRecentFeedback([]);
     } finally {
       setLoading(false);
@@ -367,7 +397,7 @@ export function ManagerDashboard() {
     lowDishes: [],
     damagedItems: [],
     bookings: { count: 0, guests: 0 },
-    newCustomers: 0
+    newCustomers: 0,
   };
 
   const customerSegments = customerStats?.segments || [];
@@ -438,443 +468,497 @@ export function ManagerDashboard() {
           <p className="text-gray-500">Đang tải dữ liệu...</p>
         </div>
       ) : (
-      <div className="space-y-6">
-        {/* 1. Báo cáo xem kho nguyên liệu (cảnh báo) - CHỈ SẮP HẾT HẠN */}
-        <Card className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <AlertTriangle className="w-5 h-5 text-orange-600" />
-            <h3>Báo cáo kho nguyên liệu - Cảnh báo</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4">Nguyên liệu</th>
-                  <th className="text-right py-3 px-4">Số lượng hiện tại</th>
-                  <th className="text-right py-3 px-4">Mức tối thiểu</th>
-                  <th className="text-right py-3 px-4">Ngày hết hạn</th>
-                  <th className="text-center py-3 px-4">Trạng thái</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(() => {
-                  const expiringItems = inventoryAlerts.filter(item => item.status === 'expiring' || item.status === 'low');
-                  return expiringItems.length > 0 ? (
-                    expiringItems.map((item, index) => (
-                      <tr key={index} className="border-b hover:bg-gray-50">
-                        <td className="py-3 px-4">{item.name}</td>
-                        <td className="text-right py-3 px-4">{item.current} kg</td>
-                        <td className="text-right py-3 px-4">{item.minimum} kg</td>
-                        <td className="text-right py-3 px-4">{item.expiryDate || 'N/A'}</td>
-                        <td className="text-center py-3 px-4">
-                          <Badge className={getStatusColor(item.status)}>
-                            {getStatusText(item.status)}
-                          </Badge>
+        <div className="space-y-6">
+          {/* 1. Báo cáo xem kho nguyên liệu (cảnh báo) - CHỈ SẮP HẾT HẠN */}
+          <Card className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <AlertTriangle className="w-5 h-5 text-orange-600" />
+              <h3>Báo cáo kho nguyên liệu - Cảnh báo</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4">Nguyên liệu</th>
+                    <th className="text-right py-3 px-4">Số lượng hiện tại</th>
+                    <th className="text-right py-3 px-4">Mức tối thiểu</th>
+                    <th className="text-right py-3 px-4">Ngày hết hạn</th>
+                    <th className="text-center py-3 px-4">Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(() => {
+                    const expiringItems = inventoryAlerts.filter(
+                      (item) =>
+                        item.status === "expiring" || item.status === "low"
+                    );
+                    return expiringItems.length > 0 ? (
+                      expiringItems.map((item, index) => (
+                        <tr key={index} className="border-b hover:bg-gray-50">
+                          <td className="py-3 px-4">{item.name}</td>
+                          <td className="text-right py-3 px-4">
+                            {item.current} kg
+                          </td>
+                          <td className="text-right py-3 px-4">
+                            {item.minimum} kg
+                          </td>
+                          <td className="text-right py-3 px-4">
+                            {item.expiryDate || "N/A"}
+                          </td>
+                          <td className="text-center py-3 px-4">
+                            <Badge className={getStatusColor(item.status)}>
+                              {getStatusText(item.status)}
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={5}
+                          className="text-center py-4 text-gray-500"
+                        >
+                          Không có cảnh báo
                         </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={5} className="text-center py-4 text-gray-500">
-                        Không có cảnh báo
-                      </td>
-                    </tr>
-                  );
-                })()}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+                    );
+                  })()}
+                </tbody>
+              </table>
+            </div>
+          </Card>
 
-        {/* 2. Báo cáo nguyên liệu bị hỏng/hết hạn - CHỈ HẾT HẠN */}
-        <Card className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Package className="w-5 h-5 text-red-600" />
-            <h3>Báo cáo nguyên liệu bị hỏng/hết hạn trong kỳ</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4">Nguyên liệu</th>
-                  <th className="text-right py-3 px-4">Số lượng</th>
-                  <th className="text-right py-3 px-4">Mức tối thiểu</th>
-                  <th className="text-right py-3 px-4">Ngày hết hạn</th>
-                  <th className="text-center py-3 px-4">Trạng thái</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(() => {
-                  const expiredItems = getFilteredAlerts('expired');
-                  return expiredItems.length > 0 ? (
-                    expiredItems.map((item, index) => (
+          {/* 2. Báo cáo nguyên liệu bị hỏng/hết hạn - CHỈ HẾT HẠN */}
+          <Card className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Package className="w-5 h-5 text-red-600" />
+              <h3>Báo cáo nguyên liệu bị hỏng/hết hạn trong kỳ</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4">Nguyên liệu</th>
+                    <th className="text-right py-3 px-4">Số lượng</th>
+                    <th className="text-right py-3 px-4">Mức tối thiểu</th>
+                    <th className="text-right py-3 px-4">Ngày hết hạn</th>
+                    <th className="text-center py-3 px-4">Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(() => {
+                    const expiredItems = getFilteredAlerts("expired");
+                    return expiredItems.length > 0 ? (
+                      expiredItems.map((item, index) => (
+                        <tr key={index} className="border-b hover:bg-gray-50">
+                          <td className="py-3 px-4">{item.name}</td>
+                          <td className="text-right py-3 px-4">
+                            {item.current} kg
+                          </td>
+                          <td className="text-right py-3 px-4">
+                            {item.minimum} kg
+                          </td>
+                          <td className="text-right py-3 px-4">
+                            {item.expiryDate || "N/A"}
+                          </td>
+                          <td className="text-center py-3 px-4">
+                            <Badge className={getStatusColor(item.status)}>
+                              {getStatusText(item.status)}
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={5}
+                          className="text-center py-4 text-gray-500"
+                        >
+                          Không có dữ liệu
+                        </td>
+                      </tr>
+                    );
+                  })()}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+
+          {/* 3. Báo cáo hóa đơn bán hàng */}
+          <Card className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <DollarSign className="w-5 h-5 text-green-600" />
+              <h3>Báo cáo hóa đơn bán hàng/phiếu gọi món</h3>
+            </div>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <p className="text-gray-600 text-sm mb-1">
+                  {dateRange === "today"
+                    ? "Hôm nay"
+                    : dateRange === "week"
+                    ? "Tuần này"
+                    : "Tháng này"}
+                </p>
+                <p className="text-2xl text-[#625EE8] mb-1">
+                  {currentData.invoices.count} đơn
+                </p>
+                <p className="text-sm text-gray-700">
+                  {currentData.invoices.revenue.toLocaleString()}đ
+                </p>
+              </div>
+              <div className="p-4 bg-green-50 rounded-lg">
+                <p className="text-gray-600 text-sm mb-1">Tổng món đã bán</p>
+                <p className="text-2xl text-green-600 mb-1">
+                  {currentData.topDishes.reduce(
+                    (sum, dish) => sum + dish.sold,
+                    0
+                  )}
+                </p>
+                <p className="text-sm text-gray-700">
+                  {currentData.topDishes
+                    .reduce((sum, dish) => sum + dish.revenue, 0)
+                    .toLocaleString()}
+                  đ
+                </p>
+              </div>
+              <div className="p-4 bg-purple-50 rounded-lg">
+                <p className="text-gray-600 text-sm mb-1">Khách hàng mới</p>
+                <p className="text-2xl text-purple-600 mb-1">
+                  {currentData.newCustomers}
+                </p>
+                <p className="text-sm text-gray-700">Trong kỳ này</p>
+              </div>
+            </div>
+
+            {/* Recent Invoices Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4">Mã HĐ</th>
+                    <th className="text-left py-3 px-4">Ngày</th>
+                    <th className="text-left py-3 px-4">Khách hàng</th>
+                    <th className="text-right py-3 px-4">Số lượng món</th>
+                    <th className="text-right py-3 px-4">Tổng tiền</th>
+                    <th className="text-center py-3 px-4">Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentData.invoices.list &&
+                  currentData.invoices.list.length > 0 ? (
+                    currentData.invoices.list.map((invoice, index) => (
                       <tr key={index} className="border-b hover:bg-gray-50">
-                        <td className="py-3 px-4">{item.name}</td>
-                        <td className="text-right py-3 px-4">{item.current} kg</td>
-                        <td className="text-right py-3 px-4">{item.minimum} kg</td>
-                        <td className="text-right py-3 px-4">{item.expiryDate || 'N/A'}</td>
+                        <td className="py-3 px-4">{invoice.id}</td>
+                        <td className="py-3 px-4">{invoice.date}</td>
+                        <td className="py-3 px-4">{invoice.customer}</td>
+                        <td className="text-right py-3 px-4">
+                          {invoice.items}
+                        </td>
+                        <td className="text-right py-3 px-4 text-green-600">
+                          {invoice.total.toLocaleString()}đ
+                        </td>
                         <td className="text-center py-3 px-4">
-                          <Badge className={getStatusColor(item.status)}>
-                            {getStatusText(item.status)}
+                          <Badge className={getStatusColor(invoice.status)}>
+                            {getStatusText(invoice.status)}
                           </Badge>
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={5} className="text-center py-4 text-gray-500">
+                      <td
+                        colSpan={6}
+                        className="text-center py-4 text-gray-500"
+                      >
                         Không có dữ liệu
                       </td>
                     </tr>
-                  );
-                })()}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-
-        {/* 3. Báo cáo hóa đơn bán hàng */}
-        <Card className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <DollarSign className="w-5 h-5 text-green-600" />
-            <h3>Báo cáo hóa đơn bán hàng/phiếu gọi món</h3>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <p className="text-gray-600 text-sm mb-1">
-                {dateRange === "today"
-                  ? "Hôm nay"
-                  : dateRange === "week"
-                  ? "Tuần này"
-                  : "Tháng này"}
-              </p>
-              <p className="text-2xl text-[#625EE8] mb-1">
-                {currentData.invoices.count} đơn
-              </p>
-              <p className="text-sm text-gray-700">
-                {currentData.invoices.revenue.toLocaleString()}đ
-              </p>
-            </div>
-            <div className="p-4 bg-green-50 rounded-lg">
-              <p className="text-gray-600 text-sm mb-1">Tổng món đã bán</p>
-              <p className="text-2xl text-green-600 mb-1">
-                {currentData.topDishes.reduce(
-                  (sum, dish) => sum + dish.sold,
-                  0
-                )}
-              </p>
-              <p className="text-sm text-gray-700">
-                {currentData.topDishes
-                  .reduce((sum, dish) => sum + dish.revenue, 0)
-                  .toLocaleString()}
-                đ
-              </p>
-            </div>
-            <div className="p-4 bg-purple-50 rounded-lg">
-              <p className="text-gray-600 text-sm mb-1">Khách hàng mới</p>
-              <p className="text-2xl text-purple-600 mb-1">
-                {currentData.newCustomers}
-              </p>
-              <p className="text-sm text-gray-700">Trong kỳ này</p>
-            </div>
-          </div>
-
-          {/* Recent Invoices Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4">Mã HĐ</th>
-                  <th className="text-left py-3 px-4">Ngày</th>
-                  <th className="text-left py-3 px-4">Khách hàng</th>
-                  <th className="text-right py-3 px-4">Số lượng món</th>
-                  <th className="text-right py-3 px-4">Tổng tiền</th>
-                  <th className="text-center py-3 px-4">Trạng thái</th>
-                </tr>
-              </thead>
-              <tbody>
-                {currentData.invoices.list && currentData.invoices.list.length > 0 ? (
-                  currentData.invoices.list.map((invoice, index) => (
-                    <tr key={index} className="border-b hover:bg-gray-50">
-                      <td className="py-3 px-4">{invoice.id}</td>
-                      <td className="py-3 px-4">{invoice.date}</td>
-                      <td className="py-3 px-4">{invoice.customer}</td>
-                      <td className="text-right py-3 px-4">{invoice.items}</td>
-                      <td className="text-right py-3 px-4 text-green-600">
-                        {invoice.total.toLocaleString()}đ
-                      </td>
-                      <td className="text-center py-3 px-4">
-                        <Badge className={getStatusColor(invoice.status)}>
-                          {getStatusText(invoice.status)}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={6} className="text-center py-4 text-gray-500">
-                      Không có dữ liệu
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-4">
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-              >
-                Trước
-              </Button>
-              <span className="text-sm text-gray-600">
-                Trang {currentPage} / {totalPages}
-              </span>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-              >
-                Sau
-              </Button>
-            </div>
-          )}
-        </Card>
-
-        {/* 4. Báo cáo thống kê món ăn */}
-        <Card className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Utensils className="w-5 h-5 text-blue-600" />
-            <h3>Báo cáo thống kê món ăn</h3>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Top Selling */}
-            <div>
-              <h4 className="mb-3 text-green-600">Món bán chạy nhất</h4>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-2 px-3">Món ăn</th>
-                      <th className="text-right py-2 px-3">Đã bán</th>
-                      <th className="text-right py-2 px-3">Doanh thu</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {currentData.topDishes && currentData.topDishes.length > 0 ? (
-                      currentData.topDishes.map((dish, index) => (
-                        <tr key={index} className="border-b hover:bg-gray-50">
-                          <td className="py-2 px-3">{dish.name}</td>
-                          <td className="text-right py-2 px-3">{dish.sold}</td>
-                          <td className="text-right py-2 px-3 text-green-600">
-                            {dish.revenue.toLocaleString()}đ
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={3} className="text-center py-4 text-gray-500 text-sm">
-                          Không có dữ liệu
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                  )}
+                </tbody>
+              </table>
             </div>
 
-            {/* Low Selling */}
-            <div>
-              <h4 className="mb-3 text-red-600">Món bán chậm</h4>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-2 px-3">Món ăn</th>
-                      <th className="text-right py-2 px-3">Đã bán</th>
-                      <th className="text-right py-2 px-3">Doanh thu</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {currentData.lowDishes && currentData.lowDishes.length > 0 ? (
-                      currentData.lowDishes.map((dish, index) => (
-                        <tr key={index} className="border-b hover:bg-gray-50">
-                          <td className="py-2 px-3">{dish.name}</td>
-                          <td className="text-right py-2 px-3">{dish.sold}</td>
-                          <td className="text-right py-2 px-3 text-red-600">
-                            {dish.revenue.toLocaleString()}đ
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={3} className="text-center py-4 text-gray-500 text-sm">
-                          Không có dữ liệu
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* 5. Báo cáo thống kê khách hàng */}
-        <Card className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Users className="w-5 h-5 text-purple-600" />
-            <h3>Báo cáo thống kê khách hàng</h3>
-          </div>
-
-          {/* Overview Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="p-4 bg-yellow-50 rounded-lg">
-              <p className="text-gray-600 text-sm mb-1">Khách VIP</p>
-              <p className="text-2xl text-yellow-600">{customerStats?.vip || 0}</p>
-            </div>
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <p className="text-gray-600 text-sm mb-1">Khách mới</p>
-              <p className="text-2xl text-blue-600">{customerStats?.new || 0}</p>
-            </div>
-            <div className="p-4 bg-green-50 rounded-lg">
-              <p className="text-gray-600 text-sm mb-1">Khách quay lại</p>
-              <p className="text-2xl text-green-600">
-                {customerStats?.returning || 0}
-              </p>
-            </div>
-            <div className="p-4 bg-purple-50 rounded-lg">
-              <p className="text-gray-600 text-sm mb-1">Chi tiêu TB</p>
-              <p className="text-2xl text-purple-600">
-                {(customerStats?.avgSpending || 0).toLocaleString()}đ
-              </p>
-            </div>
-          </div>
-
-          {/* Customer Segments Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4">Hạng</th>
-                  <th className="text-right py-3 px-4">Số lượng</th>
-                  <th className="text-right py-3 px-4">Doanh thu</th>
-                  <th className="text-right py-3 px-4">% Tổng DT</th>
-                </tr>
-              </thead>
-              <tbody>
-                {customerSegments && customerSegments.length > 0 ? (
-                  customerSegments.map((segment, index) => (
-                    <tr key={index} className="border-b hover:bg-gray-50">
-                      <td className="py-3 px-4">
-                        <Badge
-                          className={
-                            segment.tier === "Diamond"
-                              ? "bg-blue-100 text-blue-700"
-                              : segment.tier === "Platinum"
-                              ? "bg-purple-100 text-purple-700"
-                              : segment.tier === "Gold"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-gray-100 text-gray-700"
-                          }
-                        >
-                          {segment.tier}
-                        </Badge>
-                      </td>
-                      <td className="text-right py-3 px-4">{segment.count}</td>
-                      <td className="text-right py-3 px-4 text-[#625EE8]">
-                        {segment.revenue.toLocaleString()}đ
-                      </td>
-                      <td className="text-right py-3 px-4">
-                        {segment.percentage.toFixed(1)}%
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={4} className="text-center py-4 text-gray-500">
-                      Không có dữ liệu
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-
-        {/* 6. Báo cáo đặt bàn */}
-        <Card className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Calendar className="w-5 h-5 text-indigo-600" />
-            <h3>Báo cáo số lượt đặt bàn và số lượng khách</h3>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-indigo-50 rounded-lg">
-              <p className="text-gray-600 text-sm mb-1">Đặt bàn trong kỳ</p>
-              <p className="text-2xl text-indigo-600 mb-1">
-                {currentData.bookings.count} lượt
-              </p>
-              <p className="text-sm text-gray-700">
-                {currentData.bookings.guests} khách
-              </p>
-            </div>
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <p className="text-gray-600 text-sm mb-1">TB khách/đặt bàn</p>
-              <p className="text-2xl text-blue-600 mb-1">
-                {currentData.bookings.count > 0
-                  ? Math.round(currentData.bookings.guests / currentData.bookings.count)
-                  : 0}{" "}
-                khách
-              </p>
-              <p className="text-sm text-gray-700">Trung bình</p>
-            </div>
-            <div className="p-4 bg-cyan-50 rounded-lg">
-              <p className="text-gray-600 text-sm mb-1">Tổng doanh thu</p>
-              <p className="text-2xl text-cyan-600">
-                {currentData.invoices.revenue.toLocaleString()}đ
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        {/* 7. Báo cáo phản hồi */}
-        <Card className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <MessageSquare className="w-5 h-5 text-blue-600" />
-            <h3>Báo cáo phản hồi khách hàng</h3>
-          </div>
-
-          {/* Recent Feedback - 5 phản hồi gần nhất */}
-          <h4 className="mb-3">5 phản hồi gần nhất</h4>
-          <div className="space-y-3">
-            {recentFeedback && recentFeedback.length > 0 ? (
-              recentFeedback.map((feedback, index) => (
-                <div key={index} className="p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="font-medium">{feedback.customer}</p>
-                    <p className="text-sm text-gray-600">{feedback.date}</p>
-                  </div>
-                  <p className="text-gray-700">{feedback.comment}</p>
-                </div>
-              ))
-            ) : (
-              <div className="p-4 bg-gray-50 rounded-lg text-center text-gray-500">
-                Không có phản hồi
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-4">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(1, prev - 1))
+                  }
+                  disabled={currentPage === 1}
+                >
+                  Trước
+                </Button>
+                <span className="text-sm text-gray-600">
+                  Trang {currentPage} / {totalPages}
+                </span>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                >
+                  Sau
+                </Button>
               </div>
             )}
-          </div>
-        </Card>
-      </div>
+          </Card>
+
+          {/* 4. Báo cáo thống kê món ăn */}
+          <Card className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Utensils className="w-5 h-5 text-blue-600" />
+              <h3>Báo cáo thống kê món ăn</h3>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Top Selling */}
+              <div>
+                <h4 className="mb-3 text-green-600">Món bán chạy nhất</h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-2 px-3">Món ăn</th>
+                        <th className="text-right py-2 px-3">Đã bán</th>
+                        <th className="text-right py-2 px-3">Doanh thu</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currentData.topDishes &&
+                      currentData.topDishes.length > 0 ? (
+                        currentData.topDishes.map((dish, index) => (
+                          <tr key={index} className="border-b hover:bg-gray-50">
+                            <td className="py-2 px-3">{dish.name}</td>
+                            <td className="text-right py-2 px-3">
+                              {dish.sold}
+                            </td>
+                            <td className="text-right py-2 px-3 text-green-600">
+                              {dish.revenue.toLocaleString()}đ
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan={3}
+                            className="text-center py-4 text-gray-500 text-sm"
+                          >
+                            Không có dữ liệu
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Low Selling */}
+              <div>
+                <h4 className="mb-3 text-red-600">Món bán chậm</h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-2 px-3">Món ăn</th>
+                        <th className="text-right py-2 px-3">Đã bán</th>
+                        <th className="text-right py-2 px-3">Doanh thu</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currentData.lowDishes &&
+                      currentData.lowDishes.length > 0 ? (
+                        currentData.lowDishes.map((dish, index) => (
+                          <tr key={index} className="border-b hover:bg-gray-50">
+                            <td className="py-2 px-3">{dish.name}</td>
+                            <td className="text-right py-2 px-3">
+                              {dish.sold}
+                            </td>
+                            <td className="text-right py-2 px-3 text-red-600">
+                              {dish.revenue.toLocaleString()}đ
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan={3}
+                            className="text-center py-4 text-gray-500 text-sm"
+                          >
+                            Không có dữ liệu
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* 5. Báo cáo thống kê khách hàng */}
+          <Card className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Users className="w-5 h-5 text-purple-600" />
+              <h3>Báo cáo thống kê khách hàng</h3>
+            </div>
+
+            {/* Overview Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="p-4 bg-yellow-50 rounded-lg">
+                <p className="text-gray-600 text-sm mb-1">Khách VIP</p>
+                <p className="text-2xl text-yellow-600">
+                  {customerStats?.vip || 0}
+                </p>
+              </div>
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <p className="text-gray-600 text-sm mb-1">Khách mới</p>
+                <p className="text-2xl text-blue-600">
+                  {customerStats?.new || 0}
+                </p>
+              </div>
+              <div className="p-4 bg-green-50 rounded-lg">
+                <p className="text-gray-600 text-sm mb-1">Khách quay lại</p>
+                <p className="text-2xl text-green-600">
+                  {customerStats?.returning || 0}
+                </p>
+              </div>
+              <div className="p-4 bg-purple-50 rounded-lg">
+                <p className="text-gray-600 text-sm mb-1">Chi tiêu TB</p>
+                <p className="text-2xl text-purple-600">
+                  {(customerStats?.avgSpending || 0).toLocaleString()}đ
+                </p>
+              </div>
+            </div>
+
+            {/* Customer Segments Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4">Hạng</th>
+                    <th className="text-right py-3 px-4">Số lượng</th>
+                    <th className="text-right py-3 px-4">Doanh thu</th>
+                    <th className="text-right py-3 px-4">% Tổng DT</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {customerSegments && customerSegments.length > 0 ? (
+                    customerSegments.map((segment, index) => (
+                      <tr key={index} className="border-b hover:bg-gray-50">
+                        <td className="py-3 px-4">
+                          <Badge
+                            className={
+                              segment.tier === "Diamond"
+                                ? "bg-blue-100 text-blue-700"
+                                : segment.tier === "Platinum"
+                                ? "bg-purple-100 text-purple-700"
+                                : segment.tier === "Gold"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : "bg-gray-100 text-gray-700"
+                            }
+                          >
+                            {segment.tier}
+                          </Badge>
+                        </td>
+                        <td className="text-right py-3 px-4">
+                          {segment.count}
+                        </td>
+                        <td className="text-right py-3 px-4 text-[#625EE8]">
+                          {segment.revenue.toLocaleString()}đ
+                        </td>
+                        <td className="text-right py-3 px-4">
+                          {segment.percentage.toFixed(1)}%
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="text-center py-4 text-gray-500"
+                      >
+                        Không có dữ liệu
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+
+          {/* 6. Báo cáo đặt bàn */}
+          <Card className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Calendar className="w-5 h-5 text-indigo-600" />
+              <h3>Báo cáo số lượt đặt bàn và số lượng khách</h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 bg-indigo-50 rounded-lg">
+                <p className="text-gray-600 text-sm mb-1">Đặt bàn trong kỳ</p>
+                <p className="text-2xl text-indigo-600 mb-1">
+                  {currentData.bookings.count} lượt
+                </p>
+                <p className="text-sm text-gray-700">
+                  {currentData.bookings.guests} khách
+                </p>
+              </div>
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <p className="text-gray-600 text-sm mb-1">TB khách/đặt bàn</p>
+                <p className="text-2xl text-blue-600 mb-1">
+                  {currentData.bookings.count > 0
+                    ? Math.round(
+                        currentData.bookings.guests / currentData.bookings.count
+                      )
+                    : 0}{" "}
+                  khách
+                </p>
+                <p className="text-sm text-gray-700">Trung bình</p>
+              </div>
+              <div className="p-4 bg-cyan-50 rounded-lg">
+                <p className="text-gray-600 text-sm mb-1">Tổng doanh thu</p>
+                <p className="text-2xl text-cyan-600">
+                  {currentData.invoices.revenue.toLocaleString()}đ
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          {/* 7. Báo cáo phản hồi */}
+          <Card className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <MessageSquare className="w-5 h-5 text-blue-600" />
+              <h3>Báo cáo phản hồi khách hàng</h3>
+            </div>
+
+            {/* Recent Feedback - 5 phản hồi gần nhất */}
+            <h4 className="mb-3">5 phản hồi gần nhất</h4>
+            <div className="space-y-3">
+              {recentFeedback && recentFeedback.length > 0 ? (
+                recentFeedback.map((feedback, index) => (
+                  <div key={index} className="p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="font-medium">{feedback.customer}</p>
+                      <p className="text-sm text-gray-600">{feedback.date}</p>
+                    </div>
+                    <p className="text-gray-700">{feedback.comment}</p>
+                  </div>
+                ))
+              ) : (
+                <div className="p-4 bg-gray-50 rounded-lg text-center text-gray-500">
+                  Không có phản hồi
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
       )}
     </div>
   );
