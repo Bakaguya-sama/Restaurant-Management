@@ -9,19 +9,33 @@ class EmailService {
     console.log("[EmailService] Initializing SendGrid with:", {
       apiKey: apiKey ? "SET" : "MISSING",
       fromEmail: fromEmail,
+      env: process.env.NODE_ENV,
     });
 
     if (!apiKey) {
       console.error("[EmailService] SENDGRID_API_KEY is missing!");
-      throw new Error("SENDGRID_API_KEY environment variable is required");
+      // In test environment, don't throw error - just warn
+      if (process.env.NODE_ENV !== "test") {
+        throw new Error("SENDGRID_API_KEY environment variable is required");
+      }
+      console.warn(
+        "[EmailService] Running in test mode without SendGrid API key"
+      );
+    } else {
+      sgMail.setApiKey(apiKey);
     }
 
-    sgMail.setApiKey(apiKey);
     this.fromEmail = fromEmail;
   }
 
   async sendPasswordResetCode(toEmail, code, userName) {
     console.log(`[EmailService] Sending password reset code to: ${toEmail}`);
+
+    // Skip sending in test environment if no API key
+    if (process.env.NODE_ENV === "test" && !process.env.SENDGRID_API_KEY) {
+      console.log("[EmailService] Skipping email send in test mode");
+      return;
+    }
 
     const msg = {
       to: toEmail,
@@ -43,6 +57,12 @@ class EmailService {
 
   async sendPasswordResetLink(toEmail, resetLink, userName) {
     console.log(`[EmailService] Sending password reset link to: ${toEmail}`);
+
+    // Skip sending in test environment if no API key
+    if (process.env.NODE_ENV === "test" && !process.env.SENDGRID_API_KEY) {
+      console.log("[EmailService] Skipping email send in test mode");
+      return { messageId: "test-mode-no-email-sent" };
+    }
 
     const msg = {
       to: toEmail,
