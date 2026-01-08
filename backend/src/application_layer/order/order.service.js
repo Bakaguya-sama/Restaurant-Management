@@ -341,6 +341,19 @@ class OrderService {
     }
   }
 
+  async cancelAllOrderDetails(orderId) {
+    const orderDetails = await this.orderDetailRepository.findByOrderId(orderId);
+    
+    for (const detail of orderDetails) {
+      if (detail.status !== 'cancelled') {
+        const detailId = detail._id || detail.id;
+        await this.orderDetailRepository.update(detailId, { status: 'cancelled' });
+      }
+    }
+
+    await this.calculateOrderTotal(orderId);
+  }
+
   async updateOrder(id, updateData) {
     const existingOrder = await this.orderRepository.findById(id);
     if (!existingOrder) {
@@ -362,6 +375,14 @@ class OrderService {
 
     if (updateData.total_amount !== undefined && updateData.total_amount < 0) {
       throw new Error('total_amount cannot be negative');
+    }
+
+    if (updateData.status === 'cancelled' && existingOrder.status !== 'cancelled') {
+      const orderEntity = new OrderEntity(existingOrder);
+      if (!orderEntity.canBeCancelled()) {
+        throw new Error(`Order with status '${existingOrder.status}' cannot be cancelled`);
+      }
+      await this.cancelAllOrderDetails(id);
     }
 
     return await this.orderRepository.update(id, updateData);

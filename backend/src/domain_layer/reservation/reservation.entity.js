@@ -66,7 +66,7 @@ class ReservationEntity {
   }
 
   canCancel() {
-    return ['pending', 'confirmed'].includes(this.status);
+    return ['pending', 'confirmed', 'in_progress'].includes(this.status);
   }
 
   isCompleted() {
