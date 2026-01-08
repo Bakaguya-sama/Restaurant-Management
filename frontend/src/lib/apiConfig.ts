@@ -8,7 +8,7 @@
  * Priority:
  * 1. VITE_API_BASE_URL environment variable
  * 2. Dynamic detection from current window location
- * 
+ *
  * @returns {string} API base URL (e.g., http://localhost:5000/api/v1)
  */
 export function getApiBaseUrl(): string {
@@ -19,29 +19,33 @@ export function getApiBaseUrl(): string {
   }
 
   // Dynamic detection from current server
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     const protocol = window.location.protocol;
     const hostname = window.location.hostname;
-    const port = window.location.port ? `:${window.location.port}` : '';
-    
+    const port = window.location.port ? `:${window.location.port}` : "";
+
     // Default to port 5000 if running on development port
-    const apiPort = window.location.port === '5173' || window.location.port === '3000' 
-      ? ':5000' 
-      : port;
-    
+    const apiPort =
+      window.location.port === "5173" || window.location.port === "3000"
+        ? ":5000"
+        : port;
+
     return `${protocol}//${hostname}${apiPort}/api/v1`;
   }
 
   // Server-side fallback (should not happen in normal usage)
-  return (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000/api/v1';
+  return (
+    (import.meta as any).env?.VITE_API_URL || "http://localhost:5000/api/v1"
+  );
 }
 
 /**
  * Get the base server URL for image serving
  * Priority:
  * 1. VITE_BASE_URL environment variable
- * 2. Dynamic detection from current window location
- * 
+ * 2. Extract from VITE_API_BASE_URL (remove /api/v1)
+ * 3. Dynamic detection from current window location
+ *
  * @returns {string} Base server URL (e.g., http://localhost:5000)
  */
 export function getBaseUrl(): string {
@@ -51,38 +55,48 @@ export function getBaseUrl(): string {
     return envUrl;
   }
 
+  // Try to extract base URL from API URL (for deployed environments)
+  const apiUrl = (import.meta as any).env?.VITE_API_BASE_URL;
+  if (apiUrl) {
+    // Remove /api/v1 suffix to get base URL
+    // e.g., https://restaurant-management-bcsi.onrender.com/api/v1
+    //    -> https://restaurant-management-bcsi.onrender.com
+    return apiUrl.replace(/\/api\/v1\/?$/, "");
+  }
+
   // Dynamic detection from current server
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     const protocol = window.location.protocol;
     const hostname = window.location.hostname;
-    const port = window.location.port ? `:${window.location.port}` : '';
-    
+    const port = window.location.port ? `:${window.location.port}` : "";
+
     // Default to port 5000 if running on development port
-    const apiPort = window.location.port === '5173' || window.location.port === '3000' 
-      ? ':5000' 
-      : port;
-    
+    const apiPort =
+      window.location.port === "5173" || window.location.port === "3000"
+        ? ":5000"
+        : port;
+
     return `${protocol}//${hostname}${apiPort}`;
   }
 
   // Server-side fallback
-  return (import.meta as any).env?.VITE_BASE_URL || 'http://localhost:5000';
+  return "http://localhost:5000";
 }
 
 /**
  * Get the full API endpoint URL
- * 
+ *
  * @param {string} path - API path (e.g., '/uploads/dishes' or 'uploads/avatars')
  * @returns {string} Full API URL
  */
 export function getApiUrl(path: string): string {
   const base = getApiBaseUrl();
-  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
   return `${base}${cleanPath}`;
 }
 
 export default {
   getApiBaseUrl,
   getBaseUrl,
-  getApiUrl
+  getApiUrl,
 };
