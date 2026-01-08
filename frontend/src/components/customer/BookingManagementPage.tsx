@@ -32,7 +32,12 @@ import { toast } from "sonner";
 export function BookingManagementPage() {
   const { userProfile } = useAuth();
   const location = useLocation();
-  const { reservations, fetchReservationsByCustomerId, loading, updateReservationIsPaid } = useReservations();
+  const {
+    reservations,
+    fetchReservationsByCustomerId,
+    loading,
+    updateReservationIsPaid,
+  } = useReservations();
   const [customers, setCustomers] = useState<any[]>([]);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -49,7 +54,8 @@ export function BookingManagementPage() {
           await fetchReservationsByCustomerId(userProfile.id);
         }
       } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : "Lỗi khi tải dữ liệu";
+        const errorMsg =
+          err instanceof Error ? err.message : "Lỗi khi tải dữ liệu";
         toast.error(errorMsg);
         console.error("Error fetching data:", err);
       }
@@ -75,17 +81,24 @@ export function BookingManagementPage() {
               }
 
               try {
-                const detailsResponse = await reservationDetailApi.getByReservationId(reservation.id);
-                
-                if (detailsResponse.success && detailsResponse.data && detailsResponse.data.length > 0) {
+                const detailsResponse =
+                  await reservationDetailApi.getByReservationId(reservation.id);
+
+                if (
+                  detailsResponse.success &&
+                  detailsResponse.data &&
+                  detailsResponse.data.length > 0
+                ) {
                   const tableId = detailsResponse.data[0].table_id;
-                  
+
                   const tableResponse = await tableApi.getById(tableId);
                   if (tableResponse.success && tableResponse.data) {
                     tableNumber = tableResponse.data.table_number;
-                    
+
                     if (tableResponse.data.location_id) {
-                      const locationResponse = await locationApi.getById(tableResponse.data.location_id);
+                      const locationResponse = await locationApi.getById(
+                        tableResponse.data.location_id
+                      );
                       if (locationResponse.success && locationResponse.data) {
                         locationName = locationResponse.data.name;
                       }
@@ -93,7 +106,10 @@ export function BookingManagementPage() {
                   }
                 }
               } catch (err) {
-                console.error(`Error fetching details for reservation ${reservation.id}:`, err);
+                console.error(
+                  `Error fetching details for reservation ${reservation.id}:`,
+                  err
+                );
               }
 
               return {
@@ -120,10 +136,12 @@ export function BookingManagementPage() {
   useEffect(() => {
     const state = location.state as { reservationId?: string } | null;
     if (state?.reservationId && enrichedReservations.length > 0) {
-      const reservation = enrichedReservations.find((r) => r.id === state.reservationId);
+      const reservation = enrichedReservations.find(
+        (r) => r.id === state.reservationId
+      );
       if (reservation) {
         setSelectedBooking(reservation);
-        if (!reservation.isPaid && reservation.status !== 'cancelled') {
+        if (!reservation.isPaid && reservation.status !== "cancelled") {
           setShowPaymentModal(true);
         } else {
           setShowDetailModal(true);
@@ -273,28 +291,32 @@ export function BookingManagementPage() {
     if (!selectedBooking) return;
 
     try {
-      const response = await reservationApi.updateStatus(selectedBooking.id, 'cancelled');
-      
+      const response = await reservationApi.updateStatus(
+        selectedBooking.id,
+        "cancelled"
+      );
+
       if (response.success) {
-        alert(
+        toast.success(
           "Yêu cầu hủy phiếu đặt bàn đã được gửi. Tiền cọc sẽ được hoàn lại trong vòng 3-5 ngày làm việc."
         );
-        
+
         setShowCancelModal(false);
         setShowDetailModal(false);
         setShowPaymentModal(false);
-        
+
         const customerId = selectedBooking.customer_id || userProfile?.id;
         if (customerId) {
           await fetchReservationsByCustomerId(customerId);
         }
-        
+
         setSelectedBooking(null);
       } else {
         toast.error(response.message || "Lỗi khi hủy phiếu đặt bàn");
       }
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "Lỗi khi hủy phiếu đặt bàn";
+      const errorMsg =
+        err instanceof Error ? err.message : "Lỗi khi hủy phiếu đặt bàn";
       toast.error(errorMsg);
       console.error("Cancel booking error:", err);
     }
@@ -305,17 +327,18 @@ export function BookingManagementPage() {
 
     try {
       await updateReservationIsPaid(selectedBooking.id, true);
-      
+
       toast.success("Thanh toán thành công! Phiếu đặt bàn đã được xác nhận.");
       setShowPaymentModal(false);
-      
+
       if (selectedBooking.customer_id) {
         await fetchReservationsByCustomerId(selectedBooking.customer_id);
       }
-      
+
       setSelectedBooking(null);
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "Lỗi khi xử lý thanh toán";
+      const errorMsg =
+        err instanceof Error ? err.message : "Lỗi khi xử lý thanh toán";
       toast.error(errorMsg);
       console.error("Payment error:", err);
     }
@@ -338,43 +361,43 @@ export function BookingManagementPage() {
         </Card>
       ) : (
         <>
-      {/* Bookings List */}
-      <div className="space-y-4">
-        {bookings.map((booking) => (
-          <Card
-            key={booking.id}
-            className="p-4 hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Calendar className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <h4 className="mb-1">{booking.id}</h4>
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      {booking.reservation_date} {booking.reservation_time}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Users className="w-4 h-4" />
-                      {booking.number_of_guests} khách
-                    </span>
+          {/* Bookings List */}
+          <div className="space-y-4">
+            {bookings.map((booking) => (
+              <Card
+                key={booking.id}
+                className="p-4 hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Calendar className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <h4 className="mb-1">{booking.id}</h4>
+                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          {booking.reservation_date} {booking.reservation_time}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Users className="w-4 h-4" />
+                          {booking.number_of_guests} khách
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Quick Info */}
-            <div className="grid grid-cols-2 gap-4 mb-3 p-3 bg-gray-50 rounded-lg">
-              <div className="text-sm">
-                <span className="text-gray-600">Tiền cọc:</span>
-                <span className="ml-2 font-medium">
-                  {(booking.deposit_amount || 0).toLocaleString()}đ
-                </span>
-              </div>
-              {/* {booking.bill && (
+                {/* Quick Info */}
+                <div className="grid grid-cols-2 gap-4 mb-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="text-sm">
+                    <span className="text-gray-600">Tiền cọc:</span>
+                    <span className="ml-2 font-medium">
+                      {(booking.deposit_amount || 0).toLocaleString()}đ
+                    </span>
+                  </div>
+                  {/* {booking.bill && (
                 <div className="text-sm">
                   <span className="text-gray-600">Tổng bill:</span>
                   <span className="ml-2 font-medium text-green-600">
@@ -382,301 +405,343 @@ export function BookingManagementPage() {
                   </span>
                 </div>
               )} */}
-              {/* <div className="text-sm col-span-2">
+                  {/* <div className="text-sm col-span-2">
                 <span className="text-gray-600">Khu vực:</span>
                 <span className="ml-2">{booking.area}</span>
               </div> */}
-            </div>
-
-            {/* View Details Button */}
-            <Button
-              size="sm"
-              variant="secondary"
-              fullWidth
-              onClick={() => {
-                setSelectedBooking(booking);
-                if (!booking.isPaid && booking.status !== 'cancelled') {
-                  setShowPaymentModal(true);
-                } else {
-                  setShowDetailModal(true);
-                }
-              }}
-            >
-              Xem chi tiết
-            </Button>
-          </Card>
-        ))}
-      </div>
-
-      {bookings.length === 0 && (
-        <div className="text-center py-12">
-          <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500">Chưa có phiếu đặt bàn nào</p>
-        </div>
-      )}
-
-      {/* Detail Modal - Hiển thị chi tiết hóa đơn nếu có, nếu không hiển thị chi tiết đặt bàn */}
-      <Modal
-        isOpen={showDetailModal}
-        onClose={() => {
-          setShowDetailModal(false);
-          setSelectedBooking(null);
-          setShowVoucherSection(false);
-        }}
-        title={`Chi tiết đặt bàn`}
-        size="lg"
-      >
-        {selectedBooking ? (
-          /* Hiển thị chi tiết hóa đơn */
-          <div className="space-y-6">
-            
-            {/* Bill Info */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div>
-                <p className="text-sm text-gray-600">Bàn số</p>
-                <p className="text-lg">{selectedBooking.tableNumber}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-gray-600">Thời gian hẹn check-in</p>
-                <p className="text-lg">
-                  {selectedBooking.reservation_date}{" "}
-                  {selectedBooking.reservation_time}
-                </p>
-              </div>
-              <Badge className={getStatusColor(selectedBooking.status)}>
-                {getStatusText(selectedBooking.status)}
-              </Badge>
-            </div>
-
-            {/* Actions */}
-            <div className="space-y-6">
-              {/* Booking Information */}
-              <div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-2 text-gray-600 mb-2">
-                      <Calendar className="w-4 h-4" />
-                      <span className="text-sm">Ngày đặt</span>
-                    </div>
-                    <p className="font-medium">{selectedBooking.createdAtFormatted}</p>
-                  </div>
-
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-2 text-gray-600 mb-2">
-                      <Users className="w-4 h-4" />
-                      <span className="text-sm">Số khách</span>
-                    </div>
-                    <p className="font-medium">
-                      {selectedBooking.number_of_guests} người
-                    </p>
-                  </div>
-
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-2 text-gray-600 mb-2">
-                      <Utensils className="w-4 h-4" />
-                      <span className="text-sm">Bàn số</span>
-                    </div>
-                    <p className="font-medium">{selectedBooking.tableNumber}</p>
-                  </div>
-
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-2 text-gray-600 mb-2">
-                      <MapPin className="w-4 h-4" />
-                      <span className="text-sm">Khu vực</span>
-                    </div>
-                    <p className="font-medium">
-                      {selectedBooking.locationName}
-                    </p>
-                  </div>
                 </div>
-              </div>
 
-              {/* Notes */}
-              {selectedBooking.special_requests && (
-                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">Ghi chú:</p>
-                  <p>{selectedBooking.special_requests}</p>
-                </div>
-              )}
+                {/* View Details Button */}
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  fullWidth
+                  onClick={() => {
+                    setSelectedBooking(booking);
+                    if (!booking.isPaid && booking.status !== "cancelled") {
+                      setShowPaymentModal(true);
+                    } else {
+                      setShowDetailModal(true);
+                    }
+                  }}
+                >
+                  Xem chi tiết
+                </Button>
+              </Card>
+            ))}
+          </div>
 
-              {/* Deposit Information */}
-              <div className={`p-4 border rounded-lg ${selectedBooking.isPaid ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
-                <div className="flex items-center justify-between">
+          {bookings.length === 0 && (
+            <div className="text-center py-12">
+              <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500">Chưa có phiếu đặt bàn nào</p>
+            </div>
+          )}
+
+          {/* Detail Modal - Hiển thị chi tiết hóa đơn nếu có, nếu không hiển thị chi tiết đặt bàn */}
+          <Modal
+            isOpen={showDetailModal}
+            onClose={() => {
+              setShowDetailModal(false);
+              setSelectedBooking(null);
+              setShowVoucherSection(false);
+            }}
+            title={`Chi tiết đặt bàn`}
+            size="lg"
+          >
+            {selectedBooking ? (
+              /* Hiển thị chi tiết hóa đơn */
+              <div className="space-y-6">
+                {/* Bill Info */}
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div>
-                    <p className="text-sm text-gray-600 mb-1">Tiền đặt cọc</p>
-                    <p className={`text-xl font-medium ${selectedBooking.isPaid ? 'text-green-700' : 'text-gray-700'}`}>
-                      {(selectedBooking.deposit_amount || 0).toLocaleString()}đ
+                    <p className="text-sm text-gray-600">Bàn số</p>
+                    <p className="text-lg">{selectedBooking.tableNumber}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-gray-600">
+                      Thời gian hẹn check-in
+                    </p>
+                    <p className="text-lg">
+                      {selectedBooking.reservation_date}{" "}
+                      {selectedBooking.reservation_time}
                     </p>
                   </div>
-                  <Badge className={selectedBooking.isPaid ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}>
-                    {selectedBooking.isPaid ? 'Đã thanh toán' : 'Chưa thanh toán'}
+                  <Badge className={getStatusColor(selectedBooking.status)}>
+                    {getStatusText(selectedBooking.status)}
                   </Badge>
                 </div>
-              </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-3">
-                {selectedBooking.isPaid ? (
-                  <>
-                    {selectedBooking.status !== 'cancelled' && (
-                      <Button
-                        variant="secondary"
-                        fullWidth
-                        onClick={() => setShowCancelModal(true)}
-                        className="border-red-500 text-red-600 hover:bg-red-50"
+                {/* Actions */}
+                <div className="space-y-6">
+                  {/* Booking Information */}
+                  <div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-2 text-gray-600 mb-2">
+                          <Calendar className="w-4 h-4" />
+                          <span className="text-sm">Ngày đặt</span>
+                        </div>
+                        <p className="font-medium">
+                          {selectedBooking.createdAtFormatted}
+                        </p>
+                      </div>
+
+                      <div className="p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-2 text-gray-600 mb-2">
+                          <Users className="w-4 h-4" />
+                          <span className="text-sm">Số khách</span>
+                        </div>
+                        <p className="font-medium">
+                          {selectedBooking.number_of_guests} người
+                        </p>
+                      </div>
+
+                      <div className="p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-2 text-gray-600 mb-2">
+                          <Utensils className="w-4 h-4" />
+                          <span className="text-sm">Bàn số</span>
+                        </div>
+                        <p className="font-medium">
+                          {selectedBooking.tableNumber}
+                        </p>
+                      </div>
+
+                      <div className="p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-2 text-gray-600 mb-2">
+                          <MapPin className="w-4 h-4" />
+                          <span className="text-sm">Khu vực</span>
+                        </div>
+                        <p className="font-medium">
+                          {selectedBooking.locationName}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Notes */}
+                  {selectedBooking.special_requests && (
+                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-sm text-gray-600 mb-1">Ghi chú:</p>
+                      <p>{selectedBooking.special_requests}</p>
+                    </div>
+                  )}
+
+                  {/* Deposit Information */}
+                  <div
+                    className={`p-4 border rounded-lg ${
+                      selectedBooking.isPaid
+                        ? "bg-green-50 border-green-200"
+                        : "bg-gray-50 border-gray-200"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">
+                          Tiền đặt cọc
+                        </p>
+                        <p
+                          className={`text-xl font-medium ${
+                            selectedBooking.isPaid
+                              ? "text-green-700"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          {(
+                            selectedBooking.deposit_amount || 0
+                          ).toLocaleString()}
+                          đ
+                        </p>
+                      </div>
+                      <Badge
+                        className={
+                          selectedBooking.isPaid
+                            ? "bg-green-100 text-green-700"
+                            : "bg-gray-100 text-gray-700"
+                        }
                       >
-                        Hủy đặt bàn
+                        {selectedBooking.isPaid
+                          ? "Đã thanh toán"
+                          : "Chưa thanh toán"}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3">
+                    {selectedBooking.isPaid ? (
+                      <>
+                        {selectedBooking.status !== "cancelled" && (
+                          <Button
+                            variant="secondary"
+                            fullWidth
+                            onClick={() => setShowCancelModal(true)}
+                            className="border-red-500 text-red-600 hover:bg-red-50"
+                          >
+                            Hủy đặt bàn
+                          </Button>
+                        )}
+                        <Button
+                          fullWidth
+                          onClick={() => {
+                            setShowDetailModal(false);
+                            setSelectedBooking(null);
+                          }}
+                        >
+                          Đóng
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        fullWidth
+                        onClick={() => {
+                          setShowDetailModal(false);
+                          setSelectedBooking(null);
+                        }}
+                      >
+                        Đóng
                       </Button>
                     )}
-                    <Button
-                      fullWidth
-                      onClick={() => {
-                        setShowDetailModal(false);
-                        setSelectedBooking(null);
-                      }}
-                    >
-                      Đóng
-                    </Button>
-                  </>
-                ) : (
+                  </div>
+                </div>
+              </div>
+            ) : (
+              ""
+            )}
+          </Modal>
+
+          {/* Payment Modal - For pending status (unpaid deposit) */}
+          <Modal
+            isOpen={showPaymentModal}
+            onClose={() => {
+              setShowPaymentModal(false);
+              setSelectedBooking(null);
+            }}
+            title="Thanh toán tiền cọc"
+            size="lg"
+          >
+            {selectedBooking ? (
+              <div className="space-y-6">
+                {/* Reservation Info */}
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <p className="text-sm text-gray-600">Mã đặt bàn</p>
+                      <p className="text-lg font-medium">
+                        {selectedBooking.id}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Thời gian hẹn</p>
+                      <p className="text-lg font-medium">
+                        {selectedBooking.reservation_date}{" "}
+                        {selectedBooking.reservation_time}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-600">Bàn số</p>
+                      <p className="text-lg font-medium">
+                        {selectedBooking.tableNumber}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Khu vực</p>
+                      <p className="text-lg font-medium">
+                        {selectedBooking.locationName}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Deposit Warning */}
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800">
+                    <strong>Lưu ý:</strong> Bạn chưa thanh toán tiền cọc cho
+                    phiếu đặt bàn này. Vui lòng thanh toán tiền cọc để hoàn tất
+                    quá trình đặt bàn.
+                  </p>
+                </div>
+
+                {/* Deposit Amount */}
+                <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">
+                        Số tiền cọc cần thanh toán
+                      </p>
+                      <p className="text-2xl font-bold text-orange-700">
+                        {(selectedBooking.deposit_amount || 0).toLocaleString()}
+                        đ
+                      </p>
+                    </div>
+                    <Badge className="bg-orange-100 text-orange-700">
+                      Chưa thanh toán
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Booking Details */}
+                <div>
+                  <h4 className="mb-3 font-medium">Chi tiết đặt bàn</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="text-sm">
+                      <p className="text-gray-600">Số khách:</p>
+                      <p className="font-medium">
+                        {selectedBooking.number_of_guests} người
+                      </p>
+                    </div>
+                    <div className="text-sm">
+                      <p className="text-gray-600">Ngày đặt:</p>
+                      <p className="font-medium">
+                        {selectedBooking.createdAtFormatted}
+                      </p>
+                    </div>
+                  </div>
+                  {selectedBooking.special_requests && (
+                    <div className="mt-3 p-3 bg-gray-50 rounded">
+                      <p className="text-sm text-gray-600 mb-1">Ghi chú:</p>
+                      <p className="text-sm">
+                        {selectedBooking.special_requests}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3">
                   <Button
+                    variant="secondary"
                     fullWidth
-                    onClick={() => {
-                      setShowDetailModal(false);
-                      setSelectedBooking(null);
-                    }}
+                    onClick={() => setShowCancelModal(true)}
+                    className="border-red-500 text-red-600 hover:bg-red-50"
                   >
-                    Đóng
+                    Hủy đặt bàn
                   </Button>
-                )}
-              </div>
-            </div>
-          </div>
-        ) : (
-          ""
-        )}
-      </Modal>
-
-      
-
-      {/* Payment Modal - For pending status (unpaid deposit) */}
-      <Modal
-        isOpen={showPaymentModal}
-        onClose={() => {
-          setShowPaymentModal(false);
-          setSelectedBooking(null);
-        }}
-        title="Thanh toán tiền cọc"
-        size="lg"
-      >
-        {selectedBooking ? (
-          <div className="space-y-6">
-            {/* Reservation Info */}
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <p className="text-sm text-gray-600">Mã đặt bàn</p>
-                  <p className="text-lg font-medium">{selectedBooking.id}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Thời gian hẹn</p>
-                  <p className="text-lg font-medium">
-                    {selectedBooking.reservation_date} {selectedBooking.reservation_time}
-                  </p>
+                  <Button fullWidth onClick={handlePaymentComplete}>
+                    Thanh toán ngay
+                  </Button>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600">Bàn số</p>
-                  <p className="text-lg font-medium">{selectedBooking.tableNumber}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Khu vực</p>
-                  <p className="text-lg font-medium">{selectedBooking.locationName}</p>
-                </div>
+            ) : null}
+          </Modal>
+
+          {/* Cancel Booking Modal */}
+          <Modal
+            isOpen={showCancelModal}
+            onClose={() => setShowCancelModal(false)}
+            title="Xác nhận hủy đặt bàn"
+          >
+            <div className="space-y-6">
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-gray-700">
+                  Bạn có chắc chắn muốn hủy phiếu đặt bàn{" "}
+                  <span className="font-bold">{selectedBooking?.id}</span>?
+                </p>
               </div>
-            </div>
 
-            {/* Deposit Warning */}
-            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-yellow-800">
-                <strong>Lưu ý:</strong> Bạn chưa thanh toán tiền cọc cho phiếu đặt bàn này. 
-                Vui lòng thanh toán tiền cọc để hoàn tất quá trình đặt bàn.
-              </p>
-            </div>
-
-            {/* Deposit Amount */}
-            <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Số tiền cọc cần thanh toán</p>
-                  <p className="text-2xl font-bold text-orange-700">
-                    {(selectedBooking.deposit_amount || 0).toLocaleString()}đ
-                  </p>
-                </div>
-                <Badge className="bg-orange-100 text-orange-700">
-                  Chưa thanh toán
-                </Badge>
-              </div>
-            </div>
-
-            {/* Booking Details */}
-            <div>
-              <h4 className="mb-3 font-medium">Chi tiết đặt bàn</h4>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="text-sm">
-                  <p className="text-gray-600">Số khách:</p>
-                  <p className="font-medium">{selectedBooking.number_of_guests} người</p>
-                </div>
-                <div className="text-sm">
-                  <p className="text-gray-600">Ngày đặt:</p>
-                  <p className="font-medium">{selectedBooking.createdAtFormatted}</p>
-                </div>
-              </div>
-              {selectedBooking.special_requests && (
-                <div className="mt-3 p-3 bg-gray-50 rounded">
-                  <p className="text-sm text-gray-600 mb-1">Ghi chú:</p>
-                  <p className="text-sm">{selectedBooking.special_requests}</p>
-                </div>
-              )}
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-3">
-              <Button
-                variant="secondary"
-                fullWidth
-                onClick={() => setShowCancelModal(true)}
-                className="border-red-500 text-red-600 hover:bg-red-50"
-              >
-                Hủy đặt bàn
-              </Button>
-              <Button
-                fullWidth
-                onClick={handlePaymentComplete}
-              >
-                Thanh toán ngay
-              </Button>
-            </div>
-          </div>
-        ) : null}
-      </Modal>
-
-      {/* Cancel Booking Modal */}
-      <Modal
-        isOpen={showCancelModal}
-        onClose={() => setShowCancelModal(false)}
-        title="Xác nhận hủy đặt bàn"
-      >
-        <div className="space-y-6">
-          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-sm text-gray-700">
-              Bạn có chắc chắn muốn hủy phiếu đặt bàn{" "}
-              <span className="font-bold">{selectedBooking?.id}</span>?
-            </p>
-          </div>
-
-          {/* <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              {/* <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-start gap-3">
               <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm flex-shrink-0 mt-0.5">
                 i
@@ -692,24 +757,24 @@ export function BookingManagementPage() {
             </div>
           </div> */}
 
-          <div className="flex gap-4">
-            <Button
-              variant="secondary"
-              fullWidth
-              onClick={() => setShowCancelModal(false)}
-            >
-              Giữ lại phiếu đặt
-            </Button>
-            <Button
-              fullWidth
-              onClick={handleCancelBooking}
-              className="bg-red-500 hover:bg-red-600"
-            >
-              Xác nhận hủy
-            </Button>
-          </div>
-        </div>
-      </Modal>
+              <div className="flex gap-4">
+                <Button
+                  variant="secondary"
+                  fullWidth
+                  onClick={() => setShowCancelModal(false)}
+                >
+                  Giữ lại phiếu đặt
+                </Button>
+                <Button
+                  fullWidth
+                  onClick={handleCancelBooking}
+                  className="bg-red-500 hover:bg-red-600"
+                >
+                  Xác nhận hủy
+                </Button>
+              </div>
+            </div>
+          </Modal>
         </>
       )}
     </div>
