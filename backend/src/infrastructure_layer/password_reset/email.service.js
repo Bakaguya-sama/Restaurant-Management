@@ -1,53 +1,70 @@
-const nodemailer = require("nodemailer");
+const sgMail = require("@sendgrid/mail");
 
 class EmailService {
   constructor() {
-    console.log("[EmailService] Initializing with:", {
-      service: process.env.EMAIL_SERVICE || "gmail",
-      user: process.env.EMAIL_USER ? "SET" : "MISSING",
-      pass: process.env.EMAIL_PASSWORD ? "SET" : "MISSING",
+    const apiKey = process.env.SENDGRID_API_KEY;
+    const fromEmail =
+      process.env.EMAIL_FROM || "noreply@restaurant-management.com";
+
+    console.log("[EmailService] Initializing SendGrid with:", {
+      apiKey: apiKey ? "SET" : "MISSING",
+      fromEmail: fromEmail,
     });
 
-    this.transporter = nodemailer.createTransport({
-      service: process.env.EMAIL_SERVICE || "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD,
-      },
-      // Prevent hanging on connection issues
-      connectionTimeout: 10000, // 10 seconds
-      greetingTimeout: 10000, // 10 seconds
-      socketTimeout: 15000, // 15 seconds
-    });
+    if (!apiKey) {
+      console.error("[EmailService] SENDGRID_API_KEY is missing!");
+      throw new Error("SENDGRID_API_KEY environment variable is required");
+    }
+
+    sgMail.setApiKey(apiKey);
+    this.fromEmail = fromEmail;
   }
 
   async sendPasswordResetCode(toEmail, code, userName) {
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
+    console.log(`[EmailService] Sending password reset code to: ${toEmail}`);
+
+    const msg = {
       to: toEmail,
+      from: this.fromEmail,
       subject: "Mã xác nhận đặt lại mật khẩu - Nhà hàng",
       html: this.getPasswordResetEmailTemplate(code, userName),
     };
 
-    return this.transporter.sendMail(mailOptions);
+    try {
+      await sgMail.send(msg);
+      console.log(
+        `[EmailService] Reset code email sent successfully to ${toEmail}`
+      );
+    } catch (error) {
+      console.error(`[EmailService] Failed to send reset code:`, error.message);
+      throw new Error(`Không thể gửi email: ${error.message}`);
+    }
   }
 
   async sendPasswordResetLink(toEmail, resetLink, userName) {
-    console.log(`[EmailService] Sending password reset email to: ${toEmail}`);
+    console.log(`[EmailService] Sending password reset link to: ${toEmail}`);
 
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
+    const msg = {
       to: toEmail,
+      from: this.fromEmail,
       subject: "Đặt lại mật khẩu - Nhà hàng",
       html: this.getPasswordResetLinkEmailTemplate(resetLink, userName),
     };
 
     try {
-      const info = await this.transporter.sendMail(mailOptions);
-      console.log(`[EmailService] Email sent successfully:`, info.messageId);
-      return info;
+      const result = await sgMail.send(msg);
+      console.log(
+        `[EmailService] Reset link email sent successfully to ${toEmail}`
+      );
+      return result;
     } catch (error) {
-      console.error(`[EmailService] Failed to send email:`, error.message);
+      console.error(`[EmailService] Failed to send reset link:`, error.message);
+      if (error.response) {
+        console.error(
+          "[EmailService] SendGrid error details:",
+          error.response.body
+        );
+      }
       throw new Error(`Không thể gửi email: ${error.message}`);
     }
   }
