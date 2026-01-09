@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Phone, Mail, Lock, CheckCircle } from "lucide-react";
+import { User, Phone, Mail, Lock, CheckCircle, Eye, EyeOff } from "lucide-react";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { toast } from "sonner";
@@ -24,6 +24,10 @@ export function RegisterPage() {
   });
   const [showSuccess, setShowSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState({
+    password: false,
+    confirmPassword: false,
+  });
   const [errors, setErrors] = useState({
     fullName: "",
     phone: "",
@@ -218,37 +222,81 @@ export function RegisterPage() {
             </div>
 
             <div>
-              <Input
-                label="Mật khẩu"
-                type="password"
-                placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
-                icon={<Lock className="w-4 h-4" />}
-                value={form.password}
-                onChange={(e) => {
-                  setForm({ ...form, password: e.target.value });
-                  if (errors.password) setErrors({ ...errors, password: "" });
-                }}
-                required
-              />
+              <div className="relative">
+                <Input
+                  label="Mật khẩu"
+                  type={showPassword.password ? "text" : "password"}
+                  placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
+                  icon={<Lock className="w-4 h-4" />}
+                  value={form.password}
+                  onChange={(e) => {
+                    setForm({ ...form, password: e.target.value });
+                    if (errors.password) setErrors({ ...errors, password: "" });
+                  }}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowPassword({
+                      ...showPassword,
+                      password: !showPassword.password,
+                    })
+                  }
+                  className="absolute right-3 top-9 text-gray-600 hover:text-gray-800"
+                  title={
+                    showPassword.password ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"
+                  }
+                >
+                  {showPassword.password ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
               {errors.password && (
                 <p className="text-red-500 text-sm mt-1">{errors.password}</p>
               )}
             </div>
 
             <div>
-              <Input
-                label="Xác nhận mật khẩu"
-                type="password"
-                placeholder="Nhập lại mật khẩu"
-                icon={<Lock className="w-4 h-4" />}
-                value={form.confirmPassword}
-                onChange={(e) => {
-                  setForm({ ...form, confirmPassword: e.target.value });
-                  if (errors.confirmPassword)
-                    setErrors({ ...errors, confirmPassword: "" });
-                }}
-                required
-              />
+              <div className="relative">
+                <Input
+                  label="Xác nhận mật khẩu"
+                  type={showPassword.confirmPassword ? "text" : "password"}
+                  placeholder="Nhập lại mật khẩu"
+                  icon={<Lock className="w-4 h-4" />}
+                  value={form.confirmPassword}
+                  onChange={(e) => {
+                    setForm({ ...form, confirmPassword: e.target.value });
+                    if (errors.confirmPassword)
+                      setErrors({ ...errors, confirmPassword: "" });
+                  }}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowPassword({
+                      ...showPassword,
+                      confirmPassword: !showPassword.confirmPassword,
+                    })
+                  }
+                  className="absolute right-3 top-9 text-gray-600 hover:text-gray-800"
+                  title={
+                    showPassword.confirmPassword
+                      ? "Ẩn mật khẩu"
+                      : "Hiển thị mật khẩu"
+                  }
+                >
+                  {showPassword.confirmPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
               {errors.confirmPassword && (
                 <p className="text-red-500 text-sm mt-1">
                   {errors.confirmPassword}
