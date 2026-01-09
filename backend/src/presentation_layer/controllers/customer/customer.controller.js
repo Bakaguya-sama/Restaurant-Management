@@ -1,9 +1,11 @@
 const CustomerService = require('../../../application_layer/customer/customer.service');
+const EmailVerificationService = require('../../../application_layer/auth/emailverification.service');
 const UploadRepository = require('../../../infrastructure_layer/upload/upload.repository');
 
 class CustomerController {
   constructor() {
     this.customerService = new CustomerService();
+    this.emailVerificationService = new EmailVerificationService();
     this.uploadRepository = new UploadRepository('avatars');
   }
 
@@ -49,6 +51,16 @@ class CustomerController {
   async createCustomer(req, res) {
     try {
       const customer = await this.customerService.createCustomer(req.body);
+      
+      try {
+        await this.emailVerificationService.createVerificationToken(req.body.email);
+        const verification = await this.emailVerificationService.emailVerificationRepository.findByEmail(req.body.email);
+        if (verification && verification.token) {
+          await this.emailVerificationService.sendVerificationEmail(req.body.email, verification.token);
+        }
+      } catch (emailError) {
+        console.error('Email verification error for customer:', req.body.email, emailError.message);
+      }
       
       res.status(201).json({
         success: true,

@@ -1,9 +1,11 @@
 const StaffService = require('../../../application_layer/staff/staff.service');
+const EmailVerificationService = require('../../../application_layer/auth/emailverification.service');
 const UploadRepository = require('../../../infrastructure_layer/upload/upload.repository');
 
 class StaffController {
   constructor() {
     this.staffService = new StaffService();
+    this.emailVerificationService = new EmailVerificationService();
     this.uploadRepository = new UploadRepository('avatars');
   }
 
@@ -49,6 +51,16 @@ class StaffController {
   async createStaff(req, res) {
     try {
       const staff = await this.staffService.createStaff(req.body);
+
+      try {
+        await this.emailVerificationService.createVerificationToken(req.body.email);
+        const verification = await this.emailVerificationService.emailVerificationRepository.findByEmail(req.body.email);
+        if (verification && verification.token) {
+          await this.emailVerificationService.sendVerificationEmail(req.body.email, verification.token);
+        }
+      } catch (emailError) {
+        console.error('Email verification error for staff:', req.body.email, emailError.message);
+      }
       
       res.status(201).json({
         success: true,

@@ -86,17 +86,8 @@ export function RegisterPage() {
       });
 
       if (response.success && response.data) {
-        authService.setTokens(
-          response.data.accessToken,
-          response.data.refreshToken
-        );
-        
         toast.success("Đăng ký thành công!");
         setShowSuccess(true);
-        
-        setTimeout(() => {
-          navigate("/login");
-        }, 2000);
       } else {
         toast.error(response.message || "Đăng ký thất bại");
       }
@@ -113,13 +104,19 @@ export function RegisterPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#625EE8]/10 to-white p-8">
         <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle className="w-10 h-10 text-green-600" />
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Mail className="w-10 h-10 text-blue-600" />
           </div>
-          <h2 className="mb-2 text-green-600">Đăng ký thành công!</h2>
-          <p className="text-gray-600 mb-4">
-            Tài khoản của bạn đã được tạo. Đang chuyển đến trang đăng nhập...
+          <h2 className="mb-4 text-blue-600">Kiểm tra email của bạn</h2>
+          <p className="text-gray-600 mb-6">
+            Vui lòng kiểm tra hộp thư đến của bạn và nhấp vào liên kết xác thực để kích hoạt tài khoản.
           </p>
+          <Button 
+            onClick={() => navigate("/login")}
+            fullWidth
+          >
+            Quay lại Đăng nhập
+          </Button>
         </div>
       </div>
     );

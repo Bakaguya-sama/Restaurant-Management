@@ -11,6 +11,7 @@ export interface User {
   address?: string;
   date_of_birth?: string;
   image_url?: string;
+  is_email_verified: boolean;
   created_at: string;
   updated_at: string;
 }

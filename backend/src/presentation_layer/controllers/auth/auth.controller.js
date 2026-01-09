@@ -1,9 +1,11 @@
 const AuthService = require('../../../application_layer/auth/auth.service');
+const EmailVerificationService = require('../../../application_layer/auth/emailverification.service');
 const { CustomerRegisterRequest } = require('../../../domain_layer/auth/register.dto');
 
 class AuthController {
   constructor() {
     this.authService = new AuthService();
+    this.emailVerificationService = new EmailVerificationService();
   }
 
   async register(req, res) {
@@ -22,14 +24,73 @@ class AuthController {
 
       const result = await this.authService.registerCustomer(registerRequest);
 
+      await this.emailVerificationService.createVerificationToken(email);
+      await this.emailVerificationService.sendVerificationEmail(email, (await this.emailVerificationService.emailVerificationRepository.findByEmail(email)).token);
+
       res.status(201).json({
         success: true,
-        message: 'Registration successful',
-        data: result
+        message: 'Registration successful. Please verify your email to activate your account.',
+        data: {
+          ...result,
+          email_verified: false
+        }
       });
     } catch (error) {
       const statusCode = error.message.includes('already exists') ? 400 : 500;
       res.status(statusCode).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  async verifyEmail(req, res) {
+    try {
+      const { token } = req.body;
+
+      if (!token) {
+        return res.status(400).json({
+          success: false,
+          message: 'Verification token is required'
+        });
+      }
+
+      await this.emailVerificationService.verifyEmail(token);
+
+      res.status(200).json({
+        success: true,
+        message: 'Email verified successfully'
+      });
+    } catch (error) {
+      const statusCode = error.message.includes('expired') ? 400 : 500;
+      res.status(statusCode).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  async resendVerificationEmail(req, res) {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email is required'
+        });
+      }
+
+      await this.emailVerificationService.createVerificationToken(email);
+      const verification = await this.emailVerificationService.emailVerificationRepository.findByEmail(email);
+      await this.emailVerificationService.sendVerificationEmail(email, verification.token);
+
+      res.status(200).json({
+        success: true,
+        message: 'Verification email sent'
+      });
+    } catch (error) {
+      res.status(500).json({
         success: false,
         message: error.message
       });
@@ -168,6 +229,37 @@ class AuthController {
         });
       }
 
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  async updateEmailVerification(req, res) {
+    try {
+      const { is_email_verified } = req.body;
+      const userId = req.user._id;
+
+      if (typeof is_email_verified !== 'boolean') {
+        return res.status(400).json({
+          success: false,
+          message: 'is_email_verified must be a boolean'
+        });
+      }
+
+      const { User } = require('../../../models');
+      const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        { is_email_verified, updated_at: new Date() },
+        { new: true }
+      ).select('-password_hash');
+
+      res.status(200).json({
+        success: true,
+        data: updatedUser
+      });
+    } catch (error) {
       res.status(500).json({
         success: false,
         message: error.message
