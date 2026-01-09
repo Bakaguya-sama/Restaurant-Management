@@ -1,29 +1,12 @@
 const crypto = require('crypto');
-const sgMail = require('@sendgrid/mail');
+const EmailService = require('../../infrastructure_layer/email/email.service');
 const EmailVerificationRepository = require('../../infrastructure_layer/auth/emailverification.repository');
 const EmailVerificationEntity = require('../../domain_layer/auth/emailverification.entity');
 
 class EmailVerificationService {
   constructor() {
+    this.emailService = new EmailService();
     this.emailVerificationRepository = new EmailVerificationRepository();
-    this.apiKeyInitialized = false;
-    this.setupSendGrid();
-  }
-
-  get hasEmailConfig() {
-    return !!(process.env.SENDGRID_API_KEY && process.env.EMAIL_FROM);
-  }
-
-  setupSendGrid() {
-    if (!this.hasEmailConfig) {
-      if (process.env.NODE_ENV !== 'test') {
-        console.warn('[EmailVerificationService] SendGrid is not configured. Email verification tokens will be created but emails will not be sent.');
-      }
-      return;
-    }
-    
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    this.apiKeyInitialized = true;
   }
 
   generateToken() {
@@ -106,50 +89,7 @@ class EmailVerificationService {
   }
 
   async sendVerificationEmail(email, token) {
-    if (!this.hasEmailConfig) {
-      if (process.env.NODE_ENV === 'test') {
-        return { success: true, message: 'SendGrid not configured. Token logged to console.' };
-      }
-      throw new Error('Email configuration is missing. Please set SENDGRID_API_KEY and EMAIL_FROM environment variables.');
-    }
-
-    if (!token) {
-      throw new Error(`[EmailVerificationService] No token provided for email ${email}`);
-    }
-
-    if (!this.apiKeyInitialized) {
-      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-      this.apiKeyInitialized = true;
-    }
-
-    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email?token=${token}`;
-    
-    const msg = {
-      to: email,
-      from: process.env.EMAIL_FROM,
-      subject: 'Xác thực email của bạn',
-      html: `
-        <h2>Xác thực Email</h2>
-        <p>Cảm ơn bạn đã đăng ký tài khoản. Vui lòng xác thực email của bạn bằng cách nhấp vào liên kết dưới đây:</p>
-        <a href="${verificationUrl}" style="background-color: #625EE8; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
-          Xác thực Email
-        </a>
-        <p>Hoặc sao chép và dán liên kết này vào trình duyệt của bạn:</p>
-        <p>${verificationUrl}</p>
-        <p>Liên kết này sẽ hết hạn trong 24 giờ.</p>
-      `
-    };
-
-    try {
-      const result = await sgMail.send(msg);
-      return result;
-    } catch (error) {
-      console.error(`[EmailVerificationService] Failed to send email to ${email}:`);
-      console.error(`[EmailVerificationService] Error message: ${error.message}`);
-      console.error(`[EmailVerificationService] Error code: ${error.code}`);
-      console.error(`[EmailVerificationService] Full error:`, error);
-      throw new Error(`Failed to send verification email: ${error.message}`);
-    }
+    return await this.emailService.sendVerificationEmail(email, token);
   }
 
   async verifyEmail(token) {
