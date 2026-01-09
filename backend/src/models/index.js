@@ -387,7 +387,8 @@ const EmailVerificationSchema = new Schema({
   is_verified: { type: Boolean, default: false },
   expires_at: { type: Date, required: true },
   verified_at: { type: Date, default: null },
-  created_at: { type: Date, default: Date.now }
+  created_at: { type: Date, default: Date.now },
+  last_sent_at: { type: Date, default: Date.now }
 });
 
 EmailVerificationSchema.index({ expires_at: 1 }, { expireAfterSeconds: 0 });

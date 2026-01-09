@@ -3,17 +3,18 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircle, AlertCircle } from "lucide-react";
 import { Button } from "../ui/Button";
 import { toast } from "sonner";
-import { authService } from "../../lib/authService";
+import { useEmailVerification } from "../../hooks/useEmailVerification";
 
 export function VerifyEmailPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { verifyEmail } = useEmailVerification();
   const [isVerifying, setIsVerifying] = useState(true);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const verifyEmail = async () => {
+    const handleVerifyEmail = async () => {
       const token = searchParams.get("token");
       
       if (!token) {
@@ -23,24 +24,21 @@ export function VerifyEmailPage() {
       }
 
       try {
-        const response = await authService.verifyEmail(token);
-        if (response.success) {
-          setIsSuccess(true);
-          toast.success("Email đã được xác thực thành công!");
-        } else {
-          setError(response.message || "Xác thực email thất bại");
-          toast.error(response.message || "Xác thực email thất bại");
-        }
+        setIsVerifying(true);
+        await verifyEmail(token);
+        setIsSuccess(true);
+        toast.success("Email đã được xác thực thành công!");
       } catch (err: any) {
-        setError(err.message || "Xác thực email thất bại");
-        toast.error(err.message || "Xác thực email thất bại");
+        const errorMessage = err.message || "Xác thực email thất bại";
+        setError(errorMessage);
+        toast.error(errorMessage);
       } finally {
         setIsVerifying(false);
       }
     };
 
-    verifyEmail();
-  }, [searchParams]);
+    handleVerifyEmail();
+  }, [searchParams, verifyEmail]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#625EE8] to-[#7B6FFF] px-4">

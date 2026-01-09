@@ -53,13 +53,13 @@ class StaffController {
       const staff = await this.staffService.createStaff(req.body);
 
       try {
-        await this.emailVerificationService.createVerificationToken(req.body.email);
-        const verification = await this.emailVerificationService.emailVerificationRepository.findByEmail(req.body.email);
+        const verification = await this.emailVerificationService.createVerificationToken(req.body.email);
         if (verification && verification.token) {
           await this.emailVerificationService.sendVerificationEmail(req.body.email, verification.token);
         }
       } catch (emailError) {
-        console.error('Email verification error for staff:', req.body.email, emailError.message);
+        console.error('[STAFF_CREATE] Email verification error:', emailError.message);
+        console.error('[STAFF_CREATE] Full error:', emailError);
       }
       
       res.status(201).json({
@@ -76,7 +76,22 @@ class StaffController {
 
   async updateStaff(req, res) {
     try {
-      const staff = await this.staffService.updateStaff(req.params.id, req.body);
+      const staffId = req.params.id;
+      const oldStaff = await this.staffService.getStaffById(staffId);
+      const emailChanged = req.body.email && req.body.email !== oldStaff.email;
+
+      const staff = await this.staffService.updateStaff(staffId, req.body);
+      
+      if (emailChanged) {
+        try {
+          await this.staffService.updateStaff(staffId, { is_email_verified: false });
+          const verification = await this.emailVerificationService.createVerificationToken(req.body.email);
+          await this.emailVerificationService.sendVerificationEmail(req.body.email, verification.token);
+        } catch (emailError) {
+          console.error('Error handling email change:', emailError.message);
+          throw new Error(`Email verification error: ${emailError.message}`);
+        }
+      }
       
       res.status(200).json({
         success: true,

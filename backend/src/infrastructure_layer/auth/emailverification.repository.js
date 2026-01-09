@@ -28,7 +28,7 @@ class EmailVerificationRepository {
   }
 
   async deleteByEmail(email) {
-    return await EmailVerification.deleteOne({ email });
+    return await EmailVerification.deleteMany({ email });
   }
 
   async deleteExpiredTokens() {

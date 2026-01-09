@@ -24,8 +24,8 @@ class AuthController {
 
       const result = await this.authService.registerCustomer(registerRequest);
 
-      await this.emailVerificationService.createVerificationToken(email);
-      await this.emailVerificationService.sendVerificationEmail(email, (await this.emailVerificationService.emailVerificationRepository.findByEmail(email)).token);
+      const verification = await this.emailVerificationService.createVerificationToken(email);
+      await this.emailVerificationService.sendVerificationEmail(email, verification.token);
 
       res.status(201).json({
         success: true,
@@ -81,8 +81,9 @@ class AuthController {
         });
       }
 
-      await this.emailVerificationService.createVerificationToken(email);
-      const verification = await this.emailVerificationService.emailVerificationRepository.findByEmail(email);
+      await this.emailVerificationService.checkCooldown(email);
+
+      const verification = await this.emailVerificationService.createVerificationToken(email);
       await this.emailVerificationService.sendVerificationEmail(email, verification.token);
 
       res.status(200).json({
@@ -90,7 +91,10 @@ class AuthController {
         message: 'Verification email sent'
       });
     } catch (error) {
-      res.status(500).json({
+      const isCooldownError = error.message && error.message.includes('Vui lòng chờ');
+      const statusCode = isCooldownError ? 429 : 500;
+      
+      res.status(statusCode).json({
         success: false,
         message: error.message
       });
