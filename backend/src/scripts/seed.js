@@ -1583,7 +1583,7 @@ async function seedDatabase() {
         payment_method: "e-wallet",
         payment_status: "paid",
         points_used: 0,
-        points_earned: 39,
+        points_earned: Math.floor(396000 / 1000) * 10,
         paid_at: new Date("2025-12-11"),
       },
       {
@@ -1599,7 +1599,7 @@ async function seedDatabase() {
         payment_method: "cash",
         payment_status: "paid",
         points_used: 0,
-        points_earned: 69,
+        points_earned: Math.floor(698500 / 1000) * 10,
         paid_at: new Date("2025-12-11"),
       },
 

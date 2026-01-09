@@ -128,6 +128,27 @@ export const authService = {
     });
   },
 
+  async verifyEmail(token: string): Promise<any> {
+    return fetchWithAuth('/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+  },
+
+  async resendVerificationEmail(email: string): Promise<any> {
+    return fetchWithAuth('/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  async updateEmailVerification(is_email_verified: boolean): Promise<UserResponse> {
+    return fetchWithAuth('/auth/email-verification', {
+      method: 'PATCH',
+      body: JSON.stringify({ is_email_verified }),
+    });
+  },
+
   isAuthenticated(): boolean {
     return !!localStorage.getItem('accessToken');
   },

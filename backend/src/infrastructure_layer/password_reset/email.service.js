@@ -6,11 +6,12 @@ class EmailService {
     const fromEmail =
       process.env.EMAIL_FROM || "noreply@restaurant-management.com";
 
-    console.log("[EmailService] Initializing SendGrid with:", {
+    if (process.env.NODE_ENV !== "test")
+    {console.log("[EmailService] Initializing SendGrid with:", {
       apiKey: apiKey ? "SET" : "MISSING",
       fromEmail: fromEmail,
       env: process.env.NODE_ENV,
-    });
+    });}
 
     if (!apiKey) {
       console.error("[EmailService] SENDGRID_API_KEY is missing!");

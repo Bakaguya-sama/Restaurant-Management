@@ -10,6 +10,7 @@ class CustomerEntity {
     this.points = data.points || 0;
     this.total_spent = data.total_spent || 0;
     this.image_url = data.image_url;
+    this.is_email_verified = data.is_email_verified || false;
     this.isBanned = data.isBanned || false;
     this.created_at = data.created_at;
     this.updated_at = data.updated_at;
@@ -77,6 +78,7 @@ class CustomerEntity {
       points: this.points,
       total_spent: this.total_spent,
       image_url: this.image_url,
+      is_email_verified: this.is_email_verified,
       isBanned: this.isBanned,
       created_at: this.created_at,
       updated_at: this.updated_at

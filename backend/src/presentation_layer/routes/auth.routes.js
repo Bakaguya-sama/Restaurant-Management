@@ -15,5 +15,8 @@ router.get('/me', authenticateToken, (req, res) => authController.getCurrentUser
 router.post('/change-password', authenticateToken, (req, res) => authController.changePassword(req, res));
 router.post('/forgot-password', (req, res) => passwordResetController.forgotPassword(req, res));
 router.post('/reset-password', (req, res) => passwordResetController.resetPassword(req, res));
+router.post('/verify-email', (req, res) => authController.verifyEmail(req, res));
+router.post('/resend-verification', (req, res) => authController.resendVerificationEmail(req, res));
+router.patch('/email-verification', authenticateToken, (req, res) => authController.updateEmailVerification(req, res));
 
 module.exports = router;

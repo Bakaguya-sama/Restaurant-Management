@@ -6,6 +6,7 @@ import { Input } from "../ui/Input";
 import { toast } from "sonner";
 import { UserRole } from "../../types";
 import { useStaff } from "../../hooks/useStaff";
+import { useEmailVerification } from "../../hooks/useEmailVerification";
 import { Staff } from "../../lib/staffApi";
 import { useAuth } from "../../contexts/AuthContext";
 import { authService } from "../../lib/authService";
@@ -52,6 +53,7 @@ function AvatarImage({ src }: { src: string | null }) {
 export function ProfilePage({ role }: ProfilePageProps) {
   const { userProfile, isAuthenticated, updateProfile } = useAuth();
   const { getStaffById, updateStaff } = useStaff();
+  const { resendVerificationEmail, loading: isResendingVerification, error: resendError, remainingCooldown: backendCooldown } = useEmailVerification();
   const [currentStaff, setCurrentStaff] = useState<Staff | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -59,6 +61,8 @@ export function ProfilePage({ role }: ProfilePageProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [emailJustChanged, setEmailJustChanged] = useState(false);
+  const [verificationCooldown, setVerificationCooldown] = useState(0);
   const hasJustSavedRef = React.useRef(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [profileData, setProfileData] = useState({
@@ -174,6 +178,33 @@ export function ProfilePage({ role }: ProfilePageProps) {
     }
   }, [isAuthenticated, userProfile?.id]);
 
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    if (verificationCooldown > 0) {
+      interval = setInterval(() => {
+        setVerificationCooldown(prev => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [verificationCooldown]);
+
+  const handleResendVerificationEmail = async () => {
+    if (!currentStaff) return;
+    
+    try {
+      await resendVerificationEmail(currentStaff.email);
+      toast.success("Email xác thực đã được gửi!");
+      setVerificationCooldown(60);
+    } catch (error: any) {
+      const errorMessage = error.message || "Gửi email xác thực thất bại!";
+      toast.error(errorMessage);
+      // If we got a cooldown error, use the backend's remaining cooldown time
+      if (backendCooldown && backendCooldown > 0) {
+        setVerificationCooldown(backendCooldown);
+      }
+    }
+  };
+
   const getRoleLabel = (role: string): string => {
     switch (role) {
       case "manager":
@@ -284,6 +315,8 @@ export function ProfilePage({ role }: ProfilePageProps) {
         hire_date: profileData.joinDate,
       };
 
+      const emailChanged = currentStaff.email !== profileData.email;
+
       if (newImageUrl) {
         updatePayload.image_url = newImageUrl;
       }
@@ -302,6 +335,11 @@ export function ProfilePage({ role }: ProfilePageProps) {
         dateOfBirth: formatDateDisplay(updatedStaff.date_of_birth),
         joinDate: formatDateDisplay(updatedStaff.hire_date),
       }));
+
+      if (emailChanged) {
+        setEmailJustChanged(true);
+        setVerificationCooldown(60);
+      }
 
       hasJustSavedRef.current = true;
       const cacheBustedImageUrl = updatedStaff.image_url ? `${updatedStaff.image_url}?t=${Date.now()}` : undefined;
@@ -481,15 +519,17 @@ export function ProfilePage({ role }: ProfilePageProps) {
                   }
                   disabled={!isEditing}
                 />
-                <Input
-                  label="Email"
-                  type="email"
-                  value={profileData.email}
-                  onChange={(e) =>
-                    setProfileData({ ...profileData, email: e.target.value })
-                  }
-                  disabled={!isEditing}
-                />
+                <div>
+                  <Input
+                    label="Email"
+                    type="email"
+                    value={profileData.email}
+                    onChange={(e) =>
+                      setProfileData({ ...profileData, email: e.target.value })
+                    }
+                    disabled={!isEditing}
+                  />
+                </div>
                 <Input
                   label="Số điện thoại"
                   value={profileData.phone}
@@ -528,6 +568,42 @@ export function ProfilePage({ role }: ProfilePageProps) {
                   />
                 </div>
               </div>
+
+              {emailJustChanged && (
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+                  <p className="font-medium mb-2">Email đã được thay đổi</p>
+                  <p className="mb-3">Vui lòng xác thực email mới của bạn. Email xác thực đã được gửi đến địa chỉ email mới của bạn.</p>
+                  <Button
+                    onClick={handleResendVerificationEmail}
+                    disabled={verificationCooldown > 0 || isResendingVerification}
+                    variant="secondary"
+                    className="text-sm"
+                  >
+                    {verificationCooldown > 0
+                      ? `Gửi lại sau ${verificationCooldown}s`
+                      : isResendingVerification
+                      ? "Đang gửi..."
+                      : "Gửi lại email xác thực"}
+                  </Button>
+                </div>
+              )}
+              {!emailJustChanged && currentStaff && !currentStaff.is_email_verified && (
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+                  <p className="font-medium mb-3">Email chưa được xác thực</p>
+                  <Button
+                    onClick={handleResendVerificationEmail}
+                    disabled={verificationCooldown > 0 || isResendingVerification}
+                    variant="secondary"
+                    className="text-sm"
+                  >
+                    {verificationCooldown > 0
+                      ? `Gửi lại sau ${verificationCooldown}s`
+                      : isResendingVerification
+                      ? "Đang gửi..."
+                      : "Gửi email xác thực"}
+                  </Button>
+                </div>
+              )}
             </Card>
 
             <Card className="p-6">

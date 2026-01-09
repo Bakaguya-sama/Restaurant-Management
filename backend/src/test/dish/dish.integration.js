@@ -38,7 +38,7 @@ describe('Dish Integration Tests', () => {
       expect(response.body.data.name).toBe(newDish.name);
       expect(response.body.data.category).toBe(newDish.category);
       expect(response.body.data.price).toBe(newDish.price);
-      expect(response.body.data.is_available).toBe(true);
+      expect(response.body.data.is_available).toBe(false);
 
       createdDishId = response.body.data.id;
     });
@@ -307,6 +307,27 @@ describe('Dish Integration Tests', () => {
     });
 
     it('should mark dish as available again', async () => {
+      const { Ingredient } = require('../../models');
+      let ingredient = await Ingredient.findOne();
+      
+      if (!ingredient) {
+        ingredient = new Ingredient({
+          name: `Test Ingredient ${Date.now()}`,
+          unit: 'gram',
+          unit_price: 5000,
+          quantity_in_stock: 1000
+        });
+        await ingredient.save();
+      }
+
+      await request(app)
+        .post(`/api/v1/dishes/${createdDishId}/ingredients`)
+        .send({
+          ingredient_id: ingredient._id,
+          quantity_required: 100,
+          unit: 'gram'
+        });
+
       await request(app)
         .patch(`/api/v1/dishes/${createdDishId}/availability`)
         .send({

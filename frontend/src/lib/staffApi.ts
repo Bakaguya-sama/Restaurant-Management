@@ -14,6 +14,7 @@ export interface StaffData {
   username: string;
   password?: string;
   is_active?: boolean;
+  is_email_verified?: boolean;
 }
 
 export interface Staff extends Omit<StaffData, 'password'> {

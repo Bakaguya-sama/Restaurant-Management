@@ -18,6 +18,7 @@ import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { toast } from "sonner";
 import { useCustomers } from "../../hooks/useCustomers";
+import { useEmailVerification } from "../../hooks/useEmailVerification";
 import { Customer } from "../../lib/customerApi";
 import { useAuth } from "../../contexts/AuthContext";
 import { authService } from "../../lib/authService";
@@ -58,6 +59,7 @@ function AvatarImage({ src }: { src: string | null }) {
 export function CustomerProfilePage() {
   const { userProfile, isAuthenticated, updateProfile } = useAuth();
   const { getCustomerById, updateCustomer } = useCustomers();
+  const { resendVerificationEmail, loading: isResendingVerification, error: resendError, remainingCooldown: backendCooldown } = useEmailVerification();
   const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -65,6 +67,8 @@ export function CustomerProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [emailJustChanged, setEmailJustChanged] = useState(false);
+  const [verificationCooldown, setVerificationCooldown] = useState(0);
   const hasJustSavedRef = React.useRef(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [profileData, setProfileData] = useState({
@@ -172,6 +176,33 @@ export function CustomerProfilePage() {
     }
   }, [isAuthenticated, userProfile?.id]);
 
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    if (verificationCooldown > 0) {
+      interval = setInterval(() => {
+        setVerificationCooldown(prev => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [verificationCooldown]);
+
+  const handleResendVerificationEmail = async () => {
+    if (!currentCustomer) return;
+    
+    try {
+      await resendVerificationEmail(currentCustomer.email);
+      toast.success("Email xác thực đã được gửi!");
+      setVerificationCooldown(60);
+    } catch (error: any) {
+      const errorMessage = error.message || "Gửi email xác thực thất bại!";
+      toast.error(errorMessage);
+      // If we got a cooldown error, use the backend's remaining cooldown time
+      if (backendCooldown && backendCooldown > 0) {
+        setVerificationCooldown(backendCooldown);
+      }
+    }
+  };
+
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -268,6 +299,8 @@ export function CustomerProfilePage() {
         date_of_birth: isoDateOfBirth,
       };
 
+      const emailChanged = currentCustomer.email !== profileData.email;
+
       if (newImageUrl) {
         updatePayload.image_url = newImageUrl;
       }
@@ -278,6 +311,11 @@ export function CustomerProfilePage() {
       if (updatedCustomer.image_url) {
         const cacheBustedUrl = `${updatedCustomer.image_url}?t=${Date.now()}`;
         setAvatarUrl(cacheBustedUrl);
+      }
+
+      if (emailChanged) {
+        setEmailJustChanged(true);
+        setVerificationCooldown(60);
       }
       setAvatarFile(null);
       setProfileData({
@@ -540,6 +578,42 @@ export function CustomerProfilePage() {
                   />
                 </div>
               </div>
+
+              {emailJustChanged && (
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+                  <p className="font-medium mb-2">Email đã được thay đổi</p>
+                  <p className="mb-3">Vui lòng xác thực email mới của bạn. Email xác thực đã được gửi đến địa chỉ email mới của bạn.</p>
+                  <Button
+                    onClick={handleResendVerificationEmail}
+                    disabled={verificationCooldown > 0 || isResendingVerification}
+                    variant="secondary"
+                    className="text-sm"
+                  >
+                    {verificationCooldown > 0
+                      ? `Gửi lại sau ${verificationCooldown}s`
+                      : isResendingVerification
+                      ? "Đang gửi..."
+                      : "Gửi lại email xác thực"}
+                  </Button>
+                </div>
+              )}
+              {!emailJustChanged && currentCustomer && !currentCustomer.is_email_verified && (
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+                  <p className="font-medium mb-3">Email chưa được xác thực</p>
+                  <Button
+                    onClick={handleResendVerificationEmail}
+                    disabled={verificationCooldown > 0 || isResendingVerification}
+                    variant="secondary"
+                    className="text-sm"
+                  >
+                    {verificationCooldown > 0
+                      ? `Gửi lại sau ${verificationCooldown}s`
+                      : isResendingVerification
+                      ? "Đang gửi..."
+                      : "Gửi email xác thực"}
+                  </Button>
+                </div>
+              )}
             </Card>
 
             {/* Password Change */}

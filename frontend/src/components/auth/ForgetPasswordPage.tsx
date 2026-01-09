@@ -94,7 +94,7 @@ export function ForgetPasswordPage() {
             </div>
 
             <Button type="submit" fullWidth size="lg" disabled={loading}>
-              {loading ? "Đang gửi..." : "Gửi liên kết đặt lại"}
+              {loading ? "Đang gửi..." : "Gửi link đặt lại mật khẩu"}
             </Button>
 
             <div className="text-center pt-4">

@@ -11,18 +11,21 @@ class DishService {
 
   async checkDishAvailability(dishId) {
     try {
-      // Get all ingredients required for this dish
+      const dish = await this.dishRepository.findById(dishId);
+      
+      if (!dish.is_available && dish.manual_unavailable_by) {
+        return { available: false, missingIngredients: [] };
+      }
+
       const dishIngredients = await DishIngredient.find({ dish_id: dishId });
       
       if (dishIngredients.length === 0) {
-        // No ingredients required, dish is available
-        await this.updateDishAvailabilityBased(dishId, true);
-        return { available: true, missingIngredients: [] };
+        await this.updateDishAvailabilityBased(dishId, false);
+        return { available: false, missingIngredients: [] };
       }
 
       const missingIngredients = [];
 
-      // Check each ingredient
       for (const dishIngredient of dishIngredients) {
         const ingredient = await Ingredient.findById(dishIngredient.ingredient_id);
         
@@ -35,7 +38,6 @@ class DishService {
           continue;
         }
 
-        // Check if there's enough stock
         if (ingredient.quantity_in_stock < dishIngredient.quantity_required) {
           missingIngredients.push({
             name: ingredient.name,
@@ -61,8 +63,11 @@ class DishService {
 
   async updateDishAvailabilityBased(dishId, isAvailable) {
     try {
+      const hasIngredients = await this.dishRepository.hasDishIngredients(dishId);
+      const finalAvailability = isAvailable && hasIngredients;
+
       await this.dishRepository.update(dishId, {
-        is_available: isAvailable,
+        is_available: finalAvailability,
         updated_at: new Date()
       });
     } catch (error) {
@@ -73,7 +78,6 @@ class DishService {
   async getAllDishes(filters = {}) {
     const dishes = await this.dishRepository.findAll(filters);
     
-    // Check availability for each dish
     const dishesWithAvailability = await Promise.all(
       dishes.map(async (dish) => {
         const availability = await this.checkDishAvailability(dish._id || dish.id);
@@ -93,7 +97,11 @@ class DishService {
     if (!dish) {
       throw new Error('Dish not found');
     }
-    return dish;
+    
+    await this.checkDishAvailability(id);
+    const updatedDish = await this.dishRepository.findById(id);
+    
+    return updatedDish;
   }
 
   async createDish(dishData) {
@@ -109,7 +117,12 @@ class DishService {
       throw new Error('Dish with this name already exists');
     }
 
-    return await this.dishRepository.create(dishData);
+    const dishDataWithAvailability = {
+      ...dishData,
+      is_available: false
+    };
+
+    return await this.dishRepository.create(dishDataWithAvailability);
   }
 
   async updateDish(id, updateData) {
@@ -145,6 +158,21 @@ class DishService {
       throw new Error('Dish not found');
     }
 
+    if (isAvailable) {
+      const hasIngredients = await this.dishRepository.hasDishIngredients(id);
+      if (!hasIngredients) {
+        throw new Error(`Cannot enable dish "${existingDish.name}": Please attach at least one ingredient before enabling availability`);
+      }
+
+      const availability = await this.checkDishAvailability(id);
+      if (!availability.available && availability.missingIngredients.length > 0) {
+        const missingList = availability.missingIngredients
+          .map(ing => `${ing.name} (need: ${ing.required} ${ing.unit}, have: ${ing.available})`)
+          .join(', ');
+        throw new Error(`Cannot enable dish "${existingDish.name}": Insufficient ingredient stock - ${missingList}`);
+      }
+    }
+
     return await this.dishRepository.updateAvailability(id, isAvailable, reason, staffId);
   }
 
@@ -177,14 +205,11 @@ class DishService {
 
   async getTopDishes(limit = 3) {
     try {
-      // Aggregate to count how many times each dish has been ordered
       const topDishes = await OrderDetail.aggregate([
         {
-          // Only count non-cancelled orders
           $match: { status: { $ne: 'cancelled' } }
         },
         {
-          // Group by dish_id and sum quantities
           $group: {
             _id: '$dish_id',
             totalOrdered: { $sum: '$quantity' },
@@ -192,16 +217,13 @@ class DishService {
           }
         },
         {
-          // Sort by totalOrdered descending, then by totalRevenue descending (if tied)
           $sort: { totalOrdered: -1, totalRevenue: -1 }
         },
         {
-          // Limit to top N
           $limit: limit
         }
       ]);
 
-      // Get full dish details for each top dish
       const dishesWithDetails = await Promise.all(
         topDishes.map(async (item) => {
           const dish = await this.dishRepository.findById(item._id);
@@ -215,7 +237,6 @@ class DishService {
         })
       );
 
-      // Filter out null values (dishes that might have been deleted)
       return dishesWithDetails.filter(d => d !== null);
     } catch (error) {
       console.error('Error getting top dishes:', error);

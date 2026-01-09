@@ -16,6 +16,7 @@ const UserSchema = new Schema({
     enum: ['waiter', 'cashier', 'manager', 'customer'], 
     required: true 
   },
+  is_email_verified: { type: Boolean, default: false },
   is_active: { type: Boolean, default: true },
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now }
@@ -380,8 +381,19 @@ const RatingReply = mongoose.model('RatingReply', RatingReplySchema);
 const StockExport = mongoose.model('StockExport', StockExportSchema);
 const StockExportDetail = mongoose.model('StockExportDetail', StockExportDetailSchema);
 
-// Supplier model
-// (exported below)
+const EmailVerificationSchema = new Schema({
+  email: { type: String, required: true, unique: true },
+  token: { type: String, required: true, unique: true },
+  is_verified: { type: Boolean, default: false },
+  expires_at: { type: Date, required: true },
+  verified_at: { type: Date, default: null },
+  created_at: { type: Date, default: Date.now },
+  last_sent_at: { type: Date, default: Date.now }
+});
+
+EmailVerificationSchema.index({ expires_at: 1 }, { expireAfterSeconds: 0 });
+
+const EmailVerification = mongoose.model('EmailVerification', EmailVerificationSchema);
 
 module.exports = {
   User,
@@ -412,6 +424,7 @@ module.exports = {
   RatingReply,
   StockExport,
   StockExportDetail,
+  EmailVerification,
   PasswordResetToken: require('./PasswordResetToken')
 };
 

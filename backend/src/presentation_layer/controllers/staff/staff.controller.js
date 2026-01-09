@@ -1,9 +1,11 @@
 const StaffService = require('../../../application_layer/staff/staff.service');
+const EmailVerificationService = require('../../../application_layer/auth/emailverification.service');
 const UploadRepository = require('../../../infrastructure_layer/upload/upload.repository');
 
 class StaffController {
   constructor() {
     this.staffService = new StaffService();
+    this.emailVerificationService = new EmailVerificationService();
     this.uploadRepository = new UploadRepository('avatars');
   }
 
@@ -49,6 +51,16 @@ class StaffController {
   async createStaff(req, res) {
     try {
       const staff = await this.staffService.createStaff(req.body);
+
+      try {
+        const verification = await this.emailVerificationService.createVerificationToken(req.body.email);
+        if (verification && verification.token) {
+          await this.emailVerificationService.sendVerificationEmail(req.body.email, verification.token);
+        }
+      } catch (emailError) {
+        console.error('[STAFF_CREATE] Email verification error:', emailError.message);
+        console.error('[STAFF_CREATE] Full error:', emailError);
+      }
       
       res.status(201).json({
         success: true,
@@ -64,7 +76,22 @@ class StaffController {
 
   async updateStaff(req, res) {
     try {
-      const staff = await this.staffService.updateStaff(req.params.id, req.body);
+      const staffId = req.params.id;
+      const oldStaff = await this.staffService.getStaffById(staffId);
+      const emailChanged = req.body.email && req.body.email !== oldStaff.email;
+
+      const staff = await this.staffService.updateStaff(staffId, req.body);
+      
+      if (emailChanged) {
+        try {
+          await this.staffService.updateStaff(staffId, { is_email_verified: false });
+          const verification = await this.emailVerificationService.createVerificationToken(req.body.email);
+          await this.emailVerificationService.sendVerificationEmail(req.body.email, verification.token);
+        } catch (emailError) {
+          console.error('Error handling email change:', emailError.message);
+          throw new Error(`Email verification error: ${emailError.message}`);
+        }
+      }
       
       res.status(200).json({
         success: true,

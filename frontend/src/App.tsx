@@ -8,6 +8,7 @@ import { LoginPage } from "./components/auth/LoginPage";
 import { RegisterPage } from "./components/auth/RegisterPage";
 import { ForgetPasswordPage } from "./components/auth/ForgetPasswordPage";
 import { ResetPasswordPage } from "./components/auth/ResetPasswordPage";
+import { VerifyEmailPage } from "./components/auth/VerifyEmailPage";
 import { RoleBasedRoute } from "./components/auth/RoleBasedRoute";
 import { UnauthorizedPage } from "./components/auth/UnauthorizedPage";
 import { NotFoundPage } from "./components/auth/NotFoundPage";
@@ -45,6 +46,7 @@ function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/forget-password" element={<ForgetPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/verify-email" element={<VerifyEmailPage />} />
 
             {/* Error Pages */}
             <Route path="/unauthorized" element={<UnauthorizedPage />} />
