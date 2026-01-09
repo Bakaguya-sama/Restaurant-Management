@@ -326,9 +326,19 @@ export function MenuPromotionPage() {
     if (!dish) return;
     const userId = !dish.is_available ? undefined : currentUserId || undefined;
     toggleDishAvailability(id, !dish.is_available, userId).catch((err) => {
-      toast.error(
-        err instanceof Error ? err.message : "Lỗi khi cập nhật trạng thái"
-      );
+      let errorMessage = err instanceof Error ? err.message : "Lỗi khi cập nhật trạng thái";
+      
+      if (errorMessage.includes("Cannot enable dish")) {
+        const dishName = errorMessage.match(/"([^"]+)"/)?.[1] || "món ăn";
+        
+        if (errorMessage.includes("Insufficient ingredient stock")) {
+          errorMessage = `Không thể kích hoạt món "${dishName}": Không đủ nguyên liệu trong kho`;
+        } else {
+          errorMessage = `Không thể kích hoạt món "${dishName}": Vui lòng gắn ít nhất một nguyên liệu trước khi kích hoạt`;
+        }
+      }
+      
+      toast.error(errorMessage);
     });
   };
 
@@ -597,15 +607,15 @@ export function MenuPromotionPage() {
   const openEditPromoModal = (promo: Promotion) => {
     setEditingPromo(promo);
     setPromoForm({
-      name: promo.name,
+      name: promo.name || "",
       promo_code: promo.promo_code || "",
-      promotion_type: promo.promotion_type,
-      discount_value: promo.discount_value,
+      promotion_type: promo.promotion_type || "percentage",
+      discount_value: promo.discount_value || 0,
       minimum_order_amount: promo.minimum_order_amount || 0,
-      start_date: formatDateToInput(promo.start_date),
-      end_date: formatDateToInput(promo.end_date),
+      start_date: formatDateToInput(promo.start_date|| "") || "",
+      end_date: formatDateToInput(promo.end_date|| "") || "",
       max_uses: promo.max_uses || 0,
-      is_active: promo.is_active,
+      is_active: promo.is_active || true,
     });
     setShowEditPromoModal(true);
   };
@@ -869,7 +879,7 @@ export function MenuPromotionPage() {
         .toString()
         .toLowerCase()
         .includes(promoSearchQuery.toLowerCase()) ||
-      promo.name.toLowerCase().includes(promoSearchQuery.toLowerCase());
+      (promo.name || "").toLowerCase().includes(promoSearchQuery.toLowerCase());
     const matchesStatus =
       selectedPromoStatus === "all" ||
       (selectedPromoStatus === "active" && promo.is_active) ||
@@ -1145,42 +1155,42 @@ export function MenuPromotionPage() {
                       <td className="p-4 text-gray-600 hidden">
                         {((promo as any)._id || promo.id).toString()}
                       </td>
-                      <td className="p-4">{promo.name}</td>
+                      <td className="p-4">{promo.name || ""}</td>
                       <td className="p-4">
                         <code className="bg-gray-100 px-2 py-1 rounded">
-                          {promo.promo_code}
+                          {promo.promo_code || ""}
                         </code>
                       </td>
                       <td className="p-4">
-                        {promo.promotion_type === "percentage"
-                          ? `${promo.discount_value}%`
-                          : `${promo.discount_value.toLocaleString()}đ`}
+                        {(promo.promotion_type || "percentage") === "percentage"
+                          ? `${promo.discount_value || 0}%`
+                          : `${(promo.discount_value || 0).toLocaleString()}đ`}
                       </td>
                       <td className="p-4">
                         <span
                           className={
-                            promo.current_uses !== undefined &&
-                            promo.current_uses >= (promo.max_uses || 0) &&
-                            promo.max_uses > 0
+                            (promo.current_uses !== undefined && promo.current_uses !== null) &&
+                            (promo.current_uses >= ((promo.max_uses || 0) as number)) &&
+                            ((promo.max_uses || 0) as number) > 0
                               ? "text-red-600"
                               : ""
                           }
                         >
-                          {promo.max_uses && promo.max_uses > 0
-                            ? `${promo.current_uses || 0}/${promo.max_uses}`
+                          {(promo.max_uses || 0) > 0
+                            ? `${promo.current_uses || 0}/${promo.max_uses || 0}`
                             : "Không giới hạn"}
                         </span>
                       </td>
                       <td className="p-4 text-sm">
                         <div>
                           <p>
-                            {new Date(promo.start_date).toLocaleDateString(
+                            {new Date(promo.start_date || "").toLocaleDateString(
                               "vi-VN"
                             )}
                           </p>
                           <p className="text-gray-600">
                             đến{" "}
-                            {new Date(promo.end_date).toLocaleDateString(
+                            {new Date(promo.end_date || "").toLocaleDateString(
                               "vi-VN"
                             )}
                           </p>
@@ -1189,17 +1199,17 @@ export function MenuPromotionPage() {
                       <td className="p-4">
                         <Badge
                           className={
-                            promo.is_active
+                            (promo.is_active || false)
                               ? "bg-green-100 text-green-700"
                               : "bg-gray-100 text-gray-700"
                           }
                         >
-                          {promo.is_active ? "Đang diễn ra" : "Tạm dừng"}
+                          {(promo.is_active || false) ? "Đang diễn ra" : "Tạm dừng"}
                         </Badge>
                       </td>
                       <td className="p-4">
                         <div className="flex gap-1">
-                          {promo.max_uses > 0 && promo.current_uses > 0 && (
+                          {(promo.max_uses || 0) > 0 && (promo.current_uses || 0) > 0 && (
                             <Button
                               size="sm"
                               variant="ghost"

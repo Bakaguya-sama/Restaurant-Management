@@ -35,6 +35,20 @@ class DishEntity {
     };
   }
 
+  validateAvailabilityTransition(hasIngredients) {
+    if (this.is_available && !hasIngredients) {
+      return {
+        isValid: false,
+        error: 'Cannot enable dish without attached ingredients'
+      };
+    }
+
+    return {
+      isValid: true,
+      error: null
+    };
+  }
+
   formatResponse() {
     return {
       id: this.id,
