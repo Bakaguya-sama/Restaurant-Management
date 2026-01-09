@@ -27,6 +27,10 @@ class EmailVerificationRepository {
     );
   }
 
+  async deleteByToken(token) {
+    return await EmailVerification.deleteOne({ token });
+  }
+
   async deleteByEmail(email) {
     return await EmailVerification.deleteMany({ email });
   }

@@ -180,9 +180,9 @@ class EmailVerificationService {
       throw new Error('Failed to update user email verification status');
     }
 
-    const updated = await this.emailVerificationRepository.updateVerification(token);
+    await this.emailVerificationRepository.deleteByToken(token);
     
-    return updated;
+    return { success: true, message: 'Email verified and token deleted' };
   }
 
   async isEmailVerified(email) {
