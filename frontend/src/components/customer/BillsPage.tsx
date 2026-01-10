@@ -47,10 +47,10 @@ export function BillsPage() {
   const fetchInvoices = async () => {
     try {
       setLoading(true);
-      
+
       const response = await authService.getCurrentUser();
       const currentUserId = response.data.id || response.data._id;
-      
+
       if (!currentUserId) {
         toast.error("Không thể xác định người dùng hiện tại");
         setLoading(false);
@@ -71,7 +71,7 @@ export function BillsPage() {
       }
 
       const invoicesResponse = await invoiceApi.getByCustomerId(currentUserId);
-      
+
       if (!invoicesResponse.success || !invoicesResponse.data) {
         setAllBills([]);
         setLoading(false);
@@ -81,19 +81,25 @@ export function BillsPage() {
       // Fetch invoice_promotions to get voucher details
       let invoicePromotions: any = {};
       try {
-        const apiBaseUrl = (import.meta as any).env?.VITE_API_URL || "http://localhost:5000/api/v1";
+        const apiBaseUrl =
+          (import.meta as any).env?.VITE_API_URL ||
+          "http://localhost:5000/api/v1";
         const ipResponse = await fetch(`${apiBaseUrl}/invoice-promotions`);
         if (ipResponse.ok) {
           const ipResult = await ipResponse.json();
           if (ipResult.success && ipResult.data) {
             // Map invoice_promotions by invoice_id
             ipResult.data.forEach((ip: any) => {
-              const invId = ip.invoice_id?._id || ip.invoice_id?.id || ip.invoice_id;
+              const invId =
+                ip.invoice_id?._id || ip.invoice_id?.id || ip.invoice_id;
               if (invId) {
                 invoicePromotions[invId] = {
-                  promotionId: ip.promotion_id?._id || ip.promotion_id?.id || ip.promotion_id,
+                  promotionId:
+                    ip.promotion_id?._id ||
+                    ip.promotion_id?.id ||
+                    ip.promotion_id,
                   voucherCode: ip.promotion_id?.promo_code || null,
-                  discountAmount: ip.discount_applied || 0
+                  discountAmount: ip.discount_applied || 0,
                 };
               }
             });
@@ -102,26 +108,36 @@ export function BillsPage() {
       } catch (error) {
         console.error("Error fetching invoice promotions:", error);
       }
-      
-      
+
       let customerRatings: any = {};
       try {
-        const ratingsResponse = await ratingApi.getAll({ customer_id: currentUserId });
-        if (ratingsResponse.success && ratingsResponse.data && ratingsResponse.data.length > 0) {
+        const ratingsResponse = await ratingApi.getAll({
+          customer_id: currentUserId,
+        });
+        if (
+          ratingsResponse.success &&
+          ratingsResponse.data &&
+          ratingsResponse.data.length > 0
+        ) {
           const ratings = ratingsResponse.data;
-          
+
           for (const rating of ratings) {
             const invoiceId = rating.invoice_id;
             if (invoiceId) {
               const ratingId = rating._id || rating.id;
               const repliesResponse = await ratingApi.getReplies(ratingId);
-              const reply = repliesResponse.success && repliesResponse.data && repliesResponse.data.length > 0 ? repliesResponse.data[0] : null;
-              
+              const reply =
+                repliesResponse.success &&
+                repliesResponse.data &&
+                repliesResponse.data.length > 0
+                  ? repliesResponse.data[0]
+                  : null;
+
               customerRatings[invoiceId] = {
                 description: rating.description,
                 score: rating.score,
                 reply_text: reply?.reply_text,
-                reply_date: reply?.reply_date
+                reply_date: reply?.reply_date,
               };
             }
           }
@@ -129,26 +145,27 @@ export function BillsPage() {
       } catch (error) {
         console.error("Error fetching ratings/replies:", error);
       }
-      
+
       const transformedBills = invoicesResponse.data.map((invoice: any) => {
         const invoiceObj = invoice._id ? invoice : invoice;
         const orderItems = invoiceObj.order_id?.items || [];
         const invoiceId = invoiceObj._id || invoiceObj.id;
         const invoiceRating = customerRatings[invoiceId];
         const invoicePromotion = invoicePromotions[invoiceId];
-        
+
         // Calculate discounts
         const pointsUsed = invoiceObj.points_used || 0;
         const pointsDiscount = pointsUsed * 1;
-        
+
         // Voucher discount from invoice_promotion or from discount_amount
-        const voucherDiscount = invoicePromotion?.discountAmount || invoiceObj.discount_amount || 0;
+        const voucherDiscount =
+          invoicePromotion?.discountAmount || invoiceObj.discount_amount || 0;
         const voucherCode = invoicePromotion?.voucherCode || null;
         const promotionId = invoicePromotion?.promotionId || null;
-        
+
         // Total discount is voucher + points
         const totalDiscount = voucherDiscount + pointsDiscount;
-        
+
         return {
           id: invoiceId,
           date: new Date(invoiceObj.created_at).toISOString().split("T")[0],
@@ -179,10 +196,19 @@ export function BillsPage() {
           paymentMethod: invoiceObj.payment_method,
           orderId: invoiceObj.order_id?._id,
           invoiceId: invoiceId,
-          
-          feedback: invoiceObj.payment_status === 'paid' && invoiceRating ? invoiceRating.description : null,
-          feedbackReply: invoiceObj.payment_status === 'paid' && invoiceRating ? invoiceRating.reply_text : null,
-          feedbackReplyDate: invoiceObj.payment_status === 'paid' && invoiceRating ? invoiceRating.reply_date : null,
+
+          feedback:
+            invoiceObj.payment_status === "paid" && invoiceRating
+              ? invoiceRating.description
+              : null,
+          feedbackReply:
+            invoiceObj.payment_status === "paid" && invoiceRating
+              ? invoiceRating.reply_text
+              : null,
+          feedbackReplyDate:
+            invoiceObj.payment_status === "paid" && invoiceRating
+              ? invoiceRating.reply_date
+              : null,
         };
       });
 
@@ -208,16 +234,15 @@ export function BillsPage() {
       }
     } catch (error) {
       console.error("Error fetching promotions:", error);
-      
     }
   };
 
   const handleApplyVoucher = () => {
     const voucher = promotions.find(
-      (p) => p.promo_code?.toUpperCase() === voucherCode.toUpperCase() && p.is_active
+      (p) =>
+        p.promo_code?.toUpperCase() === voucherCode.toUpperCase() && p.is_active
     );
     if (voucher) {
-      
       // Check if promotion has available uses (unlimited if max_uses = -1)
       if (
         voucher.max_uses !== undefined &&
@@ -229,18 +254,21 @@ export function BillsPage() {
         return;
       }
 
-      
       const orderTotal = selectedBill.subtotal + selectedBill.tax;
-      if (voucher.minimum_order_amount && orderTotal < voucher.minimum_order_amount) {
-        toast.error(`Đơn hàng phải từ ${voucher.minimum_order_amount.toLocaleString()}đ`);
+      if (
+        voucher.minimum_order_amount &&
+        orderTotal < voucher.minimum_order_amount
+      ) {
+        toast.error(
+          `Đơn hàng phải từ ${voucher.minimum_order_amount.toLocaleString()}đ`
+        );
         return;
       }
 
       let voucherDiscount = 0;
       if (voucher.promotion_type === "percentage") {
         voucherDiscount = Math.floor(
-          (selectedBill.subtotal + selectedBill.tax) *
-            (voucher.discount_value / 100)
+          selectedBill.subtotal * (voucher.discount_value / 100)
         );
       } else {
         voucherDiscount = voucher.discount_value;
@@ -249,20 +277,20 @@ export function BillsPage() {
       setAppliedVoucher(voucher);
       const updatedBills = [...allBills];
       const billIndex = updatedBills.findIndex((b) => b.id === selectedBill.id);
-      
-      
-      const totalDiscount = voucherDiscount + updatedBills[billIndex].pointsDiscount;
-      
+
+      const totalDiscount =
+        voucherDiscount + updatedBills[billIndex].pointsDiscount;
+
       updatedBills[billIndex] = {
         ...updatedBills[billIndex],
         voucherDiscount: voucherDiscount,
         voucherCode: voucher.promo_code,
         promotionId: voucher._id || voucher.id,
-        discount: totalDiscount, 
+        discount: totalDiscount,
         total:
-          updatedBills[billIndex].subtotal +
-          updatedBills[billIndex].tax -
-          totalDiscount,
+          updatedBills[billIndex].subtotal -
+          totalDiscount +
+          updatedBills[billIndex].subtotal * 0.1,
       };
       setAllBills(updatedBills);
       setSelectedBill(updatedBills[billIndex]);
@@ -274,7 +302,6 @@ export function BillsPage() {
   };
 
   const handleSelectPromotion = (promo: Promotion) => {
-    
     // Check if promotion has available uses (unlimited if max_uses = -1)
     if (
       promo.max_uses !== undefined &&
@@ -286,17 +313,18 @@ export function BillsPage() {
       return;
     }
 
-    
     const orderTotal = selectedBill.subtotal + selectedBill.tax;
     if (promo.minimum_order_amount && orderTotal < promo.minimum_order_amount) {
-      toast.error(`Đơn hàng phải từ ${promo.minimum_order_amount.toLocaleString()}đ`);
+      toast.error(
+        `Đơn hàng phải từ ${promo.minimum_order_amount.toLocaleString()}đ`
+      );
       return;
     }
 
     let voucherDiscount = 0;
     if (promo.promotion_type === "percentage") {
       voucherDiscount = Math.floor(
-        (selectedBill.subtotal + selectedBill.tax) * (promo.discount_value / 100)
+        selectedBill.subtotal * (promo.discount_value / 100)
       );
     } else {
       voucherDiscount = promo.discount_value;
@@ -305,9 +333,10 @@ export function BillsPage() {
     setAppliedVoucher(promo);
     const updatedBills = [...allBills];
     const billIndex = updatedBills.findIndex((b) => b.id === selectedBill.id);
-    
-    const totalDiscount = voucherDiscount + updatedBills[billIndex].pointsDiscount;
-    
+
+    const totalDiscount =
+      voucherDiscount + updatedBills[billIndex].pointsDiscount;
+
     updatedBills[billIndex] = {
       ...updatedBills[billIndex],
       voucherDiscount: voucherDiscount,
@@ -315,9 +344,9 @@ export function BillsPage() {
       promotionId: promo._id || promo.id,
       discount: totalDiscount,
       total:
-        updatedBills[billIndex].subtotal +
-        updatedBills[billIndex].tax -
-        totalDiscount,
+        updatedBills[billIndex].subtotal -
+        totalDiscount +
+        updatedBills[billIndex].subtotal * 0.1,
     };
     setAllBills(updatedBills);
     setSelectedBill(updatedBills[billIndex]);
@@ -339,19 +368,19 @@ export function BillsPage() {
     const pointsDiscount = pointsToUse; // 1000 points = 1000đ
     const updatedBills = [...allBills];
     const billIndex = updatedBills.findIndex((b) => b.id === selectedBill.id);
-    
-    
-    const totalDiscount = updatedBills[billIndex].voucherDiscount + pointsDiscount;
-    
+
+    const totalDiscount =
+      updatedBills[billIndex].voucherDiscount + pointsDiscount;
+
     updatedBills[billIndex] = {
       ...updatedBills[billIndex],
       pointsDiscount: pointsDiscount,
       pointsUsed: pointsToUse,
-      discount: totalDiscount, 
+      discount: totalDiscount,
       total:
-        updatedBills[billIndex].subtotal +
-        updatedBills[billIndex].tax -
-        totalDiscount,
+        updatedBills[billIndex].subtotal -
+        totalDiscount +
+        updatedBills[billIndex].subtotal * 0.1,
     };
     setAllBills(updatedBills);
     setSelectedBill(updatedBills[billIndex]);
@@ -374,41 +403,41 @@ export function BillsPage() {
 
     try {
       const paymentMethodMap: any = {
-        wallet: 'e-wallet',
-        card: 'card',
-        cash: 'cash',
-        online: 'transfer',
+        wallet: "e-wallet",
+        card: "card",
+        cash: "cash",
+        online: "transfer",
       };
 
       const mappedPaymentMethod = paymentMethodMap[paymentMethod];
 
-      
       await invoiceApi.update(selectedBill.invoiceId, {
         payment_method: mappedPaymentMethod,
         points_used: selectedBill.pointsUsed || 0,
       });
 
-      if (paymentMethod === 'cash') {
-        toast.success("Đã gửi yêu cầu thanh toán! Vui lòng chờ nhân viên xác nhận.");
+      if (paymentMethod === "cash") {
+        toast.success(
+          "Đã gửi yêu cầu thanh toán! Vui lòng chờ nhân viên xác nhận."
+        );
       } else {
-        
         await invoiceApi.markAsPaid(
-          selectedBill.invoiceId, 
+          selectedBill.invoiceId,
           mappedPaymentMethod,
           selectedBill.promotionId || null,
           selectedBill.pointsUsed || 0
         );
-        
-        const updatedBills = allBills.map(bill => 
-          bill.invoiceId === selectedBill.invoiceId 
-            ? { ...bill, status: 'paid', paymentMethod: mappedPaymentMethod }
+
+        const updatedBills = allBills.map((bill) =>
+          bill.invoiceId === selectedBill.invoiceId
+            ? { ...bill, status: "paid", paymentMethod: mappedPaymentMethod }
             : bill
         );
         setAllBills(updatedBills);
-        
+
         toast.success("Thanh toán thành công!");
       }
-      
+
       setShowPaymentModal(false);
       setSelectedBill(null);
       setPaymentMethod(null);
@@ -440,18 +469,18 @@ export function BillsPage() {
 
     try {
       const invoiceId = selectedBill._id || selectedBill.id;
-      
+
       await ratingApi.create({
         customer_id: customerId,
         invoice_id: invoiceId,
         description: feedback,
-        score: 5
+        score: 5,
       });
 
       toast.success("Cảm ơn bạn đã gửi đánh giá!");
       setShowFeedbackModal(false);
       setFeedback("");
-      
+
       await fetchInvoices();
     } catch (error: any) {
       console.error("Rating error:", error);
@@ -515,78 +544,80 @@ export function BillsPage() {
       ) : (
         <div className="space-y-4">
           {allBills.map((bill) => (
-          <Card
-            key={bill.id}
-            className="p-4 hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => setSelectedBill(bill)}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-4">
-                <div
-                  className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                    bill.status === "paid" ? "bg-green-100" : "bg-blue-100"
-                  }`}
-                >
-                  {bill.status === "paid" ? (
-                    <Check className="w-6 h-6 text-green-600" />
-                  ) : (
-                    <Clock className="w-6 h-6 text-blue-600" />
+            <Card
+              key={bill.id}
+              className="p-4 hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => setSelectedBill(bill)}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-4">
+                  <div
+                    className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                      bill.status === "paid" ? "bg-green-100" : "bg-blue-100"
+                    }`}
+                  >
+                    {bill.status === "paid" ? (
+                      <Check className="w-6 h-6 text-green-600" />
+                    ) : (
+                      <Clock className="w-6 h-6 text-blue-600" />
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="mb-1">{bill.id}</h4>
+                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        {bill.date} {bill.time}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-xl mb-1">{bill.total.toLocaleString()}đ</p>
+                  <Badge
+                    className={
+                      bill.status === "paid"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-blue-100 text-blue-700"
+                    }
+                  >
+                    {bill.status === "paid"
+                      ? "Đã thanh toán"
+                      : "Đang tiến hành"}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Discount Info */}
+              {(bill.voucherUsed || bill.pointsUsed > 0) && (
+                <div className="mt-3 pt-3 border-t space-y-1 text-sm">
+                  {bill.voucherUsed && (
+                    <div className="flex items-center justify-between text-gray-600">
+                      <span className="flex items-center gap-1">
+                        <Tag className="w-4 h-4" />
+                        Voucher: {bill.voucherUsed}
+                      </span>
+                      <span className="text-green-600">
+                        -{bill.voucherDiscount?.toLocaleString()}đ
+                      </span>
+                    </div>
+                  )}
+                  {bill.pointsUsed > 0 && (
+                    <div className="flex items-center justify-between text-gray-600">
+                      <span className="flex items-center gap-1">
+                        <Gift className="w-4 h-4" />
+                        Điểm: {bill.pointsUsed} điểm
+                      </span>
+                      <span className="text-green-600">
+                        -{bill.pointsDiscount?.toLocaleString()}đ
+                      </span>
+                    </div>
                   )}
                 </div>
-                <div>
-                  <h4 className="mb-1">{bill.id}</h4>
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      {bill.date} {bill.time}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-xl mb-1">{bill.total.toLocaleString()}đ</p>
-                <Badge
-                  className={
-                    bill.status === "paid"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-blue-100 text-blue-700"
-                  }
-                >
-                  {bill.status === "paid" ? "Đã thanh toán" : "Đang tiến hành"}
-                </Badge>
-              </div>
-            </div>
+              )}
 
-            {/* Discount Info */}
-            {(bill.voucherUsed || bill.pointsUsed > 0) && (
-              <div className="mt-3 pt-3 border-t space-y-1 text-sm">
-                {bill.voucherUsed && (
-                  <div className="flex items-center justify-between text-gray-600">
-                    <span className="flex items-center gap-1">
-                      <Tag className="w-4 h-4" />
-                      Voucher: {bill.voucherUsed}
-                    </span>
-                    <span className="text-green-600">
-                      -{bill.voucherDiscount?.toLocaleString()}đ
-                    </span>
-                  </div>
-                )}
-                {bill.pointsUsed > 0 && (
-                  <div className="flex items-center justify-between text-gray-600">
-                    <span className="flex items-center gap-1">
-                      <Gift className="w-4 h-4" />
-                      Điểm: {bill.pointsUsed} điểm
-                    </span>
-                    <span className="text-green-600">
-                      -{bill.pointsDiscount?.toLocaleString()}đ
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Manager Reply - NOT IN API SPEC - COMMENTED OUT FOR NOW */}
-            {/* {bill.feedbackReply && (
+              {/* Manager Reply - NOT IN API SPEC - COMMENTED OUT FOR NOW */}
+              {/* {bill.feedbackReply && (
               <div className="mt-3 pt-3 border-t">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <div className="flex items-start gap-2">
@@ -610,8 +641,8 @@ export function BillsPage() {
                 </div>
               </div>
             )} */}
-          </Card>
-        ))}
+            </Card>
+          ))}
         </div>
       )}
 
@@ -772,28 +803,72 @@ export function BillsPage() {
                     <div className="p-4 border rounded-lg">
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="text-sm">Voucher giảm giá</h4>
-                        {appliedVoucher ? (
-                          <Badge className="bg-green-100 text-green-700">
-                            Đã áp dụng: {appliedVoucher.code}
-                          </Badge>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => setShowVoucherModal(true)}
-                          >
-                            Chọn voucher
-                          </Button>
-                        )}
+                        <div className="flex gap-2">
+                          {appliedVoucher ? (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => setShowVoucherModal(true)}
+                              >
+                                Đổi voucher
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => {
+                                  const updatedBills = [...allBills];
+                                  const billIndex = updatedBills.findIndex(
+                                    (b) => b.id === selectedBill.id
+                                  );
+                                  updatedBills[billIndex] = {
+                                    ...updatedBills[billIndex],
+                                    voucherDiscount: 0,
+                                    voucherCode: null,
+                                    promotionId: null,
+                                    discount:
+                                      updatedBills[billIndex].pointsDiscount,
+                                    total:
+                                      updatedBills[billIndex].subtotal -
+                                      updatedBills[billIndex].pointsDiscount +
+                                      updatedBills[billIndex].subtotal * 0.1,
+                                  };
+                                  setAllBills(updatedBills);
+                                  setSelectedBill(updatedBills[billIndex]);
+                                  setAppliedVoucher(null);
+                                  setVoucherCode("");
+                                  toast.success("Đã hủy voucher");
+                                }}
+                              >
+                                Hủy
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => setShowVoucherModal(true)}
+                            >
+                              Chọn voucher
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       {appliedVoucher && (
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">
-                            {appliedVoucher.name}
-                          </span>
-                          <span className="text-green-600">
-                            -{selectedBill.voucherDiscount.toLocaleString()}đ
-                          </span>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-green-100 text-green-700">
+                              {appliedVoucher.promo_code || voucherCode}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">
+                              {appliedVoucher.name}
+                            </span>
+                            <span className="text-green-600">
+                              -{selectedBill.voucherDiscount.toLocaleString()}đ
+                            </span>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -828,15 +903,17 @@ export function BillsPage() {
                                 ...updatedBills[billIndex],
                                 pointsDiscount: 0,
                                 pointsUsed: 0,
-                                discount: updatedBills[billIndex].voucherDiscount, 
-                                total:
-                                  updatedBills[billIndex].subtotal +
-                                  updatedBills[billIndex].tax -
+                                discount:
                                   updatedBills[billIndex].voucherDiscount,
+                                total:
+                                  updatedBills[billIndex].subtotal -
+                                  updatedBills[billIndex].voucherDiscount +
+                                  updatedBills[billIndex].subtotal * 0.1,
                               };
                               setAllBills(updatedBills);
                               setSelectedBill(updatedBills[billIndex]);
                               setPointsToUse(0);
+                              toast.success("Đã hủy sử dụng điểm");
                             }}
                           >
                             Hủy
@@ -960,22 +1037,29 @@ export function BillsPage() {
             </label>
             <div className="space-y-3">
               {promotions.length === 0 ? (
-                <p className="text-center text-gray-500 py-4">Không có khuyến mãi nào</p>
+                <p className="text-center text-gray-500 py-4">
+                  Không có khuyến mãi nào
+                </p>
               ) : (
                 promotions
                   .filter((p) => {
                     if (!p.is_active) return false;
-                    
+
                     // Check minimum order amount
                     if (p.minimum_order_amount && selectedBill) {
-                      const orderTotal = selectedBill.subtotal + selectedBill.tax;
+                      const orderTotal =
+                        selectedBill.subtotal + selectedBill.tax;
                       if (orderTotal < p.minimum_order_amount) return false;
                     }
-                    
+
                     // Unlimited promotions (max_uses = -1) are always available
                     if (p.max_uses === -1) return true;
                     // Limited promotions must have uses remaining
-                    return p.max_uses !== undefined && p.current_uses !== undefined && p.current_uses < p.max_uses;
+                    return (
+                      p.max_uses !== undefined &&
+                      p.current_uses !== undefined &&
+                      p.current_uses < p.max_uses
+                    );
                   })
                   .map((promo) => (
                     <div
@@ -1000,14 +1084,18 @@ export function BillsPage() {
                           {new Date(promo.end_date).toLocaleDateString("vi-VN")}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {promo.max_uses === -1 
+                          {promo.max_uses === -1
                             ? "Không giới hạn"
-                            : `Còn ${(promo.max_uses || 0) - (promo.current_uses || 0)} lượt`}
+                            : `Còn ${
+                                (promo.max_uses || 0) -
+                                (promo.current_uses || 0)
+                              } lượt`}
                         </p>
                       </div>
                       {promo.minimum_order_amount > 0 && (
                         <p className="text-xs text-gray-400 mt-2">
-                          Đơn tối thiểu: {promo.minimum_order_amount.toLocaleString()}đ
+                          Đơn tối thiểu:{" "}
+                          {promo.minimum_order_amount.toLocaleString()}đ
                         </p>
                       )}
                     </div>
