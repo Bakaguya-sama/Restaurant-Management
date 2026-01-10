@@ -145,7 +145,7 @@ async function createStockImport(items, staffId = null) {
         name: it.name,
         unit: it.unit || "kg",
         quantity_in_stock: 0,
-        minimum_quantity: 0,
+        minimum_quantity: it.minimumQuantity !== undefined ? it.minimumQuantity : 10,
         unit_price: it.unitPrice || 0,
         stock_status: "available",
       });
