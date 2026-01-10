@@ -50,7 +50,7 @@ export function InvoicesPage() {
     const loadCurrentUser = async () => {
       // Check if user is authenticated
       if (!authService.isAuthenticated()) {
-        console.log('User is not authenticated, skipping getCurrentUser');
+        console.log("User is not authenticated, skipping getCurrentUser");
         return;
       }
 
@@ -59,11 +59,15 @@ export function InvoicesPage() {
         const userId = response.data.id || response.data._id;
         setCurrentUserId(userId);
       } catch (error: any) {
-        console.error('Error getting current user:', error);
-        
+        console.error("Error getting current user:", error);
+
         // If token is invalid or expired, clear tokens
-        if (error.message?.includes('token') || error.message?.includes('Invalid') || error.message?.includes('expired')) {
-          console.log('Token invalid or expired, clearing authentication');
+        if (
+          error.message?.includes("token") ||
+          error.message?.includes("Invalid") ||
+          error.message?.includes("expired")
+        ) {
+          console.log("Token invalid or expired, clearing authentication");
           authService.clearTokens();
         }
       }
@@ -75,20 +79,23 @@ export function InvoicesPage() {
   useEffect(() => {
     const loadCustomerPoints = async () => {
       if (!selectedInvoice || !selectedInvoice.customerId) {
-        console.log('No selected invoice or customer ID:', selectedInvoice);
+        console.log("No selected invoice or customer ID:", selectedInvoice);
         setCustomerPoints(null);
         setCashierPointsToUse(0);
         return;
       }
 
-      console.log('Loading points for customer ID:', selectedInvoice.customerId);
+      console.log(
+        "Loading points for customer ID:",
+        selectedInvoice.customerId
+      );
 
       try {
         const res: any = await customerApi.getById(selectedInvoice.customerId);
-        console.log('Customer data received:', res);
+        console.log("Customer data received:", res);
         if (res && res.data) {
           setCustomerPoints(res.data.points || 0);
-          console.log('Customer points set to:', res.data.points || 0);
+          console.log("Customer points set to:", res.data.points || 0);
         } else {
           setCustomerPoints(0);
         }
@@ -109,7 +116,7 @@ export function InvoicesPage() {
       const transformedData = data.map((invoice: any) => {
         const items =
           invoice.order_id?.items
-            ?.filter((item: any) => item.status !== 'cancelled')
+            ?.filter((item: any) => item.status !== "cancelled")
             ?.map((item: any) => ({
               id: item.id || item._id,
               name: item.dish_id?.name || "Món ăn",
@@ -120,7 +127,8 @@ export function InvoicesPage() {
         // Extract customer ID từ populated object hoặc string
         const getCustomerId = () => {
           if (!invoice.customer_id) return null;
-          if (typeof invoice.customer_id === 'string') return invoice.customer_id;
+          if (typeof invoice.customer_id === "string")
+            return invoice.customer_id;
           return invoice.customer_id._id || invoice.customer_id.id || null;
         };
 
@@ -129,7 +137,10 @@ export function InvoicesPage() {
           tableId: invoice.order_id?.table_id || "",
           tableNumber: invoice.order_id?.table?.table_number || "N/A",
           customerId: getCustomerId(),
-          customerName: invoice.customer_id?.full_name || invoice.customer?.full_name || "Khách hàng",
+          customerName:
+            invoice.customer_id?.full_name ||
+            invoice.customer?.full_name ||
+            "Khách hàng",
           items,
           subtotal: invoice.subtotal || 0,
           tax: invoice.tax || 0,
@@ -256,25 +267,25 @@ export function InvoicesPage() {
     let baseDiscount = selectedInvoice.discount || 0;
 
     let promotionDiscount = 0;
-    if (
-      cashierSelectedPromotion &&
-      !selectedInvoice.customerSelectedVoucher
-    ) {
+    if (cashierSelectedPromotion && !selectedInvoice.customerSelectedVoucher) {
       if (cashierSelectedPromotion.promotion_type === "fixed_amount") {
         promotionDiscount = cashierSelectedPromotion.discount_value;
       } else if (cashierSelectedPromotion.promotion_type === "percentage") {
         const discountableAmount = selectedInvoice.subtotal - baseDiscount;
         promotionDiscount =
-          discountableAmount *
-          (cashierSelectedPromotion.discount_value / 100);
+          discountableAmount * (cashierSelectedPromotion.discount_value / 100);
       }
     }
 
     const pointsDiscount = selectedInvoice.pointsDiscount || 0;
 
-    const discountedAmount = selectedInvoice.subtotal - baseDiscount - promotionDiscount - pointsDiscount;
-    
-    const vat = discountedAmount * 0.1;
+    const discountedAmount =
+      selectedInvoice.subtotal -
+      baseDiscount -
+      promotionDiscount -
+      pointsDiscount;
+
+    const vat = selectedInvoice.subtotal * 0.1;
 
     return discountedAmount + vat;
   };
@@ -282,18 +293,22 @@ export function InvoicesPage() {
   const finalTotal = calculateFinalTotal();
 
   const promotionDiscount =
-    cashierSelectedPromotion &&
-    !selectedInvoice?.customerSelectedVoucher
+    cashierSelectedPromotion && !selectedInvoice?.customerSelectedVoucher
       ? cashierSelectedPromotion.promotion_type === "fixed_amount"
         ? cashierSelectedPromotion.discount_value
-        : ((selectedInvoice?.subtotal || 0) - (selectedInvoice?.discount || 0)) *
+        : ((selectedInvoice?.subtotal || 0) -
+            (selectedInvoice?.discount || 0)) *
           (cashierSelectedPromotion.discount_value / 100)
       : 0;
 
   const pointsDiscount = selectedInvoice?.pointsDiscount || 0;
 
-  const discountedAmount = (selectedInvoice?.subtotal || 0) - (selectedInvoice?.discount || 0) - promotionDiscount - pointsDiscount;
-  const calculatedVat = Math.max(0, discountedAmount * 0.1);
+  const discountedAmount =
+    (selectedInvoice?.subtotal || 0) -
+    (selectedInvoice?.discount || 0) -
+    promotionDiscount -
+    pointsDiscount;
+  const calculatedVat = Math.max(0, (selectedInvoice?.subtotal || 0) * 0.1);
 
   const handlePayment = async () => {
     if (!selectedInvoice) return;
@@ -311,24 +326,24 @@ export function InvoicesPage() {
     let pointsEarned = 0;
 
     const paymentMethodMap: { [key: string]: string } = {
-      cash: 'cash',
-      card: 'card',
-      wallet: 'e-wallet'
+      cash: "cash",
+      card: "card",
+      wallet: "e-wallet",
     };
 
     try {
       const promotionId = cashierSelectedPromotion?.id || null;
       const paymentResponse = await invoiceApi.markAsPaid(
-        selectedInvoice.id, 
-        paymentMethodMap[paymentMethod] || 'cash',
+        selectedInvoice.id,
+        paymentMethodMap[paymentMethod] || "cash",
         promotionId,
         pointsUsed
       );
-      
+
       if (paymentResponse && paymentResponse.points_earned !== undefined) {
         pointsEarned = paymentResponse.points_earned;
       }
-      
+
       await fetchInvoices();
 
       setInvoices((prev) =>
@@ -641,92 +656,89 @@ export function InvoicesPage() {
 
                     {/* Cashier can select promotion */}
                     {availablePromotions.length > 0 && (
-                        <div className="mb-6">
-                          <h4 className="mb-3 flex items-center gap-2">
-                            <Percent className="w-5 h-5 text-purple-600" />
-                            Chọn khuyến mãi cho khách hàng
-                          </h4>
-                          <div className="space-y-2 max-h-80 overflow-y-auto">
-                            <button
-                              onClick={() => setCashierSelectedPromotion(null)}
-                              className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
-                                !cashierSelectedPromotion
-                                  ? "border-[#625EE8] bg-blue-50"
-                                  : "border-gray-200 hover:border-gray-300"
-                              }`}
-                            >
-                              <p className="text-sm">
-                                Không áp dụng khuyến mãi
-                              </p>
-                            </button>
-                            {availablePromotions.map((promo) => {
-                              const discountAmount =
-                                promo.promotion_type === "fixed_amount"
-                                  ? promo.discount_value
-                                  : selectedInvoice.subtotal *
-                                    (promo.discount_value / 100);
+                      <div className="mb-6">
+                        <h4 className="mb-3 flex items-center gap-2">
+                          <Percent className="w-5 h-5 text-purple-600" />
+                          Chọn khuyến mãi cho khách hàng
+                        </h4>
+                        <div className="space-y-2 max-h-80 overflow-y-auto">
+                          <button
+                            onClick={() => setCashierSelectedPromotion(null)}
+                            className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
+                              !cashierSelectedPromotion
+                                ? "border-[#625EE8] bg-blue-50"
+                                : "border-gray-200 hover:border-gray-300"
+                            }`}
+                          >
+                            <p className="text-sm">Không áp dụng khuyến mãi</p>
+                          </button>
+                          {availablePromotions.map((promo) => {
+                            const discountAmount =
+                              promo.promotion_type === "fixed_amount"
+                                ? promo.discount_value
+                                : selectedInvoice.subtotal *
+                                  (promo.discount_value / 100);
 
-                              return (
-                                <button
-                                  key={promo.id}
-                                  onClick={() =>
-                                    setCashierSelectedPromotion(promo)
-                                  }
-                                  className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
-                                    cashierSelectedPromotion?.id === promo.id
-                                      ? "border-[#625EE8] bg-blue-50"
-                                      : "border-gray-200 hover:border-gray-300"
-                                  }`}
-                                >
-                                  <div className="flex items-start justify-between gap-3">
-                                    <div className="flex-1">
-                                      <p className="mb-1">{promo.name}</p>
-                                      <p className="text-sm text-gray-600 mb-1">
-                                        {promo.description}
-                                      </p>
-                                      <div className="flex items-center gap-2">
-                                        <Badge className="bg-purple-100 text-purple-700 text-xs">
-                                          {promo.promo_code}
-                                        </Badge>
-                                        {promo.minimum_order_amount && (
+                            return (
+                              <button
+                                key={promo.id}
+                                onClick={() =>
+                                  setCashierSelectedPromotion(promo)
+                                }
+                                className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
+                                  cashierSelectedPromotion?.id === promo.id
+                                    ? "border-[#625EE8] bg-blue-50"
+                                    : "border-gray-200 hover:border-gray-300"
+                                }`}
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="flex-1">
+                                    <p className="mb-1">{promo.name}</p>
+                                    <p className="text-sm text-gray-600 mb-1">
+                                      {promo.description}
+                                    </p>
+                                    <div className="flex items-center gap-2">
+                                      <Badge className="bg-purple-100 text-purple-700 text-xs">
+                                        {promo.promo_code}
+                                      </Badge>
+                                      {promo.minimum_order_amount && (
+                                        <span className="text-xs text-gray-500">
+                                          Đơn tối thiểu:{" "}
+                                          {promo.minimum_order_amount.toLocaleString()}
+                                          đ
+                                        </span>
+                                      )}
+                                      {promo.max_uses !== undefined &&
+                                        promo.max_uses !== -1 && (
                                           <span className="text-xs text-gray-500">
-                                            Đơn tối thiểu:{" "}
-                                            {promo.minimum_order_amount.toLocaleString()}
-                                            đ
+                                            • Còn{" "}
+                                            {promo.max_uses -
+                                              (promo.current_uses || 0)}{" "}
+                                            lượt
                                           </span>
                                         )}
-                                        {promo.max_uses !== undefined &&
-                                          promo.max_uses !== -1 && (
-                                            <span className="text-xs text-gray-500">
-                                              • Còn{" "}
-                                              {promo.max_uses -
-                                                (promo.current_uses || 0)}{" "}
-                                              lượt
-                                            </span>
-                                          )}
-                                      </div>
-                                    </div>
-                                    <div className="text-right flex-shrink-0">
-                                      <p className="text-green-600">
-                                        -{discountAmount.toLocaleString()}đ
-                                      </p>
-                                      {promo.promotion_type ===
-                                        "percentage" && (
-                                        <p className="text-xs text-gray-500">
-                                          ({promo.discount_value}%)
-                                        </p>
-                                      )}
                                     </div>
                                   </div>
-                                </button>
-                              );
-                            })}
-                          </div>
-                          <p className="text-xs text-gray-500 mt-2">
-                            💡 Khuyến mãi tốt nhất được hiển thị ở trên cùng
-                          </p>
+                                  <div className="text-right flex-shrink-0">
+                                    <p className="text-green-600">
+                                      -{discountAmount.toLocaleString()}đ
+                                    </p>
+                                    {promo.promotion_type === "percentage" && (
+                                      <p className="text-xs text-gray-500">
+                                        ({promo.discount_value}%)
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
                         </div>
-                      )}
+                        <p className="text-xs text-gray-500 mt-2">
+                          💡 Khuyến mãi tốt nhất được hiển thị ở trên cùng
+                        </p>
+                      </div>
+                    )}
 
                     {/* Points apply section */}
                     <div className="mb-6">
@@ -734,38 +746,38 @@ export function InvoicesPage() {
                         <Gift className="w-5 h-5 text-green-600" />
                         Sử dụng điểm khách hàng
                       </h4>
-                          <div className="flex items-center gap-3">
-                            <div className="text-sm text-gray-600">
-                              Hiện có:{" "}
-                              <span className="font-medium">
-                                {customerPoints ?? 0} điểm
-                              </span>
-                            </div>
-                            <Input
-                              type="number"
-                              placeholder="Số điểm muốn dùng"
-                              value={cashierPointsToUse}
-                              onChange={(e) =>
-                                setCashierPointsToUse(
-                                  e.target.value === ""
-                                    ? 0
-                                    : parseInt(e.target.value, 10)
-                                )
-                              }
-                              className="w-40"
-                              min={0}
-                            />
-                            <Button
-                              onClick={handleApplyPoints}
-                              disabled={!customerPoints}
-                            >
-                              Áp dụng
-                            </Button>
-                          </div>
-                          <p className="text-xs text-gray-500 mt-2">
-                            1000 điểm = 1000đ. Điểm tối thiểu 1000.
-                          </p>
+                      <div className="flex items-center gap-3">
+                        <div className="text-sm text-gray-600">
+                          Hiện có:{" "}
+                          <span className="font-medium">
+                            {customerPoints ?? 0} điểm
+                          </span>
                         </div>
+                        <Input
+                          type="number"
+                          placeholder="Số điểm muốn dùng"
+                          value={cashierPointsToUse}
+                          onChange={(e) =>
+                            setCashierPointsToUse(
+                              e.target.value === ""
+                                ? 0
+                                : parseInt(e.target.value, 10)
+                            )
+                          }
+                          className="w-40"
+                          min={0}
+                        />
+                        <Button
+                          onClick={handleApplyPoints}
+                          disabled={!customerPoints}
+                        >
+                          Áp dụng
+                        </Button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        1000 điểm = 1000đ. Điểm tối thiểu 1000.
+                      </p>
+                    </div>
 
                     {/* Payment Method */}
                     <div className="mb-6">
@@ -808,28 +820,28 @@ export function InvoicesPage() {
                     </div>
 
                     {paymentMethod === "cash" && (
-                        <div className="mb-6">
-                          <Input
-                            label="Tiền khách đưa"
-                            type="number"
-                            value={cashReceived}
-                            onChange={(e) => setCashReceived(e.target.value)}
-                            placeholder="Nhập số tiền"
-                          />
-                          {cashReceived &&
-                            parseFloat(cashReceived) >= finalTotal && (
-                              <div className="mt-2 p-3 bg-green-50 rounded-lg">
-                                <p className="text-sm text-green-700">
-                                  Tiền thừa:{" "}
-                                  {(
-                                    parseFloat(cashReceived) - finalTotal
-                                  ).toLocaleString()}
-                                  đ
-                                </p>
-                              </div>
-                            )}
-                        </div>
-                      )}
+                      <div className="mb-6">
+                        <Input
+                          label="Tiền khách đưa"
+                          type="number"
+                          value={cashReceived}
+                          onChange={(e) => setCashReceived(e.target.value)}
+                          placeholder="Nhập số tiền"
+                        />
+                        {cashReceived &&
+                          parseFloat(cashReceived) >= finalTotal && (
+                            <div className="mt-2 p-3 bg-green-50 rounded-lg">
+                              <p className="text-sm text-green-700">
+                                Tiền thừa:{" "}
+                                {(
+                                  parseFloat(cashReceived) - finalTotal
+                                ).toLocaleString()}
+                                đ
+                              </p>
+                            </div>
+                          )}
+                      </div>
+                    )}
 
                     {/* Total */}
                     <div className="border-t pt-4 mb-6">
@@ -842,7 +854,9 @@ export function InvoicesPage() {
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">VAT (10%):</span>
-                          <span>{Math.round(calculatedVat).toLocaleString()}đ</span>
+                          <span>
+                            {Math.round(calculatedVat).toLocaleString()}đ
+                          </span>
                         </div>
                         {selectedInvoice.discount > 0 && (
                           <div className="flex justify-between text-sm text-green-600">
@@ -971,7 +985,8 @@ export function InvoicesPage() {
                           <td className="py-3 px-4">
                             <span
                               className={`px-2 py-1 rounded-full text-xs ${
-                                invoice.paymentMethod === "transfer" || invoice.paymentMethod === "online"
+                                invoice.paymentMethod === "transfer" ||
+                                invoice.paymentMethod === "online"
                                   ? "bg-blue-100 text-blue-700"
                                   : invoice.paymentMethod === "card"
                                   ? "bg-purple-100 text-purple-700"
