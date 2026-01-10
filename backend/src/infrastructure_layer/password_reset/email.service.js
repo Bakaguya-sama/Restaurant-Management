@@ -1,36 +1,93 @@
-const nodemailer = require('nodemailer');
+const sgMail = require("@sendgrid/mail");
 
 class EmailService {
   constructor() {
-    this.transporter = nodemailer.createTransport({
-      service: process.env.EMAIL_SERVICE || 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
+    const apiKey = process.env.SENDGRID_API_KEY;
+    const fromEmail =
+      process.env.EMAIL_FROM || "noreply@restaurant-management.com";
+
+    if (process.env.NODE_ENV !== "test")
+    {console.log("[EmailService] Initializing SendGrid with:", {
+      apiKey: apiKey ? "SET" : "MISSING",
+      fromEmail: fromEmail,
+      env: process.env.NODE_ENV,
+    });}
+
+    if (!apiKey) {
+      console.error("[EmailService] SENDGRID_API_KEY is missing!");
+      // In test environment, don't throw error - just warn
+      if (process.env.NODE_ENV !== "test") {
+        throw new Error("SENDGRID_API_KEY environment variable is required");
       }
-    });
+      console.warn(
+        "[EmailService] Running in test mode without SendGrid API key"
+      );
+    } else {
+      sgMail.setApiKey(apiKey);
+    }
+
+    this.fromEmail = fromEmail;
   }
 
   async sendPasswordResetCode(toEmail, code, userName) {
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
+    console.log(`[EmailService] Sending password reset code to: ${toEmail}`);
+
+    // Skip sending in test environment if no API key
+    if (process.env.NODE_ENV === "test" && !process.env.SENDGRID_API_KEY) {
+      console.log("[EmailService] Skipping email send in test mode");
+      return;
+    }
+
+    const msg = {
       to: toEmail,
-      subject: 'Mã xác nhận đặt lại mật khẩu - Nhà hàng',
-      html: this.getPasswordResetEmailTemplate(code, userName)
+      from: this.fromEmail,
+      subject: "Mã xác nhận đặt lại mật khẩu - Nhà hàng",
+      html: this.getPasswordResetEmailTemplate(code, userName),
     };
 
-    return this.transporter.sendMail(mailOptions);
+    try {
+      await sgMail.send(msg);
+      console.log(
+        `[EmailService] Reset code email sent successfully to ${toEmail}`
+      );
+    } catch (error) {
+      console.error(`[EmailService] Failed to send reset code:`, error.message);
+      throw new Error(`Không thể gửi email: ${error.message}`);
+    }
   }
 
   async sendPasswordResetLink(toEmail, resetLink, userName) {
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
+    console.log(`[EmailService] Sending password reset link to: ${toEmail}`);
+
+    // Skip sending in test environment if no API key
+    if (process.env.NODE_ENV === "test" && !process.env.SENDGRID_API_KEY) {
+      console.log("[EmailService] Skipping email send in test mode");
+      return { messageId: "test-mode-no-email-sent" };
+    }
+
+    const msg = {
       to: toEmail,
-      subject: 'Đặt lại mật khẩu - Nhà hàng',
-      html: this.getPasswordResetLinkEmailTemplate(resetLink, userName)
+      from: this.fromEmail,
+      subject: "Đặt lại mật khẩu - Nhà hàng",
+      html: this.getPasswordResetLinkEmailTemplate(resetLink, userName),
     };
 
-    return this.transporter.sendMail(mailOptions);
+    try {
+      const result = await sgMail.send(msg);
+      console.log(
+        `[EmailService] Reset link email sent successfully to ${toEmail}`
+      );
+      return result;
+    } catch (error) {
+      console.error(`[EmailService] Failed to send reset link:`, error.message);
+      if (error.response) {
+        console.error(
+          "[EmailService] SendGrid error details:",
+          error.response.body
+        );
+      }
+      throw new Error(`Không thể gửi email: ${error.message}`);
+    }
   }
 
   getPasswordResetEmailTemplate(code, userName) {

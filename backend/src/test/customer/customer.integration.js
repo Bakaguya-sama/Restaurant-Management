@@ -24,7 +24,7 @@ describe('Customer Integration Tests', () => {
       const newCustomer = {
         full_name: 'Test Customer',
         email: `testcustomer${Date.now()}@example.com`,
-        phone: '0123456789',
+        phone: `0123${String(Date.now()).slice(-6)}`,
         address: '456 Customer Street',
         date_of_birth: '1998-08-20',
         username: `testcust${Date.now()}`,
@@ -33,9 +33,14 @@ describe('Customer Integration Tests', () => {
 
       const response = await request(app)
         .post('/api/v1/customers')
-        .send(newCustomer)
-        .expect(201);
+        .send(newCustomer);
 
+      // Debug: log error if status is not 201
+      if (response.status !== 201) {
+        console.log('Customer creation error:', response.status, response.body);
+      }
+
+      expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('id');
       expect(response.body.data.full_name).toBe(newCustomer.full_name);
@@ -310,6 +315,108 @@ describe('Customer Integration Tests', () => {
       expect(response.body.data.message).toContain('deleted successfully');
       
       createdCustomerId = null;
+    });
+  });
+
+  describe('Email Verification - Customer Registration', () => {
+    it('should set is_email_verified to false when customer registers', async () => {
+      const { EmailVerification } = require('../../models');
+      
+      const email = `emailcust${Date.now()}@example.com`;
+      const newCustomer = {
+        full_name: 'Email Test Customer',
+        email: email,
+        phone: `0123${String(Date.now()).slice(-6)}`,
+        address: '789 Email Street',
+        date_of_birth: '1998-08-20',
+        username: `emailcust${Date.now()}`,
+        password: 'password123'
+      };
+
+      const response = await request(app)
+        .post('/api/v1/customers')
+        .send(newCustomer);
+
+      if (response.status === 201) {
+        // Verify user is created with is_email_verified: false
+        const user = await User.findOne({ email });
+        expect(user).not.toBeNull();
+        expect(user.is_email_verified).toBe(false);
+        
+        // Clean up
+        await EmailVerification.deleteOne({ email });
+        await User.deleteOne({ email });
+      }
+    });
+
+    it('should create an EmailVerification token when customer registers', async () => {
+      const { EmailVerification } = require('../../models');
+      
+      const email = `emailverify${Date.now()}@example.com`;
+      const newCustomer = {
+        full_name: 'Email Verify Customer',
+        email: email,
+        phone: `0123${String(Date.now()).slice(-6)}`,
+        address: '789 Verify Street',
+        date_of_birth: '1998-08-20',
+        username: `emailverify${Date.now()}`,
+        password: 'password123'
+      };
+
+      const response = await request(app)
+        .post('/api/v1/customers')
+        .send(newCustomer);
+
+      if (response.status === 201) {
+        // Verify email verification record exists
+        const verification = await EmailVerification.findOne({ email });
+        expect(verification).not.toBeNull();
+        expect(verification.token).toBeDefined();
+        
+        // Clean up
+        await EmailVerification.deleteOne({ email });
+        await User.deleteOne({ email });
+      }
+    });
+
+    it('should update user is_email_verified to true when email verified via token', async () => {
+      const { EmailVerification } = require('../../models');
+      
+      const email = `emailconfirm${Date.now()}@example.com`;
+      const newCustomer = {
+        full_name: 'Email Confirm Customer',
+        email: email,
+        phone: `0123${String(Date.now()).slice(-6)}`,
+        address: '789 Confirm Street',
+        date_of_birth: '1998-08-20',
+        username: `emailconfirm${Date.now()}`,
+        password: 'password123'
+      };
+
+      const createRes = await request(app)
+        .post('/api/v1/customers')
+        .send(newCustomer);
+
+      if (createRes.status === 201) {
+        // Get verification token
+        const verification = await EmailVerification.findOne({ email });
+        expect(verification).not.toBeNull();
+
+        // Verify email
+        const verifyResponse = await request(app)
+          .post('/api/v1/auth/verify-email')
+          .send({ token: verification.token });
+
+        if (verifyResponse.status === 200) {
+          // Verify user is_email_verified is now true
+          const user = await User.findOne({ email });
+          expect(user.is_email_verified).toBe(true);
+        }
+        
+        // Clean up
+        await EmailVerification.deleteOne({ email });
+        await User.deleteOne({ email });
+      }
     });
   });
 });

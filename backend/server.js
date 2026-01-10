@@ -50,8 +50,40 @@ const app = express();
 connectDB();
 
 // Middleware
+const getAllowedOrigins = () => {
+  const allowed = [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'https://restaurant-management-t5ep.vercel.app',
+    process.env.FRONTEND_URL
+  ].filter(Boolean);
+
+  
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    allowed.push(`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`);
+  }
+  if (process.env.VERCEL_BRANCH_URL) {
+    allowed.push(`https://${process.env.VERCEL_BRANCH_URL}`);
+  }
+
+  return allowed;
+};
+
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: function(origin, callback) {
+    const allowed = getAllowedOrigins();
+    
+    
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (allowed.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']

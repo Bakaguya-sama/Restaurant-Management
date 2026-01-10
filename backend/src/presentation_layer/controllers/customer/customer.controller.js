@@ -1,9 +1,11 @@
 const CustomerService = require('../../../application_layer/customer/customer.service');
+const EmailVerificationService = require('../../../application_layer/auth/emailverification.service');
 const UploadRepository = require('../../../infrastructure_layer/upload/upload.repository');
 
 class CustomerController {
   constructor() {
     this.customerService = new CustomerService();
+    this.emailVerificationService = new EmailVerificationService();
     this.uploadRepository = new UploadRepository('avatars');
   }
 
@@ -50,6 +52,16 @@ class CustomerController {
     try {
       const customer = await this.customerService.createCustomer(req.body);
       
+      try {
+        const verification = await this.emailVerificationService.createVerificationToken(req.body.email);
+        if (verification && verification.token) {
+          await this.emailVerificationService.sendVerificationEmail(req.body.email, verification.token);
+        }
+      } catch (emailError) {
+        console.error('[CUSTOMER_CREATE] Email verification error:', emailError.message);
+        console.error('[CUSTOMER_CREATE] Full error:', emailError);
+      }
+      
       res.status(201).json({
         success: true,
         data: customer.toJSON ? customer.toJSON() : customer
@@ -64,7 +76,22 @@ class CustomerController {
 
   async updateCustomer(req, res) {
     try {
-      const customer = await this.customerService.updateCustomer(req.params.id, req.body);
+      const customerId = req.params.id;
+      const oldCustomer = await this.customerService.getCustomerById(customerId);
+      const emailChanged = req.body.email && req.body.email !== oldCustomer.email;
+
+      const customer = await this.customerService.updateCustomer(customerId, req.body);
+      
+      if (emailChanged) {
+        try {
+          await this.customerService.updateCustomer(customerId, { is_email_verified: false });
+          const verification = await this.emailVerificationService.createVerificationToken(req.body.email);
+          await this.emailVerificationService.sendVerificationEmail(req.body.email, verification.token);
+        } catch (emailError) {
+          console.error('Error handling email change:', emailError.message);
+          throw new Error(`Email verification error: ${emailError.message}`);
+        }
+      }
       
       res.status(200).json({
         success: true,

@@ -78,6 +78,11 @@ class OrderEntity {
       updated_at: this.updated_at
     };
   }
+
+  canBeCancelled() {
+    const cancellableStatuses = ['pending', 'preparing', 'ready'];
+    return cancellableStatuses.includes(this.status);
+  }
 }
 
 module.exports = OrderEntity;

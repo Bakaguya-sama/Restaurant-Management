@@ -1,6 +1,14 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, Phone, Lock, User, AlertCircle, Eye, EyeOff } from "lucide-react";
+import {
+  Mail,
+  Phone,
+  Lock,
+  User,
+  AlertCircle,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { UserRole } from "../../types";
@@ -14,9 +22,9 @@ export function LoginPage() {
     identifier: "",
     password: "",
   });
-  const [staffForm, setStaffForm] = useState({ 
-    employeeId: "", 
-    password: ""
+  const [staffForm, setStaffForm] = useState({
+    employeeId: "",
+    password: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>("");
@@ -34,7 +42,9 @@ export function LoginPage() {
       await login(customerForm.identifier, customerForm.password, "customer");
       navigate("/customer/home");
     } catch (err: any) {
-      setError(err.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.");
+      setError(
+        err.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -47,7 +57,7 @@ export function LoginPage() {
 
     try {
       const userProfile = await login(staffForm.employeeId, staffForm.password);
-      
+
       let redirectPath: string;
       if (userProfile.role === "manager") {
         redirectPath = "/staff/manager/dashboard";
@@ -56,10 +66,12 @@ export function LoginPage() {
       } else {
         redirectPath = "/staff/waiter/tables";
       }
-      
+
       navigate(redirectPath);
     } catch (err: any) {
-      setError(err.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.");
+      setError(
+        err.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -86,31 +98,9 @@ export function LoginPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <h2 className="mb-2">Đăng nhập</h2>
-            <p className="text-gray-600">Chọn loại tài khoản</p>
-          </div>
-
-          {/* Tab Switcher */}
-          <div className="flex gap-2 mb-6 bg-gray-100 p-1 rounded-lg">
-            <button
-              onClick={() => setActiveTab("customer")}
-              className={`flex-1 py-2.5 rounded-md transition-all ${
-                activeTab === "customer"
-                  ? "bg-white shadow-sm text-[#625EE8]"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              Khách hàng
-            </button>
-            <button
-              onClick={() => setActiveTab("staff")}
-              className={`flex-1 py-2.5 rounded-md transition-all ${
-                activeTab === "staff"
-                  ? "bg-white shadow-sm text-[#625EE8]"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              Nhân viên
-            </button>
+            <p className="text-gray-600">
+              {activeTab === "customer" ? "Khách hàng" : "Nhân viên"}
+            </p>
           </div>
 
           {/* Customer Login Form */}
@@ -122,7 +112,7 @@ export function LoginPage() {
                   <span className="text-sm">{error}</span>
                 </div>
               )}
-              
+
               <Input
                 label="Email, Số điện thoại hoặc Tên đăng nhập"
                 type="text"
@@ -147,7 +137,10 @@ export function LoginPage() {
                   value={customerForm.password}
                   onChange={(e) => {
                     setError("");
-                    setCustomerForm({ ...customerForm, password: e.target.value });
+                    setCustomerForm({
+                      ...customerForm,
+                      password: e.target.value,
+                    });
                   }}
                   required
                 />
@@ -160,7 +153,9 @@ export function LoginPage() {
                     })
                   }
                   className="absolute right-3 top-9 text-gray-600 hover:text-gray-800"
-                  title={showPassword.customer ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"}
+                  title={
+                    showPassword.customer ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"
+                  }
                 >
                   {showPassword.customer ? (
                     <EyeOff className="w-5 h-5" />
@@ -187,7 +182,7 @@ export function LoginPage() {
                 {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
               </Button>
 
-              <div className="text-center pt-4">
+              <div className="text-center pt-4 space-y-2">
                 <p className="text-gray-600">
                   Chưa có tài khoản?{" "}
                   <button
@@ -198,20 +193,64 @@ export function LoginPage() {
                     Đăng ký ngay
                   </button>
                 </p>
+                <p className="text-gray-600">
+                  Bạn là nhân viên?{" "}
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("staff")}
+                    className="text-[#625EE8] hover:underline"
+                  >
+                    Đăng nhập tại đây
+                  </button>
+                </p>
               </div>
 
-              <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <h4 className="text-sm font-semibold text-blue-900 mb-3">📝 Tài khoản mẫu (Customer):</h4>
+              {/* <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h4 className="text-sm font-semibold text-blue-900 mb-3">
+                  📝 Tài khoản mẫu (Customer):
+                </h4>
                 <div className="space-y-2 text-xs text-blue-800">
-                  <div><span className="font-semibold">🔷 Diamond:</span> <code className="bg-blue-100 px-2 py-1 rounded">tuan.nguyen@gmail.com</code></div>
-                  <div><span className="font-semibold">🔶 Platinum:</span> <code className="bg-blue-100 px-2 py-1 rounded">huong.tran@gmail.com</code></div>
-                  <div><span className="font-semibold">🟡 Gold:</span> <code className="bg-blue-100 px-2 py-1 rounded">huy.le@gmail.com</code></div>
-                  <div><span className="font-semibold">⚪ Silver:</span> <code className="bg-blue-100 px-2 py-1 rounded">nga.pham@gmail.com</code></div>
-                  <div><span className="font-semibold">🟤 Bronze:</span> <code className="bg-blue-100 px-2 py-1 rounded">khoa.vo@gmail.com</code></div>
-                  <div><span className="font-semibold">⚫ Regular:</span> <code className="bg-blue-100 px-2 py-1 rounded">son.hoang@gmail.com</code></div>
-                  <div className="pt-2 border-t border-blue-300 text-center text-blue-700">Tất cả: <strong>password123</strong></div>
+                  <div>
+                    <span className="font-semibold">🔷 Diamond:</span>{" "}
+                    <code className="bg-blue-100 px-2 py-1 rounded">
+                      tuan.nguyen@gmail.com
+                    </code>
+                  </div>
+                  <div>
+                    <span className="font-semibold">🔶 Platinum:</span>{" "}
+                    <code className="bg-blue-100 px-2 py-1 rounded">
+                      huong.tran@gmail.com
+                    </code>
+                  </div>
+                  <div>
+                    <span className="font-semibold">🟡 Gold:</span>{" "}
+                    <code className="bg-blue-100 px-2 py-1 rounded">
+                      huy.le@gmail.com
+                    </code>
+                  </div>
+                  <div>
+                    <span className="font-semibold">⚪ Silver:</span>{" "}
+                    <code className="bg-blue-100 px-2 py-1 rounded">
+                      nga.pham@gmail.com
+                    </code>
+                  </div>
+                  <div>
+                    <span className="font-semibold">🟤 Bronze:</span>{" "}
+                    <code className="bg-blue-100 px-2 py-1 rounded">
+                      khoa.vo@gmail.com
+                    </code>
+                  </div>
+                  <div>
+                    <span className="font-semibold">⚫ Regular:</span>{" "}
+                    <code className="bg-blue-100 px-2 py-1 rounded">
+                      son.hoang@gmail.com
+                    </code>
+                  </div>
+                  <div className="pt-2 border-t border-blue-300 text-center text-blue-700">
+                    Tất cả: <strong>password123</strong>
+                  </div>
                 </div>
-              </div>
+              </div> */}
             </form>
           )}
 
@@ -224,7 +263,7 @@ export function LoginPage() {
                   <span className="text-sm">{error}</span>
                 </div>
               )}
-              
+
               <Input
                 label="Tên đăng nhập"
                 type="text"
@@ -259,7 +298,9 @@ export function LoginPage() {
                     })
                   }
                   className="absolute right-3 top-9 text-gray-600 hover:text-gray-800"
-                  title={showPassword.staff ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"}
+                  title={
+                    showPassword.staff ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"
+                  }
                 >
                   {showPassword.staff ? (
                     <EyeOff className="w-5 h-5" />
@@ -269,32 +310,79 @@ export function LoginPage() {
                 </button>
               </div>
 
-              <div className="flex items-center text-sm">
+              <div className="flex items-center justify-between text-sm">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" className="rounded border-gray-300" />
                   <span className="text-gray-600">Ghi nhớ đăng nhập</span>
                 </label>
+                <a
+                  href="/forget-password"
+                  className="text-[#625EE8] hover:underline"
+                >
+                  Quên mật khẩu?
+                </a>
               </div>
 
               <Button type="submit" fullWidth size="lg" disabled={isLoading}>
                 {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
               </Button>
 
-              <div className="text-center pt-4">
+              <div className="text-center pt-4 space-y-2">
                 <p className="text-sm text-gray-500">
                   Tài khoản nhân viên được cấp bởi quản lý
                 </p>
+                <p className="text-gray-600">
+                  Bạn là khách hàng?{" "}
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("customer")}
+                    className="text-[#625EE8] hover:underline"
+                  >
+                    Đăng nhập tại đây
+                  </button>
+                </p>
               </div>
 
-              <div className="mt-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
-                <h4 className="text-sm font-semibold text-purple-900 mb-3">📝 Tài khoản mẫu (Staff):</h4>
+              {/* <div className="mt-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <h4 className="text-sm font-semibold text-purple-900 mb-3">
+                  📝 Tài khoản mẫu (Staff):
+                </h4>
                 <div className="space-y-2 text-xs text-purple-800">
-                  <div><span className="font-semibold">👨‍💼 Manager:</span> <code className="bg-purple-100 px-2 py-1 rounded">minh.manager</code> hoặc <code className="bg-purple-100 px-2 py-1 rounded">hoa.manager</code></div>
-                  <div><span className="font-semibold">💰 Cashier:</span> <code className="bg-purple-100 px-2 py-1 rounded">nam.cashier</code> hoặc <code className="bg-purple-100 px-2 py-1 rounded">lan.cashier</code></div>
-                  <div><span className="font-semibold">🍽️ Waiter:</span> <code className="bg-purple-100 px-2 py-1 rounded">hung.waiter</code> hoặc <code className="bg-purple-100 px-2 py-1 rounded">mai.waiter</code></div>
-                  <div className="pt-2 border-t border-purple-300 text-center text-purple-700">Tất cả: <strong>password123</strong></div>
+                  <div>
+                    <span className="font-semibold">👨‍💼 Manager:</span>{" "}
+                    <code className="bg-purple-100 px-2 py-1 rounded">
+                      minh.manager
+                    </code>{" "}
+                    hoặc{" "}
+                    <code className="bg-purple-100 px-2 py-1 rounded">
+                      hoa.manager
+                    </code>
+                  </div>
+                  <div>
+                    <span className="font-semibold">💰 Cashier:</span>{" "}
+                    <code className="bg-purple-100 px-2 py-1 rounded">
+                      nam.cashier
+                    </code>{" "}
+                    hoặc{" "}
+                    <code className="bg-purple-100 px-2 py-1 rounded">
+                      lan.cashier
+                    </code>
+                  </div>
+                  <div>
+                    <span className="font-semibold">🍽️ Waiter:</span>{" "}
+                    <code className="bg-purple-100 px-2 py-1 rounded">
+                      hung.waiter
+                    </code>{" "}
+                    hoặc{" "}
+                    <code className="bg-purple-100 px-2 py-1 rounded">
+                      mai.waiter
+                    </code>
+                  </div>
+                  <div className="pt-2 border-t border-purple-300 text-center text-purple-700">
+                    Tất cả: <strong>password123</strong>
+                  </div>
                 </div>
-              </div>
+              </div> */}
             </form>
           )}
         </div>

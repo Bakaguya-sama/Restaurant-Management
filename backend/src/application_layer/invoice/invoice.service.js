@@ -76,7 +76,7 @@ class InvoiceService {
           detail.dish_id,
           detail.quantity,
           invoiceData.order_id,
-          invoiceData.staff_id // Pass staff_id from invoice
+          invoiceData.staff_id 
         );
       } catch (error) {
         console.error(`Lỗi khi trừ nguyên liệu cho món ${detail.dish_id}:`, error.message);
@@ -282,18 +282,24 @@ class InvoiceService {
       }
 
       discountAmount = promoEntity.calculateDiscount(invoice.subtotal);
-      totalAmount = invoice.subtotal + invoice.tax - discountAmount - (pointsUsed || 0);
+      
+      const discountedAmount = invoice.subtotal - discountAmount - (pointsUsed || 0);
+      const calculatedTax = discountedAmount * 0.1;
+      totalAmount = discountedAmount + calculatedTax;
 
       await this.invoiceRepository.addPromotion(id, promotionId, discountAmount);
       
       await this.promotionService.incrementPromotionUses(promotionId);
     } else {
-      totalAmount = invoice.subtotal + invoice.tax - (pointsUsed || 0);
+      const discountedAmount = invoice.subtotal - (pointsUsed || 0);
+      const calculatedTax = discountedAmount * 0.1;
+      totalAmount = discountedAmount + calculatedTax;
     }
 
-    // Calculate points earned based on actual amount paid (after using points)
-    // Customer earns points on money they actually spend
-    const pointsEarned = Math.floor(totalAmount / 10);
+    let pointsEarned = 0;
+    if (pointsUsed === 0) {
+      pointsEarned = Math.floor(totalAmount / 1000) * 10;
+    }
 
     const updateData = {
       payment_method: paymentMethod,
@@ -307,7 +313,6 @@ class InvoiceService {
 
     await this.invoiceRepository.update(id, updateData);
 
-    // Extract customer ID (handle both populated object and string ID)
     const customerId = invoice.customer_id?._id || invoice.customer_id?.id || invoice.customer_id;
     
     if (customerId && pointsUsed > 0) {
@@ -318,8 +323,7 @@ class InvoiceService {
       }
     }
 
-    // Always award points if customer made a purchase (even if they used points)
-    if (customerId && pointsEarned > 0) {
+    if (customerId && pointsEarned > 0 && pointsUsed === 0) {
       try {
         await this.pointsService.awardCustomerPoints(customerId, pointsEarned);
       } catch (error) {
@@ -329,12 +333,6 @@ class InvoiceService {
 
     
     if (customerId && totalAmount > 0) {
-      console.log('📊 Updating customer total_spent:', {
-        customerId: customerId,
-        invoiceId: id,
-        totalAmount: totalAmount
-      });
-      
       try {
         const { Customer } = require('../../models');
         const customer = await Customer.findById(customerId);
@@ -343,18 +341,6 @@ class InvoiceService {
           const oldTotal = customer.total_spent || 0;
           customer.total_spent = oldTotal + totalAmount;
           
-          console.log('✅ Customer total_spent updated:', {
-            customerId: customer._id,
-            oldTotal: oldTotal,
-            addedAmount: totalAmount,
-            newTotal: customer.total_spent
-          });
-          console.log('✅ Customer total_spent updated:', {
-            customerId: customer._id,
-            oldTotal: oldTotal,
-            addedAmount: totalAmount,
-            newTotal: customer.total_spent
-          });
           
           const newTotal = customer.total_spent;
           let newMembershipLevel = 'regular';
@@ -373,24 +359,17 @@ class InvoiceService {
           
           if (customer.membership_level !== newMembershipLevel) {
             customer.membership_level = newMembershipLevel;
-            console.log('🎖️ Membership level upgraded:', {
-              customerId: customer._id,
-              oldLevel: customer.membership_level,
-              newLevel: newMembershipLevel,
-              totalSpent: newTotal
-            });
           }
           
           await customer.save();
-          console.log('💾 Customer saved successfully');
         } else {
-          console.log('⚠️ Customer not found with ID:', customerId);
+          console.error('Customer not found with ID:', customerId);
         }
       } catch (error) {
-        console.error('❌ Failed to update customer total_spent:', error);
+        console.error('Failed to update customer total_spent:', error);
       }
     } else {
-      console.log('⚠️ Skipping total_spent update:', {
+      console.error('Skipping total_spent update:', {
         hasCustomerId: !!customerId,
         totalAmount: totalAmount
       });

@@ -8,6 +8,7 @@ class StaffEntity {
     this.date_of_birth = data.date_of_birth;
     this.hire_date = data.hire_date;
     this.is_active = data.is_active;
+    this.is_email_verified = data.is_email_verified || false;
     this.role = data.role;
     this.image_url = data.image_url;
     this.username = data.username;
@@ -59,6 +60,7 @@ class StaffEntity {
       date_of_birth: this.date_of_birth,
       hire_date: this.hire_date,
       is_active: this.is_active,
+      is_email_verified: this.is_email_verified,
       role: this.role,
       image_url: this.image_url,
       username: this.username,

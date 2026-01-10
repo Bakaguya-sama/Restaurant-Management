@@ -1,5 +1,5 @@
 const { ForgotPasswordRequest } = require('../../domain_layer/auth/password.reset.dto');
-const EmailService = require('../../infrastructure_layer/password_reset/email.service');
+const EmailService = require('../../infrastructure_layer/email/email.service');
 const PasswordResetToken = require('../../infrastructure_layer/password_reset/password.reset.repository');
 const { User, PasswordResetToken: PasswordResetTokenModel } = require('../../models');
 

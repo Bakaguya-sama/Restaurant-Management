@@ -1,14 +1,11 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Award,
   Star,
   Gift,
   TrendingUp,
   Ticket,
-  Copy,
-  Check,
   History,
-  ChevronDown,
 } from "lucide-react";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
@@ -17,207 +14,86 @@ import { toast } from "sonner";
 import { copyToClipboard } from "../../lib/clipboard";
 import { PromotionCard } from "./PromotionCard";
 import { useAuth } from "../../contexts/AuthContext";
+import { usePromotions } from "../../hooks/usePromotions";
+import { useInvoices } from "../../hooks/useInvoices";
+import { useInvoicePromotions } from "../../hooks/useInvoicePromotions";
 
 export function MembershipPage() {
   const { userProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<
     "rewards" | "promotions" | "history"
   >("rewards");
-  const [selectedReward, setSelectedReward] = useState<any>(null);
-  const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [showPointsRedemption, setShowPointsRedemption] = useState(false);
   const [pointsToRedeem, setPointsToRedeem] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [promotions, setPromotions] = useState<any[]>([]);
-  const [isLoadingPromotions, setIsLoadingPromotions] = useState(false);
   const [voucherHistory, setVoucherHistory] = useState<any[]>([]);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [pointHistory, setPointHistory] = useState<any[]>([]);
-  const [currentCustomerData, setCurrentCustomerData] = useState<any>(null);
 
-  // ⭐ Dùng customer từ userProfile (đã đăng nhập)
-  const currentCustomer = currentCustomerData || userProfile;
+  const { promotions, loading: isLoadingPromotions } = usePromotions();
+  const { invoices, loading: isLoadingInvoices } = useInvoices();
+  const { invoicePromotions } = useInvoicePromotions();
 
-  // ⭐ Refetch customer data để có total_spent mới nhất
+  const currentCustomer = userProfile;
+  const isLoading = !userProfile;
+
   useEffect(() => {
-    const fetchCustomerData = async () => {
-      if (!userProfile) {
-        setIsLoading(false);
-        toast.error("Vui lòng đăng nhập để xem thông tin thành viên");
-        return;
-      }
+    if (!currentCustomer) return;
 
-      try {
-        const apiBaseUrl =
-          (import.meta as any).env?.VITE_API_URL ||
-          "http://localhost:5000/api/v1";
+    const customerId = currentCustomer._id || currentCustomer.id;
+    
+    const customerInvoices = invoices.filter((inv: any) => {
+      const invoiceCustomerId = inv.customer_id?._id || inv.customer_id?.id || inv.customer_id;
+      return invoiceCustomerId === customerId || 
+             invoiceCustomerId?.toString() === customerId?.toString();
+    });
+
+    const customerVouchers = invoicePromotions
+      .filter((ip: any) => {
+        if (!ip.invoice_id) return false;
         
-        const customerId = userProfile._id || userProfile.id;
-        const response = await fetch(`${apiBaseUrl}/customers/${customerId}`);
+        const invoiceCustomerId = 
+          ip.invoice_id.customer_id?._id?.toString() ||
+          ip.invoice_id.customer_id?.toString();
         
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success && result.data) {
-            setCurrentCustomerData(result.data);
-            console.log("Refreshed customer data:", result.data);
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching customer data:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+        const currentCustomerId =
+          currentCustomer?._id?.toString() ||
+          currentCustomer?.id?.toString();
+        
+        return invoiceCustomerId === currentCustomerId;
+      })
+      .map((ip: any) => ({
+        id: ip._id,
+        invoiceId: ip.invoice_id?.invoice_number || "N/A",
+        voucherCode: ip.promotion_id?.promo_code || "N/A",
+        voucherName: ip.promotion_id?.name || "Khuyến mãi",
+        promoType: ip.promotion_id?.promotion_type || "fixed_amount",
+        promoValue: ip.promotion_id?.discount_value ?? ip.discount_applied ?? 0,
+        discountAmount: ip.discount_applied || 0,
+        usedAt: ip.invoice_id?.paid_at || ip.invoice_id?.invoice_date || ip.createdAt,
+      }))
+      .sort((a: any, b: any) => 
+        new Date(b.usedAt).getTime() - new Date(a.usedAt).getTime()
+      );
 
-    fetchCustomerData();
-  }, [userProfile]);
+    setVoucherHistory(customerVouchers);
 
-  // Fetch promotions từ API
-  useEffect(() => {
-    const fetchPromotions = async () => {
-      try {
-        setIsLoadingPromotions(true);
-        const apiBaseUrl =
-          (import.meta as any).env?.VITE_API_URL ||
-          "http://localhost:5000/api/v1";
+    const pointHistoryData = customerInvoices
+      .filter((inv: any) => inv.payment_status === 'paid')
+      .map((inv: any) => {
+        const points = inv.points_earned;
+        return {
+          id: inv._id || inv.id,
+          type: 'earned',
+          amount: points,
+          description: `Tích điểm từ hóa đơn ${inv.invoice_number}`,
+          invoiceId: inv.invoice_number,
+          date: inv.paid_at || inv.invoice_date || inv.created_at
+        };
+      })
+      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    setPointHistory(pointHistoryData);
+  }, [currentCustomer, invoices, invoicePromotions]);
 
-        const response = await fetch(`${apiBaseUrl}/promotions`);
-
-        if (!response.ok) {
-          throw new Error("Không thể tải danh sách khuyến mãi");
-        }
-
-        const result = await response.json();
-        if (result.success && result.data) {
-          // Tạm thời hiển thị tất cả promotions để debug
-          console.log("All promotions from API:", result.data);
-          setPromotions(result.data);
-        }
-      } catch (error: any) {
-        console.error("Error fetching promotions:", error);
-        toast.error(error.message || "Không thể tải danh sách khuyến mãi");
-      } finally {
-        setIsLoadingPromotions(false);
-      }
-    };
-
-    fetchPromotions();
-  }, []);
-
-  // Fetch voucher history (invoices with promotions)
-  useEffect(() => {
-    const fetchVoucherHistory = async () => {
-      if (!currentCustomer) return;
-
-      try {
-        setIsLoadingHistory(true);
-        const apiBaseUrl =
-          (import.meta as any).env?.VITE_API_URL ||
-          "http://localhost:5000/api/v1";
-
-        // Fetch tất cả invoices
-        const invoicesResponse = await fetch(`${apiBaseUrl}/invoices`);
-        if (!invoicesResponse.ok) throw new Error("Không thể tải hóa đơn");
-
-        const invoicesResult = await invoicesResponse.json();
-
-        if (invoicesResult.success && invoicesResult.data) {
-          // ⭐ Lọc invoices của customer hiện tại
-          const customerId = currentCustomer._id || currentCustomer.id;
-          console.log("Filtering invoices for customer ID:", customerId);
-          
-          const customerInvoices = invoicesResult.data.filter((inv: any) => {
-            // Check both populated object and string ID
-            const invoiceCustomerId = inv.customer_id?._id || inv.customer_id?.id || inv.customer_id;
-            return invoiceCustomerId === customerId || 
-                   invoiceCustomerId?.toString() === customerId?.toString();
-          });
-          
-          console.log(`Found ${customerInvoices.length} invoices for customer`);
-
-          // Fetch invoice_promotions cho mỗi invoice
-          // ⭐ Fetch voucher history từ invoice_promotions (approach tốt hơn)
-          try {
-            const ipResponse = await fetch(
-              `${apiBaseUrl}/invoice-promotions`
-            );
-            
-            if (ipResponse.ok) {
-              const ipResult = await ipResponse.json();
-              
-              if (ipResult.success && ipResult.data && ipResult.data.length > 0) {
-                // Filter invoice_promotions của customer hiện tại
-                const customerVouchers = ipResult.data
-                  .filter((ip: any) => {
-                    // Check nếu invoice_id được populate và có customer_id
-                    if (!ip.invoice_id) return false;
-                    
-                    const invoiceCustomerId = 
-                      ip.invoice_id.customer_id?._id?.toString() ||
-                      ip.invoice_id.customer_id?.toString();
-                    
-                    const currentCustomerId =
-                      currentCustomer?._id?.toString() ||
-                      currentCustomer?.id?.toString();
-                    
-                    return invoiceCustomerId === currentCustomerId;
-                  })
-                  .map((ip: any) => ({
-                    id: ip._id,
-                    invoiceId: ip.invoice_id?.invoice_number || "N/A",
-                    voucherCode: ip.promotion_id?.promo_code || "N/A",
-                    voucherName: ip.promotion_id?.name || "Khuyến mãi",
-                    promoType: ip.promotion_id?.promotion_type || "fixed_amount",
-                    promoValue: ip.promotion_id?.discount_value ?? ip.discount_applied ?? 0,
-                    discountAmount: ip.discount_applied || 0,
-                    usedAt: ip.invoice_id?.paid_at || ip.invoice_id?.invoice_date || ip.createdAt,
-                  }))
-                  .sort((a: any, b: any) => 
-                    new Date(b.usedAt).getTime() - new Date(a.usedAt).getTime()
-                  );
-                
-                setVoucherHistory(customerVouchers);
-                console.log("Voucher history loaded:", customerVouchers);
-              } else {
-                setVoucherHistory([]);
-              }
-            }
-          } catch (err) {
-            console.error("Error loading voucher history:", err);
-            setVoucherHistory([]);
-          }
-
-          // ⭐ TẠO POINT HISTORY từ invoices đã thanh toán
-          const pointHistoryData = customerInvoices
-            .filter((inv: any) => inv.payment_status === 'paid')
-            .map((inv: any) => {
-              // Tính điểm tích lũy: 10đ = 1 điểm (total_amount / 10)
-              const points = Math.floor((inv.total_amount || 0) / 10);
-              return {
-                id: inv._id || inv.id,
-                type: 'earned',
-                amount: points,
-                description: `Tích điểm từ hóa đơn ${inv.invoice_number}`,
-                invoiceId: inv.invoice_number,
-                date: inv.paid_at || inv.invoice_date || inv.created_at
-              };
-            })
-            .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
-          
-          setPointHistory(pointHistoryData);
-          console.log("Point history loaded:", pointHistoryData);
-        }
-      } catch (error: any) {
-        console.error("Error fetching voucher history:", error);
-      } finally {
-        setIsLoadingHistory(false);
-      }
-    };
-
-    fetchVoucherHistory();
-  }, [currentCustomer]);
-
-  // Tính toán next tier points dựa trên membership level
   const getNextTierPoints = (level: string) => {
     const tierMap: Record<string, number> = {
       regular: 1000,
@@ -225,14 +101,13 @@ export function MembershipPage() {
       silver: 2000,
       gold: 5000,
       platinum: 10000,
-      diamond: 0, // Max tier
+      diamond: 0, 
     };
     return tierMap[level] || 1000;
   };
 
   const memberData = {
     name:
-      currentCustomer?.full_name ||
       currentCustomer?.name ||
       userProfile?.name ||
       "Khách hàng",
@@ -262,16 +137,13 @@ export function MembershipPage() {
   };
 
   const currentTier = tierConfig[memberData.tier as keyof typeof tierConfig] || tierConfig.regular;
-  const progress = (memberData.points / memberData.nextTierPoints) * 100;
 
   const handleCopyCode = async (code: string) => {
     const success = await copyToClipboard(code);
     if (success) {
-      setCopiedCode(code);
       toast.success(
         "Đã sao chép mã! Bạn có thể sử dụng mã này khi thanh toán."
       );
-      setTimeout(() => setCopiedCode(null), 3000);
     } else {
       toast.error("Không thể sao chép mã. Vui lòng thử lại.");
     }
@@ -294,7 +166,6 @@ export function MembershipPage() {
     setPointsToRedeem(0);
   };
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto px-6 py-8">
@@ -308,7 +179,6 @@ export function MembershipPage() {
     );
   }
 
-  // Error state - no customer data
   if (!currentCustomer) {
     return (
       <div className="max-w-7xl mx-auto px-6 py-8">
@@ -490,25 +360,23 @@ export function MembershipPage() {
                   key={promotion._id || promotion.id}
                   promotion={{
                     id: promotion._id || promotion.id,
-                    name: promotion.promotion_name || promotion.title,
+                    name: promotion.name || "",
                     description: promotion.description || "",
-                    code: promotion.promo_code || promotion.code,
-                    // prefer `promotion_type` (backend uses this); fallback to discount_type
+                    code: promotion.promo_code || promotion.code || "",
                     discountType:
                       promotion.promotion_type ||
-                      promotion.discount_type ||
                       "fixed_amount",
                     discountValue:
-                      promotion.discount_value ?? promotion.discountValue ?? 0,
+                      promotion.discount_value ?? 0,
                     validUntil: promotion.end_date
                       ? new Date(promotion.end_date).toLocaleDateString("vi-VN")
                       : "",
-                    minOrderAmount: promotion.minimum_order_amount || promotion.min_order_value || 0,
+                    minOrderAmount: promotion.minimum_order_amount || 0,
                     maxDiscountAmount: promotion.max_discount_amount,
                     promotionQuantity: promotion.promotion_quantity,
                     startDate: promotion.start_date,
                     endDate: promotion.end_date,
-                    active: promotion.is_active !== false && new Date(promotion.end_date) >= new Date(),
+                    active: promotion.is_active !== false && (promotion.end_date ? new Date(promotion.end_date) >= new Date() : false),
                   }}
                   variant="list"
                 />
@@ -535,7 +403,7 @@ export function MembershipPage() {
               Lịch sử tích điểm
             </h4>
             <div className="space-y-3">
-              {isLoadingHistory ? (
+              {isLoadingInvoices ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="text-center">
                     <div className="w-10 h-10 border-4 border-[#625EE8] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
@@ -586,7 +454,7 @@ export function MembershipPage() {
               Lịch sử sử dụng voucher
             </h4>
 
-            {isLoadingHistory ? (
+            {isLoadingInvoices ? (
               <div className="flex items-center justify-center py-8">
                 <div className="text-center">
                   <div className="w-10 h-10 border-4 border-[#625EE8] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>

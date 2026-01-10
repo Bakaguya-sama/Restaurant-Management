@@ -11,6 +11,7 @@ export interface CustomerData {
   total_spent?: number;
   image_url?: string;
   isBanned?: boolean;
+  is_email_verified?: boolean;
 }
 
 export interface Customer extends CustomerData {

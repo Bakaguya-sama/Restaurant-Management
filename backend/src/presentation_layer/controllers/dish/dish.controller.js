@@ -221,7 +221,10 @@ class DishController {
         message: 'Dish availability updated successfully'
       });
     } catch (error) {
-      const statusCode = error.message === 'Dish not found' ? 404 : 400;
+      let statusCode = 400;
+      if (error.message === 'Dish not found') statusCode = 404;
+      if (error.message.includes('Cannot enable dish')) statusCode = 422;
+
       res.status(statusCode).json({
         success: false,
         data: null,

@@ -2,12 +2,14 @@ const ReservationRepository = require('../../infrastructure_layer/reservation/re
 const ReservationDetailRepository = require('../../infrastructure_layer/reservationdetail/reservationdetail.repository');
 const TableRepository = require('../../infrastructure_layer/table/table.repository');
 const ReservationEntity = require('../../domain_layer/reservation/reservation.entity');
+const ViolationService = require('../violation/violation.service');
 
 class ReservationService {
   constructor() {
     this.reservationRepository = new ReservationRepository();
     this.reservationDetailRepository = new ReservationDetailRepository();
     this.tableRepository = new TableRepository();
+    this.violationService = new ViolationService();
   }
 
   isWithin60Minutes(reservationDate, reservationTime) {
@@ -78,6 +80,18 @@ class ReservationService {
     if (this.shouldAutoCancelReservation(reservation)) {
       if (reservation.status !== 'cancelled') {
         await this.reservationRepository.update(reservation._id, { status: 'cancelled' });
+        
+        const violationDescription = this.buildNoShowViolationDescription(reservation);
+        await this.violationService.createViolation({
+          customer_id: reservation.customer_id,
+          description: violationDescription,
+          violation_type: 'no_show'
+        });
+        
+        const details = await this.reservationDetailRepository.findAll({ reservation_id: reservation._id });
+        for (const detail of details) {
+          await this.tableRepository.updateStatus(detail.table_id, 'free');
+        }
       }
       return reservation;
     }
@@ -269,6 +283,55 @@ class ReservationService {
     return this.formatReservationResponse(updated);
   }
 
+  buildLateCancelViolationDescription(reservation) {
+    let dateStr = reservation.reservation_date;
+    if (reservation.reservation_date instanceof Date) {
+      const year = reservation.reservation_date.getFullYear();
+      const month = String(reservation.reservation_date.getMonth() + 1).padStart(2, '0');
+      const day = String(reservation.reservation_date.getDate()).padStart(2, '0');
+      dateStr = `${year}-${month}-${day}`;
+    }
+
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const [resHour, resMinute] = reservation.reservation_time.split(':').map(Number);
+    const reservationDateTime = new Date(year, month - 1, day, resHour, resMinute);
+    const now = new Date();
+    
+    const diffMs = now - reservationDateTime;
+    const diffHours = Math.floor(diffMs / (60 * 60 * 1000));
+    const diffMinutes = Math.floor((diffMs % (60 * 60 * 1000)) / (60 * 1000));
+
+    const reservedFormatted = reservationDateTime.toLocaleString('vi-VN');
+    const cancelledFormatted = now.toLocaleString('vi-VN');
+
+    let timeSpanText = '';
+    if (diffHours > 0) {
+      timeSpanText = `${diffHours} giờ ${diffMinutes} phút`;
+    } else {
+      timeSpanText = `${diffMinutes} phút`;
+    }
+
+    return `Khách hủy đơn đặt bàn ${timeSpanText} trước giờ đặt\nThời gian đặt: ${reservedFormatted}\nThời gian hủy: ${cancelledFormatted}`;
+  }
+
+  buildNoShowViolationDescription(reservation) {
+    let dateStr = reservation.reservation_date;
+    if (reservation.reservation_date instanceof Date) {
+      const year = reservation.reservation_date.getFullYear();
+      const month = String(reservation.reservation_date.getMonth() + 1).padStart(2, '0');
+      const day = String(reservation.reservation_date.getDate()).padStart(2, '0');
+      dateStr = `${year}-${month}-${day}`;
+    }
+
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const [resHour, resMinute] = reservation.reservation_time.split(':').map(Number);
+    const reservationDateTime = new Date(year, month - 1, day, resHour, resMinute);
+
+    const reservedFormatted = reservationDateTime.toLocaleString('vi-VN');
+
+    return `Khách không đến nhận bàn đã đặt\nThời gian đặt: ${reservedFormatted}`;
+  }
+
   async updateReservationStatus(id, status) {
     const reservation = await this.reservationRepository.findById(id);
     if (!reservation) {
@@ -298,6 +361,17 @@ class ReservationService {
     const updated = await this.reservationRepository.update(id, { status });
 
     if (status === 'cancelled') {
+      const isAutoExpired = this.shouldAutoCancelReservation(reservation);
+      
+      if (reservation.status === 'in_progress' && !isAutoExpired) {
+        const violationDescription = this.buildLateCancelViolationDescription(reservation);
+        await this.violationService.createViolation({
+          customer_id: reservation.customer_id,
+          description: violationDescription,
+          violation_type: 'late_cancel'
+        });
+      }
+
       if (this.isWithin60Minutes(reservation.reservation_date, reservation.reservation_time)) {
         const details = await this.reservationDetailRepository.findAll({ reservation_id: id });
         for (const detail of details) {

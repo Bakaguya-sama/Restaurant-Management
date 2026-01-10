@@ -1,23 +1,23 @@
 import { apiClient } from './apiClient';
-import { getApiBaseUrl } from './apiConfig';
-
-// ==================== TYPE DEFINITIONS ====================
 
 export interface Invoice {
   _id?: string;
   id?: string;
   invoice_number: string;
   order_id: string;
+  staff_id?: string;
   customer_id?: string;
-  total_amount: number;
-  tax: number;
+  invoice_date?: string;
   subtotal: number;
-  discount?: number;
-  payment_method?: string;
-  status: 'pending' | 'paid' | 'cancelled';
-  notes?: string;
+  tax: number;
+  discount_amount?: number;
+  total_amount: number;
+  payment_method?: 'cash' | 'card' | 'transfer' | 'e-wallet';
+  payment_status?: 'pending' | 'paid' | 'cancelled';
+  points_used?: number;
+  points_earned?: number;
+  paid_at?: string;
   created_at?: string;
-  updated_at?: string;
 }
 
 export interface CreateInvoiceParams {
@@ -41,16 +41,8 @@ export interface InvoiceStatistics {
   cancelledInvoices: number;
 }
 
-// ==================== INVOICE API ====================
-
-// API base URL is now dynamically determined from apiConfig
-// Falls back to localhost:5000 if not configured
-
 export const invoiceApi = {
-  /**
-   * Get all invoices with optional filtering and search
-   */
-  getAll: async (params?: { 
+  getAll: (params?: { 
     status?: string; 
     search?: string; 
     start_date?: string; 
@@ -68,210 +60,50 @@ export const invoiceApi = {
     if (params?.customer_id) queryParams.append('customer_id', params.customer_id);
     if (params?.payment_method) queryParams.append('payment_method', params.payment_method);
 
-    const response = await fetch(`${getApiBaseUrl()}/invoices?${queryParams}`);
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.message || 'Failed to fetch invoices');
-    }
-
-    return result;
+    const query = queryParams.toString();
+    const endpoint = query ? `/invoices?${query}` : '/invoices';
+    return apiClient.get<Invoice[]>(endpoint);
   },
 
-  /**
-   * Get invoices by customer ID
-   */
-  getByCustomerId: async (customerId: string) => {
-    const response = await fetch(`${getApiBaseUrl()}/invoices?customer_id=${customerId}`);
-    const result = await response.json();
+  getByCustomerId: (customerId: string) => 
+    apiClient.get<Invoice[]>(`/invoices?customer_id=${customerId}`),
 
-    if (!response.ok) {
-      throw new Error(result.message || 'Failed to fetch invoices for customer');
-    }
+  getById: (id: string) => 
+    apiClient.get<Invoice>(`/invoices/${id}`),
 
-    return result;
-  },
+  getByInvoiceNumber: (invoiceNumber: string) => 
+    apiClient.get<Invoice>(`/invoices/number/${invoiceNumber}`),
 
-  /**
-   * Get invoice by ID
-   */
-  getById: async (id: string) => {
-    const response = await fetch(`${getApiBaseUrl()}/invoices/${id}`);
-    const result = await response.json();
+  getByOrderId: (orderId: string) => 
+    apiClient.get<Invoice>(`/invoices/order/${orderId}`),
 
-    if (!response.ok) {
-      throw new Error(result.message || 'Failed to fetch invoice');
-    }
+  create: (params: CreateInvoiceParams) => 
+    apiClient.post<Invoice>('/invoices', params),
 
-    return result.data;
-  },
+  update: (id: string, params: UpdateInvoiceParams) => 
+    apiClient.put<Invoice>(`/invoices/${id}`, params),
 
-  /**
-   * Get invoice by invoice number
-   */
-  getByInvoiceNumber: async (invoiceNumber: string) => {
-    const response = await fetch(`${getApiBaseUrl()}/invoices/number/${invoiceNumber}`);
-    const result = await response.json();
+  delete: (id: string) => 
+    apiClient.delete(`/invoices/${id}`),
 
-    if (!response.ok) {
-      throw new Error(result.message || 'Failed to fetch invoice');
-    }
-
-    return result.data;
-  },
-
-  /**
-   * Get invoice by order ID
-   */
-  getByOrderId: async (orderId: string) => {
-    const response = await fetch(`${getApiBaseUrl()}/invoices/order/${orderId}`);
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.message || 'Failed to fetch invoice');
-    }
-
-    return result.data;
-  },
-
-  /**
-   * Create a new invoice
-   */
-  create: async (params: CreateInvoiceParams) => {
-    const response = await fetch(`${getApiBaseUrl()}/invoices`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(params),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.message || 'Failed to create invoice');
-    }
-
-    return result.data;
-  },
-
-  /**
-   * Update invoice details
-   */
-  update: async (id: string, params: UpdateInvoiceParams) => {
-    const response = await fetch(`${getApiBaseUrl()}/invoices/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(params),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.message || 'Failed to update invoice');
-    }
-
-    return result.data;
-  },
-
-  /**
-   * Delete invoice
-   */
-  delete: async (id: string) => {
-    const response = await fetch(`${getApiBaseUrl()}/invoices/${id}`, {
-      method: 'DELETE',
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.message || 'Failed to delete invoice');
-    }
-
-    return result.data;
-  },
-
-  /**
-   * Mark invoice as paid
-   */
-  markAsPaid: async (
+  markAsPaid: (
     id: string, 
     payment_method?: string,
     promotion_id?: string | null,
     points_used?: number
-  ) => {
-    const response = await fetch(`${getApiBaseUrl()}/invoices/${id}/paid`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ 
-        payment_method,
-        promotion_id,
-        points_used
-      }),
-    });
+  ) => 
+    apiClient.patch<Invoice>(`/invoices/${id}/paid`, { 
+      payment_method,
+      promotion_id,
+      points_used
+    }),
 
-    const result = await response.json();
+  cancel: (id: string) => 
+    apiClient.patch<Invoice>(`/invoices/${id}/cancel`, {}),
 
-    if (!response.ok) {
-      throw new Error(result.message || 'Failed to mark invoice as paid');
-    }
+  getStatistics: () => 
+    apiClient.get<InvoiceStatistics>(`/invoices/statistics`),
 
-    return result.data;
-  },
-
-  /**
-   * Cancel invoice
-   */
-  cancel: async (id: string) => {
-    const response = await fetch(`${getApiBaseUrl()}/invoices/${id}/cancel`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.message || 'Failed to cancel invoice');
-    }
-
-    return result.data;
-  },
-
-  /**
-   * Get invoice statistics
-   */
-  getStatistics: async (): Promise<InvoiceStatistics> => {
-    const response = await fetch(`${getApiBaseUrl()}/invoices/statistics`);
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.message || 'Failed to fetch statistics');
-    }
-
-    return result.data;
-  },
-
-  /**
-   * Get revenue data for a date range
-   */
-  getRevenue: async (start_date: string, end_date: string) => {
-    const queryParams = new URLSearchParams();
-    queryParams.append('start_date', start_date);
-    queryParams.append('end_date', end_date);
-
-    const response = await fetch(`${getApiBaseUrl()}/invoices/revenue?${queryParams}`);
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.message || 'Failed to fetch revenue data');
-    }
-
-    return result.data;
-  },
+  getRevenue: (start_date: string, end_date: string) => 
+    apiClient.get<any>(`/invoices/revenue?start_date=${start_date}&end_date=${end_date}`),
 };

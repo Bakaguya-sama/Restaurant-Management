@@ -91,6 +91,12 @@ class DishRepository {
       }
     ]);
   }
+
+  async hasDishIngredients(dishId) {
+    const { DishIngredient } = require('../../models');
+    const count = await DishIngredient.countDocuments({ dish_id: dishId });
+    return count > 0;
+  }
 }
 
 module.exports = DishRepository;

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Phone, Mail, Lock, CheckCircle } from "lucide-react";
+import { User, Phone, Mail, Lock, CheckCircle, Eye, EyeOff } from "lucide-react";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { toast } from "sonner";
@@ -24,6 +24,10 @@ export function RegisterPage() {
   });
   const [showSuccess, setShowSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState({
+    password: false,
+    confirmPassword: false,
+  });
   const [errors, setErrors] = useState({
     fullName: "",
     phone: "",
@@ -82,17 +86,8 @@ export function RegisterPage() {
       });
 
       if (response.success && response.data) {
-        authService.setTokens(
-          response.data.accessToken,
-          response.data.refreshToken
-        );
-        
         toast.success("Đăng ký thành công!");
         setShowSuccess(true);
-        
-        setTimeout(() => {
-          navigate("/login");
-        }, 2000);
       } else {
         toast.error(response.message || "Đăng ký thất bại");
       }
@@ -109,13 +104,19 @@ export function RegisterPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#625EE8]/10 to-white p-8">
         <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle className="w-10 h-10 text-green-600" />
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Mail className="w-10 h-10 text-blue-600" />
           </div>
-          <h2 className="mb-2 text-green-600">Đăng ký thành công!</h2>
-          <p className="text-gray-600 mb-4">
-            Tài khoản của bạn đã được tạo. Đang chuyển đến trang đăng nhập...
+          <h2 className="mb-4 text-blue-600">Kiểm tra email của bạn</h2>
+          <p className="text-gray-600 mb-6">
+            Vui lòng kiểm tra hộp thư đến của bạn và nhấp vào liên kết xác thực để kích hoạt tài khoản.
           </p>
+          <Button 
+            onClick={() => navigate("/login")}
+            fullWidth
+          >
+            Quay lại Đăng nhập
+          </Button>
         </div>
       </div>
     );
@@ -218,37 +219,81 @@ export function RegisterPage() {
             </div>
 
             <div>
-              <Input
-                label="Mật khẩu"
-                type="password"
-                placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
-                icon={<Lock className="w-4 h-4" />}
-                value={form.password}
-                onChange={(e) => {
-                  setForm({ ...form, password: e.target.value });
-                  if (errors.password) setErrors({ ...errors, password: "" });
-                }}
-                required
-              />
+              <div className="relative">
+                <Input
+                  label="Mật khẩu"
+                  type={showPassword.password ? "text" : "password"}
+                  placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
+                  icon={<Lock className="w-4 h-4" />}
+                  value={form.password}
+                  onChange={(e) => {
+                    setForm({ ...form, password: e.target.value });
+                    if (errors.password) setErrors({ ...errors, password: "" });
+                  }}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowPassword({
+                      ...showPassword,
+                      password: !showPassword.password,
+                    })
+                  }
+                  className="absolute right-3 top-9 text-gray-600 hover:text-gray-800"
+                  title={
+                    showPassword.password ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"
+                  }
+                >
+                  {showPassword.password ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
               {errors.password && (
                 <p className="text-red-500 text-sm mt-1">{errors.password}</p>
               )}
             </div>
 
             <div>
-              <Input
-                label="Xác nhận mật khẩu"
-                type="password"
-                placeholder="Nhập lại mật khẩu"
-                icon={<Lock className="w-4 h-4" />}
-                value={form.confirmPassword}
-                onChange={(e) => {
-                  setForm({ ...form, confirmPassword: e.target.value });
-                  if (errors.confirmPassword)
-                    setErrors({ ...errors, confirmPassword: "" });
-                }}
-                required
-              />
+              <div className="relative">
+                <Input
+                  label="Xác nhận mật khẩu"
+                  type={showPassword.confirmPassword ? "text" : "password"}
+                  placeholder="Nhập lại mật khẩu"
+                  icon={<Lock className="w-4 h-4" />}
+                  value={form.confirmPassword}
+                  onChange={(e) => {
+                    setForm({ ...form, confirmPassword: e.target.value });
+                    if (errors.confirmPassword)
+                      setErrors({ ...errors, confirmPassword: "" });
+                  }}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowPassword({
+                      ...showPassword,
+                      confirmPassword: !showPassword.confirmPassword,
+                    })
+                  }
+                  className="absolute right-3 top-9 text-gray-600 hover:text-gray-800"
+                  title={
+                    showPassword.confirmPassword
+                      ? "Ẩn mật khẩu"
+                      : "Hiển thị mật khẩu"
+                  }
+                >
+                  {showPassword.confirmPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
               {errors.confirmPassword && (
                 <p className="text-red-500 text-sm mt-1">
                   {errors.confirmPassword}
