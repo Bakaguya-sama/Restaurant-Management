@@ -185,6 +185,7 @@ export function InventoryPage() {
       quantity: number;
       unit: string;
       price: number;
+      minimumQuantity: number;
       expiryDate: string;
       storageLocation: string;
     }>
@@ -195,6 +196,7 @@ export function InventoryPage() {
       quantity: 0,
       unit: "",
       price: 0,
+      minimumQuantity: 10,
       expiryDate: "",
       storageLocation: "",
     },
@@ -283,6 +285,7 @@ export function InventoryPage() {
         quantity: 0,
         unit: "",
         price: 0,
+        minimumQuantity: 10,
         expiryDate: "",
         storageLocation: "",
       },
@@ -337,6 +340,7 @@ export function InventoryPage() {
             unit: importItem.unit,
             unitPrice: importItem.price,
             quantity: importItem.quantity,
+            minimumQuantity: importItem.minimumQuantity || 10,
             supplierId: selectedSupplier,
             expiryDate:
               importItem.expiryDate || new Date().toISOString().split("T")[0],
@@ -1403,6 +1407,26 @@ export function InventoryPage() {
                         )}
                       </div>
                       <div className="flex gap-3">
+                        <div className="flex-1">
+                          <label className="block text-sm text-gray-600 mb-1">
+                            Số lượng tối thiểu
+                          </label>
+                          <Input
+                            type="number"
+                            placeholder="SL tối thiểu"
+                            value={item.minimumQuantity || ""}
+                            onChange={(e) =>
+                              updateImportRow(
+                                index,
+                                "minimumQuantity",
+                                parseFloat(e.target.value) || 0
+                              )
+                            }
+                            className="w-full"
+                            min="0"
+                            required
+                          />
+                        </div>
                         <div className="flex-1">
                           <label className="block text-sm text-gray-600 mb-1">
                             Hạn sử dụng
