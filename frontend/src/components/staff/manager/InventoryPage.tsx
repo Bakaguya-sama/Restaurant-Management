@@ -25,6 +25,7 @@ import { InventoryItem, Supplier } from "../../../types";
 import { toast } from "sonner";
 import { ConfirmationModal } from "../../ui/ConfirmationModal";
 import { useInventory, useSuppliers } from "../../../hooks/useInventory";
+import { useIngredients } from "../../../hooks/useIngredients";
 import {
   importInventoryItems,
   exportInventoryItems,
@@ -49,6 +50,11 @@ export function InventoryPage() {
     error: suppliersError,
     refresh: refreshSuppliers,
   } = useSuppliers();
+  const {
+    ingredients,
+    loading: ingredientsLoading,
+    error: ingredientsError,
+  } = useIngredients();
 
   // History of exports (xử lý hàng hỏng)
   type ExportOrder = {
@@ -1274,13 +1280,13 @@ export function InventoryPage() {
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                         >
                           <option value="">Chọn nguyên liệu</option>
-                          {inventory.map((invItem) => (
+                          {ingredients.map((ingredient) => (
                             <option
-                              key={invItem.id}
-                              value={invItem.ingredientId}
+                              key={ingredient.id}
+                              value={ingredient.id}
                             >
-                              {invItem.name} (Tồn: {invItem.quantity}{" "}
-                              {invItem.unit})
+                              {ingredient.name} (Tồn: {ingredient.quantity_in_stock}{" "}
+                              {ingredient.unit})
                             </option>
                           ))}
                         </select>
