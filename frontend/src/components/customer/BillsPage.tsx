@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { invoiceApi } from "../../lib/invoiceApi";
 import { customerApi } from "../../lib/customerApi";
 import { ratingApi } from "../../lib/ratingApi";
+import { dishRatingApi } from "../../lib/dishRatingApi";
 import { promotionApi } from "../../lib/promotionApi";
 import { authService } from "../../lib/authService";
 import { Promotion } from "../../types";
@@ -144,16 +145,25 @@ export function BillsPage() {
                   reply_date: reply?.reply_date,
                   itemRatings: {}, // Thêm object để lưu rating từng item
                 };
-              }
 
-              // Nếu có dish_id, lưu rating vào itemRatings
-              if (rating.dish_id) {
-                const dishId = rating.dish_id?._id || rating.dish_id?.id || rating.dish_id;
-                customerRatings[invoiceId].itemRatings[dishId] = {
-                  score: rating.score,
-                  comment: rating.description,
-                  dishName: rating.dish_id?.name || "Món ăn",
-                };
+                // Fetch dish ratings for this rating
+                try {
+                  const dishRatingsResponse = await dishRatingApi.getByRatingId(ratingId);
+                  if (dishRatingsResponse.success && dishRatingsResponse.data) {
+                    dishRatingsResponse.data.forEach((dishRating: any) => {
+                      const dishId = dishRating.dish_id;
+                      if (dishId) {
+                        customerRatings[invoiceId].itemRatings[dishId] = {
+                          score: dishRating.score,
+                          comment: dishRating.comment || dishRating.description,
+                          dishName: dishRating.dish_id?.name || "Món ăn",
+                        };
+                      }
+                    });
+                  }
+                } catch (error) {
+                  console.error("Error fetching dish ratings:", error);
+                }
               }
             }
           }
@@ -191,6 +201,7 @@ export function BillsPage() {
           }),
           items: orderItems.map((item: any) => ({
             id: item._id,
+            dishId: item.dish_id?._id || item.dish_id?.id || item.dish_id,
             name: item.dish_id?.name || "Món ăn",
             quantity: item.quantity,
             price: item.unit_price,
@@ -500,23 +511,25 @@ export function BillsPage() {
       const invoiceId = selectedBill._id || selectedBill.id;
 
       // 1. Submit general feedback for invoice
-      await ratingApi.create({
+      const generalRatingResponse = await ratingApi.create({
         customer_id: customerId,
         invoice_id: invoiceId,
         description: feedback,
         score: 5,
       });
 
-      // 2. Submit individual item ratings
+      const ratingId = generalRatingResponse.data?.id || generalRatingResponse.data?._id;
+
+      // 2. Submit individual item ratings using dishRatingApi
       for (const item of selectedBill.items) {
         const itemRating = itemRatings[item.id];
         if (itemRating && itemRating.score > 0) {
-          await ratingApi.create({
-            customer_id: customerId,
-            invoice_id: invoiceId,
-            dish_id: item.id,
-            description: itemRating.comment || `Đánh giá: ${itemRating.score}/5 sao`,
+          // Create dish rating entry with the actual dish_id
+          await dishRatingApi.create({
+            dish_id: item.dishId,
+            rating_id: ratingId,
             score: itemRating.score,
+            comment: itemRating.comment,
           });
         }
       }
@@ -527,6 +540,75 @@ export function BillsPage() {
       setItemRatings({});
 
       await fetchInvoices();
+      
+      // Update selectedBill with the refreshed data
+      const updatedBills = await (async () => {
+        const response = await authService.getCurrentUser();
+        const currentUserId = response.data.id || response.data._id;
+        const invoicesResponse = await invoiceApi.getByCustomerId(currentUserId);
+        return invoicesResponse.data || [];
+      })();
+      
+      const updatedBill = updatedBills.find((bill: any) => {
+        const billId = bill._id || bill.id;
+        return billId === selectedBill.invoiceId;
+      });
+      
+      if (updatedBill) {
+        const orderItems = updatedBill.order_id?.items || [];
+        const invoiceId = updatedBill._id || updatedBill.id;
+        
+        // Fetch ratings for this invoice
+        let customerRatings: any = {};
+        try {
+          const ratingsResponse = await ratingApi.getAll({
+            customer_id: currentUserId,
+          });
+          if (ratingsResponse.success && ratingsResponse.data) {
+            const ratings = ratingsResponse.data;
+            for (const rating of ratings) {
+              const ratingInvoiceId = rating.invoice_id;
+              if (ratingInvoiceId === invoiceId) {
+                const ratingId = rating._id || rating.id;
+                customerRatings[invoiceId] = {
+                  description: rating.description,
+                  score: rating.score,
+                  itemRatings: {},
+                };
+
+                // Fetch dish ratings
+                try {
+                  const dishRatingsResponse = await dishRatingApi.getByRatingId(ratingId);
+                  if (dishRatingsResponse.success && dishRatingsResponse.data) {
+                    dishRatingsResponse.data.forEach((dishRating: any) => {
+                      const dishId = dishRating.dish_id;
+                      if (dishId) {
+                        customerRatings[invoiceId].itemRatings[dishId] = {
+                          score: dishRating.score,
+                          comment: dishRating.comment || dishRating.description,
+                          dishName: dishRating.dish_id?.name || "Món ăn",
+                        };
+                      }
+                    });
+                  }
+                } catch (error) {
+                  console.error("Error fetching dish ratings:", error);
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching ratings:", error);
+        }
+
+        const invoiceRating = customerRatings[invoiceId];
+        const newSelectedBill = {
+          ...selectedBill,
+          feedback: invoiceRating?.description || null,
+          itemRatings: invoiceRating?.itemRatings || {},
+        };
+        setSelectedBill(newSelectedBill);
+      }
     } catch (error: any) {
       console.error("Rating error:", error);
       toast.error(error.message || "Gửi đánh giá thất bại");

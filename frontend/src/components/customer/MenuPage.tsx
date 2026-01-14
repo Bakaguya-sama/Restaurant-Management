@@ -213,7 +213,7 @@ export function MenuPage() {
                         key={comment.id || comment._id}
                         className="p-3 bg-gray-50 rounded-lg border border-gray-200"
                       >
-                        <div className="flex items-start gap-2 mb-1">
+                        <div className="flex items-start justify-between mb-1">
                           <div className="flex gap-1 text-[#fbbf24]">
                             {[1, 2, 3, 4, 5].map((star) => (
                               <span key={star} className="text-sm">
@@ -221,11 +221,11 @@ export function MenuPage() {
                               </span>
                             ))}
                           </div>
-                          <span className="text-xs text-gray-500 ml-auto">
-                            {new Date(comment.created_at || comment.rating_date || "").toLocaleDateString(
-                              "vi-VN"
-                            )}
-                          </span>
+                          {comment.Customer?.full_name && (
+                            <span className="text-xs text-gray-600 ml-auto">
+                              {comment.Customer.full_name}
+                            </span>
+                          )}
                         </div>
                         <p className="text-sm text-gray-700">
                           {comment.description || comment.comment}
@@ -274,17 +274,12 @@ export function MenuPage() {
                 key={comment.id || comment._id}
                 className="p-4 bg-gray-50 rounded-lg border border-gray-200"
               >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex gap-1 text-[#fbbf24]">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <span key={star} className="text-lg">
-                        {star <= comment.score ? "★" : "☆"}
-                      </span>
-                    ))}
-                  </div>
-                  <span className="text-sm text-gray-500">
-                    {new Date(comment.created_at || comment.rating_date || "").toLocaleDateString("vi-VN")}
-                  </span>
+                <div className="flex gap-1 text-[#fbbf24] mb-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span key={star} className="text-lg">
+                      {star <= comment.score ? "★" : "☆"}
+                    </span>
+                  ))}
                 </div>
                 <p className="text-gray-800 leading-relaxed">
                   {comment.description || comment.comment}
