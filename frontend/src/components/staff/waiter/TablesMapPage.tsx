@@ -7,13 +7,14 @@ import {
   WrenchIcon,
   User,
   UserCheck,
+  Image as ImageIcon,
 } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Card } from "../../ui/Card";
 import { Modal } from "../../ui/Modal";
 import { Input, Textarea } from "../../ui/Input";
 import { Badge } from "../../ui/badge";
-import { Table, TableStatus, Customer } from "../../../types";
+import { Table, TableStatus, Customer, Reservation } from "../../../types";
 import { toast } from "sonner";
 import { useTables } from "../../../hooks/useTables";
 import { useLocations } from "../../../hooks/useLocations";
@@ -24,6 +25,8 @@ import { authService } from "../../../lib/authService";
 import { createOrder } from "../../../lib/orderingPageApi";
 import { reservationApi } from "../../../lib/reservationApi";
 import { generateOrderNumber } from "../../../lib/orderApi";
+import { buildImageUrl } from "../../../lib/uploadApi";
+import { customerApi } from "../../../lib/customerApi";
 
 export function TablesMapPage() {
   const hookResult = useTables();
@@ -50,6 +53,9 @@ export function TablesMapPage() {
   const [showBrokenModal, setShowBrokenModal] = useState(false);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [bookingCode, setBookingCode] = useState("");
+  const [foundReservation, setFoundReservation] = useState<Reservation | null>(null);
+  const [reservationCustomer, setReservationCustomer] = useState<Customer | null>(null);
+  const [searchingReservation, setSearchingReservation] = useState(false);
   const [brokenReason, setBrokenReason] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -251,6 +257,46 @@ export function TablesMapPage() {
     setFoundCustomer(null);
   };
 
+  // Search reservation when booking code changes
+  const handleSearchReservation = async () => {
+    if (!bookingCode.trim()) {
+      setFoundReservation(null);
+      setReservationCustomer(null);
+      return;
+    }
+
+    try {
+      setSearchingReservation(true);
+      const reservationId = bookingCode.trim();
+      
+      // Find reservation from list first
+      const reservation = reservations.find(
+        (res) => res.id === reservationId
+      );
+
+      if (reservation) {
+        setFoundReservation(reservation);
+        // Fetch customer info
+        try {
+          const customerResponse = await customerApi.getById(reservation.customer_id);
+          if (customerResponse.success && customerResponse.data) {
+            setReservationCustomer(customerResponse.data);
+          }
+        } catch {
+          console.error("Error fetching customer info");
+        }
+      } else {
+        setFoundReservation(null);
+        setReservationCustomer(null);
+        toast.error("Không tìm thấy đơn đặt bàn");
+      }
+    } catch (err) {
+      console.error("Error searching reservation:", err);
+    } finally {
+      setSearchingReservation(false);
+    }
+  };
+
   const handleCheckIn = async () => {
     if (!selectedTable || !bookingCode) {
       toast.error("Vui lòng nhập mã đặt bàn");
@@ -262,27 +308,32 @@ export function TablesMapPage() {
       return;
     }
 
+    if (!foundReservation) {
+      toast.error("Vui lòng tìm kiếm đơn đặt bàn trước");
+      return;
+    }
+
+    // Check if reservation is confirmed and paid
+    if (foundReservation.status !== "confirmed") {
+      toast.error("Đơn đặt bàn chưa được xác nhận. Vui lòng liên hệ thu ngân.");
+      return;
+    }
+
+    if (!foundReservation.isPaid) {
+      toast.error("Đơn đặt bàn chưa được thanh toán cọc. Vui lòng liên hệ thu ngân xác nhận.");
+      return;
+    }
+
     let checkInSuccess = false;
     try {
       const reservationId = bookingCode.trim();
-      
-      const activeReservation = reservations.find(
-        (res) =>
-          res.id === reservationId &&
-          res.status === "in_progress"
-      );
-
-      if (!activeReservation) {
-        toast.error("Mã đơn đặt bàn không hợp lệ.");
-        return;
-      }
 
       const orderData = {
         order_number: `ORD-${Date.now()}`,
         order_type: "dine-in-waiter" as const,
         order_time: new Date().toISOString(),
         table_id: selectedTable.id,
-        customer_id: activeReservation.customer_id,
+        customer_id: foundReservation.customer_id,
         staff_id: currentUserId,
         status: "pending" as const,
       };
@@ -313,6 +364,8 @@ export function TablesMapPage() {
       setShowActionModal(false);
       setSelectedTable(null);
       setBookingCode("");
+      setFoundReservation(null);
+      setReservationCustomer(null);
     }
   };
 
@@ -649,26 +702,107 @@ export function TablesMapPage() {
             onClose={() => {
               setShowCheckInModal(false);
               setBookingCode("");
+              setFoundReservation(null);
+              setReservationCustomer(null);
             }}
             title="Check-in khách đặt bàn"
           >
             <div className="space-y-4">
-              <Input
-                label="Mã đặt bàn"
-                value={bookingCode}
-                onChange={(e) => setBookingCode(e.target.value)}
-                placeholder="Nhập mã đặt bàn"
-              />
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Input
+                    label="Mã đặt bàn"
+                    value={bookingCode}
+                    onChange={(e) => setBookingCode(e.target.value)}
+                    placeholder="Nhập mã đặt bàn"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button 
+                    onClick={handleSearchReservation}
+                    disabled={!bookingCode.trim() || searchingReservation}
+                  >
+                    {searchingReservation ? "Đang tìm..." : "Tìm kiếm"}
+                  </Button>
+                </div>
+              </div>
 
-              {/* <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-800 mb-2">
-                  <strong>Format:</strong> RES-xxx:1234
-                </p>
-                <p className="text-xs text-blue-700">
-                  • RES-xxx: Mã đặt bàn<br />
-                  • 1234: Mã xác thực 4 số (nếu có)
-                </p>
-              </div> */}
+              {/* Reservation Info */}
+              {foundReservation && (
+                <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Thông tin đặt bàn</span>
+                    {foundReservation.isPaid ? (
+                      <Badge className="bg-green-100 text-green-700 border-green-200">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Đã thanh toán cọc
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">
+                        Chờ thanh toán
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <p className="text-gray-500">Khách hàng</p>
+                      <p className="font-medium">{reservationCustomer?.full_name || "N/A"}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">SĐT</p>
+                      <p className="font-medium">{reservationCustomer?.phone || "N/A"}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Ngày giờ</p>
+                      <p className="font-medium">
+                        {foundReservation.reservation_date} {foundReservation.reservation_time}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Số người</p>
+                      <p className="font-medium">{foundReservation.number_of_guests} người</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Trạng thái</p>
+                      <p className="font-medium">
+                        {foundReservation.status === "confirmed" ? "Đã xác nhận" : 
+                         foundReservation.status === "pending" ? "Chờ xác nhận" : 
+                         foundReservation.status}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Tiền cọc</p>
+                      <p className="font-medium text-green-600">
+                        {foundReservation.deposit_amount?.toLocaleString()}đ
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Deposit Proof Image */}
+                  {foundReservation.deposit_proof_image && (
+                    <div className="border-t pt-3">
+                      <p className="text-sm text-gray-500 mb-2">Ảnh xác nhận thanh toán</p>
+                      <img
+                        src={buildImageUrl(foundReservation.deposit_proof_image)}
+                        alt="Deposit proof"
+                        className="max-w-full max-h-48 object-contain rounded-lg border"
+                      />
+                    </div>
+                  )}
+
+                  {/* Warning if not paid or not confirmed */}
+                  {(!foundReservation.isPaid || foundReservation.status !== "confirmed") && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                      <p className="text-sm text-yellow-800">
+                        {!foundReservation.isPaid 
+                          ? "⚠️ Đơn đặt bàn chưa được xác nhận thanh toán cọc. Vui lòng liên hệ thu ngân."
+                          : "⚠️ Đơn đặt bàn chưa được xác nhận. Vui lòng liên hệ thu ngân."}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="flex gap-4">
                 <Button
@@ -677,11 +811,17 @@ export function TablesMapPage() {
                   onClick={() => {
                     setShowCheckInModal(false);
                     setBookingCode("");
+                    setFoundReservation(null);
+                    setReservationCustomer(null);
                   }}
                 >
                   Hủy
                 </Button>
-                <Button fullWidth onClick={handleCheckIn}>
+                <Button 
+                  fullWidth 
+                  onClick={handleCheckIn}
+                  disabled={!foundReservation || !foundReservation.isPaid || foundReservation.status !== "confirmed"}
+                >
                   Xác nhận check-in
                 </Button>
               </div>
