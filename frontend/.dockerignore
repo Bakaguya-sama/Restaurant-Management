@@ -1,9 +1,4 @@
-# ========================================
-# .dockerignore for Frontend
-# ========================================
-# File này chỉ định các file/folder không cần copy vào Docker image
-
-# Dependencies - sẽ được cài lại trong container
+# Dependencies
 node_modules
 npm-debug.log
 package-lock.json
