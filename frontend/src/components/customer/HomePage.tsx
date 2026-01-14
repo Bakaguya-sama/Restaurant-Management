@@ -9,6 +9,8 @@ import { fetchTopDishes } from "../../lib/menuPageApi";
 import { useImageLoader } from "../../hooks/useImageLoader";
 import { buildImageUrl } from "../../lib/uploadApi";
 import { dishRatingApi, DishRating } from "../../lib/dishRatingApi";
+import { ratingApi } from "../../lib/ratingApi";
+import { customerApi } from "../../lib/customerApi";
 import { MessageCircle, ChevronRight } from "lucide-react";
 
 const PLACEHOLDER_IMAGE =
@@ -61,8 +63,41 @@ export function HomePage() {
         const response = await dishRatingApi.getByDishId(selectedDish.id!);
         
         if (response.success && response.data) {
+          // Fetch rating details and customer info
+          const commentsWithCustomer = await Promise.all(
+            response.data.map(async (comment) => {
+              try {
+                const ratingResponse = await ratingApi.getById(comment.rating_id);
+                if (ratingResponse.success && ratingResponse.data) {
+                  const customerId = ratingResponse.data.customer_id;
+                  // Handle customer_id as either string or object
+                  const customerIdStr = typeof customerId === 'string' ? customerId : (customerId?._id || customerId?.id);
+                  
+                  if (customerIdStr) {
+                    try {
+                      const customerResponse = await customerApi.getById(customerIdStr);
+                      if (customerResponse.success && customerResponse.data) {
+                        return {
+                          ...comment,
+                          Customer: {
+                            full_name: customerResponse.data.full_name,
+                          },
+                        };
+                      }
+                    } catch (error) {
+                      console.error('Error fetching customer:', error);
+                    }
+                  }
+                }
+              } catch (error) {
+                console.error('Error fetching rating details:', error);
+              }
+              return comment;
+            })
+          );
+
           // Sort by most recent first
-          const comments = response.data.sort(
+          const comments = commentsWithCustomer.sort(
             (a, b) =>
               new Date(b.created_at || b.rating_date || "").getTime() -
               new Date(a.created_at || a.rating_date || "").getTime()
