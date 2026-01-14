@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Calendar, Clock, Users, CreditCard, CheckCircle } from "lucide-react";
+import { Calendar, Clock, Users, CreditCard, CheckCircle, Upload } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "../ui/Button";
 import { Input, Textarea } from "../ui/Input";
@@ -9,6 +9,7 @@ import { customerApi } from "../../lib/customerApi";
 import { tableApi } from "../../lib/tableApi";
 import { locationApi } from "../../lib/locationApi";
 import { floorApi } from "../../lib/floorApi";
+import { uploadDepositProofImage, extractRelativePath } from "../../lib/uploadApi";
 import {
   Table,
   Reservation,
@@ -62,6 +63,10 @@ export function BookingPage() {
   );
   const [selectedFloorFilter, setSelectedFloorFilter] = useState<string>("all");
   const [selectedCapacityFilter, setSelectedCapacityFilter] = useState<string>("all");
+  const [depositProofImage, setDepositProofImage] = useState<File | null>(null);
+  const [depositProofPreview, setDepositProofPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -262,6 +267,37 @@ export function BookingPage() {
     setBookingData({ ...bookingData, tableId: table.id });
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Vui lòng chọn file ảnh');
+        return;
+      }
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('Kích thước file không được vượt quá 10MB');
+        return;
+      }
+      setDepositProofImage(file);
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      setDepositProofPreview(previewUrl);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setDepositProofImage(null);
+    if (depositProofPreview) {
+      URL.revokeObjectURL(depositProofPreview);
+      setDepositProofPreview(null);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleConfirmBooking = async () => {
     if (!userProfile?.id) {
       toast.error("Vui lòng đăng nhập để đặt bàn");
@@ -283,7 +319,18 @@ export function BookingPage() {
       return;
     }
 
+    if (!depositProofImage) {
+      toast.error("Vui lòng upload ảnh xác nhận thanh toán");
+      return;
+    }
+
     try {
+      setUploading(true);
+      
+      // Upload deposit proof image first
+      const uploadedImageUrl = await uploadDepositProofImage(depositProofImage);
+      const relativePath = extractRelativePath(uploadedImageUrl);
+
       const backendPaymentMethod =
         paymentMethod === "wallet" ? "transfer" : "card";
 
@@ -295,8 +342,10 @@ export function BookingPage() {
         number_of_guests: bookingData.guests,
         deposit_amount: 200000,
         payment_method: backendPaymentMethod,
+        deposit_proof_image: relativePath,
         special_requests: bookingData.notes,
-        status: "confirmed",
+        status: "pending", // Chờ cashier xác nhận
+        isPaid: false,
         details: [
           {
             table_id: selectedTable.id,
@@ -313,6 +362,8 @@ export function BookingPage() {
       const errorMessage =
         err instanceof Error ? err.message : "Lỗi khi tạo đặt bàn";
       toast.error(errorMessage);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -322,10 +373,14 @@ export function BookingPage() {
     return (
       <div className="max-w-2xl mx-auto px-6 py-16">
         <Card className="p-12 text-center">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-12 h-12 text-green-600" />
+          <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Clock className="w-12 h-12 text-yellow-600" />
           </div>
-          <h2 className="mb-4 text-green-600">Đặt bàn thành công!</h2>
+          <h2 className="mb-4 text-yellow-600">Đặt bàn đang chờ xác nhận!</h2>
+          <p className="text-gray-600 mb-4">
+            Đơn đặt bàn của bạn đang chờ thu ngân xác nhận thanh toán cọc.
+            Bạn sẽ nhận được thông báo khi đơn được xác nhận.
+          </p>
           <div className="bg-gray-50 rounded-lg p-6 mb-6">
             <div className="text-6xl mb-4">
               <div className="w-40 h-40 mx-auto bg-white rounded-lg flex items-center justify-center border-2 border-gray-200 shadow-sm p-2">
@@ -345,6 +400,11 @@ export function BookingPage() {
             <p className="text-2xl mb-4 text-center font-semibold">
               {createdReservation?.id || "BOOKING-001"}
             </p>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+              <p className="text-sm text-yellow-800 font-medium">
+                Trạng thái: Chờ xác nhận thanh toán
+              </p>
+            </div>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-gray-600">Ngày giờ</p>
@@ -653,55 +713,6 @@ export function BookingPage() {
             <div>
               <Card className="p-8 mb-6">
                 <h3 className="mb-6">Chọn vị trí bàn</h3>
-                
-                {/* Filter Section */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 pb-6 border-b">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Lọc theo tầng
-                    </label>
-                    <select
-                      value={selectedFloorFilter}
-                      onChange={(e) => {
-                        setSelectedFloorFilter(e.target.value);
-                        setSelectedTable(null);
-                        setBookingData({ ...bookingData, tableId: "" });
-                      }}
-                      disabled={isUserBanned}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#625EE8] disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <option value="all">Tất cả tầng</option>
-                      {floors.map((floor) => (
-                        <option key={floor.id} value={floor.id}>
-                          {floor.floor_name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Lọc theo số chỗ
-                    </label>
-                    <select
-                      value={selectedCapacityFilter}
-                      onChange={(e) => {
-                        setSelectedCapacityFilter(e.target.value);
-                        setSelectedTable(null);
-                        setBookingData({ ...bookingData, tableId: "" });
-                      }}
-                      disabled={isUserBanned}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#625EE8] disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <option value="all">Tất cả số chỗ</option>
-                      <option value="2">2 chỗ</option>
-                      <option value="4">4 chỗ</option>
-                      <option value="6">6 chỗ</option>
-                      <option value="8">8 chỗ</option>
-                    </select>
-                  </div>
-                </div>
-
                 {loading ? (
                   <div className="text-center py-8">
                     <p className="text-gray-500">Đang tải danh sách bàn...</p>
@@ -885,6 +896,72 @@ export function BookingPage() {
                   </div>
                 </div>
 
+                {/* Upload ảnh xác nhận thanh toán */}
+                <div className="border-t pt-6 mb-6">
+                  <h4 className="mb-4">Upload ảnh xác nhận thanh toán</h4>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Vui lòng chuyển khoản và upload ảnh xác nhận giao dịch để hoàn tất đặt bàn.
+                    Thu ngân sẽ xác nhận thanh toán của bạn.
+                  </p>
+                  
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <p className="text-sm text-blue-800 font-medium mb-2">Thông tin chuyển khoản:</p>
+                    <p className="text-sm text-blue-700">Ngân hàng: VietcomBank</p>
+                    <p className="text-sm text-blue-700">STK: 1234567890</p>
+                    <p className="text-sm text-blue-700">Chủ TK: CONG TY TNHH NHA HANG</p>
+                    <p className="text-sm text-blue-700">Số tiền: {depositAmount.toLocaleString()}đ</p>
+                    <p className="text-sm text-blue-700">Nội dung: {userProfile?.phone || "SDT"} DAT BAN</p>
+                  </div>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    disabled={isUserBanned}
+                  />
+
+                  {!depositProofPreview ? (
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUserBanned}
+                      className={`w-full p-8 border-2 border-dashed rounded-lg transition ${
+                        isUserBanned
+                          ? "opacity-50 cursor-not-allowed border-gray-300"
+                          : "border-gray-300 hover:border-[#625EE8] hover:bg-gray-50 cursor-pointer"
+                      }`}
+                    >
+                      <div className="flex flex-col items-center text-gray-500">
+                        <Upload className="w-10 h-10 mb-3" />
+                        <p className="font-medium">Nhấn để upload ảnh</p>
+                        <p className="text-sm">PNG, JPG, GIF (tối đa 10MB)</p>
+                      </div>
+                    </button>
+                  ) : (
+                    <div className="relative">
+                      <img
+                        src={depositProofPreview}
+                        alt="Deposit proof preview"
+                        className="w-full max-h-64 object-contain rounded-lg border"
+                      />
+                      <button
+                        onClick={handleRemoveImage}
+                        disabled={isUserBanned}
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                      <p className="text-sm text-green-600 mt-2 flex items-center">
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        Đã chọn ảnh: {depositProofImage?.name}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
                 <div className="border-t pt-6">
                   <h4 className="mb-4">Tóm tắt đặt bàn</h4>
                   <div className="space-y-2 text-sm mb-4">
@@ -913,14 +990,14 @@ export function BookingPage() {
                 </div>
               </Card>
               <div className="flex gap-4">
-                <Button variant="secondary" onClick={() => setStep(3)}>
+                <Button variant="secondary" onClick={() => setStep(3)} disabled={uploading}>
                   Quay lại
                 </Button>
                 <Button
                   onClick={handleConfirmBooking}
-                  disabled={!paymentMethod || isUserBanned}
+                  disabled={!paymentMethod || !depositProofImage || isUserBanned || uploading}
                 >
-                  Xác nhận & Hoàn tất
+                  {uploading ? "Đang xử lý..." : "Xác nhận & Hoàn tất"}
                 </Button>
               </div>
             </div>

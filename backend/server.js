@@ -42,6 +42,7 @@ const reservationRouter = require('./src/presentation_layer/routes/reservation.r
 const reservationDetailRouter = require('./src/presentation_layer/routes/reservationdetail.routes');
 const dishesUploadsRouter = require('./src/presentation_layer/routes/dishes-uploads.routes');
 const avatarsUploadsRouter = require('./src/presentation_layer/routes/avatars-uploads.routes');
+const depositsUploadsRouter = require('./src/presentation_layer/routes/deposits-uploads.routes');
 const dashboardRouter = require('./src/presentation_layer/routes/dashboard.routes');
 
 const app = express();
@@ -158,6 +159,7 @@ app.use('/api/v1/dashboard', dashboardRouter);
 
 app.use('/api/v1/uploads/dishes', dishesUploadsRouter);
 app.use('/api/v1/uploads/avatars', avatarsUploadsRouter);
+app.use('/api/v1/uploads/deposits', depositsUploadsRouter);
 
 
 app.use((err, req, res, next) => {
