@@ -209,7 +209,7 @@ export async function uploadDepositProofImage(file: File, reservationId?: string
     formData.append('entityId', reservationId);
   }
 
-  const response = await fetch(`${getApiBaseUrl()}/uploads/deposits`, {
+  const response = await fetch(`${getApiBaseUrl()}/uploads/images`, {
     method: 'POST',
     body: formData,
   });

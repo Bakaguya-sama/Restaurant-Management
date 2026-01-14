@@ -471,6 +471,7 @@ class ReservationService {
       number_of_guests: reservationObj.number_of_guests,
       deposit_amount: reservationObj.deposit_amount,
       payment_method: reservationObj.payment_method,
+      deposit_proof_image: reservationObj.deposit_proof_image,
       status: reservationObj.status,
       isPaid: reservationObj.isPaid,
       special_requests: reservationObj.special_requests,

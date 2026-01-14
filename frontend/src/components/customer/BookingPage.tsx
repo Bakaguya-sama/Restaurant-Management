@@ -713,6 +713,50 @@ export function BookingPage() {
             <div>
               <Card className="p-8 mb-6">
                 <h3 className="mb-6">Chọn vị trí bàn</h3>
+                
+                {/* Filter Section */}
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+                  <p className="text-sm font-medium text-gray-700 mb-4">Lọc theo</p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-2">
+                        Khu vực
+                      </label>
+                      <select
+                        value={selectedFloorFilter}
+                        onChange={(e) => setSelectedFloorFilter(e.target.value)}
+                        disabled={isUserBanned}
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#625EE8] focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <option value="all">Tất cả khu vực</option>
+                        {floors.map((floor) => (
+                          <option key={floor.id} value={floor.id}>
+                            {floor.floor_name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-2">
+                        Sức chứa
+                      </label>
+                      <select
+                        value={selectedCapacityFilter}
+                        onChange={(e) => setSelectedCapacityFilter(e.target.value)}
+                        disabled={isUserBanned}
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#625EE8] focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <option value="all">Tất cả sức chứa</option>
+                        <option value="2">2 chỗ</option>
+                        <option value="4">4 chỗ</option>
+                        <option value="6">6 chỗ</option>
+                        <option value="8">8 chỗ</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                
                 {loading ? (
                   <div className="text-center py-8">
                     <p className="text-gray-500">Đang tải danh sách bàn...</p>
