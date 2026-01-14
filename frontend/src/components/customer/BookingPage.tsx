@@ -60,6 +60,8 @@ export function BookingPage() {
   const [paymentMethod, setPaymentMethod] = useState<"wallet" | "card" | null>(
     null
   );
+  const [selectedFloorFilter, setSelectedFloorFilter] = useState<string>("all");
+  const [selectedCapacityFilter, setSelectedCapacityFilter] = useState<string>("all");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -219,12 +221,41 @@ export function BookingPage() {
     return `${formattedDate} ${formattedTime}`;
   };
 
-  const availableTables = tables.filter(
-    (t) =>
-      (t.status === "free" || t.status === "reserved") &&
-      t.capacity >= bookingData.guests &&
-      availableTableIds.has(t.id)
-  );
+  const availableTables = tables.filter((t) => {
+    // Basic filters
+    if (
+      !(t.status === "free" || t.status === "reserved") ||
+      t.capacity < bookingData.guests ||
+      !availableTableIds.has(t.id)
+    ) {
+      return false;
+    }
+
+    // Floor filter
+    if (selectedFloorFilter !== "all") {
+      const location = locations.find(
+        (l) => l.id === t.location_id || (l as any)._id === t.location_id
+      );
+      if (location) {
+        const floorId = location.floor_id || (location as any).floor;
+        if (floorId !== selectedFloorFilter) {
+          return false;
+        }
+      } else {
+        return false;
+      }
+    }
+
+    // Capacity filter
+    if (selectedCapacityFilter !== "all") {
+      const capacity = parseInt(selectedCapacityFilter);
+      if (t.capacity !== capacity) {
+        return false;
+      }
+    }
+
+    return true;
+  });
 
   const handleTableSelect = (table: Table) => {
     setSelectedTable(table);
@@ -622,6 +653,55 @@ export function BookingPage() {
             <div>
               <Card className="p-8 mb-6">
                 <h3 className="mb-6">Chọn vị trí bàn</h3>
+                
+                {/* Filter Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 pb-6 border-b">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Lọc theo tầng
+                    </label>
+                    <select
+                      value={selectedFloorFilter}
+                      onChange={(e) => {
+                        setSelectedFloorFilter(e.target.value);
+                        setSelectedTable(null);
+                        setBookingData({ ...bookingData, tableId: "" });
+                      }}
+                      disabled={isUserBanned}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#625EE8] disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="all">Tất cả tầng</option>
+                      {floors.map((floor) => (
+                        <option key={floor.id} value={floor.id}>
+                          {floor.floor_name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Lọc theo số chỗ
+                    </label>
+                    <select
+                      value={selectedCapacityFilter}
+                      onChange={(e) => {
+                        setSelectedCapacityFilter(e.target.value);
+                        setSelectedTable(null);
+                        setBookingData({ ...bookingData, tableId: "" });
+                      }}
+                      disabled={isUserBanned}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#625EE8] disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="all">Tất cả số chỗ</option>
+                      <option value="2">2 chỗ</option>
+                      <option value="4">4 chỗ</option>
+                      <option value="6">6 chỗ</option>
+                      <option value="8">8 chỗ</option>
+                    </select>
+                  </div>
+                </div>
+
                 {loading ? (
                   <div className="text-center py-8">
                     <p className="text-gray-500">Đang tải danh sách bàn...</p>
