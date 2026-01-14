@@ -1,8 +1,8 @@
-const InvoiceRepository = require('../../infrastructure_layer/invoice/invoice.repository');
-const PromotionService = require('../promotion/promotion.service');
-const InvoicePointsService = require('./invoice-points.service');
-const InvoiceEntity = require('../../domain_layer/invoice/invoice.entity');
-const { Order, User } = require('../../models');
+const InvoiceRepository = require("../../infrastructure_layer/invoice/invoice.repository");
+const PromotionService = require("../promotion/promotion.service");
+const InvoicePointsService = require("./invoice-points.service");
+const InvoiceEntity = require("../../domain_layer/invoice/invoice.entity");
+const { Order, User } = require("../../models");
 
 class InvoiceService {
   constructor() {
@@ -18,15 +18,17 @@ class InvoiceService {
   async getInvoiceById(id) {
     const invoice = await this.invoiceRepository.findById(id);
     if (!invoice) {
-      throw new Error('Invoice not found');
+      throw new Error("Invoice not found");
     }
     return invoice;
   }
 
   async getInvoiceByInvoiceNumber(invoiceNumber) {
-    const invoice = await this.invoiceRepository.findByInvoiceNumber(invoiceNumber);
+    const invoice = await this.invoiceRepository.findByInvoiceNumber(
+      invoiceNumber
+    );
     if (!invoice) {
-      throw new Error('Invoice not found');
+      throw new Error("Invoice not found");
     }
     return invoice;
   }
@@ -34,7 +36,7 @@ class InvoiceService {
   async getInvoiceByOrderId(orderId) {
     const invoice = await this.invoiceRepository.findByOrderId(orderId);
     if (!invoice) {
-      throw new Error('Invoice not found for this order');
+      throw new Error("Invoice not found for this order");
     }
     return invoice;
   }
@@ -42,33 +44,33 @@ class InvoiceService {
   async createInvoice(invoiceData) {
     const order = await Order.findById(invoiceData.order_id);
     if (!order) {
-      throw new Error('Order not found');
+      throw new Error("Order not found");
     }
 
     const staff = await User.findById(invoiceData.staff_id);
     if (!staff) {
-      throw new Error('Staff not found');
+      throw new Error("Staff not found");
     }
 
-    if (!['waiter', 'cashier', 'manager'].includes(staff.role)) {
-      throw new Error('User is not a staff member');
+    if (!["waiter", "cashier", "manager"].includes(staff.role)) {
+      throw new Error("User is not a staff member");
     }
 
-    const existingInvoice = await this.invoiceRepository.findByOrderId(invoiceData.order_id);
+    const existingInvoice = await this.invoiceRepository.findByOrderId(
+      invoiceData.order_id
+    );
     if (existingInvoice) {
-      throw new Error('Invoice already exists for this order');
+      throw new Error("Invoice already exists for this order");
     }
 
-    const { OrderDetail } = require('../../models');
-    const OrderDetailService = require('../orderdetail/orderdetail.service');
+    const { OrderDetail } = require("../../models");
+    const OrderDetailService = require("../orderdetail/orderdetail.service");
     const orderDetailService = new OrderDetailService();
-    
-    const orderDetails = await OrderDetail.find({ 
+
+    const orderDetails = await OrderDetail.find({
       order_id: invoiceData.order_id,
-      status: { $ne: 'cancelled' }
+      status: { $ne: "cancelled" },
     });
-    
-    
 
     for (const detail of orderDetails) {
       try {
@@ -76,10 +78,13 @@ class InvoiceService {
           detail.dish_id,
           detail.quantity,
           invoiceData.order_id,
-          invoiceData.staff_id 
+          invoiceData.staff_id
         );
       } catch (error) {
-        console.error(`Lỗi khi trừ nguyên liệu cho món ${detail.dish_id}:`, error.message);
+        console.error(
+          `Lỗi khi trừ nguyên liệu cho món ${detail.dish_id}:`,
+          error.message
+        );
         throw new Error(`Không thể tạo hóa đơn: ${error.message}`);
       }
     }
@@ -97,26 +102,25 @@ class InvoiceService {
           promoCode,
           invoiceData.subtotal
         );
-        
+
         discountAmount += validation.discount_amount;
         promotionIds.push({
           id: validation.promotion.id,
-          discount: validation.discount_amount
+          discount: validation.discount_amount,
         });
       }
     }
 
-    
     let pointsUsed = invoiceData.points_used || 0;
     let pointsEarned = invoiceData.points_earned || 0;
 
-    
     if (invoiceData.customer_id) {
       if (pointsUsed > 0) {
-        const pointsValidation = await this.pointsService.validatePointsForRedeeming(
-          invoiceData.customer_id,
-          pointsUsed
-        );
+        const pointsValidation =
+          await this.pointsService.validatePointsForRedeeming(
+            invoiceData.customer_id,
+            pointsUsed
+          );
         if (!pointsValidation.isValid) {
           throw new Error(pointsValidation.message);
         }
@@ -124,11 +128,14 @@ class InvoiceService {
       }
 
       if (!invoiceData.points_earned) {
-        pointsEarned = this.pointsService.calculatePointsEarned(invoiceData.subtotal + invoiceData.tax);
+        pointsEarned = this.pointsService.calculatePointsEarned(
+          invoiceData.subtotal + invoiceData.tax
+        );
       }
     }
 
-    const taxRate = invoiceData.tax_rate !== undefined ? invoiceData.tax_rate : 10;
+    const taxRate =
+      invoiceData.tax_rate !== undefined ? invoiceData.tax_rate : 10;
     const totals = new InvoiceEntity({}).calculateTotals(
       invoiceData.subtotal,
       taxRate,
@@ -145,22 +152,26 @@ class InvoiceService {
       discount_amount: totals.discount_amount,
       total_amount: totals.total_amount,
       payment_method: invoiceData.payment_method,
-      payment_status: invoiceData.payment_status || 'pending',
+      payment_status: invoiceData.payment_status || "pending",
       points_used: pointsUsed,
-      points_earned: pointsEarned
+      points_earned: pointsEarned,
     };
 
     const invoiceEntity = new InvoiceEntity(finalInvoiceData);
     const validation = invoiceEntity.validate();
-    
+
     if (!validation.isValid) {
-      throw new Error(validation.errors.join(', '));
+      throw new Error(validation.errors.join(", "));
     }
 
     const invoice = await this.invoiceRepository.create(finalInvoiceData);
 
     for (const promo of promotionIds) {
-      await this.invoiceRepository.addPromotion(invoice.id, promo.id, promo.discount);
+      await this.invoiceRepository.addPromotion(
+        invoice.id,
+        promo.id,
+        promo.discount
+      );
       await this.promotionService.incrementPromotionUses(promo.id);
     }
 
@@ -170,11 +181,11 @@ class InvoiceService {
   async updateInvoice(id, updateData) {
     const existingInvoice = await this.invoiceRepository.findById(id);
     if (!existingInvoice) {
-      throw new Error('Invoice not found');
+      throw new Error("Invoice not found");
     }
 
-    if (existingInvoice.payment_status === 'paid') {
-      throw new Error('Cannot update paid invoice');
+    if (existingInvoice.payment_status === "paid") {
+      throw new Error("Cannot update paid invoice");
     }
 
     return await this.invoiceRepository.update(id, updateData);
@@ -183,39 +194,38 @@ class InvoiceService {
   async deleteInvoice(id) {
     const invoice = await this.invoiceRepository.findById(id);
     if (!invoice) {
-      throw new Error('Invoice not found');
+      throw new Error("Invoice not found");
     }
 
-    if (invoice.payment_status === 'paid') {
-      throw new Error('Cannot delete paid invoice');
+    if (invoice.payment_status === "paid") {
+      throw new Error("Cannot delete paid invoice");
     }
 
     const result = await this.invoiceRepository.delete(id);
     if (!result) {
-      throw new Error('Failed to delete invoice');
+      throw new Error("Failed to delete invoice");
     }
 
-    return { message: 'Invoice deleted successfully' };
+    return { message: "Invoice deleted successfully" };
   }
 
   async applyPromotionToInvoice(id, promotionId) {
     const invoice = await this.invoiceRepository.findById(id);
     if (!invoice) {
-      throw new Error('Invoice not found');
+      throw new Error("Invoice not found");
     }
 
-    if (invoice.payment_status === 'paid') {
-      throw new Error('Cannot apply promotion to paid invoice');
+    if (invoice.payment_status === "paid") {
+      throw new Error("Cannot apply promotion to paid invoice");
     }
 
-    if (invoice.payment_status === 'cancelled') {
-      throw new Error('Cannot apply promotion to cancelled invoice');
+    if (invoice.payment_status === "cancelled") {
+      throw new Error("Cannot apply promotion to cancelled invoice");
     }
 
-    
     const promotion = await this.promotionService.getPromotionById(promotionId);
     if (!promotion) {
-      throw new Error('Promotion not found');
+      throw new Error("Promotion not found");
     }
 
     const validation = await this.promotionService.validatePromoCode(
@@ -223,19 +233,16 @@ class InvoiceService {
       invoice.subtotal
     );
 
-    
     let discountAmount = validation.discount_amount;
     const newTotal = invoice.subtotal + invoice.tax - discountAmount;
 
-    
     const updateData = {
       discount_amount: discountAmount,
-      total_amount: newTotal
+      total_amount: newTotal,
     };
 
     const updatedInvoice = await this.invoiceRepository.update(id, updateData);
 
-    
     await this.invoiceRepository.clearPromotions(id);
     await this.invoiceRepository.addPromotion(id, promotionId, discountAmount);
     await this.promotionService.incrementPromotionUses(promotionId);
@@ -246,53 +253,62 @@ class InvoiceService {
   async markAsPaid(id, paymentMethod, promotionId = null, pointsUsed = 0) {
     const invoice = await this.invoiceRepository.findById(id);
     if (!invoice) {
-      throw new Error('Invoice not found');
+      throw new Error("Invoice not found");
     }
 
     if (invoice.isPaid()) {
-      throw new Error('Invoice is already paid');
+      throw new Error("Invoice is already paid");
     }
 
     if (invoice.isCancelled()) {
-      throw new Error('Cannot mark cancelled invoice as paid');
+      throw new Error("Cannot mark cancelled invoice as paid");
     }
 
     let discountAmount = invoice.discount_amount || 0;
     let totalAmount = invoice.total_amount;
 
     if (promotionId) {
-      const promotion = await this.promotionService.getPromotionById(promotionId);
+      const promotion = await this.promotionService.getPromotionById(
+        promotionId
+      );
       if (!promotion) {
-        throw new Error('Promotion not found');
+        throw new Error("Promotion not found");
       }
 
-      const promotionEntity = require('../../domain_layer/promotion/promotion.entity');
+      const promotionEntity = require("../../domain_layer/promotion/promotion.entity");
       const promoEntity = new promotionEntity(promotion);
-      
+
       if (!promoEntity.isValidNow()) {
-        throw new Error('Promo code is not valid at this time');
+        throw new Error("Promo code is not valid at this time");
       }
 
       if (!promoEntity.canBeUsed()) {
-        throw new Error('Promo code has reached maximum uses');
+        throw new Error("Promo code has reached maximum uses");
       }
 
       if (invoice.subtotal < promotion.minimum_order_amount) {
-        throw new Error(`Minimum order amount is ${promotion.minimum_order_amount}`);
+        throw new Error(
+          `Minimum order amount is ${promotion.minimum_order_amount}`
+        );
       }
 
       discountAmount = promoEntity.calculateDiscount(invoice.subtotal);
-      
-      const discountedAmount = invoice.subtotal - discountAmount - (pointsUsed || 0);
-      const calculatedTax = discountedAmount * 0.1;
+
+      const discountedAmount =
+        invoice.subtotal - discountAmount - (pointsUsed || 0);
+      const calculatedTax = invoice.subtotal * 0.1;
       totalAmount = discountedAmount + calculatedTax;
 
-      await this.invoiceRepository.addPromotion(id, promotionId, discountAmount);
-      
+      await this.invoiceRepository.addPromotion(
+        id,
+        promotionId,
+        discountAmount
+      );
+
       await this.promotionService.incrementPromotionUses(promotionId);
     } else {
       const discountedAmount = invoice.subtotal - (pointsUsed || 0);
-      const calculatedTax = discountedAmount * 0.1;
+      const calculatedTax = invoice.subtotal * 0.1;
       totalAmount = discountedAmount + calculatedTax;
     }
 
@@ -303,23 +319,26 @@ class InvoiceService {
 
     const updateData = {
       payment_method: paymentMethod,
-      payment_status: 'paid',
+      payment_status: "paid",
       paid_at: new Date(),
       discount_amount: discountAmount,
       total_amount: totalAmount,
       points_used: pointsUsed || 0,
-      points_earned: pointsEarned
+      points_earned: pointsEarned,
     };
 
     await this.invoiceRepository.update(id, updateData);
 
-    const customerId = invoice.customer_id?._id || invoice.customer_id?.id || invoice.customer_id;
-    
+    const customerId =
+      invoice.customer_id?._id ||
+      invoice.customer_id?.id ||
+      invoice.customer_id;
+
     if (customerId && pointsUsed > 0) {
       try {
         await this.pointsService.redeemCustomerPoints(customerId, pointsUsed);
       } catch (error) {
-        console.error('Failed to redeem points:', error);
+        console.error("Failed to redeem points:", error);
       }
     }
 
@@ -327,51 +346,49 @@ class InvoiceService {
       try {
         await this.pointsService.awardCustomerPoints(customerId, pointsEarned);
       } catch (error) {
-        console.error('Failed to award points:', error);
+        console.error("Failed to award points:", error);
       }
     }
 
-    
     if (customerId && totalAmount > 0) {
       try {
-        const { Customer } = require('../../models');
+        const { Customer } = require("../../models");
         const customer = await Customer.findById(customerId);
-        
+
         if (customer) {
           const oldTotal = customer.total_spent || 0;
           customer.total_spent = oldTotal + totalAmount;
-          
-          
+
           const newTotal = customer.total_spent;
-          let newMembershipLevel = 'regular';
-          
+          let newMembershipLevel = "regular";
+
           if (newTotal >= 50000000) {
-            newMembershipLevel = 'diamond';
+            newMembershipLevel = "diamond";
           } else if (newTotal >= 30000000) {
-            newMembershipLevel = 'platinum';
+            newMembershipLevel = "platinum";
           } else if (newTotal >= 15000000) {
-            newMembershipLevel = 'gold';
+            newMembershipLevel = "gold";
           } else if (newTotal >= 5000000) {
-            newMembershipLevel = 'silver';
+            newMembershipLevel = "silver";
           } else if (newTotal >= 1000000) {
-            newMembershipLevel = 'bronze';
+            newMembershipLevel = "bronze";
           }
-          
+
           if (customer.membership_level !== newMembershipLevel) {
             customer.membership_level = newMembershipLevel;
           }
-          
+
           await customer.save();
         } else {
-          console.error('Customer not found with ID:', customerId);
+          console.error("Customer not found with ID:", customerId);
         }
       } catch (error) {
-        console.error('Failed to update customer total_spent:', error);
+        console.error("Failed to update customer total_spent:", error);
       }
     } else {
-      console.error('Skipping total_spent update:', {
+      console.error("Skipping total_spent update:", {
         hasCustomerId: !!customerId,
-        totalAmount: totalAmount
+        totalAmount: totalAmount,
       });
     }
 
@@ -381,14 +398,14 @@ class InvoiceService {
   async cancelInvoice(id) {
     const invoice = await this.invoiceRepository.findById(id);
     if (!invoice) {
-      throw new Error('Invoice not found');
+      throw new Error("Invoice not found");
     }
 
-    if (invoice.payment_status === 'paid') {
-      throw new Error('Cannot cancel paid invoice');
+    if (invoice.payment_status === "paid") {
+      throw new Error("Cannot cancel paid invoice");
     }
 
-    return await this.invoiceRepository.updatePaymentStatus(id, 'cancelled');
+    return await this.invoiceRepository.updatePaymentStatus(id, "cancelled");
   }
 
   async getInvoiceStatistics() {
@@ -397,26 +414,29 @@ class InvoiceService {
 
   async getRevenueByDateRange(startDate, endDate) {
     if (!startDate || !endDate) {
-      throw new Error('Start date and end date are required');
+      throw new Error("Start date and end date are required");
     }
 
-    return await this.invoiceRepository.getRevenueByDateRange(startDate, endDate);
+    return await this.invoiceRepository.getRevenueByDateRange(
+      startDate,
+      endDate
+    );
   }
 
   async generateInvoiceNumber() {
     const date = new Date();
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
     const prefix = `INV-${year}${month}${day}`;
-    
+
     const lastInvoice = await this.invoiceRepository.findAll({
-      search: prefix
+      search: prefix,
     });
 
     const sequence = lastInvoice.length + 1;
-    const invoiceNumber = `${prefix}-${String(sequence).padStart(4, '0')}`;
+    const invoiceNumber = `${prefix}-${String(sequence).padStart(4, "0")}`;
 
     return invoiceNumber;
   }

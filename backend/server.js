@@ -93,13 +93,13 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from uploads directory
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Serve static files from placeholder_images directory
+
 app.use('/placeholder_images', express.static(path.join(__dirname, 'placeholder_images')));
 
-// Health check route
+
 app.get('/', (req, res) => {
   res.json({
     message: 'Restaurant Management API Server',
@@ -109,7 +109,7 @@ app.get('/', (req, res) => {
   });
 });
 
-// API Routes
+
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
@@ -155,11 +155,11 @@ app.use('/api/v1/reservation-details', reservationDetailRouter);
 
 app.use('/api/v1/dashboard', dashboardRouter);
 
-// Upload Routes - Separated by type
+
 app.use('/api/v1/uploads/dishes', dishesUploadsRouter);
 app.use('/api/v1/uploads/avatars', avatarsUploadsRouter);
 
-// Error handling middleware
+
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(err.status || 500).json({
@@ -169,7 +169,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
+
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -180,7 +180,7 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 5000;
 let timestamp = new Date().toLocaleString();
 
-// Only listen if not in test environment
+
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
     console.log(`
