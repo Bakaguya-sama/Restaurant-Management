@@ -125,7 +125,10 @@ export function BillsPage() {
           const ratings = ratingsResponse.data;
 
           for (const rating of ratings) {
-            const invoiceId = rating.invoice_id;
+            let invoiceId = rating.invoice_id;
+            // Handle invoice_id as either string or object
+            invoiceId = typeof invoiceId === 'string' ? invoiceId : (invoiceId?._id || invoiceId?.id);
+            
             if (invoiceId) {
               const ratingId = rating._id || rating.id;
               const repliesResponse = await ratingApi.getReplies(ratingId);
@@ -150,16 +153,54 @@ export function BillsPage() {
                 try {
                   const dishRatingsResponse = await dishRatingApi.getByRatingId(ratingId);
                   if (dishRatingsResponse.success && dishRatingsResponse.data) {
-                    dishRatingsResponse.data.forEach((dishRating: any) => {
+                    // Get the invoice to access orderItems
+                    const invoiceObj = invoicesResponse.data.find((inv: any) => {
+                      const invId = inv._id || inv.id;
+                      return invId === invoiceId;
+                    });
+                    
+                    const orderItems = invoiceObj?.order_id?.items || [];
+                    
+                    for (const dishRating of dishRatingsResponse.data) {
                       const dishId = dishRating.dish_id;
-                      if (dishId) {
-                        customerRatings[invoiceId].itemRatings[dishId] = {
+                      // Handle dish_id as either string or object
+                      const dishIdStr = typeof dishId === 'string' ? dishId : (dishId?._id || dishId?.id);
+                      
+                      if (dishIdStr) {
+                        let dishName = "Món ăn";
+                        // If dish_id is an object with name, use it
+                        if (typeof dishId === 'object' && dishId?.name) {
+                          dishName = dishId.name;
+                        } else {
+                          // Otherwise, fetch dish name from API
+                          try {
+                            const apiBaseUrl = (import.meta as any).env?.VITE_API_URL || "http://localhost:5000/api/v1";
+                            const dishResponse = await fetch(`${apiBaseUrl}/dishes/${dishIdStr}`);
+                            if (dishResponse.ok) {
+                              const dishData = await dishResponse.json();
+                              if (dishData.success && dishData.data) {
+                                dishName = dishData.data.name;
+                              }
+                            }
+                          } catch (error) {
+                            console.error("Error fetching dish name:", error);
+                          }
+                        }
+                        
+                        // Find the corresponding order item by dish ID to use its item.id as key
+                        const correspondingItem = orderItems.find((item: any) => {
+                          const itemDishId = item.dish_id?._id || item.dish_id?.id || item.dish_id;
+                          return itemDishId === dishIdStr;
+                        });
+                        
+                        const itemKey = correspondingItem ? correspondingItem._id : dishIdStr;
+                        customerRatings[invoiceId].itemRatings[itemKey] = {
                           score: dishRating.score,
                           comment: dishRating.comment || dishRating.description,
-                          dishName: dishRating.dish_id?.name || "Món ăn",
+                          dishName: dishName,
                         };
                       }
-                    });
+                    }
                   }
                 } catch (error) {
                   console.error("Error fetching dish ratings:", error);
