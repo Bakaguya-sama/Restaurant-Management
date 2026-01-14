@@ -29,6 +29,11 @@ const UPLOAD_CONSTRAINTS = {
     maxSize: 5 * 1024 * 1024, // 5MB
     allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
     errorMessage: 'File size exceeds 5MB limit for avatars'
+  },
+  deposits: {
+    maxSize: 10 * 1024 * 1024, // 10MB
+    allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+    errorMessage: 'File size exceeds 10MB limit for deposit proof images'
   }
 };
 
@@ -78,7 +83,7 @@ export function extractRelativePath(fullUrl: string): string {
  */
 export function validateFileForUpload(
   file: File,
-  uploadType: 'dishes' | 'avatars'
+  uploadType: 'dishes' | 'avatars' | 'deposits'
 ): { valid: boolean; error?: string } {
   const constraints = UPLOAD_CONSTRAINTS[uploadType];
 
@@ -180,6 +185,45 @@ export async function uploadAvatarImage(file: File, userId?: string): Promise<st
   console.log('[uploadAvatarImage] Server returned path:', imagePath);
   const fullUrl = buildImageUrl(imagePath);
   console.log('[uploadAvatarImage] Built full URL:', fullUrl);
+  return fullUrl;
+}
+
+/**
+ * Upload deposit proof image to the server
+ * Route: POST /api/v1/uploads/deposits
+ * Max size: 10MB
+ *
+ * @param {File} file - Deposit proof image file to upload
+ * @param {string} reservationId - Reservation ID for filename (optional)
+ * @returns {Promise<string>} Image URL
+ */
+export async function uploadDepositProofImage(file: File, reservationId?: string): Promise<string> {
+  const validation = validateFileForUpload(file, 'deposits');
+  if (!validation.valid) {
+    throw new Error(validation.error);
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+  if (reservationId) {
+    formData.append('entityId', reservationId);
+  }
+
+  const response = await fetch(`${getApiBaseUrl()}/uploads/images`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  const data: UploadResponse = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || `Failed to upload deposit proof (${response.status})`);
+  }
+
+  const imagePath = data.data.url;
+  console.log('[uploadDepositProofImage] Server returned path:', imagePath);
+  const fullUrl = buildImageUrl(imagePath);
+  console.log('[uploadDepositProofImage] Built full URL:', fullUrl);
   return fullUrl;
 }
 

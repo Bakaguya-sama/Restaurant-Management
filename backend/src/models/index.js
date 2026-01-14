@@ -82,6 +82,7 @@ const ReservationSchema = new Schema({
   number_of_guests: { type: Number, required: true },
   deposit_amount: { type: Number, required: true }, // "200000"
   payment_method: { type: String, enum: ['card', 'transfer'], required: true , default: 'card' },
+  deposit_proof_image: { type: String }, // URL của ảnh xác nhận thanh toán cọc
   status: { type: String, enum: ['pending', 'confirmed', 'in_progress', 'cancelled', 'completed'], default: 'pending' },
   isPaid: { type: Boolean, default: false },
   special_requests: String,
