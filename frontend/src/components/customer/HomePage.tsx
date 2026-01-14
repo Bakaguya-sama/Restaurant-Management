@@ -8,6 +8,8 @@ import { useNavigate } from "react-router-dom";
 import { fetchTopDishes } from "../../lib/menuPageApi";
 import { useImageLoader } from "../../hooks/useImageLoader";
 import { buildImageUrl } from "../../lib/uploadApi";
+import { dishRatingApi, DishRating } from "../../lib/dishRatingApi";
+import { MessageCircle, ChevronRight } from "lucide-react";
 
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1676300183339-09e3824b215d?w=400";
@@ -17,6 +19,9 @@ export function HomePage() {
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
   const [featuredDishes, setFeaturedDishes] = useState<Dish[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dishComments, setDishComments] = useState<DishRating[]>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [showAllComments, setShowAllComments] = useState(false);
   // imageUrls removed — do not call hooks inside loops or effects
 
   // Hook to get selected dish image (called unconditionally to obey hooks rules)
@@ -42,6 +47,39 @@ export function HomePage() {
 
     loadTopDishes();
   }, []);
+
+  // Fetch comments for selected dish
+  useEffect(() => {
+    if (!selectedDish?.id) {
+      setDishComments([]);
+      return;
+    }
+
+    async function loadDishComments() {
+      try {
+        setLoadingComments(true);
+        const response = await dishRatingApi.getByDishId(selectedDish.id!);
+        
+        if (response.success && response.data) {
+          // Sort by most recent first
+          const comments = response.data.sort(
+            (a, b) =>
+              new Date(b.created_at || b.rating_date || "").getTime() -
+              new Date(a.created_at || a.rating_date || "").getTime()
+          );
+          
+          setDishComments(comments);
+        }
+      } catch (error) {
+        console.error("Error loading dish comments:", error);
+        setDishComments([]);
+      } finally {
+        setLoadingComments(false);
+      }
+    }
+
+    loadDishComments();
+  }, [selectedDish?.id]);
 
   // Do not call hooks inside loops. For list images, use buildImageUrl and rely on onError fallback.
 
@@ -138,7 +176,10 @@ export function HomePage() {
       }
       <Modal
         isOpen={selectedDish !== null}
-        onClose={() => setSelectedDish(null)}
+        onClose={() => {
+          setSelectedDish(null);
+          setShowAllComments(false);
+        }}
         title={selectedDish?.name || ""}
         size="xl"
       >
@@ -181,6 +222,61 @@ export function HomePage() {
                 </span>
               </div>
 
+              {/* Comments Section */}
+              <div className="pt-4 border-t space-y-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <MessageCircle size={18} className="text-[#625EE8]" />
+                  <h4 className="font-semibold text-gray-800">
+                    Bình luận từ khách hàng
+                  </h4>
+                </div>
+
+                {loadingComments ? (
+                  <div className="text-center py-6 text-gray-500">
+                    <p>Đang tải bình luận...</p>
+                  </div>
+                ) : dishComments.length === 0 ? (
+                  <div className="text-center py-6 text-gray-500">
+                    <p>Chưa có bình luận nào</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                    {dishComments.slice(0, 5).map((comment) => (
+                      <div
+                        key={comment.id || comment._id}
+                        className="p-3 bg-gray-50 rounded-lg border border-gray-200"
+                      >
+                        <div className="flex items-start gap-2 mb-1">
+                          <div className="flex gap-1 text-[#fbbf24]">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <span key={star} className="text-sm">
+                                {star <= comment.score ? "★" : "☆"}
+                              </span>
+                            ))}
+                          </div>
+                          <span className="text-xs text-gray-500 ml-auto">
+                            {new Date(comment.created_at || comment.rating_date || "").toLocaleDateString("vi-VN")}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-700">
+                          {comment.description || comment.comment}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {dishComments.length > 5 && (
+                  <button
+                    onClick={() => setShowAllComments(true)}
+                    className="flex items-center gap-2 text-[#625EE8] hover:text-[#5149d4] font-medium text-sm w-full justify-center py-2 border border-[#625EE8] rounded-lg hover:bg-blue-50 transition"
+                  >
+                    Xem tất cả {dishComments.length} bình luận
+                    <ChevronRight size={16} />
+                  </button>
+                )}
+              </div>
+
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
                 <p className="text-gray-700 italic text-base">
                   Hãy đến hoặc đặt bàn trước để trải nghiệm!
@@ -189,6 +285,50 @@ export function HomePage() {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* All Comments Modal */}
+      <Modal
+        isOpen={showAllComments}
+        onClose={() => setShowAllComments(false)}
+        title={`Tất cả bình luận - ${selectedDish?.name || ""}`}
+        size="lg"
+      >
+        <div className="space-y-4 max-h-[500px] overflow-y-auto">
+          {dishComments.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <p>Không có bình luận nào</p>
+            </div>
+          ) : (
+            dishComments.map((comment) => (
+              <div
+                key={comment.id || comment._id}
+                className="p-4 bg-gray-50 rounded-lg border border-gray-200"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex gap-1 text-[#fbbf24]">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <span key={star} className="text-lg">
+                        {star <= comment.score ? "★" : "☆"}
+                      </span>
+                    ))}
+                  </div>
+                  <span className="text-sm text-gray-500">
+                    {new Date(comment.created_at || comment.rating_date || "").toLocaleDateString("vi-VN")}
+                  </span>
+                </div>
+                <p className="text-gray-800 leading-relaxed">
+                  {comment.description || comment.comment}
+                </p>
+                {comment.Customer?.full_name && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    - {comment.Customer.full_name}
+                  </p>
+                )}
+              </div>
+            ))
+          )}
+        </div>
       </Modal>
     </div>
   );
