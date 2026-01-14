@@ -35,6 +35,7 @@ const invoiceRouter = require('./src/presentation_layer/routes/invoice.routes');
 const invoicePromotionRouter = require('./src/presentation_layer/routes/invoice_promotion.routes');
 const complaintRouter = require('./src/presentation_layer/routes/complaint.routes');
 const ratingRouter = require('./src/presentation_layer/routes/rating.routes');
+const dishRatingRouter = require('./src/presentation_layer/routes/dishrating.routes');
 const violationRouter = require('./src/presentation_layer/routes/violation.routes');
 const ratingReplyRouter = require('./src/presentation_layer/routes/rating_reply.routes');
 const orderRouter = require('./src/presentation_layer/routes/orders.routes');
@@ -50,46 +51,7 @@ const app = express();
 connectDB();
 
 // Middleware
-const getAllowedOrigins = () => {
-  const allowed = [
-    'http://localhost:3000',
-    'http://localhost:5173',
-    'https://restaurant-management-t5ep.vercel.app',
-    process.env.FRONTEND_URL
-  ].filter(Boolean);
-
-  
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
-    allowed.push(`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`);
-  }
-  if (process.env.VERCEL_BRANCH_URL) {
-    allowed.push(`https://${process.env.VERCEL_BRANCH_URL}`);
-  }
-
-  return allowed;
-};
-
-const corsOptions = {
-  origin: function(origin, callback) {
-    const allowed = getAllowedOrigins();
-    
-    
-    if (!origin) {
-      return callback(null, true);
-    }
-
-    if (allowed.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-};
-
-app.use(cors(corsOptions));
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -144,6 +106,8 @@ app.use('/api/v1/invoice-promotions', invoicePromotionRouter);
 app.use('/api/v1/complaints', complaintRouter);
 
 app.use('/api/v1/ratings', ratingRouter);
+
+app.use('/api/v1/dish-ratings', dishRatingRouter);
 
 app.use('/api/v1/violations', violationRouter);
 
