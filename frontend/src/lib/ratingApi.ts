@@ -3,6 +3,7 @@ import { apiClient, ApiResponse } from './apiClient';
 export interface RatingData {
   customer_id: string;
   invoice_id: string;
+  dish_id?: string;
   description?: string;
   score: number;
 }

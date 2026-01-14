@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Search } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, MessageCircle, ChevronRight } from "lucide-react";
 import { Card } from "../ui/Card";
 import { Modal } from "../ui/Modal";
 import { Input } from "../ui/Input";
@@ -7,6 +7,9 @@ import { Dish } from "../../types";
 import { useMenuDishes } from "../../hooks/useMenuDishes";
 import { buildImageUrl } from "../../lib/uploadApi";
 import { useImageLoader } from "../../hooks/useImageLoader";
+import { dishRatingApi, DishRating } from "../../lib/dishRatingApi";
+import { ratingApi } from "../../lib/ratingApi";
+import { customerApi } from "../../lib/customerApi";
 
 const PLACEHOLDER_IMAGE = "/placeholder_images/placeholder_dish_image.jpg";
 
@@ -56,6 +59,9 @@ export function MenuPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
+  const [dishComments, setDishComments] = useState<DishRating[]>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [showAllComments, setShowAllComments] = useState(false);
 
   const categories = ["all", "Khai vị", "Món chính", "Đồ uống"];
 
@@ -68,6 +74,72 @@ export function MenuPage() {
     selectedDish?.image_url || "",
     PLACEHOLDER_IMAGE
   );
+
+  // Fetch comments for selected dish
+  useEffect(() => {
+    if (!selectedDish?.id) {
+      setDishComments([]);
+      return;
+    }
+
+    async function loadDishComments() {
+      try {
+        setLoadingComments(true);
+        const response = await dishRatingApi.getByDishId(selectedDish.id!);
+
+        if (response.success && response.data) {
+          // Fetch rating details and customer info
+          const commentsWithCustomer = await Promise.all(
+            response.data.map(async (comment) => {
+              try {
+                const ratingResponse = await ratingApi.getById(comment.rating_id);
+                if (ratingResponse.success && ratingResponse.data) {
+                  const customerId = ratingResponse.data.customer_id;
+                  // Handle customer_id as either string or object
+                  const customerIdStr = typeof customerId === 'string' ? customerId : (customerId?._id || customerId?.id);
+                  
+                  if (customerIdStr) {
+                    try {
+                      const customerResponse = await customerApi.getById(customerIdStr);
+                      if (customerResponse.success && customerResponse.data) {
+                        return {
+                          ...comment,
+                          Customer: {
+                            full_name: customerResponse.data.full_name,
+                          },
+                        };
+                      }
+                    } catch (error) {
+                      console.error('Error fetching customer:', error);
+                    }
+                  }
+                }
+              } catch (error) {
+                console.error('Error fetching rating details:', error);
+              }
+              return comment;
+            })
+          );
+
+          // Sort by most recent first
+          const comments = commentsWithCustomer.sort(
+            (a, b) =>
+              new Date(b.created_at || b.rating_date || "").getTime() -
+              new Date(a.created_at || a.rating_date || "").getTime()
+          );
+
+          setDishComments(comments);
+        }
+      } catch (error) {
+        console.error("Error loading dish comments:", error);
+        setDishComments([]);
+      } finally {
+        setLoadingComments(false);
+      }
+    }
+
+    loadDishComments();
+  }, [selectedDish?.id]);
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
@@ -121,7 +193,10 @@ export function MenuPage() {
       {/* Dish Detail Modal */}
       <Modal
         isOpen={selectedDish !== null}
-        onClose={() => setSelectedDish(null)}
+        onClose={() => {
+          setSelectedDish(null);
+          setShowAllComments(false);
+        }}
         title={selectedDish?.name || ""}
         size="xl"
       >
@@ -149,6 +224,63 @@ export function MenuPage() {
                 </span>
               </div>
 
+              {/* Comments Section */}
+              <div className="pt-4 border-t space-y-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <MessageCircle size={18} className="text-[#625EE8]" />
+                  <h4 className="font-semibold text-gray-800">
+                    Bình luận từ khách hàng
+                  </h4>
+                </div>
+
+                {loadingComments ? (
+                  <div className="text-center py-6 text-gray-500">
+                    <p>Đang tải bình luận...</p>
+                  </div>
+                ) : dishComments.length === 0 ? (
+                  <div className="text-center py-6 text-gray-500">
+                    <p>Chưa có bình luận nào</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                    {dishComments.slice(0, 5).map((comment) => (
+                      <div
+                        key={comment.id || comment._id}
+                        className="p-3 bg-gray-50 rounded-lg border border-gray-200"
+                      >
+                        <div className="flex items-start justify-between mb-1">
+                          <div className="flex gap-1 text-[#fbbf24]">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <span key={star} className="text-sm">
+                                {star <= comment.score ? "★" : "☆"}
+                              </span>
+                            ))}
+                          </div>
+                          {comment.Customer?.full_name && (
+                            <span className="text-xs text-gray-600 ml-auto">
+                              {comment.Customer.full_name}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-700">
+                          {comment.description || comment.comment}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {dishComments.length > 5 && (
+                  <button
+                    onClick={() => setShowAllComments(true)}
+                    className="flex items-center gap-2 text-[#625EE8] hover:text-[#5149d4] font-medium text-sm w-full justify-center py-2 border border-[#625EE8] rounded-lg hover:bg-blue-50 transition"
+                  >
+                    Xem tất cả {dishComments.length} bình luận
+                    <ChevronRight size={16} />
+                  </button>
+                )}
+              </div>
+
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
                 <p className="text-gray-700 italic text-base">
                   Hãy đến hoặc đặt bàn trước để thưởng thức nhé! 👋
@@ -157,6 +289,45 @@ export function MenuPage() {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* All Comments Modal */}
+      <Modal
+        isOpen={showAllComments}
+        onClose={() => setShowAllComments(false)}
+        title={`Tất cả bình luận - ${selectedDish?.name || ""}`}
+        size="lg"
+      >
+        <div className="space-y-4 max-h-[500px] overflow-y-auto">
+          {dishComments.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <p>Không có bình luận nào</p>
+            </div>
+          ) : (
+            dishComments.map((comment) => (
+              <div
+                key={comment.id || comment._id}
+                className="p-4 bg-gray-50 rounded-lg border border-gray-200"
+              >
+                <div className="flex gap-1 text-[#fbbf24] mb-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span key={star} className="text-lg">
+                      {star <= comment.score ? "★" : "☆"}
+                    </span>
+                  ))}
+                </div>
+                <p className="text-gray-800 leading-relaxed">
+                  {comment.description || comment.comment}
+                </p>
+                {comment.Customer?.full_name && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    - {comment.Customer.full_name}
+                  </p>
+                )}
+              </div>
+            ))
+          )}
+        </div>
       </Modal>
     </div>
   );

@@ -17,10 +17,12 @@ import { Modal } from "../ui/Modal";
 import { Badge } from "../ui/badge";
 import { Textarea } from "../ui/textarea";
 import { Input } from "../ui/Input";
+import { RatingStars } from "../ui/RatingStars";
 import { toast } from "sonner";
 import { invoiceApi } from "../../lib/invoiceApi";
 import { customerApi } from "../../lib/customerApi";
 import { ratingApi } from "../../lib/ratingApi";
+import { dishRatingApi } from "../../lib/dishRatingApi";
 import { promotionApi } from "../../lib/promotionApi";
 import { authService } from "../../lib/authService";
 import { Promotion } from "../../types";
@@ -34,6 +36,7 @@ export function BillsPage() {
     "wallet" | "card" | "cash" | "online" | null
   >(null);
   const [feedback, setFeedback] = useState("");
+  const [itemRatings, setItemRatings] = useState<Record<string, { score: number; comment: string }>>({});
   const [voucherCode, setVoucherCode] = useState("");
   const [appliedVoucher, setAppliedVoucher] = useState<any>(null);
   const [pointsToUse, setPointsToUse] = useState(0);
@@ -122,7 +125,10 @@ export function BillsPage() {
           const ratings = ratingsResponse.data;
 
           for (const rating of ratings) {
-            const invoiceId = rating.invoice_id;
+            let invoiceId = rating.invoice_id;
+            // Handle invoice_id as either string or object
+            invoiceId = typeof invoiceId === 'string' ? invoiceId : (invoiceId?._id || invoiceId?.id);
+            
             if (invoiceId) {
               const ratingId = rating._id || rating.id;
               const repliesResponse = await ratingApi.getReplies(ratingId);
@@ -133,12 +139,73 @@ export function BillsPage() {
                   ? repliesResponse.data[0]
                   : null;
 
-              customerRatings[invoiceId] = {
-                description: rating.description,
-                score: rating.score,
-                reply_text: reply?.reply_text,
-                reply_date: reply?.reply_date,
-              };
+              // Lưu rating chung cho invoice
+              if (!customerRatings[invoiceId]) {
+                customerRatings[invoiceId] = {
+                  description: rating.description,
+                  score: rating.score,
+                  reply_text: reply?.reply_text,
+                  reply_date: reply?.reply_date,
+                  itemRatings: {}, // Thêm object để lưu rating từng item
+                };
+
+                // Fetch dish ratings for this rating
+                try {
+                  const dishRatingsResponse = await dishRatingApi.getByRatingId(ratingId);
+                  if (dishRatingsResponse.success && dishRatingsResponse.data) {
+                    // Get the invoice to access orderItems
+                    const invoiceObj = invoicesResponse.data.find((inv: any) => {
+                      const invId = inv._id || inv.id;
+                      return invId === invoiceId;
+                    });
+                    
+                    const orderItems = invoiceObj?.order_id?.items || [];
+                    
+                    for (const dishRating of dishRatingsResponse.data) {
+                      const dishId = dishRating.dish_id;
+                      // Handle dish_id as either string or object
+                      const dishIdStr = typeof dishId === 'string' ? dishId : (dishId?._id || dishId?.id);
+                      
+                      if (dishIdStr) {
+                        let dishName = "Món ăn";
+                        // If dish_id is an object with name, use it
+                        if (typeof dishId === 'object' && dishId?.name) {
+                          dishName = dishId.name;
+                        } else {
+                          // Otherwise, fetch dish name from API
+                          try {
+                            const apiBaseUrl = (import.meta as any).env?.VITE_API_URL || "http://localhost:5000/api/v1";
+                            const dishResponse = await fetch(`${apiBaseUrl}/dishes/${dishIdStr}`);
+                            if (dishResponse.ok) {
+                              const dishData = await dishResponse.json();
+                              if (dishData.success && dishData.data) {
+                                dishName = dishData.data.name;
+                              }
+                            }
+                          } catch (error) {
+                            console.error("Error fetching dish name:", error);
+                          }
+                        }
+                        
+                        // Find the corresponding order item by dish ID to use its item.id as key
+                        const correspondingItem = orderItems.find((item: any) => {
+                          const itemDishId = item.dish_id?._id || item.dish_id?.id || item.dish_id;
+                          return itemDishId === dishIdStr;
+                        });
+                        
+                        const itemKey = correspondingItem ? correspondingItem._id : dishIdStr;
+                        customerRatings[invoiceId].itemRatings[itemKey] = {
+                          score: dishRating.score,
+                          comment: dishRating.comment || dishRating.description,
+                          dishName: dishName,
+                        };
+                      }
+                    }
+                  }
+                } catch (error) {
+                  console.error("Error fetching dish ratings:", error);
+                }
+              }
             }
           }
         }
@@ -175,6 +242,7 @@ export function BillsPage() {
           }),
           items: orderItems.map((item: any) => ({
             id: item._id,
+            dishId: item.dish_id?._id || item.dish_id?.id || item.dish_id,
             name: item.dish_id?.name || "Món ăn",
             quantity: item.quantity,
             price: item.unit_price,
@@ -209,6 +277,10 @@ export function BillsPage() {
             invoiceObj.payment_status === "paid" && invoiceRating
               ? invoiceRating.reply_date
               : null,
+          itemRatings:
+            invoiceObj.payment_status === "paid" && invoiceRating
+              ? invoiceRating.itemRatings
+              : {},
         };
       });
 
@@ -453,7 +525,16 @@ export function BillsPage() {
 
   const handleSubmitFeedback = async () => {
     if (feedback === "") {
-      toast.error("Vui lòng nhập nhận xét");
+      toast.error("Vui lòng nhập nhận xét chung");
+      return;
+    }
+
+    // Check if at least one item has a rating
+    const hasItemRating = Object.values(itemRatings).some(
+      (rating) => rating.score > 0
+    );
+    if (!hasItemRating) {
+      toast.error("Vui lòng đánh giá ít nhất một món ăn");
       return;
     }
 
@@ -470,18 +551,105 @@ export function BillsPage() {
     try {
       const invoiceId = selectedBill._id || selectedBill.id;
 
-      await ratingApi.create({
+      // 1. Submit general feedback for invoice
+      const generalRatingResponse = await ratingApi.create({
         customer_id: customerId,
         invoice_id: invoiceId,
         description: feedback,
         score: 5,
       });
 
-      toast.success("Cảm ơn bạn đã gửi đánh giá!");
+      const ratingId = generalRatingResponse.data?.id || generalRatingResponse.data?._id;
+
+      // 2. Submit individual item ratings using dishRatingApi
+      for (const item of selectedBill.items) {
+        const itemRating = itemRatings[item.id];
+        if (itemRating && itemRating.score > 0) {
+          // Create dish rating entry with the actual dish_id
+          await dishRatingApi.create({
+            dish_id: item.dishId,
+            rating_id: ratingId,
+            score: itemRating.score,
+            comment: itemRating.comment,
+          });
+        }
+      }
+
+      toast.success("Cảm ơn bạn đã gửi đánh giá chi tiết!");
       setShowFeedbackModal(false);
       setFeedback("");
+      setItemRatings({});
 
       await fetchInvoices();
+      
+      // Update selectedBill with the refreshed data
+      const updatedBills = await (async () => {
+        const response = await authService.getCurrentUser();
+        const currentUserId = response.data.id || response.data._id;
+        const invoicesResponse = await invoiceApi.getByCustomerId(currentUserId);
+        return invoicesResponse.data || [];
+      })();
+      
+      const updatedBill = updatedBills.find((bill: any) => {
+        const billId = bill._id || bill.id;
+        return billId === selectedBill.invoiceId;
+      });
+      
+      if (updatedBill) {
+        const orderItems = updatedBill.order_id?.items || [];
+        const invoiceId = updatedBill._id || updatedBill.id;
+        
+        // Fetch ratings for this invoice
+        let customerRatings: any = {};
+        try {
+          const ratingsResponse = await ratingApi.getAll({
+            customer_id: currentUserId,
+          });
+          if (ratingsResponse.success && ratingsResponse.data) {
+            const ratings = ratingsResponse.data;
+            for (const rating of ratings) {
+              const ratingInvoiceId = rating.invoice_id;
+              if (ratingInvoiceId === invoiceId) {
+                const ratingId = rating._id || rating.id;
+                customerRatings[invoiceId] = {
+                  description: rating.description,
+                  score: rating.score,
+                  itemRatings: {},
+                };
+
+                // Fetch dish ratings
+                try {
+                  const dishRatingsResponse = await dishRatingApi.getByRatingId(ratingId);
+                  if (dishRatingsResponse.success && dishRatingsResponse.data) {
+                    dishRatingsResponse.data.forEach((dishRating: any) => {
+                      const dishId = dishRating.dish_id;
+                      if (dishId) {
+                        customerRatings[invoiceId].itemRatings[dishId] = {
+                          score: dishRating.score,
+                          comment: dishRating.comment || dishRating.description,
+                          dishName: dishRating.dish_id?.name || "Món ăn",
+                        };
+                      }
+                    });
+                  }
+                } catch (error) {
+                  console.error("Error fetching dish ratings:", error);
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching ratings:", error);
+        }
+
+        const invoiceRating = customerRatings[invoiceId];
+        const newSelectedBill = {
+          ...selectedBill,
+          feedback: invoiceRating?.description || null,
+          itemRatings: invoiceRating?.itemRatings || {},
+        };
+        setSelectedBill(newSelectedBill);
+      }
     } catch (error: any) {
       console.error("Rating error:", error);
       toast.error(error.message || "Gửi đánh giá thất bại");
@@ -1213,11 +1381,60 @@ export function BillsPage() {
           {selectedBill?.feedback ? (
             <>
               <div>
-                <label className="block mb-2">Đánh giá của bạn</label>
+                <label className="block mb-2">Nhận xét chung</label>
                 <div className="p-3 bg-gray-50 rounded-lg border text-sm text-gray-700">
                   {selectedBill.feedback}
                 </div>
               </div>
+
+              {/* Hiển thị đánh giá từng item */}
+              {selectedBill.itemRatings && Object.keys(selectedBill.itemRatings).length > 0 && (
+                <div className="border-t pt-4">
+                  <h4 className="font-medium mb-4">Đánh giá từng món ăn</h4>
+                  <div className="space-y-4">
+                    {Object.entries(selectedBill.itemRatings).map(
+                      ([itemId, itemRating]: [string, any]) => (
+                        <div
+                          key={itemId}
+                          className="p-4 border rounded-lg bg-gray-50"
+                        >
+                          {/* Item Name */}
+                          <div className="flex items-start justify-between mb-2">
+                            <h5 className="font-medium text-sm">
+                              {itemRating.dishName}
+                            </h5>
+                            <span className="text-sm font-medium text-yellow-600">
+                              {itemRating.score}/5
+                            </span>
+                          </div>
+
+                          {/* Stars Display */}
+                          <div className="flex gap-1 mb-3">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={`w-5 h-5 ${
+                                  star <= itemRating.score
+                                    ? "fill-yellow-400 text-yellow-400"
+                                    : "text-gray-300"
+                                }`}
+                              />
+                            ))}
+                          </div>
+
+                          {/* Comment */}
+                          {itemRating.comment && (
+                            <p className="text-sm text-gray-700 p-3 bg-white rounded border border-gray-200">
+                              {itemRating.comment}
+                            </p>
+                          )}
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+
               {selectedBill.feedbackReply && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <div className="flex items-start gap-2">
@@ -1253,25 +1470,123 @@ export function BillsPage() {
             </>
           ) : (
             <>
+              {/* Overall Feedback */}
               <div>
-                <label className="block mb-2">Chia sẻ cảm nhận của bạn</label>
+                <label className="block mb-2 font-medium">
+                  Nhận xét chung về trải nghiệm
+                </label>
                 <Textarea
                   value={feedback}
                   onChange={(e) => setFeedback(e.target.value)}
-                  placeholder="Món ăn ngon, phục vụ tận tình..."
-                  rows={4}
+                  placeholder="Chia sẻ cảm nhận của bạn về nhà hàng, dịch vụ..."
+                  rows={3}
                 />
               </div>
 
-              <div className="flex gap-4">
+              {/* Individual Item Ratings */}
+              {selectedBill && (
+              <div className="border-t pt-4">
+                <h4 className="font-medium mb-4">
+                  Đánh giá từng món ăn (tối thiểu 1 món)
+                </h4>
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {selectedBill.items.map((item: any) => (
+                    <div
+                      key={item.id}
+                      className="p-4 border rounded-lg bg-gray-50"
+                    >
+                      {/* Item Name and Stars */}
+                      <div className="mb-3">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h5 className="font-medium text-sm">
+                              {item.name}
+                            </h5>
+                            <p className="text-xs text-gray-500">
+                              x{item.quantity}
+                            </p>
+                          </div>
+                          <span className="text-sm text-gray-600">
+                            {(item.price * item.quantity).toLocaleString()}đ
+                          </span>
+                        </div>
+
+                        {/* Star Rating */}
+                        <div className="flex items-center gap-2 my-3">
+                          <div className="flex gap-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                onClick={() =>
+                                  setItemRatings({
+                                    ...itemRatings,
+                                    [item.id]: {
+                                      score: star,
+                                      comment:
+                                        itemRatings[item.id]?.comment || "",
+                                    },
+                                  })
+                                }
+                                className="transition-transform hover:scale-110"
+                              >
+                                <Star
+                                  className={`w-6 h-6 ${
+                                    star <=
+                                    (itemRatings[item.id]?.score || 0)
+                                      ? "fill-yellow-400 text-yellow-400"
+                                      : "text-gray-300"
+                                  }`}
+                                />
+                              </button>
+                            ))}
+                          </div>
+                          {itemRatings[item.id]?.score > 0 && (
+                            <span className="text-sm font-medium text-yellow-600">
+                              {itemRatings[item.id]?.score}/5
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Comment */}
+                      {itemRatings[item.id]?.score > 0 && (
+                        <Textarea
+                          value={itemRatings[item.id]?.comment || ""}
+                          onChange={(e) =>
+                            setItemRatings({
+                              ...itemRatings,
+                              [item.id]: {
+                                score: itemRatings[item.id].score,
+                                comment: e.target.value,
+                              },
+                            })
+                          }
+                          placeholder="Chia sẻ chi tiết về món này (tùy chọn)..."
+                          rows={2}
+                          className="text-sm"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-4 border-t pt-4">
                 <Button
                   variant="secondary"
                   fullWidth
-                  onClick={() => setShowFeedbackModal(false)}
+                  onClick={() => {
+                    setShowFeedbackModal(false);
+                    setFeedback("");
+                    setItemRatings({});
+                  }}
                 >
                   Bỏ qua
                 </Button>
                 <Button fullWidth onClick={handleSubmitFeedback}>
+                  <Star className="w-4 h-4 mr-2" />
                   Gửi đánh giá
                 </Button>
               </div>
