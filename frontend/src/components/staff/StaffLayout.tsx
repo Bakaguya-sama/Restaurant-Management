@@ -17,6 +17,7 @@ import {
   Utensils,
   MapPin,
   ChevronDown,
+  Receipt,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useStaff } from "../../hooks/useStaff";
@@ -141,6 +142,12 @@ export function StaffLayout() {
           label: "Quản lý thanh toán",
           icon: CreditCard,
           path: "/staff/cashier/invoices",
+        },
+        {
+          id: "deposits",
+          label: "Xác nhận cọc",
+          icon: Receipt,
+          path: "/staff/cashier/deposits",
         },
         {
           id: "profile",

@@ -9,6 +9,7 @@ class ReservationEntity {
     this.number_of_guests = data.number_of_guests;
     this.deposit_amount = data.deposit_amount;
     this.payment_method = data.payment_method;
+    this.deposit_proof_image = data.deposit_proof_image;
     this.status = data.status;
     this.isPaid = data.isPaid;
     this.special_requests = data.special_requests;

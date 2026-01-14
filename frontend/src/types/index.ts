@@ -123,6 +123,7 @@ export interface Reservation {
   number_of_guests: number;
   deposit_amount: number;
   payment_method: 'card' | 'transfer';
+  deposit_proof_image?: string;
   status: ReservationStatus;
   special_requests?: string;
   created_at: string;
@@ -138,6 +139,7 @@ export interface ReservationData {
   number_of_guests: number;
   deposit_amount?: number;
   payment_method?: 'card' | 'transfer';
+  deposit_proof_image?: string;
   status?: ReservationStatus;
   special_requests?: string;
   isPaid?: boolean;

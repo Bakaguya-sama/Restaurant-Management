@@ -28,6 +28,7 @@ import { InventoryPage } from "./components/staff/manager/InventoryPage";
 import { CustomersPage } from "./components/staff/manager/CustomersPage";
 import { MenuPromotionPage } from "./components/staff/manager/MenuPromotionPage";
 import { InvoicesPage } from "./components/staff/cashier/InvoicesPage";
+import { DepositConfirmationPage } from "./components/staff/cashier/DepositConfirmationPage";
 import { TablesMapPage } from "./components/staff/waiter/TablesMapPage";
 import { OrderingPage } from "./components/staff/waiter/OrderingPage";
 import { ProfilePage } from "./components/staff/ProfilePage";
@@ -139,6 +140,14 @@ function App() {
                 element={
                   <RoleBasedRoute allowedRoles={["cashier", "manager"]}>
                     <InvoicesPage />
+                  </RoleBasedRoute>
+                }
+              />
+              <Route
+                path="cashier/deposits"
+                element={
+                  <RoleBasedRoute allowedRoles={["cashier", "manager"]}>
+                    <DepositConfirmationPage />
                   </RoleBasedRoute>
                 }
               />
