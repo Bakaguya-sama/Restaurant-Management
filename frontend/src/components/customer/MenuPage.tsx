@@ -3,6 +3,7 @@ import { Search, MessageCircle, ChevronRight } from "lucide-react";
 import { Card } from "../ui/Card";
 import { Modal } from "../ui/Modal";
 import { Input } from "../ui/Input";
+import { RatingStars } from "../ui/RatingStars";
 import { Dish } from "../../types";
 import { useMenuDishes } from "../../hooks/useMenuDishes";
 import { buildImageUrl } from "../../lib/uploadApi";
@@ -92,15 +93,22 @@ export function MenuPage() {
           const commentsWithCustomer = await Promise.all(
             response.data.map(async (comment) => {
               try {
-                const ratingResponse = await ratingApi.getById(comment.rating_id);
+                const ratingResponse = await ratingApi.getById(
+                  comment.rating_id
+                );
                 if (ratingResponse.success && ratingResponse.data) {
                   const customerId = ratingResponse.data.customer_id;
                   // Handle customer_id as either string or object
-                  const customerIdStr = typeof customerId === 'string' ? customerId : (customerId?._id || customerId?.id);
-                  
+                  const customerIdStr =
+                    typeof customerId === "string"
+                      ? customerId
+                      : customerId?._id || customerId?.id;
+
                   if (customerIdStr) {
                     try {
-                      const customerResponse = await customerApi.getById(customerIdStr);
+                      const customerResponse = await customerApi.getById(
+                        customerIdStr
+                      );
                       if (customerResponse.success && customerResponse.data) {
                         return {
                           ...comment,
@@ -110,12 +118,12 @@ export function MenuPage() {
                         };
                       }
                     } catch (error) {
-                      console.error('Error fetching customer:', error);
+                      console.error("Error fetching customer:", error);
                     }
                   }
                 }
               } catch (error) {
-                console.error('Error fetching rating details:', error);
+                console.error("Error fetching rating details:", error);
               }
               return comment;
             })
@@ -216,6 +224,16 @@ export function MenuPage() {
               <p className="text-gray-600 text-lg">
                 {selectedDish.description}
               </p>
+
+              {/* Rating Stars */}
+              <div className="pt-3 border-t">
+                <RatingStars
+                  rating={selectedDish.average_rating || 4.5}
+                  totalReviews={selectedDish.total_reviews || 0}
+                  size="md"
+                  showCount={true}
+                />
+              </div>
 
               <div className="flex items-center justify-between pt-4 border-t">
                 <span className="text-gray-600 text-lg">Giá:</span>
