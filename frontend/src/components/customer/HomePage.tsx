@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { Modal } from "../ui/Modal";
+import { RatingStars } from "../ui/RatingStars";
 import { Dish } from "../../types";
 import { useNavigate } from "react-router-dom";
 import { fetchTopDishes } from "../../lib/menuPageApi";
@@ -162,6 +163,16 @@ export function HomePage() {
               <p className="text-gray-600 text-lg">
                 {selectedDish.description}
               </p>
+
+              {/* Rating Stars */}
+              <div className="pt-3 border-t">
+                <RatingStars 
+                  rating={selectedDish.average_rating || 4.5} 
+                  totalReviews={selectedDish.total_reviews || 0}
+                  size="md"
+                  showCount={true}
+                />
+              </div>
 
               <div className="flex items-center justify-between pt-4 border-t">
                 <span className="text-gray-600 text-lg">Giá:</span>

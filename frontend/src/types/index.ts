@@ -71,6 +71,8 @@ export interface Dish {
   description?: string;
   image_url?: string;
   is_available: boolean;
+  average_rating?: number;      // 0-5 rating
+  total_reviews?: number;        // Total number of reviews
   createdAt?: string;
   updatedAt?: string;
   manual_unavailable_reason?: string;
