@@ -32,6 +32,7 @@ const {
   Violation,
   Rating,
   RatingReply,
+  DishRating,
 } = require("../models");
 
 async function connectDB() {
@@ -1725,6 +1726,53 @@ async function seedDatabase() {
     ]);
     console.log(`   OK ${ratingReplies.length} replies\n`);
 
+    console.log("25/25 Tạo Dish Ratings...");
+    const dishRatings = await DishRating.insertMany([
+      {
+        dish_id: dishes[0]._id,
+        rating_id: ratings[0]._id,
+        score: 5,
+        comment: "Gà rán giòn, thơm lừng, tuyệt vời!",
+      },
+      {
+        dish_id: dishes[1]._id,
+        rating_id: ratings[0]._id,
+        score: 5,
+        comment: "Mì Ý rất ngon, sốt đậm đà",
+      },
+      {
+        dish_id: dishes[2]._id,
+        rating_id: ratings[1]._id,
+        score: 3,
+        comment: "Cơm chiên tổn, nhưng tối hơi nhiều",
+      },
+      {
+        dish_id: dishes[3]._id,
+        rating_id: ratings[1]._id,
+        score: 3,
+        comment: "Súp tôm bình thường, không có gì đặc biệt",
+      },
+      {
+        dish_id: dishes[0]._id,
+        rating_id: ratings[2]._id,
+        score: 3,
+        comment: "Gà rán ở lần này chưa tốt bằng lần trước",
+      },
+      {
+        dish_id: dishes[4]._id,
+        rating_id: ratings[3]._id,
+        score: 4,
+        comment: "Bánh chocolate ngon, mềm mọn, tấm ưu đặc",
+      },
+      {
+        dish_id: dishes[1]._id,
+        rating_id: ratings[3]._id,
+        score: 4,
+        comment: "Mì Ý tươi, sốt cà chua tự nhiên",
+      },
+    ]);
+    console.log(`   OK ${dishRatings.length} dish ratings\n`);
+
     // TỔNG KẾT
     console.log("\n========================================");
     console.log("SEED DATABASE HOÀN TẤT!");
@@ -1754,6 +1802,7 @@ async function seedDatabase() {
     console.log(`   22. Violations: ${violations.length}`);
     console.log(`   23. Ratings: ${ratings.length}`);
     console.log(`   24. Rating Replies: ${ratingReplies.length}`);
+    console.log(`   25. Dish Ratings: ${dishRatings.length}`);
     console.log("========================================");
     console.log("Test Accounts:");
     console.log("   Waiter: hung.waiter@restaurant.vn / password123");

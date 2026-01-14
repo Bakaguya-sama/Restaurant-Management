@@ -344,6 +344,13 @@ const RatingSchema = new Schema({
   score: { type: Number, required: true, min: 1, max: 5 },
 });
 
+const DishRatingSchema = new Schema({
+  dish_id: { type: Schema.Types.ObjectId, ref: 'Dish', required: true },
+  rating_id: { type: Schema.Types.ObjectId, ref: 'Rating', required: true },
+  score: { type: Number, required: true, min: 1, max: 5 },
+  comment: String,
+});
+
 //Replies to ratings
 const RatingReplySchema = new Schema({
   rating_id: { type: Schema.Types.ObjectId, ref: 'Rating', required: true },
@@ -351,6 +358,7 @@ const RatingReplySchema = new Schema({
   reply_text: { type: String, required: true },
   reply_date: { type: Date, default: Date.now },
 });
+
 
 // ==================== EXPORTS ====================
 const User = UserModel;
@@ -377,6 +385,7 @@ const InvoicePromotion = mongoose.model('InvoicePromotion', InvoicePromotionSche
 const Violation = mongoose.model('Violation', ViolationSchema);
 const Rating = mongoose.model('Rating', RatingSchema);
 const RatingReply = mongoose.model('RatingReply', RatingReplySchema);
+const DishRating = mongoose.model('DishRating', DishRatingSchema);
 
 const StockExport = mongoose.model('StockExport', StockExportSchema);
 const StockExportDetail = mongoose.model('StockExportDetail', StockExportDetailSchema);
@@ -422,6 +431,7 @@ module.exports = {
   Violation,
   Rating,
   RatingReply,
+  DishRating,
   StockExport,
   StockExportDetail,
   EmailVerification,
